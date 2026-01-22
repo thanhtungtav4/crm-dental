@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\TreatmentPlans\Relations;
 
+use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -18,7 +21,7 @@ class SessionsRelationManager extends RelationManager
         return $schema->schema([
             Forms\Components\Select::make('doctor_id')
                 ->label('Bác sĩ')
-                ->options(fn () => \App\Models\User::role('Doctor')->pluck('name','id'))
+                ->options(fn() => \App\Models\User::role('Doctor')->pluck('name', 'id'))
                 ->searchable()->preload(),
             Forms\Components\DateTimePicker::make('start_at')->label('Bắt đầu'),
             Forms\Components\DateTimePicker::make('end_at')->label('Kết thúc'),
@@ -41,19 +44,19 @@ class SessionsRelationManager extends RelationManager
                 TextColumn::make('end_at')->label('Kết thúc')->dateTime()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('doctor.name')->label('Bác sĩ'),
                 TextColumn::make('status')->label('Trạng thái')->badge()
-                    ->icon(fn (?string $s) => \App\Support\StatusBadge::icon($s))
-                    ->color(fn (?string $s) => \App\Support\StatusBadge::color($s)),
+                    ->icon(fn(?string $s) => \App\Support\StatusBadge::icon($s))
+                    ->color(fn(?string $s) => \App\Support\StatusBadge::color($s)),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Tạo buổi điều trị mới')
                     ->after(function ($record) {
                         // Optionally pre-fill supplies from plan items in future
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 }

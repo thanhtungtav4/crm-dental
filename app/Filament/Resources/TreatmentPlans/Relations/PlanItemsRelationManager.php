@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\TreatmentPlans\Relations;
 
 use App\Models\PlanItem;
+use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -25,7 +28,7 @@ class PlanItemsRelationManager extends RelationManager
                 ->schema([
                     Forms\Components\Select::make('material_id')
                         ->label('Vật tư')
-                        ->options(fn () => \App\Models\Material::query()->pluck('name','id'))
+                        ->options(fn() => \App\Models\Material::query()->pluck('name', 'id'))
                         ->searchable()
                         ->preload(),
                     Forms\Components\TextInput::make('qty')->numeric()->default(1),
@@ -41,14 +44,14 @@ class PlanItemsRelationManager extends RelationManager
                 TextColumn::make('name')->label('Hạng mục')->searchable(),
                 TextColumn::make('quantity')->label('SL')->sortable(),
                 TextColumn::make('price')->label('Giá')->money('VND')->sortable(),
-                TextColumn::make('total')->label('Thành tiền')->state(fn (PlanItem $rec) => $rec->quantity * $rec->price)->money('VND'),
+                TextColumn::make('total')->label('Thành tiền')->state(fn(PlanItem $rec) => $rec->quantity * $rec->price)->money('VND'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 }

@@ -2,7 +2,12 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -63,7 +68,7 @@ class PatientPhotosRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make('create_normal')
+                CreateAction::make('create_normal')
                     ->label('Thêm ảnh thông thường')
                     ->modalWidth('3xl')
                     ->color('gray')
@@ -92,7 +97,7 @@ class PatientPhotosRelationManager extends RelationManager
                             ->columnSpanFull(),
                     ]),
 
-                Tables\Actions\CreateAction::make('create_ortho')
+                CreateAction::make('create_ortho')
                     ->label('Thêm ảnh chỉnh nha')
                     ->modalWidth('5xl')
                     ->color('primary')
@@ -108,8 +113,8 @@ class PatientPhotosRelationManager extends RelationManager
                             ->required()
                             ->default(now()),
 
-                        // Standardized 9-photo Grid
-                        Forms\Components\Grid::make(3)
+                        // Standardized 9-photo Grid (3 columns)
+                        Group::make()
                             ->schema([
                                 // Row 1
                                 Forms\Components\FileUpload::make('content.lateral')
@@ -161,7 +166,8 @@ class PatientPhotosRelationManager extends RelationManager
                                     ->image()
                                     ->directory('patient-photos/ortho')
                                     ->imageEditor(),
-                            ]),
+                            ])
+                            ->columns(3),
 
                         Forms\Components\Textarea::make('description')
                             ->label('Nội dung:')
@@ -169,11 +175,11 @@ class PatientPhotosRelationManager extends RelationManager
                     ]),
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('date', 'desc');

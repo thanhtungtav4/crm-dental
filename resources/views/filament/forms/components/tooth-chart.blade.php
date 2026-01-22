@@ -46,6 +46,16 @@
                 return c ? c.name : code;
             }).join(', ');
         },
+
+        getConditionLabels(tooth) {
+            let data = this.getToothData(tooth);
+            if (!data.conditions || data.conditions.length === 0) return '';
+            
+            return data.conditions.map(code => {
+                // Return short code for display on tooth
+                return code;
+            }).join(' ');
+        },
         
         openModal(tooth) {
             this.selectedTooth = tooth;
@@ -128,6 +138,13 @@
                              {{-- Main body --}}
                              <path d="M12 2C8 2 5 5 5 9c0 4 3 7 3 10h8c0-3 3-6 3-10 0-4-3-7-7-7z"/>
                         </svg>
+                        {{-- Condition Labels Overlay --}}
+                        <div 
+                            x-show="getConditionLabels({{ $t }})" 
+                            x-text="getConditionLabels({{ $t }})"
+                            class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md leading-tight text-center"
+                            style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"
+                        ></div>
                      </div>
                 </div>
                 {{-- Add space between 11 and 21 (Quadrants) --}}
@@ -148,6 +165,7 @@
                         <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
                              <path d="M12 4C9 4 7 6 7 9c0 3 2 5 2 7h6c0-2 2-4 2-7 0-3-2-5-5-5z"/>
                         </svg>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
                      </div>
                      <span class="text-[10px] text-gray-400 mt-1 group-hover:text-primary-600">{{ $t }}</span>
                 </div>
@@ -169,6 +187,7 @@
                          <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
                              <path d="M12 4C9 4 7 6 7 9c0 3 2 5 2 7h6c0-2 2-4 2-7 0-3-2-5-5-5z"/>
                         </svg>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
                      </div>
                 </div>
                  @if($t === 81) <div class="w-6 md:w-10 border-r border-dashed border-gray-200 mx-2"></div> @endif
@@ -187,6 +206,7 @@
                         <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
                              <path d="M12 2C8 2 5 5 5 9c0 4 3 7 3 10h8c0-3 3-6 3-10 0-4-3-7-7-7z"/>
                         </svg>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
                      </div>
                       <span class="text-xs text-gray-500 mt-1 font-medium group-hover:text-primary-600">{{ $t }}</span>
                 </div>
