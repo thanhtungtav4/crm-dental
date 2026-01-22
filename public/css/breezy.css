@@ -1,0 +1,8 @@
+/* Prebuilt CSS (no Vite) for Breezy overrides. Mirrors resources/css/filament/admin/breezy.css */
+.breezy-2fa-grid{display:grid;grid-template-columns:1fr;gap:1rem}
+@media (min-width:768px){.breezy-2fa-grid{grid-template-columns:auto 1fr;align-items:start}}
+.breezy-2fa-qr svg{max-width:180px;height:auto;display:block}
+.breezy-2fa-codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.5rem}
+.breezy-2fa-code{display:inline-flex;align-items:center;padding:.25rem .5rem;font-size:.75rem;background:var(--gray-100,#f3f4f6);color:var(--gray-800,#1f2937);border-radius:9999px}
+.dark .breezy-2fa-code{background:#111827;color:#9ca3af}
+.breezy-actions{display:flex;justify-content:space-between;gap:.75rem}

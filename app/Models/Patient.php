@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+
+class Patient extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'customer_id',
+        'patient_code',
+        'first_branch_id',
+        'full_name',
+        'email',
+        'birthday',
+        'gender',
+        'phone',
+        'address',
+        'medical_history',
+        'created_by',
+        'updated_by',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'first_branch_id');
+    }
+
+    public function treatmentPlans()
+    {
+        return $this->hasMany(TreatmentPlan::class);
+    }
+
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    public function branchLogs()
+    {
+        return $this->hasMany(BranchLog::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    public function clinicalNotes()
+    {
+        return $this->hasMany(ClinicalNote::class);
+    }
+
+    public function photos()
+    {
+        return $this->hasMany(PatientPhoto::class);
+    }
+
+    public function medicalRecord()
+    {
+        return $this->hasOne(PatientMedicalRecord::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $patient) {
+            // Prevent any deletion (soft or force) via model events
+            return false;
+        });
+
+        static::creating(function (self $patient) {
+            // If no customer selected, create a lead automatically from patient info
+            if (empty($patient->customer_id)) {
+                $customer = new Customer();
+                $customer->branch_id = $patient->first_branch_id;
+                $customer->full_name = $patient->full_name;
+                $customer->phone = $patient->phone;
+                $customer->email = $patient->email ?? null;
+                $customer->source = 'patient';
+                $customer->status = 'lead';
+                $customer->notes = 'Auto-created from Patient';
+                $customer->save();
+
+                $patient->customer_id = $customer->id;
+            }
+            if (!empty($patient->patient_code)) {
+                return;
+            }
+
+            // Generate a unique code: PAT-YYYYMMDD-XXXXXX
+            $date = now()->format('Ymd');
+            $attempts = 0;
+            do {
+                $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                $code = "PAT-{$date}-{$suffix}";
+                $exists = self::withTrashed()->where('patient_code', $code)->exists();
+                $attempts++;
+            } while ($exists && $attempts < 5);
+
+            $patient->patient_code = $code;
+        });
+
+        static::updating(function (self $patient) {
+            if ($patient->isDirty('first_branch_id')) {
+                $from = $patient->getOriginal('first_branch_id');
+                $to = $patient->first_branch_id;
+                if ($from != $to) {
+                    \App\Models\BranchLog::create([
+                        'patient_id' => $patient->id,
+                        'from_branch_id' => $from,
+                        'to_branch_id' => $to,
+                        'moved_by' => Auth::id(),
+                        'note' => 'Chuyển chi nhánh',
+                    ]);
+                }
+            }
+        });
+    }
+}

@@ -1,0 +1,31 @@
+
+   INFO  Seeding database.  
+
+  Database\Seeders\RolesAndPermissionsSeeder  RUNNING  
+  Database\Seeders\RolesAndPermissionsSeeder  129 ms DONE  
+
+
+   Illuminate\Database\UniqueConstraintViolationException 
+
+  SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'admin@example.com' for key 'users.users_email_unique' (Connection: mysql, SQL: insert into `users` (`name`, `email`, `email_verified_at`, `password`, `remember_token`, `branch_id`, `updated_at`, `created_at`) values (Super Admin, admin@example.com, 2026-01-19 13:53:25, $2y$12$TKnPovB/r4nVWqSSzA21He8MQd/TGv9KoClpmLLCHhpqRt224yFdC, p0pxawGoCg, 3, 2026-01-19 13:53:25, 2026-01-19 13:53:25))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:819
+    815▕         // message to include the bindings with SQL, which will make this exception a
+    816▕         // lot more helpful to the developer instead of just the database's errors.
+    817▕         catch (Exception $e) {
+    818▕             if ($this->isUniqueConstraintError($e)) {
+  ➜ 819▕                 throw new UniqueConstraintViolationException(
+    820▕                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+    821▕                 );
+    822▕             }
+    823▕
+
+      [2m+16 vendor frames [22m
+
+  17  database/seeders/DatabaseSeeder.php:44
+      Illuminate\Database\Eloquent\Factories\Factory::create(["Super Admin", "admin@example.com", "$2y$12$TKnPovB/r4nVWqSSzA21He8MQd/TGv9KoClpmLLCHhpqRt224yFdC"])
+      [2m+25 vendor frames [22m
+
+  43  artisan:16
+      Illuminate\Foundation\Application::handleCommand(Object(Symfony\Component\Console\Input\ArgvInput))
+

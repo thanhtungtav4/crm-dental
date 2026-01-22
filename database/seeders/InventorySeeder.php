@@ -1,0 +1,566 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Material;
+use App\Models\MaterialBatch;
+use App\Models\Supplier;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class InventorySeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        // Get first user for created_by/updated_by
+        $userId = DB::table('users')->value('id') ?? 1;
+
+        // Create 5 Vietnamese dental suppliers
+        $suppliers = [
+            [
+                'name' => 'Nha Khoa Việt Nam',
+                'code' => 'NKVN',
+                'tax_code' => '0123456789',
+                'contact_person' => 'Nguyễn Văn A',
+                'phone' => '0901234567',
+                'email' => 'nkvn@example.com',
+                'address' => '123 Nguyễn Huệ, Q.1, TP.HCM',
+                'website' => 'https://nkvn.com.vn',
+                'payment_terms' => '30_days',
+                'notes' => 'Nhà phân phối chính thức 3M ESPE tại Việt Nam',
+                'active' => true,
+            ],
+            [
+                'name' => 'Dentsply Vietnam Co., Ltd',
+                'code' => 'DPLY',
+                'tax_code' => '0987654321',
+                'contact_person' => 'Trần Thị B',
+                'phone' => '0902345678',
+                'email' => 'dentsply@example.com',
+                'address' => '456 Lê Lợi, Q.1, TP.HCM',
+                'website' => 'https://dentsply.com',
+                'payment_terms' => '15_days',
+                'notes' => 'Nhà sản xuất vật liệu nha khoa hàng đầu thế giới',
+                'active' => true,
+            ],
+            [
+                'name' => 'NSK Vietnam',
+                'code' => 'NSK',
+                'tax_code' => '0112233445',
+                'contact_person' => 'Lê Văn C',
+                'phone' => '0903456789',
+                'email' => 'nsk@example.com',
+                'address' => '789 Trần Hưng Đạo, Q.5, TP.HCM',
+                'payment_terms' => '7_days',
+                'notes' => 'Chuyên cung cấp thiết bị nha khoa Nhật Bản',
+                'active' => true,
+            ],
+            [
+                'name' => 'Công ty TNHH Dược Phẩm Hà Nội',
+                'code' => 'DPHN',
+                'tax_code' => '0556677889',
+                'contact_person' => 'Phạm Thị D',
+                'phone' => '0904567890',
+                'email' => 'dphn@example.com',
+                'address' => '321 Hai Bà Trưng, Q.3, TP.HCM',
+                'payment_terms' => 'cash',
+                'notes' => 'Nhà cung cấp thuốc và dược phẩm',
+                'active' => true,
+            ],
+            [
+                'name' => 'Sirona Dental Vietnam',
+                'code' => 'SIRONA',
+                'tax_code' => '0998877665',
+                'contact_person' => 'Hoàng Văn E',
+                'phone' => '0905678901',
+                'email' => 'sirona@example.com',
+                'address' => '147 Pasteur, Q.1, TP.HCM',
+                'website' => 'https://sirona.com',
+                'payment_terms' => '60_days',
+                'notes' => 'Thiết bị nha khoa cao cấp từ Đức',
+                'active' => true,
+            ],
+        ];
+
+        foreach ($suppliers as $supplierData) {
+            Supplier::firstOrCreate(
+                ['code' => $supplierData['code']],
+                $supplierData
+            );
+        }
+
+        $this->command->info('✅ Created or updated 5 suppliers');
+
+        // Get suppliers for foreign keys
+        $supplierIds = Supplier::pluck('id')->toArray();
+
+        // Get first branch for materials
+        $branchId = DB::table('branches')->value('id');
+
+        // Create 25 materials across 4 categories
+        $materials = [
+            // MEDICINE (5 items)
+            [
+                'sku' => 'MED-001',
+                'name' => 'Lidocaine 2% (Hộp 50 ống)',
+                'category' => 'medicine',
+                'manufacturer' => 'Novocol Pharmaceutical',
+                'supplier_id' => $supplierIds[3] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 15,
+                'min_stock' => 5,
+                'reorder_point' => 8,
+                'cost_price' => 450000,
+                'sale_price' => 650000,
+                'storage_location' => 'Tủ thuốc A1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MED-002',
+                'name' => 'Articaine 4% với Epinephrine',
+                'category' => 'medicine',
+                'manufacturer' => 'Septodont',
+                'supplier_id' => $supplierIds[3] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 8,
+                'min_stock' => 3,
+                'reorder_point' => 5,
+                'cost_price' => 580000,
+                'sale_price' => 820000,
+                'storage_location' => 'Tủ thuốc A1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MED-003',
+                'name' => 'Amoxicillin 500mg (Hộp 100 viên)',
+                'category' => 'medicine',
+                'manufacturer' => 'DHG Pharma',
+                'supplier_id' => $supplierIds[3] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 20,
+                'min_stock' => 10,
+                'reorder_point' => 15,
+                'cost_price' => 120000,
+                'sale_price' => 180000,
+                'storage_location' => 'Tủ thuốc B2',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MED-004',
+                'name' => 'Ibuprofen 400mg (Hộp 100 viên)',
+                'category' => 'medicine',
+                'manufacturer' => 'Traphaco',
+                'supplier_id' => $supplierIds[3] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 25,
+                'min_stock' => 10,
+                'reorder_point' => 15,
+                'cost_price' => 85000,
+                'sale_price' => 130000,
+                'storage_location' => 'Tủ thuốc B2',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MED-005',
+                'name' => 'Hydrogen Peroxide 3% (Chai 500ml)',
+                'category' => 'medicine',
+                'manufacturer' => 'Vĩnh Phúc',
+                'supplier_id' => $supplierIds[3] ?? null,
+                'unit' => 'Chai',
+                'stock_qty' => 30,
+                'min_stock' => 15,
+                'reorder_point' => 20,
+                'cost_price' => 25000,
+                'sale_price' => 45000,
+                'storage_location' => 'Tủ thuốc C1',
+                'branch_id' => $branchId,
+            ],
+
+            // CONSUMABLE (8 items)
+            [
+                'sku' => 'CON-001',
+                'name' => 'Bông cuộn (Gói 100g)',
+                'category' => 'consumable',
+                'manufacturer' => 'Vina Cotton',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Gói',
+                'stock_qty' => 50,
+                'min_stock' => 20,
+                'reorder_point' => 30,
+                'cost_price' => 35000,
+                'sale_price' => 50000,
+                'storage_location' => 'Kệ D1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-002',
+                'name' => 'Gạc y tế (Gói 100 miếng)',
+                'category' => 'consumable',
+                'manufacturer' => 'Vina Cotton',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Gói',
+                'stock_qty' => 40,
+                'min_stock' => 15,
+                'reorder_point' => 25,
+                'cost_price' => 45000,
+                'sale_price' => 65000,
+                'storage_location' => 'Kệ D1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-003',
+                'name' => 'Găng tay nitrile (Hộp 100 cái)',
+                'category' => 'consumable',
+                'manufacturer' => 'Ansell',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 35,
+                'min_stock' => 15,
+                'reorder_point' => 20,
+                'cost_price' => 180000,
+                'sale_price' => 250000,
+                'storage_location' => 'Kệ E1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-004',
+                'name' => 'Khẩu trang y tế 4 lớp (Hộp 50 cái)',
+                'category' => 'consumable',
+                'manufacturer' => '3M',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 45,
+                'min_stock' => 20,
+                'reorder_point' => 30,
+                'cost_price' => 95000,
+                'sale_price' => 140000,
+                'storage_location' => 'Kệ E1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-005',
+                'name' => 'Xilanh 5ml (Hộp 100 cái)',
+                'category' => 'consumable',
+                'manufacturer' => 'Terumo',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 20,
+                'min_stock' => 8,
+                'reorder_point' => 12,
+                'cost_price' => 250000,
+                'sale_price' => 350000,
+                'storage_location' => 'Tủ D3',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-006',
+                'name' => 'Kim tiêm 27G (Hộp 100 cái)',
+                'category' => 'consumable',
+                'manufacturer' => 'Terumo',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 18,
+                'min_stock' => 10,
+                'reorder_point' => 15,
+                'cost_price' => 120000,
+                'sale_price' => 180000,
+                'storage_location' => 'Tủ D3',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-007',
+                'name' => 'Saliva ejector (Túi 100 cái)',
+                'category' => 'consumable',
+                'manufacturer' => 'Dentsply',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Túi',
+                'stock_qty' => 60,
+                'min_stock' => 25,
+                'reorder_point' => 40,
+                'cost_price' => 150000,
+                'sale_price' => 220000,
+                'storage_location' => 'Kệ F2',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'CON-008',
+                'name' => 'Dental bib (Hộp 500 tấm)',
+                'category' => 'consumable',
+                'manufacturer' => 'Medicom',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 12,
+                'min_stock' => 5,
+                'reorder_point' => 8,
+                'cost_price' => 320000,
+                'sale_price' => 450000,
+                'storage_location' => 'Kệ F1',
+                'branch_id' => $branchId,
+            ],
+
+            // EQUIPMENT (5 items)
+            [
+                'sku' => 'EQP-001',
+                'name' => 'Handpiece tốc độ cao NSK',
+                'category' => 'equipment',
+                'manufacturer' => 'NSK',
+                'supplier_id' => $supplierIds[2] ?? null,
+                'unit' => 'Cái',
+                'stock_qty' => 3,
+                'min_stock' => 1,
+                'reorder_point' => 2,
+                'cost_price' => 8500000,
+                'sale_price' => 12000000,
+                'storage_location' => 'Tủ thiết bị A',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'EQP-002',
+                'name' => 'Máy cạo vôi răng Ultrasonic',
+                'category' => 'equipment',
+                'manufacturer' => 'EMS',
+                'supplier_id' => $supplierIds[2] ?? null,
+                'unit' => 'Cái',
+                'stock_qty' => 2,
+                'min_stock' => 1,
+                'reorder_point' => 1,
+                'cost_price' => 15000000,
+                'sale_price' => 22000000,
+                'storage_location' => 'Tủ thiết bị A',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'EQP-003',
+                'name' => 'Đèn quang trùng hợp LED',
+                'category' => 'equipment',
+                'manufacturer' => '3M ESPE',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Cái',
+                'stock_qty' => 4,
+                'min_stock' => 2,
+                'reorder_point' => 3,
+                'cost_price' => 4500000,
+                'sale_price' => 6500000,
+                'storage_location' => 'Tủ thiết bị B',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'EQP-004',
+                'name' => 'Suction tip dùng một lần (Túi 50 cái)',
+                'category' => 'equipment',
+                'manufacturer' => 'Dentsply',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Túi',
+                'stock_qty' => 25,
+                'min_stock' => 10,
+                'reorder_point' => 15,
+                'cost_price' => 280000,
+                'sale_price' => 400000,
+                'storage_location' => 'Kệ G1',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'EQP-005',
+                'name' => 'Dental mirror (Hộp 12 cái)',
+                'category' => 'equipment',
+                'manufacturer' => 'ASA Dental',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 8,
+                'min_stock' => 3,
+                'reorder_point' => 5,
+                'cost_price' => 450000,
+                'sale_price' => 650000,
+                'storage_location' => 'Tủ dụng cụ C',
+                'branch_id' => $branchId,
+            ],
+
+            // DENTAL_MATERIAL (7 items)
+            [
+                'sku' => 'MAT-001',
+                'name' => 'Composite resin A2 (Xilanh 4g)',
+                'category' => 'dental_material',
+                'manufacturer' => '3M ESPE',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Xilanh',
+                'stock_qty' => 45,
+                'min_stock' => 15,
+                'reorder_point' => 25,
+                'cost_price' => 380000,
+                'sale_price' => 550000,
+                'storage_location' => 'Tủ lạnh vật liệu',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-002',
+                'name' => 'Glass ionomer cement (Lọ 15g)',
+                'category' => 'dental_material',
+                'manufacturer' => 'GC Corporation',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Lọ',
+                'stock_qty' => 30,
+                'min_stock' => 10,
+                'reorder_point' => 18,
+                'cost_price' => 420000,
+                'sale_price' => 600000,
+                'storage_location' => 'Tủ vật liệu A',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-003',
+                'name' => 'Dental cement (Bộ 35g bột + 15ml dung dịch)',
+                'category' => 'dental_material',
+                'manufacturer' => 'Dentsply',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Bộ',
+                'stock_qty' => 22,
+                'min_stock' => 8,
+                'reorder_point' => 12,
+                'cost_price' => 290000,
+                'sale_price' => 420000,
+                'storage_location' => 'Tủ vật liệu A',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-004',
+                'name' => 'Impression material Alginate (Túi 453g)',
+                'category' => 'dental_material',
+                'manufacturer' => 'Zhermack',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Túi',
+                'stock_qty' => 18,
+                'min_stock' => 8,
+                'reorder_point' => 12,
+                'cost_price' => 320000,
+                'sale_price' => 480000,
+                'storage_location' => 'Tủ vật liệu B',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-005',
+                'name' => 'Bonding agent (Chai 5ml)',
+                'category' => 'dental_material',
+                'manufacturer' => '3M ESPE',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Chai',
+                'stock_qty' => 28,
+                'min_stock' => 10,
+                'reorder_point' => 15,
+                'cost_price' => 680000,
+                'sale_price' => 950000,
+                'storage_location' => 'Tủ lạnh vật liệu',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-006',
+                'name' => 'Etching gel 37% (Xilanh 3ml)',
+                'category' => 'dental_material',
+                'manufacturer' => 'Bisco',
+                'supplier_id' => $supplierIds[0] ?? null,
+                'unit' => 'Xilanh',
+                'stock_qty' => 35,
+                'min_stock' => 12,
+                'reorder_point' => 20,
+                'cost_price' => 180000,
+                'sale_price' => 280000,
+                'storage_location' => 'Tủ vật liệu A',
+                'branch_id' => $branchId,
+            ],
+            [
+                'sku' => 'MAT-007',
+                'name' => 'Temporary filling material (Hộp 30g)',
+                'category' => 'dental_material',
+                'manufacturer' => 'Dentsply',
+                'supplier_id' => $supplierIds[1] ?? null,
+                'unit' => 'Hộp',
+                'stock_qty' => 40,
+                'min_stock' => 15,
+                'reorder_point' => 25,
+                'cost_price' => 220000,
+                'sale_price' => 350000,
+                'storage_location' => 'Tủ vật liệu B',
+                'branch_id' => $branchId,
+            ],
+        ];
+
+        foreach ($materials as $materialData) {
+            Material::firstOrCreate(
+                ['sku' => $materialData['sku']],
+                $materialData
+            );
+        }
+
+        $this->command->info('✅ Created or updated 25 materials across 4 categories');
+
+        // Create batches with varied expiry dates
+        $materialIds = Material::pluck('id', 'sku')->toArray();
+        
+        $batches = [
+            // EXPIRED BATCHES (5 items) - HẾT HẠN
+            ['material_sku' => 'MED-001', 'batch_number' => 'LOT-2023-001', 'expiry_date' => now()->subDays(45), 'quantity' => 0, 'status' => 'expired'],
+            ['material_sku' => 'CON-003', 'batch_number' => 'LOT-2023-015', 'expiry_date' => now()->subDays(30), 'quantity' => 0, 'status' => 'expired'],
+            ['material_sku' => 'MAT-001', 'batch_number' => 'LOT-2023-022', 'expiry_date' => now()->subDays(15), 'quantity' => 0, 'status' => 'expired'],
+            ['material_sku' => 'MED-005', 'batch_number' => 'LOT-2023-008', 'expiry_date' => now()->subDays(10), 'quantity' => 0, 'status' => 'expired'],
+            ['material_sku' => 'CON-004', 'batch_number' => 'LOT-2023-019', 'expiry_date' => now()->subDays(5), 'quantity' => 0, 'status' => 'expired'],
+
+            // EXPIRING SOON (< 30 days) (10 items) - SẮP HẾT HẠN
+            ['material_sku' => 'MED-002', 'batch_number' => 'LOT-2025-002', 'expiry_date' => now()->addDays(3), 'quantity' => 20, 'status' => 'active'],
+            ['material_sku' => 'MED-003', 'batch_number' => 'LOT-2025-003', 'expiry_date' => now()->addDays(5), 'quantity' => 50, 'status' => 'active'],
+            ['material_sku' => 'CON-001', 'batch_number' => 'LOT-2025-010', 'expiry_date' => now()->addDays(7), 'quantity' => 100, 'status' => 'active'],
+            ['material_sku' => 'MAT-002', 'batch_number' => 'LOT-2025-025', 'expiry_date' => now()->addDays(10), 'quantity' => 30, 'status' => 'active'],
+            ['material_sku' => 'MED-004', 'batch_number' => 'LOT-2025-004', 'expiry_date' => now()->addDays(12), 'quantity' => 80, 'status' => 'active'],
+            ['material_sku' => 'CON-002', 'batch_number' => 'LOT-2025-011', 'expiry_date' => now()->addDays(15), 'quantity' => 90, 'status' => 'active'],
+            ['material_sku' => 'MAT-005', 'batch_number' => 'LOT-2025-029', 'expiry_date' => now()->addDays(18), 'quantity' => 25, 'status' => 'active'],
+            ['material_sku' => 'CON-005', 'batch_number' => 'LOT-2025-013', 'expiry_date' => now()->addDays(22), 'quantity' => 60, 'status' => 'active'],
+            ['material_sku' => 'MAT-006', 'batch_number' => 'LOT-2025-030', 'expiry_date' => now()->addDays(25), 'quantity' => 40, 'status' => 'active'],
+            ['material_sku' => 'CON-006', 'batch_number' => 'LOT-2025-014', 'expiry_date' => now()->addDays(28), 'quantity' => 70, 'status' => 'active'],
+
+            // NORMAL BATCHES (> 30 days) (20 items) - CÒN HẠN
+            ['material_sku' => 'MED-001', 'batch_number' => 'LOT-2025-001', 'expiry_date' => now()->addDays(60), 'quantity' => 150, 'status' => 'active'],
+            ['material_sku' => 'MED-002', 'batch_number' => 'LOT-2025-002B', 'expiry_date' => now()->addDays(90), 'quantity' => 100, 'status' => 'active'],
+            ['material_sku' => 'MED-003', 'batch_number' => 'LOT-2025-003B', 'expiry_date' => now()->addDays(120), 'quantity' => 200, 'status' => 'active'],
+            ['material_sku' => 'MED-004', 'batch_number' => 'LOT-2025-004B', 'expiry_date' => now()->addDays(150), 'quantity' => 250, 'status' => 'active'],
+            ['material_sku' => 'MED-005', 'batch_number' => 'LOT-2025-005', 'expiry_date' => now()->addDays(180), 'quantity' => 300, 'status' => 'active'],
+            ['material_sku' => 'CON-001', 'batch_number' => 'LOT-2025-010B', 'expiry_date' => now()->addDays(240), 'quantity' => 500, 'status' => 'active'],
+            ['material_sku' => 'CON-002', 'batch_number' => 'LOT-2025-011B', 'expiry_date' => now()->addDays(270), 'quantity' => 400, 'status' => 'active'],
+            ['material_sku' => 'CON-003', 'batch_number' => 'LOT-2025-012', 'expiry_date' => now()->addDays(300), 'quantity' => 350, 'status' => 'active'],
+            ['material_sku' => 'CON-004', 'batch_number' => 'LOT-2025-013B', 'expiry_date' => now()->addDays(330), 'quantity' => 450, 'status' => 'active'],
+            ['material_sku' => 'CON-005', 'batch_number' => 'LOT-2025-014B', 'expiry_date' => now()->addDays(365), 'quantity' => 200, 'status' => 'active'],
+            ['material_sku' => 'CON-006', 'batch_number' => 'LOT-2025-015', 'expiry_date' => now()->addDays(400), 'quantity' => 180, 'status' => 'active'],
+            ['material_sku' => 'CON-007', 'batch_number' => 'LOT-2025-016', 'expiry_date' => now()->addDays(450), 'quantity' => 600, 'status' => 'active'],
+            ['material_sku' => 'CON-008', 'batch_number' => 'LOT-2025-017', 'expiry_date' => now()->addDays(500), 'quantity' => 120, 'status' => 'active'],
+            ['material_sku' => 'MAT-001', 'batch_number' => 'LOT-2025-026', 'expiry_date' => now()->addDays(540), 'quantity' => 450, 'status' => 'active'],
+            ['material_sku' => 'MAT-002', 'batch_number' => 'LOT-2025-027', 'expiry_date' => now()->addDays(600), 'quantity' => 300, 'status' => 'active'],
+            ['material_sku' => 'MAT-003', 'batch_number' => 'LOT-2025-028', 'expiry_date' => now()->addDays(650), 'quantity' => 220, 'status' => 'active'],
+            ['material_sku' => 'MAT-004', 'batch_number' => 'LOT-2025-029B', 'expiry_date' => now()->addDays(700), 'quantity' => 180, 'status' => 'active'],
+            ['material_sku' => 'MAT-005', 'batch_number' => 'LOT-2025-030B', 'expiry_date' => now()->addDays(730), 'quantity' => 280, 'status' => 'active'],
+            ['material_sku' => 'MAT-006', 'batch_number' => 'LOT-2025-031', 'expiry_date' => now()->addDays(800), 'quantity' => 350, 'status' => 'active'],
+            ['material_sku' => 'MAT-007', 'batch_number' => 'LOT-2025-032', 'expiry_date' => now()->addDays(900), 'quantity' => 400, 'status' => 'active'],
+        ];
+
+        $batchCount = 0;
+        foreach ($batches as $batchData) {
+            $materialId = $materialIds[$batchData['material_sku']] ?? null;
+            if (!$materialId) continue;
+
+            MaterialBatch::create([
+                'material_id' => $materialId,
+                'batch_number' => $batchData['batch_number'],
+                'expiry_date' => $batchData['expiry_date'],
+                'quantity' => $batchData['quantity'],
+                'purchase_price' => rand(50000, 500000),
+                'received_date' => now()->subDays(rand(1, 90)),
+                'supplier_id' => $supplierIds[array_rand($supplierIds)] ?? null,
+                'status' => $batchData['status'],
+                'notes' => $batchData['status'] === 'expired' ? 'Đã hết hạn - cần xử lý' : null,
+            ]);
+            $batchCount++;
+        }
+
+        $this->command->info("✅ Created {$batchCount} batches (5 expired, 10 expiring soon, 20 normal)");
+        $this->command->info('🎉 Inventory seeding completed successfully!');
+    }
+}
