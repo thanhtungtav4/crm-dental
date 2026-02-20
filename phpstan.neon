@@ -1,0 +1,19 @@
+parameters:
+    level: 3
+    paths:
+        - app/Services
+        - app/Models/Customer.php
+        - app/Models/Patient.php
+        - app/Models/DuplicateDetection.php
+        - app/Models/RecordMerge.php
+        - app/Models/IdentificationLog.php
+        - app/Console/Commands/DetectDuplicatesCommand.php
+        - app/Console/Commands/ListDuplicatesCommand.php
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Call to an undefined static method App\\Models#'
+        - '#Access to an undefined property#'
+        - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Factory#'
+        - '#Call to static method.*on an unknown class DB#'
+        - '#Parameter.*contains unresolvable type#'
+        - '#should return.*Builder but returns.*Builder#'

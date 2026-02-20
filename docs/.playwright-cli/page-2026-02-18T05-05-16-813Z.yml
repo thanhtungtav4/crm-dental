@@ -1,0 +1,236 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "18"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e109]: Quản lý thu/chi
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - heading "Báo cáo mới" [level=3] [ref=e114]
+              - img [ref=e116] [cursor=pointer]
+            - switch [checked] [ref=e119] [cursor=pointer]
+          - generic [ref=e122] [cursor=pointer]:
+            - img [ref=e124]
+            - superscript [ref=e127]
+      - generic [ref=e137]:
+        - generic [ref=e139]:
+          - generic [ref=e143]:
+            - generic [ref=e152] [cursor=pointer]:
+              - textbox "Ngày bắt đầu" [ref=e153]: 01-02-2026
+              - generic: ~
+              - textbox "Ngày kết thúc" [ref=e154]: 28-02-2026
+              - img [ref=e156]
+            - combobox [ref=e165] [cursor=pointer]:
+              - generic [ref=e167]: Loại phiếu
+              - generic:
+                - 'generic "icon: down"':
+                  - img
+            - combobox [ref=e175] [cursor=pointer]:
+              - generic [ref=e177]: Nhóm
+              - generic:
+                - 'generic "icon: down"':
+                  - img
+            - combobox [ref=e185] [cursor=pointer]:
+              - generic [ref=e187]: Danh mục
+              - generic:
+                - 'generic "icon: down"':
+                  - img
+          - generic [ref=e188]:
+            - button "Export" [ref=e190] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Export
+            - button "Thêm mới" [ref=e192] [cursor=pointer]:
+              - generic: Thêm mới
+        - generic [ref=e196]:
+          - generic [ref=e198]:
+            - table [ref=e201]:
+              - rowgroup [ref=e214]:
+                - row "Mã phiếu Loại phiếu Ngày tạo Nhóm Danh mục Số tiền Phương thức Người nộp/người nhận Người tạo Nội dung" [ref=e215]:
+                  - columnheader "Mã phiếu" [ref=e216]:
+                    - generic [ref=e220]: Mã phiếu
+                  - columnheader "Loại phiếu" [ref=e221]:
+                    - generic [ref=e225]: Loại phiếu
+                  - columnheader "Ngày tạo" [ref=e226]:
+                    - generic [ref=e230]: Ngày tạo
+                  - columnheader "Nhóm" [ref=e231]:
+                    - generic [ref=e235]: Nhóm
+                  - columnheader "Danh mục" [ref=e236]:
+                    - generic [ref=e240]: Danh mục
+                  - columnheader "Số tiền" [ref=e241]:
+                    - generic [ref=e245]: Số tiền
+                  - columnheader "Phương thức" [ref=e246]:
+                    - generic [ref=e250]: Phương thức
+                  - columnheader "Người nộp/người nhận" [ref=e251]:
+                    - generic [ref=e255]: Người nộp/người nhận
+                  - columnheader "Người tạo" [ref=e256]:
+                    - generic [ref=e260]: Người tạo
+                  - columnheader "Nội dung" [ref=e261]:
+                    - generic [ref=e265]: Nội dung
+              - rowgroup [ref=e266]:
+                - row "Phiếu chi 02/02/2026 1. Chi lương - Thưởng Lương bác sĩ 10,000,000 Tiền mặt Phạm Văn Nam MAI HOÀNG YẾN" [ref=e267]:
+                  - cell [ref=e268]
+                  - cell "Phiếu chi" [ref=e269]:
+                    - generic [ref=e270]: Phiếu chi
+                  - cell "02/02/2026" [ref=e271]:
+                    - generic [ref=e272]: 02/02/2026
+                  - cell "1. Chi lương - Thưởng" [ref=e273]:
+                    - generic [ref=e274]: 1. Chi lương - Thưởng
+                  - cell "Lương bác sĩ" [ref=e275]:
+                    - generic [ref=e276]: Lương bác sĩ
+                  - cell "10,000,000" [ref=e277]:
+                    - generic [ref=e278]: 10,000,000
+                  - cell "Tiền mặt" [ref=e279]:
+                    - generic [ref=e280]: Tiền mặt
+                  - cell "Phạm Văn Nam" [ref=e281]:
+                    - generic [ref=e282]: Phạm Văn Nam
+                  - cell "MAI HOÀNG YẾN" [ref=e283]:
+                    - generic [ref=e284]: MAI HOÀNG YẾN
+                  - cell [ref=e285]
+            - table [ref=e289]:
+              - rowgroup [ref=e292]:
+                - row "Thao tác" [ref=e293]:
+                  - columnheader "Thao tác" [ref=e294]:
+                    - generic [ref=e298]: Thao tác
+              - rowgroup [ref=e299]:
+                - row [ref=e300]:
+                  - cell [ref=e301]:
+                    - generic [ref=e302]:
+                      - img [ref=e304] [cursor=pointer]
+                      - img [ref=e307] [cursor=pointer]
+                      - img [ref=e310] [cursor=pointer]
+          - list [ref=e312]:
+            - listitem [ref=e313]: 1-1 trên 1 bản ghi
+            - listitem "Previous Page" [ref=e314]:
+              - 'generic "icon: left" [ref=e316]':
+                - img [ref=e317]
+            - listitem "1" [ref=e319] [cursor=pointer]:
+              - generic [ref=e320]: "1"
+            - listitem "Next Page" [ref=e321]:
+              - 'generic "icon: right" [ref=e323]':
+                - img [ref=e324]
+  - dialog [ref=e340]:
+    - document:
+      - generic [ref=e342]:
+        - generic [ref=e343]:
+          - heading "Thêm mới" [level=2] [ref=e345]
+          - img [ref=e347] [cursor=pointer]
+        - generic [ref=e350]:
+          - generic [ref=e351]:
+            - generic [ref=e353]:
+              - generic [ref=e354]: Ngày lập phiếu *
+              - generic [ref=e361] [cursor=pointer]:
+                - textbox "dd-mm-yyyy" [ref=e362]: 18-02-2026
+                - img [ref=e364]
+            - generic [ref=e367]:
+              - generic [ref=e368]: Loại phiếu *
+              - generic [ref=e375]:
+                - generic [ref=e376] [cursor=pointer]:
+                  - radio "Phiếu chi" [checked] [ref=e378]
+                  - text: Phiếu chi
+                - generic [ref=e380] [cursor=pointer]:
+                  - radio "Phiếu thu" [ref=e382]
+                  - text: Phiếu thu
+          - generic [ref=e384]:
+            - generic [ref=e386]:
+              - generic [ref=e387]: Mã phiếu
+              - textbox "Mã phiếu" [ref=e393]
+            - generic [ref=e395]:
+              - generic [ref=e396]: Người nhận *
+              - combobox [ref=e403] [cursor=pointer]:
+                - generic [ref=e404]:
+                  - generic [ref=e405]: Người nhận
+                  - list:
+                    - listitem [ref=e406]:
+                      - textbox [ref=e408]
+          - generic [ref=e409]:
+            - generic [ref=e410]:
+              - generic [ref=e411] [cursor=pointer]: Thêm Nhóm
+              - generic [ref=e412]:
+                - generic [ref=e413]: Nhóm *
+                - combobox [ref=e420] [cursor=pointer]:
+                  - generic [ref=e422]: Chọn nhóm
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+            - generic [ref=e424]:
+              - generic [ref=e425]: Danh mục *
+              - combobox [ref=e432] [cursor=pointer]:
+                - generic [ref=e433]:
+                  - generic [ref=e434]: Danh mục
+                  - list:
+                    - listitem [ref=e435]:
+                      - textbox [ref=e437]
+          - generic [ref=e438]:
+            - generic [ref=e440]:
+              - generic [ref=e441]: Số tiền *
+              - spinbutton "Số tiền" [ref=e449]
+            - generic [ref=e451]:
+              - generic [ref=e452]: Phương thức *
+              - combobox [ref=e459] [cursor=pointer]:
+                - generic "Tiền mặt" [ref=e461]
+                - 'generic "icon: close-circle" [ref=e463]':
+                  - img [ref=e464]
+                - generic:
+                  - 'generic "icon: down"':
+                    - img
+          - generic [ref=e466]:
+            - generic [ref=e468]:
+              - generic [ref=e469]: Nội dung
+              - generic [ref=e474]:
+                - toolbar "Editor toolbar" [ref=e475]:
+                  - generic [ref=e476]:
+                    - button "Paragraph" [ref=e478]:
+                      - generic [ref=e479]: Paragraph
+                      - img
+                    - button "Insert image" [ref=e481]:
+                      - img [ref=e482]
+                - textbox "Rich Text Editor, main" [ref=e484]:
+                  - paragraph [ref=e485]
+            - paragraph [ref=e487]: "Người tạo: MAI HOÀNG YẾN"
+          - generic [ref=e488]:
+            - separator [ref=e489]
+            - generic [ref=e490]:
+              - button "Lưu thông tin" [ref=e492] [cursor=pointer]:
+                - generic: Lưu thông tin
+              - button "Hủy bỏ" [ref=e494] [cursor=pointer]:
+                - generic: Hủy bỏ

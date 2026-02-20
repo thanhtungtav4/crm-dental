@@ -28,7 +28,7 @@ class DoctorResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '6️⃣ Hệ thống';
+        return 'Quản lý nhân sự';
     }
     
     protected static ?int $navigationSort = 52;

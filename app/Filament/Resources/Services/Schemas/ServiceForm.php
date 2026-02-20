@@ -19,7 +19,7 @@ class ServiceForm
                     ->schema([
                         Select::make('category_id')
                             ->label('Danh mục dịch vụ')
-                            ->relationship('category', 'name')
+                            ->relationship('category', 'name', fn ($query) => $query->where('active', true))
                             ->searchable()
                             ->preload()
                             ->required()

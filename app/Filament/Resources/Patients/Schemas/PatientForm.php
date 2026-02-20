@@ -42,6 +42,12 @@ class PatientForm
                     if ($customer->email) {
                         $set('email', $customer->email);
                     }
+                    if ($customer->customer_group_id) {
+                        $set('customer_group_id', $customer->customer_group_id);
+                    }
+                    if ($customer->promotion_group_id) {
+                        $set('promotion_group_id', $customer->promotion_group_id);
+                    }
                 })
                 ->visibleOn('create')
                 ->nullable(),
@@ -78,6 +84,11 @@ class PatientForm
                 ->label('Ngày sinh')
                 ->nullable(),
 
+            Forms\Components\TextInput::make('cccd')
+                ->label('Số CCCD')
+                ->maxLength(20)
+                ->nullable(),
+
             Forms\Components\Select::make('gender')
                 ->label('Giới tính')
                 ->options([
@@ -94,10 +105,49 @@ class PatientForm
                 ->unique(table: 'patients', column: 'phone', ignoreRecord: true)
                 ->nullable(),
 
+            Forms\Components\TextInput::make('phone_secondary')
+                ->label('Điện thoại 2')
+                ->tel()
+                ->maxLength(20)
+                ->nullable(),
+
             Forms\Components\TextInput::make('email')
                 ->label('Email')
                 ->email()
                 ->unique(table: 'patients', column: 'email', ignoreRecord: true)
+                ->nullable(),
+
+            Forms\Components\TextInput::make('occupation')
+                ->label('Nghề nghiệp')
+                ->maxLength(255)
+                ->nullable(),
+
+            Forms\Components\Select::make('customer_group_id')
+                ->relationship('customerGroup', 'name', fn ($query) => $query->where('is_active', true))
+                ->label('Nhóm khách hàng')
+                ->searchable()
+                ->preload()
+                ->nullable(),
+
+            Forms\Components\Select::make('promotion_group_id')
+                ->relationship('promotionGroup', 'name', fn ($query) => $query->where('is_active', true))
+                ->label('Nhóm khuyến mãi')
+                ->searchable()
+                ->preload()
+                ->nullable(),
+
+            Forms\Components\Select::make('primary_doctor_id')
+                ->relationship('primaryDoctor', 'name', fn ($query) => $query->role('Doctor'))
+                ->label('Bác sĩ phụ trách')
+                ->searchable()
+                ->preload()
+                ->nullable(),
+
+            Forms\Components\Select::make('owner_staff_id')
+                ->relationship('ownerStaff', 'name')
+                ->label('Nhân viên phụ trách')
+                ->searchable()
+                ->preload()
                 ->nullable(),
 
             Forms\Components\TextInput::make('address')
@@ -106,11 +156,33 @@ class PatientForm
                 ->nullable()
                 ->columnSpanFull(),
 
+            Forms\Components\Textarea::make('first_visit_reason')
+                ->label('Lý do đến khám')
+                ->rows(2)
+                ->nullable()
+                ->columnSpanFull(),
+
             Forms\Components\Textarea::make('medical_history')
                 ->label('Tiền sử bệnh')
                 ->rows(3)
                 ->nullable()
                 ->columnSpanFull(),
+
+            Forms\Components\Textarea::make('note')
+                ->label('Ghi chú')
+                ->rows(3)
+                ->nullable()
+                ->columnSpanFull(),
+
+            Forms\Components\Select::make('status')
+                ->label('Trạng thái hồ sơ')
+                ->options([
+                    'active' => 'Đang hoạt động',
+                    'inactive' => 'Tạm ngưng',
+                    'blocked' => 'Khóa',
+                ])
+                ->default('active')
+                ->required(),
         ];
     }
 }

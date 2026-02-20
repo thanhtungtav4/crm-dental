@@ -16,7 +16,7 @@ class ListAppointments extends ListRecords
         return [
             CreateAction::make(),
             Action::make('calendar')
-                ->label('Xem lịch (Calendar)')
+                ->label('Xem lịch')
                 ->icon('heroicon-o-calendar')
                 ->url(AppointmentResource::getUrl('calendar')),
         ];

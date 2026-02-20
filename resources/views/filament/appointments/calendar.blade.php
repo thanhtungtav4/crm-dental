@@ -47,7 +47,21 @@
 <x-filament::section>
     <div class="flex flex-col gap-4">
         <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-             <h1 class="fi-header-heading">Lịch hẹn</h1>
+            <div class="space-y-1">
+                <h1 class="fi-header-heading">Lịch hẹn</h1>
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                    Google Calendar:
+                    @if($this->isGoogleCalendarEnabled())
+                        <span class="inline-flex items-center rounded-md bg-success-50 px-2 py-0.5 text-success-700 dark:bg-success-500/20 dark:text-success-300">
+                            Đang bật ({{ $this->getGoogleCalendarSyncModeLabel() }})
+                        </span>
+                    @else
+                        <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                            Đang tắt
+                        </span>
+                    @endif
+                </div>
+            </div>
         </div>
 
         <div x-data="calendar()" x-init="init(@js($events), @js($statusColors))">

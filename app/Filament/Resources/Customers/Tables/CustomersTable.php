@@ -31,6 +31,14 @@ class CustomersTable
                 TextColumn::make('email')
                     ->label('Email')
                     ->toggleable(),
+                TextColumn::make('customerGroup.name')
+                    ->label('Nhóm KH')
+                    ->badge()
+                    ->toggleable(),
+                TextColumn::make('promotionGroup.name')
+                    ->label('Nhóm KM')
+                    ->badge()
+                    ->toggleable(),
                 TextColumn::make('branch.name')
                     ->label('Chi nhánh')
                     ->toggleable(),
@@ -141,6 +149,14 @@ class CustomersTable
                             ->label('Thời gian')
                             ->default(fn() => now()->addDay())
                             ->required(),
+                        \Filament\Forms\Components\Select::make('appointment_kind')
+                            ->label('Loại lịch hẹn')
+                            ->options([
+                                'booking' => 'Đặt hẹn',
+                                're_exam' => 'Tái khám',
+                            ])
+                            ->default('booking')
+                            ->required(),
                         \Filament\Forms\Components\Select::make('status')
                             ->label('Trạng thái')
                             ->options([
@@ -149,6 +165,10 @@ class CustomersTable
                                 'completed' => 'Hoàn thành',
                                 'cancelled' => 'Hủy',
                             ])->default('scheduled'),
+                        \Filament\Forms\Components\Textarea::make('cancellation_reason')
+                            ->label('Lý do hủy')
+                            ->visible(fn (callable $get) => $get('status') === 'cancelled')
+                            ->rows(2),
                         \Filament\Forms\Components\Textarea::make('note')
                             ->label('Ghi chú')
                             ->rows(3),
@@ -163,6 +183,9 @@ class CustomersTable
                                 'email' => $record->email,
                                 'phone' => $record->phone,
                                 'first_branch_id' => $record->branch_id,
+                                'customer_group_id' => $record->customer_group_id,
+                                'promotion_group_id' => $record->promotion_group_id,
+                                'owner_staff_id' => $record->assigned_to,
                             ]);
                             $record->update(['status' => 'converted']);
                         }
@@ -172,7 +195,9 @@ class CustomersTable
                             'doctor_id' => $data['doctor_id'] ?? null,
                             'branch_id' => $data['branch_id'] ?? $record->branch_id,
                             'date' => $data['date'],
+                            'appointment_kind' => $data['appointment_kind'] ?? 'booking',
                             'status' => $data['status'] ?? 'scheduled',
+                            'cancellation_reason' => $data['cancellation_reason'] ?? null,
                             'note' => $data['note'] ?? null,
                         ]);
                         Notification::make()

@@ -14,16 +14,24 @@ class PlanItem extends Model
         'treatment_plan_id',
         'name',
         'service_id',
+        'tooth_ids',
+        'diagnosis_ids',
         'tooth_number',
         'tooth_notation',
         'quantity',
         'price', // Keep for backward compatibility
+        'discount_amount',
+        'discount_percent',
+        'vat_amount',
+        'final_amount',
         'estimated_cost',
         'actual_cost',
         'required_visits',
         'completed_visits',
         'estimated_supplies',
         'status',
+        'patient_approved',
+        'is_completed',
         'priority',
         'notes',
         'before_photo',
@@ -34,15 +42,23 @@ class PlanItem extends Model
     ];
 
     protected $casts = [
+        'tooth_ids' => 'array',
+        'diagnosis_ids' => 'array',
         'estimated_supplies' => 'array',
         'estimated_cost' => 'decimal:2',
         'actual_cost' => 'decimal:2',
         'price' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'discount_percent' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
+        'final_amount' => 'decimal:2',
         'required_visits' => 'integer',
         'completed_visits' => 'integer',
         'progress_percentage' => 'integer',
         'started_at' => 'date',
         'completed_at' => 'date',
+        'is_completed' => 'boolean',
+        'patient_approved' => 'boolean',
     ];
 
     public function treatmentPlan()

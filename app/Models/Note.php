@@ -11,11 +11,24 @@ class Note extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-    'patient_id',
-    'customer_id',
+        'patient_id',
+        'customer_id',
         'user_id',
         'type',
+        'care_type',
+        'care_channel',
+        'care_status',
+        'care_at',
+        'care_mode',
+        'is_recurring',
         'content',
+        'source_type',
+        'source_id',
+    ];
+
+    protected $casts = [
+        'care_at' => 'datetime',
+        'is_recurring' => 'boolean',
     ];
 
     public function patient()

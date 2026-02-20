@@ -1,0 +1,72 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - img [ref=e11] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - link [ref=e18] [cursor=pointer]:
+          - /url: /
+          - img [ref=e20]
+        - link [ref=e23] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e25]
+        - button [ref=e31] [cursor=pointer]:
+          - link [ref=e32]:
+            - /url: /customer-care
+            - img [ref=e34]
+        - button [ref=e42] [cursor=pointer]:
+          - link [ref=e43]:
+            - /url: /calendar
+            - img [ref=e45]
+        - link [ref=e48] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e50]
+        - link [ref=e53] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e55]
+        - button [ref=e61] [cursor=pointer]:
+          - img [ref=e64]
+        - button [ref=e70] [cursor=pointer]:
+          - img [ref=e73]
+        - link [ref=e76] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e78]
+        - link [ref=e81] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e83]
+        - button [ref=e92] [cursor=pointer]:
+          - img [ref=e95]
+      - generic [ref=e98] [cursor=pointer]:
+        - img [ref=e100]
+        - paragraph [ref=e102]: "18"
+  - generic [ref=e104]:
+    - generic [ref=e105]:
+      - generic [ref=e109]: Dental Call Center
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - heading "Báo cáo mới" [level=3] [ref=e114]
+            - img [ref=e116] [cursor=pointer]
+          - switch [checked] [ref=e119] [cursor=pointer]
+        - img [ref=e124] [cursor=pointer]
+    - generic [ref=e137]:
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - heading "Thiết lập ứng dụng" [level=3] [ref=e140]
+          - generic [ref=e141]:
+            - text: Sau khi cài đặt Call Center thành công, quý khách vẫn chưa thể sử dụng được tính năng gọi điện chăm sóc khách hàng. Quý khách vui lòng liên hệ qua
+            - link "support@dentalflow.vn" [ref=e142] [cursor=pointer]:
+              - /url: mailto:support@dentalflow.vn
+            - text: hoặc
+            - link "0927741985" [ref=e143] [cursor=pointer]:
+              - /url: tel:0927741985
+            - text: để được hỗ trợ.
+        - generic [ref=e144]:
+          - heading "Dịch vụ call center" [level=3] [ref=e145]
+          - generic [ref=e148]:
+            - generic [ref=e149] [cursor=pointer]:
+              - radio "Stringee" [ref=e151]
+              - generic [ref=e153]: Stringee
+            - generic [ref=e154] [cursor=pointer]:
+              - radio "CareSoft" [checked] [ref=e156]
+              - generic [ref=e158]: CareSoft
+      - switch [ref=e263] [cursor=pointer]

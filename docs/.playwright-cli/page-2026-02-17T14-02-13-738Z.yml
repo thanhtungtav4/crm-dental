@@ -1,0 +1,318 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - img [ref=e11] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - link [ref=e18] [cursor=pointer]:
+          - /url: /
+          - img [ref=e20]
+        - link [ref=e23] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e25]
+        - button [ref=e31] [cursor=pointer]:
+          - link [ref=e32]:
+            - /url: /customer-care
+            - img [ref=e34]
+        - button [ref=e42] [cursor=pointer]:
+          - link [ref=e43]:
+            - /url: /calendar
+            - img [ref=e45]
+        - link [ref=e48] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e50]
+        - link [ref=e53] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e55]
+        - button [ref=e61] [cursor=pointer]:
+          - img [ref=e64]
+        - button [ref=e70] [cursor=pointer]:
+          - img [ref=e73]
+        - link [ref=e76] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e78]
+        - link [ref=e81] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e83]
+        - button [ref=e92] [cursor=pointer]:
+          - img [ref=e95]
+      - generic [ref=e98] [cursor=pointer]:
+        - img [ref=e100]
+        - paragraph [ref=e102]: "17"
+  - generic [ref=e104]:
+    - generic [ref=e105]:
+      - generic [ref=e165]: Nguyễn Văn An
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - heading "Báo cáo mới" [level=3] [ref=e110]
+            - img [ref=e112] [cursor=pointer]
+          - switch [checked] [ref=e115] [cursor=pointer]
+        - img [ref=e120] [cursor=pointer]
+    - generic [ref=e134]:
+      - tablist [active] [ref=e135]:
+        - button "In" [ref=e140] [cursor=pointer]:
+          - generic:
+            - img
+        - generic [ref=e141]:
+          - generic:
+            - generic:
+              - 'generic "icon: left"':
+                - img
+          - generic:
+            - generic:
+              - 'generic "icon: right"':
+                - img
+          - generic [ref=e145]:
+            - tab "Thông tin cơ bản" [ref=e146] [cursor=pointer]
+            - tab "Khám & Điều trị" [ref=e147] [cursor=pointer]
+            - tab "Đơn thuốc" [ref=e148] [cursor=pointer]
+            - tab "Thư viện ảnh" [ref=e149] [cursor=pointer]
+            - tab "Xưởng/Vật tư" [ref=e150] [cursor=pointer]
+            - tab "Lịch hẹn" [ref=e151] [cursor=pointer]
+            - tab "Thanh toán" [selected] [ref=e152] [cursor=pointer]
+            - tab "Biểu mẫu" [ref=e153] [cursor=pointer]
+            - tab "Chăm sóc" [ref=e154] [cursor=pointer]
+            - tab "Lịch sử thao tác" [ref=e155] [cursor=pointer]
+      - generic [ref=e157]:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - paragraph: Dữ liệu ngày khám & điều trị đang trống
+            - generic:
+              - button:
+                - generic:
+                  - img
+                - generic: Thêm phiếu Khám & Điều trị
+        - tabpanel [ref=e1127]:
+          - generic [ref=e1130]:
+            - generic [ref=e1131]:
+              - generic [ref=e1132]:
+                - generic [ref=e1133]: Thông tin thanh toán
+                - generic [ref=e1134]:
+                  - generic [ref=e1135]:
+                    - generic [ref=e1136]: Số dư
+                    - text: ": 0"
+                  - button "Phiếu thu" [ref=e1138] [cursor=pointer]:
+                    - generic:
+                      - img
+                    - generic: Phiếu thu
+                  - button "Thanh toán" [ref=e2486] [cursor=pointer]:
+                    - generic:
+                      - img
+                    - generic: Thanh toán
+              - generic [ref=e1139]:
+                - generic [ref=e1140]:
+                  - generic [ref=e1142]:
+                    - generic [ref=e1143]:
+                      - generic [ref=e1144]: Tổng tiền điều trị
+                      - img [ref=e1146] [cursor=pointer]
+                    - generic [ref=e1149]: 22,000,000
+                  - generic [ref=e1151]:
+                    - generic [ref=e1152]:
+                      - generic [ref=e1153]: Giảm giá
+                      - img [ref=e1155] [cursor=pointer]
+                    - generic [ref=e1158]: "0"
+                  - generic [ref=e1160]:
+                    - generic [ref=e1161]:
+                      - generic [ref=e1162]: Phải thanh toán
+                      - img [ref=e1164] [cursor=pointer]
+                    - generic [ref=e1167]: 22,000,000
+                  - generic [ref=e1169]:
+                    - generic [ref=e1170]:
+                      - generic [ref=e1171]: Đã thu
+                      - img [ref=e1173] [cursor=pointer]
+                    - generic [ref=e1176]: 12,000,000
+                  - generic [ref=e1178]:
+                    - generic [ref=e1179]:
+                      - generic [ref=e1180]: Còn lại
+                      - img [ref=e1182] [cursor=pointer]
+                    - generic [ref=e1185]: 10,000,000
+                - separator [ref=e1186]
+            - generic [ref=e1187]:
+              - generic [ref=e1189]:
+                - generic [ref=e1191]:
+                  - generic [ref=e1192]: Hóa đơn điều trị
+                  - img [ref=e1194] [cursor=pointer]
+                - button "In hóa đơn" [ref=e1198] [cursor=pointer]:
+                  - generic:
+                    - img
+                  - generic: In hóa đơn
+              - generic [ref=e1203]:
+                - table [ref=e1208]:
+                  - rowgroup [ref=e1218]:
+                    - row "Ngày điều trị Thành tiền Tiền giảm giá Tổng chi phí Đã thanh toán Còn lại Đã xuất hóa đơn Thao tác" [ref=e1219]:
+                      - columnheader "Ngày điều trị" [ref=e1220]:
+                        - generic [ref=e1224]: Ngày điều trị
+                      - columnheader "Thành tiền" [ref=e1225]:
+                        - generic [ref=e1229]: Thành tiền
+                      - columnheader "Tiền giảm giá" [ref=e1230]:
+                        - generic [ref=e1234]: Tiền giảm giá
+                      - columnheader "Tổng chi phí" [ref=e1235]:
+                        - generic [ref=e1239]: Tổng chi phí
+                      - columnheader "Đã thanh toán" [ref=e1240]:
+                        - generic [ref=e1244]: Đã thanh toán
+                      - columnheader "Còn lại" [ref=e1245]:
+                        - generic [ref=e1249]: Còn lại
+                      - columnheader "Đã xuất hóa đơn" [ref=e1250]:
+                        - generic [ref=e1254]: Đã xuất hóa đơn
+                      - columnheader "Thao tác" [ref=e1255]:
+                        - generic [ref=e1259]: Thao tác
+                  - rowgroup [ref=e1260]:
+                    - row "17/02/2026 10,000,000 0 10,000,000 0 10,000,000 0" [ref=e2487]:
+                      - cell "17/02/2026" [ref=e2488]:
+                        - generic [ref=e2489]: 17/02/2026
+                      - cell "10,000,000" [ref=e2490]:
+                        - generic [ref=e2491]: 10,000,000
+                      - cell "0" [ref=e2492]:
+                        - generic [ref=e2493]: "0"
+                      - cell "10,000,000" [ref=e2494]:
+                        - generic [ref=e2495]: 10,000,000
+                      - cell "0" [ref=e2496]:
+                        - generic [ref=e2497]: "0"
+                      - cell "10,000,000" [ref=e2498]:
+                        - generic [ref=e2499]: 10,000,000
+                      - cell "0" [ref=e2500]:
+                        - generic [ref=e2501]: "0"
+                      - cell [ref=e2502]:
+                        - generic [ref=e2503]:
+                          - img [ref=e2505] [cursor=pointer]
+                          - img [ref=e2508] [cursor=pointer]
+                          - img [ref=e2511] [cursor=pointer]
+                    - row "10/02/2026 12,000,000 0 12,000,000 12,000,000 0 12,000,000" [ref=e1261]:
+                      - cell "10/02/2026" [ref=e1262]:
+                        - generic [ref=e1263]: 10/02/2026
+                      - cell "12,000,000" [ref=e1264]:
+                        - generic [ref=e1265]: 12,000,000
+                      - cell "0" [ref=e1266]:
+                        - generic [ref=e1267]: "0"
+                      - cell "12,000,000" [ref=e1268]:
+                        - generic [ref=e1269]: 12,000,000
+                      - cell "12,000,000" [ref=e1270]:
+                        - generic [ref=e1271]: 12,000,000
+                      - cell "0" [ref=e1272]:
+                        - generic [ref=e1273]: "0"
+                      - cell "12,000,000" [ref=e1274]:
+                        - generic [ref=e1275]: 12,000,000
+                      - cell [ref=e1276]:
+                        - generic [ref=e1277]:
+                          - img [ref=e1279] [cursor=pointer]
+                          - img [ref=e1282]
+                          - img [ref=e1285] [cursor=pointer]
+                - list [ref=e1290]:
+                  - listitem [ref=e1291]: 1-2 trên 2 bản ghi
+                  - listitem "Previous Page" [ref=e1292]:
+                    - 'generic "icon: left" [ref=e1294]':
+                      - img [ref=e1295]
+                  - listitem "1" [ref=e1297] [cursor=pointer]:
+                    - generic [ref=e1298]: "1"
+                  - listitem "Next Page" [ref=e1299]:
+                    - 'generic "icon: right" [ref=e1301]':
+                      - img [ref=e1302]
+            - generic [ref=e1305]:
+              - generic [ref=e1307]:
+                - generic [ref=e1308]: Danh sách phiếu thu - hoàn ứng
+                - img [ref=e1310] [cursor=pointer]
+              - generic [ref=e1316]:
+                - generic [ref=e1318]:
+                  - table [ref=e1321]:
+                    - rowgroup [ref=e1331]:
+                      - row "Ngày tạo Ngày lập phiếu Loại phiếu Hình thức thanh toán Người tạo Số tiền Nội dung" [ref=e1332]:
+                        - columnheader "Ngày tạo" [ref=e1333]:
+                          - generic [ref=e1337]: Ngày tạo
+                        - columnheader "Ngày lập phiếu" [ref=e1338]:
+                          - generic [ref=e1342]: Ngày lập phiếu
+                        - columnheader "Loại phiếu" [ref=e1343]:
+                          - generic [ref=e1347]: Loại phiếu
+                        - columnheader "Hình thức thanh toán" [ref=e1348]:
+                          - generic [ref=e1352]: Hình thức thanh toán
+                        - columnheader "Người tạo" [ref=e1353]:
+                          - generic [ref=e1357]: Người tạo
+                        - columnheader "Số tiền" [ref=e1358]:
+                          - generic [ref=e1362]: Số tiền
+                        - columnheader "Nội dung" [ref=e1363]:
+                          - generic [ref=e1367]: Nội dung
+                    - rowgroup [ref=e1368]:
+                      - row "10/02/2026, 18:33 10/02/2026, 18:33 Phiếu thu Tiền mặt MAI HOÀNG YẾN 12,000,000" [ref=e1369]:
+                        - cell "10/02/2026, 18:33" [ref=e1370]:
+                          - generic [ref=e1371]: 10/02/2026, 18:33
+                        - cell "10/02/2026, 18:33" [ref=e1372]:
+                          - generic [ref=e1374]: 10/02/2026, 18:33
+                        - cell "Phiếu thu" [ref=e1375]:
+                          - generic [ref=e1376]: Phiếu thu
+                        - cell "Tiền mặt" [ref=e1377]:
+                          - generic [ref=e1378]: Tiền mặt
+                        - cell "MAI HOÀNG YẾN" [ref=e1379]:
+                          - generic [ref=e1380]: MAI HOÀNG YẾN
+                        - cell "12,000,000" [ref=e1381]:
+                          - generic [ref=e1382]: 12,000,000
+                        - cell [ref=e1383]
+                  - table [ref=e1387]:
+                    - rowgroup [ref=e1390]:
+                      - row "Thao tác" [ref=e1391]:
+                        - columnheader "Thao tác" [ref=e1392]:
+                          - generic [ref=e1396]: Thao tác
+                    - rowgroup [ref=e1397]:
+                      - row [ref=e1398]:
+                        - cell [ref=e1399]:
+                          - generic [ref=e1400]:
+                            - img [ref=e1402] [cursor=pointer]
+                            - img [ref=e1405] [cursor=pointer]
+                            - img [ref=e1408] [cursor=pointer]
+                - list [ref=e1412]:
+                  - listitem [ref=e1413]: 1-1 trên 1 bản ghi
+                  - listitem "Previous Page" [ref=e1414]:
+                    - 'generic "icon: left" [ref=e1416]':
+                      - img [ref=e1417]
+                  - listitem "1" [ref=e1419] [cursor=pointer]:
+                    - generic [ref=e1420]: "1"
+                  - listitem "Next Page" [ref=e1421]:
+                    - 'generic "icon: right" [ref=e1423]':
+                      - img [ref=e1424]
+            - generic [ref=e1427]:
+              - generic [ref=e1429]:
+                - generic [ref=e1430]: Chi tiết thanh toán
+                - img [ref=e1432] [cursor=pointer]
+              - generic [ref=e1438]:
+                - table [ref=e1443]:
+                  - rowgroup [ref=e1451]:
+                    - row "Ngày tạo Ngày lập phiếu Ngày điều trị Người tạo Thanh toán Thao tác" [ref=e1452]:
+                      - columnheader "Ngày tạo" [ref=e1453]:
+                        - generic [ref=e1457]: Ngày tạo
+                      - columnheader "Ngày lập phiếu" [ref=e1458]:
+                        - generic [ref=e1462]: Ngày lập phiếu
+                      - columnheader "Ngày điều trị" [ref=e1463]:
+                        - generic [ref=e1467]: Ngày điều trị
+                      - columnheader "Người tạo" [ref=e1468]:
+                        - generic [ref=e1472]: Người tạo
+                      - columnheader "Thanh toán" [ref=e1473]:
+                        - generic [ref=e1477]: Thanh toán
+                      - columnheader "Thao tác" [ref=e1478]:
+                        - generic [ref=e1482]: Thao tác
+                  - rowgroup [ref=e1483]:
+                    - row "10/02/2026, 18:33 10/02/2026 10/02/2026 MAI HOÀNG YẾN 12,000,000" [ref=e1484]:
+                      - cell "10/02/2026, 18:33" [ref=e1485]:
+                        - generic [ref=e1486]: 10/02/2026, 18:33
+                      - cell "10/02/2026" [ref=e1487]:
+                        - generic [ref=e1489]: 10/02/2026
+                      - cell "10/02/2026" [ref=e1490]:
+                        - generic [ref=e1491]: 10/02/2026
+                      - cell "MAI HOÀNG YẾN" [ref=e1492]:
+                        - generic [ref=e1493]: MAI HOÀNG YẾN
+                      - cell "12,000,000" [ref=e1494]:
+                        - generic [ref=e1495]: 12,000,000
+                      - cell [ref=e1496]:
+                        - generic [ref=e1497]:
+                          - img [ref=e1499] [cursor=pointer]
+                          - img [ref=e1502] [cursor=pointer]
+                          - img [ref=e1505] [cursor=pointer]
+                - list [ref=e1509]:
+                  - listitem [ref=e1510]: 1-1 trên 1 bản ghi
+                  - listitem "Previous Page" [ref=e1511]:
+                    - 'generic "icon: left" [ref=e1513]':
+                      - img [ref=e1514]
+                  - listitem "1" [ref=e1516] [cursor=pointer]:
+                    - generic [ref=e1517]: "1"
+                  - listitem "Next Page" [ref=e1518]:
+                    - 'generic "icon: right" [ref=e1520]':
+                      - img [ref=e1521]

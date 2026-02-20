@@ -32,6 +32,23 @@ class PatientsTable
                 TextColumn::make('phone')
                     ->label('Điện thoại')
                     ->searchable(),
+                TextColumn::make('phone_secondary')
+                    ->label('Điện thoại 2')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('address')
+                    ->label('Địa chỉ')
+                    ->limit(40)
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('medical_history')
+                    ->label('Tiền sử bệnh')
+                    ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('note')
+                    ->label('Ghi chú')
+                    ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('branch.name')
                     ->label('Chi nhánh')
                     ->toggleable(),
@@ -103,6 +120,14 @@ class PatientsTable
                             ->label('Thời gian')
                             ->default(fn () => now()->addDay())
                             ->required(),
+                        \Filament\Forms\Components\Select::make('appointment_kind')
+                            ->label('Loại lịch hẹn')
+                            ->options([
+                                'booking' => 'Đặt hẹn',
+                                're_exam' => 'Tái khám',
+                            ])
+                            ->default('booking')
+                            ->required(),
                         \Filament\Forms\Components\Select::make('status')
                             ->label('Trạng thái')
                             ->options([
@@ -111,6 +136,10 @@ class PatientsTable
                                 'completed' => 'Hoàn thành',
                                 'cancelled' => 'Hủy',
                             ])->default('scheduled'),
+                        \Filament\Forms\Components\Textarea::make('cancellation_reason')
+                            ->label('Lý do hủy')
+                            ->visible(fn (callable $get) => $get('status') === 'cancelled')
+                            ->rows(2),
                         \Filament\Forms\Components\Textarea::make('note')
                             ->label('Ghi chú')
                             ->rows(3),
@@ -121,7 +150,9 @@ class PatientsTable
                             'doctor_id' => $data['doctor_id'] ?? null,
                             'branch_id' => $data['branch_id'] ?? $record->first_branch_id,
                             'date' => $data['date'],
+                            'appointment_kind' => $data['appointment_kind'] ?? 'booking',
                             'status' => $data['status'] ?? 'scheduled',
+                            'cancellation_reason' => $data['cancellation_reason'] ?? null,
                             'note' => $data['note'] ?? null,
                         ]);
                         Notification::make()

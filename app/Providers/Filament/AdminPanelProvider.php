@@ -36,19 +36,31 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandLogo(asset('images/logo.svg'))
+            ->favicon(asset('images/logo.svg'))
             ->viteTheme('resources/css/filament/admin/theme.css')
 
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): HtmlString => new HtmlString(
-                    '<link rel="icon" type="image/x-icon" href="' . asset('favicon.ico') . '">' .
-                    '<link rel="icon" type="image/svg+xml" href="' . asset('favicon.svg') . '">' .
-                    '<link rel="shortcut icon" href="' . asset('favicon.ico') . '">' .
-                    '<link rel="apple-touch-icon" href="' . asset('favicon.svg') . '">'
+                    '<link rel="icon" type="image/svg+xml" href="' . asset('images/logo.svg') . '">' .
+                    '<link rel="apple-touch-icon" href="' . asset('images/logo.svg') . '">'
                 )
             )
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Violet,
+            ])
+            ->navigationGroups([
+                'Hoạt động hàng ngày',
+                'Quản lý khách hàng',
+                'Chăm sóc khách hàng',
+                'Tài chính',
+                'Dịch vụ & điều trị',
+                'Quản lý kho',
+                'Báo cáo & thống kê',
+                'Quản lý nhân sự',
+                'Quản lý chi nhánh',
+                'Ứng dụng mở rộng',
+                'Cài đặt hệ thống',
             ])
             ->sidebarCollapsibleOnDesktop()
             ->sidebarFullyCollapsibleOnDesktop()

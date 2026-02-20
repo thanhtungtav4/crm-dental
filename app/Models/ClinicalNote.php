@@ -18,6 +18,7 @@ class ClinicalNote extends Model
         'date',
         'examination_note',
         'general_exam_notes',
+        'recommendation_notes',
         'treatment_plan_note',
         'indications',
         'indication_images',

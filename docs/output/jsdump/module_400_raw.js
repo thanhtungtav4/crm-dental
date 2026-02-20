@@ -1,0 +1,1 @@
+400:function(e,t,n){"use strict";n.d(t,"a",function(){return c});var a=n(95),r=n(89),i=n(1),o=n(12),c=function(){var e,t=Object(r.a)(),n=Object(a.e)().addOnDentalApp;return(null===(e=t(i.W.vnPay))||void 0===e?void 0:e.value)===a.c.activate&&n(o.a.DENTAL_APP.VN_PAY)}},

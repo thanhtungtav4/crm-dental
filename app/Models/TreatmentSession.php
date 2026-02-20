@@ -14,6 +14,7 @@ class TreatmentSession extends Model
         'treatment_plan_id',
     'plan_item_id',
         'doctor_id',
+        'assistant_id',
     'start_at',
     'end_at',
         'performed_at',
@@ -38,9 +39,19 @@ class TreatmentSession extends Model
         return $this->belongsTo(TreatmentPlan::class);
     }
 
+    public function planItem()
+    {
+        return $this->belongsTo(PlanItem::class, 'plan_item_id');
+    }
+
     public function doctor()
     {
         return $this->belongsTo(User::class, 'doctor_id');
+    }
+
+    public function assistant()
+    {
+        return $this->belongsTo(User::class, 'assistant_id');
     }
 
     public function materials()

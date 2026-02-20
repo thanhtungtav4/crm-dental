@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoice extends Model
@@ -26,6 +25,8 @@ class Invoice extends Model
         'paid_amount',
         'qr_code',
         'status',
+        'invoice_exported',
+        'exported_at',
         'issued_at',
         'due_date',
         'paid_at',
@@ -37,6 +38,8 @@ class Invoice extends Model
         'tax_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
+        'invoice_exported' => 'boolean',
+        'exported_at' => 'datetime',
         'issued_at' => 'datetime',
         'due_date' => 'date',
         'paid_at' => 'datetime',
@@ -62,16 +65,6 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
-    }
-
-    public function installmentPlan(): HasOne
-    {
-        return $this->hasOne(InstallmentPlan::class);
-    }
-
-    public function reminders(): HasMany
-    {
-        return $this->hasMany(PaymentReminder::class);
     }
 
     // ==================== PAYMENT TRACKING METHODS ====================
@@ -108,7 +101,7 @@ class Invoice extends Model
     public function updatePaymentStatus(): void
     {
         $totalPaid = $this->paid_amount ?? $this->getTotalPaid();
-        
+
         if ($totalPaid >= $this->total_amount) {
             $this->status = 'paid';
             $this->paid_at = $this->paid_at ?? now();
@@ -119,20 +112,36 @@ class Invoice extends Model
             if (!in_array($this->status, ['paid', 'cancelled'])) {
                 // Keep current status but mark as overdue in UI
             }
+        } else {
+            if (!in_array($this->status, ['draft', 'cancelled'])) {
+                $this->status = 'issued';
+            }
+            $this->paid_at = null;
         }
     }
 
     /**
      * Record a payment and update status
      */
-    public function recordPayment(float $amount, string $method = 'cash', ?string $notes = null): Payment
+    public function recordPayment(
+        float $amount,
+        string $method = 'cash',
+        ?string $notes = null,
+        mixed $paidAt = null,
+        string $direction = 'receipt',
+        ?string $refundReason = null
+    ): Payment
     {
+        $amount = $direction === 'refund' ? -abs($amount) : abs($amount);
+
         $payment = $this->payments()->create([
             'amount' => $amount,
+            'direction' => $direction,
             'method' => $method,
-            'paid_at' => now(),
+            'paid_at' => $paidAt ?: now(),
             'received_by' => auth()->id(),
             'note' => $notes,
+            'refund_reason' => $refundReason,
             'payment_source' => 'patient',
         ]);
 
@@ -255,14 +264,6 @@ class Invoice extends Model
     }
 
     /**
-     * Check if has installment plan
-     */
-    public function hasInstallmentPlan(): bool
-    {
-        return $this->installmentPlan()->exists();
-    }
-
-    /**
      * Format balance as VNĐ
      */
     public function formatBalance(): string
@@ -318,8 +319,4 @@ class Invoice extends Model
         return $query->where('treatment_plan_id', $planId);
     }
 
-    public function scopeHasInstallmentPlan($query)
-    {
-        return $query->whereHas('installmentPlan');
-    }
 }

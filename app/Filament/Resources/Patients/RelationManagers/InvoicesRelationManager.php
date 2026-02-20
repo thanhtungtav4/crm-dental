@@ -17,13 +17,13 @@ class InvoicesRelationManager extends RelationManager
 
     protected static ?string $title = 'Hóa đơn';
 
-    protected static ?string $recordTitleAttribute = 'invoice_number';
+    protected static ?string $recordTitleAttribute = 'invoice_no';
 
     public function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('invoice_number')
+                Tables\Columns\TextColumn::make('invoice_no')
                     ->label('Số hóa đơn')
                     ->searchable()
                     ->sortable()
@@ -32,7 +32,7 @@ class InvoicesRelationManager extends RelationManager
                     ->color('primary')
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('treatmentPlan.name')
+                Tables\Columns\TextColumn::make('plan.title')
                     ->label('Kế hoạch')
                     ->limit(25)
                     ->searchable()
@@ -58,6 +58,14 @@ class InvoicesRelationManager extends RelationManager
                         'gray' => 'cancelled',
                     ]),
 
+                Tables\Columns\BadgeColumn::make('invoice_exported')
+                    ->label('Xuất HĐ')
+                    ->formatStateUsing(fn (bool $state): string => $state ? 'Đã xuất' : 'Chưa xuất')
+                    ->colors([
+                        'success' => true,
+                        'gray' => false,
+                    ]),
+
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Tổng tiền')
                     ->money('VND', locale: 'vi')
@@ -72,12 +80,11 @@ class InvoicesRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Còn lại')
-                    ->money('VND', locale: 'vi')
-                    ->sortable()
+                    ->formatStateUsing(fn (Invoice $record) => number_format($record->calculateBalance(), 0, ',', '.') . 'đ')
                     ->color('warning')
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('issue_date')
+                Tables\Columns\TextColumn::make('issued_at')
                     ->label('Ngày xuất')
                     ->date('d/m/Y')
                     ->sortable(),
@@ -104,15 +111,34 @@ class InvoicesRelationManager extends RelationManager
                         'cancelled' => 'Đã hủy',
                     ]),
             ])
+            ->headerActions([
+                Action::make('printLatestInvoice')
+                    ->label('In hóa đơn')
+                    ->icon('heroicon-o-printer')
+                    ->color('primary')
+                    ->visible(fn (): bool => $this->getOwnerRecord()->invoices()->exists())
+                    ->url(function (): string {
+                        $invoice = $this->getOwnerRecord()->invoices()->latest('created_at')->first();
+
+                        return $invoice ? route('invoices.print', $invoice) : '#';
+                    })
+                    ->openUrlInNewTab(),
+            ])
             ->actions([
                 EditAction::make()
                     ->url(fn (Invoice $record): string => 
                         route('filament.admin.resources.invoices.edit', ['record' => $record->id])),
+                Action::make('print')
+                    ->label('In')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn (Invoice $record): string => route('invoices.print', $record))
+                    ->openUrlInNewTab(),
                 
                 Action::make('recordPayment')
                     ->label('Ghi thanh toán')
                     ->icon('heroicon-o-banknotes')
-                    ->color('success')
+                    ->color('primary')
                     ->visible(fn (Invoice $record) => $record->status !== 'paid' && $record->status !== 'cancelled')
                     ->url(fn (Invoice $record): string => 
                         route('filament.admin.resources.payments.create', [
@@ -131,7 +157,7 @@ class InvoicesRelationManager extends RelationManager
                 Action::make('create')
                     ->label('Tạo hóa đơn mới')
                     ->icon('heroicon-o-plus')
-                    ->color('warning')
+                    ->color('primary')
                     ->url(fn () => route('filament.admin.resources.invoices.create', [
                         'patient_id' => $this->getOwnerRecord()->id,
                     ])),

@@ -30,10 +30,20 @@ class PatientResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '1️⃣ Hoạt động hàng ngày';
+        return 'Hoạt động hàng ngày';
     }
 
-    protected static ?int $navigationSort = 2;
+    public static function getModelLabel(): string
+    {
+        return 'Bệnh nhân';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'Bệnh nhân';
+    }
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {

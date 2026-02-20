@@ -1,0 +1,508 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - img [ref=e13] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e22]
+          - link [ref=e25] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e27]
+          - button [ref=e33] [cursor=pointer]:
+            - link [ref=e34]:
+              - /url: /customer-care
+              - img [ref=e36]
+          - button [ref=e44] [cursor=pointer]:
+            - link [ref=e45]:
+              - /url: /calendar
+              - img [ref=e47]
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e52]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e57]
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e66]
+          - button [ref=e72] [cursor=pointer]:
+            - img [ref=e75]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e85]
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e97]
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - paragraph [ref=e104]: "17"
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e167]: Nguyễn Văn An
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - heading "Báo cáo mới" [level=3] [ref=e112]
+              - img [ref=e114] [cursor=pointer]
+            - switch [checked] [ref=e117] [cursor=pointer]
+          - img [ref=e122] [cursor=pointer]
+      - generic [ref=e136]:
+        - tablist [ref=e137]:
+          - button "In" [ref=e142] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e143]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e147]:
+              - tab "Thông tin cơ bản" [ref=e148] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e149] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e150] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e151] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [ref=e152] [cursor=pointer]
+              - tab "Lịch hẹn" [selected] [ref=e153] [cursor=pointer]
+              - tab "Thanh toán" [ref=e154] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e155] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e156] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e157] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - tabpanel [ref=e267]:
+            - generic [ref=e269]:
+              - generic [ref=e271]:
+                - heading "Danh sách lịch hẹn" [level=3] [ref=e273]
+                - generic [ref=e274]:
+                  - generic [ref=e279] [cursor=pointer]:
+                    - textbox "Ngày bắt đầu" [ref=e280]
+                    - generic: ~
+                    - textbox "Ngày kết thúc" [ref=e281]
+                    - img [ref=e283]
+                  - button "Thêm lịch hẹn" [ref=e287] [cursor=pointer]:
+                    - generic: Thêm lịch hẹn
+              - generic [ref=e292]:
+                - table [ref=e297]:
+                  - rowgroup [ref=e309]:
+                    - row "Ngày Khung giờ Bác sĩ Nội dung Phân loại Loại lịch hẹn Ghi chú Lý do hẹn lại / hủy lịch Trạng thái Thao tác" [ref=e310]:
+                      - columnheader "Ngày" [ref=e311]:
+                        - generic [ref=e315]: Ngày
+                      - columnheader "Khung giờ" [ref=e316]:
+                        - generic [ref=e320]: Khung giờ
+                      - columnheader "Bác sĩ" [ref=e321]:
+                        - generic [ref=e325]: Bác sĩ
+                      - columnheader "Nội dung" [ref=e326]:
+                        - generic [ref=e330]: Nội dung
+                      - columnheader "Phân loại" [ref=e331]:
+                        - generic [ref=e335]: Phân loại
+                      - columnheader "Loại lịch hẹn" [ref=e336]:
+                        - generic [ref=e340]: Loại lịch hẹn
+                      - columnheader "Ghi chú" [ref=e341]:
+                        - generic [ref=e345]: Ghi chú
+                      - columnheader "Lý do hẹn lại / hủy lịch" [ref=e346]:
+                        - generic [ref=e350]: Lý do hẹn lại / hủy lịch
+                      - columnheader "Trạng thái" [ref=e351]:
+                        - generic [ref=e355]: Trạng thái
+                      - columnheader "Thao tác" [ref=e356]:
+                        - generic [ref=e360]: Thao tác
+                  - rowgroup [ref=e517]:
+                    - row "17/02/2026 21:45 - 22:00 MAI HOÀNG YẾN Khám mới Đặt trước Đang điều trị" [ref=e2106]:
+                      - cell "17/02/2026" [ref=e1812]:
+                        - generic [ref=e1813]: 17/02/2026
+                      - cell "21:45 - 22:00" [ref=e1814]:
+                        - generic [ref=e1815]: 21:45 - 22:00
+                      - cell "MAI HOÀNG YẾN" [ref=e1816]:
+                        - generic [ref=e1817]: MAI HOÀNG YẾN
+                      - cell [ref=e1818]
+                      - cell "Khám mới" [ref=e1819]:
+                        - generic [ref=e1820]: Khám mới
+                      - cell "Đặt trước" [ref=e1821]:
+                        - generic [ref=e1822]: Đặt trước
+                      - cell [ref=e1823]
+                      - cell [ref=e1824]
+                      - cell "Đang điều trị" [ref=e2107]:
+                        - generic [ref=e1827]:
+                          - text: Đang điều trị
+                          - img [ref=e1829] [cursor=pointer]
+                      - cell [ref=e1831]:
+                        - generic [ref=e1832]:
+                          - img [ref=e2070] [cursor=pointer]
+                          - img [ref=e2073] [cursor=pointer]
+                - list [ref=e1842]:
+                  - listitem [ref=e1843]: 1-1 trên 1 bản ghi
+                  - listitem "Previous Page" [ref=e1844]:
+                    - 'generic "icon: left" [ref=e1846]':
+                      - img [ref=e1847]
+                  - listitem "1" [ref=e1849] [cursor=pointer]:
+                    - generic [ref=e1850]: "1"
+                  - listitem "Next Page" [ref=e1851]:
+                    - 'generic "icon: right" [ref=e1853]':
+                      - img [ref=e1854]
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Lịch chăm sóc
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: ~
+                              - generic:
+                                - img
+                      - generic:
+                        - button:
+                          - generic: Thêm chăm sóc
+                      - generic:
+                        - button:
+                          - generic: Đặt lịch chăm sóc
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - table:
+                                  - rowgroup:
+                                    - row:
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thời gian chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Loại chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Kênh chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nhân viên chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nội dung
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Trạng thái chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thao tác
+                                  - rowgroup:
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026, 21:46
+                                      - cell:
+                                        - generic: Khác
+                                      - cell
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: Đặt lịch chăm sóc định kỳ sau 7 ngày
+                                      - cell:
+                                        - generic: Chưa chăm sóc
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026, 21:44
+                                      - cell:
+                                        - generic: Khác
+                                      - cell:
+                                        - generic: Tin nhắn
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: Chăm sóc sau điều trị - gọi điện xác nhận tình trạng
+                                      - cell:
+                                        - generic: Hoàn thành
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                          - generic:
+                                            - img
+                        - list:
+                          - listitem: 1-2 trên 2 bản ghi
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic: "1"
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Lịch sử thao tác
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - combobox:
+                                            - generic:
+                                              - generic: Loại thao tác
+                                              - listitem
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - table:
+                                  - rowgroup:
+                                    - row:
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thời gian
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Người thực hiện
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nội dung
+                                  - rowgroup:
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026, 21:40
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Lịch hẹn:"
+                                        - generic:
+                                          - generic: "Giờ bắt đầu: 21:45 17-02-2026 Giờ kết thúc: 22:00 17-02-2026 Trạng thái: Chưa đến Bác sĩ: MAI HOÀNG YẾN Loại lịch: Đặt trước"
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026, 21:01
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Điều trị:"
+                                        - generic:
+                                          - generic:
+                                            - text: "Ngày điều trị: 17-02-2026 Thủ thuật: Gắn mắc cài kim loại Tổng tiền: 10,000,000"
+                                            - text: "Bác sĩ: MAI HOÀNG YẾN Trợ thủ:"
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026, 08:54
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Ngày khám:"
+                                        - generic: Ngày khám 17-02-2026
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:33
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Hoá đơn:"
+                                        - generic:
+                                          - generic: "Ngày tạo: 18:33 10-02-2026 Ngày điều trị: 10-02-2026 Tổng tiền: 12,000,000"
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:33
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Phiếu thu:"
+                                        - generic:
+                                          - generic: "Ngày tạo: 18:33 10-02-2026 Số tiền: 12,000,000"
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:33
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Điều trị:"
+                                        - generic:
+                                          - generic:
+                                            - text: "Ngày điều trị: 10-02-2026 Thủ thuật: Implant Osstem HQ Tổng tiền: 12,000,000"
+                                            - text: "Bác sĩ: MAI HOÀNG YẾN Trợ thủ:"
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:33
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Kế hoạch điều trị:"
+                                        - generic:
+                                          - generic: "Thủ thuật: Implant Osstem HQ Tổng tiền: 12,000,000"
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:33
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Kế hoạch điều trị:"
+                                        - generic:
+                                          - generic: "Thủ thuật: Gắn mắc cài kim loại Tổng tiền: 10,000,000"
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:32
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Ngày khám:"
+                                        - generic: Ngày khám 10-02-2026
+                                    - row:
+                                      - cell:
+                                        - generic: 10/02/2026, 18:32
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: "Thêm Hồ sơ khách hàng:"
+                                        - generic:
+                                          - generic: "Mã hồ sơ: 329320993 Họ tên: Nguyễn Văn An Ngày sinh: 08-02-1999 Giới tính: Nam SĐT1: 0393874646 Địa chỉ: abc Ngày sinh: 08-02-1999"
+                        - list:
+                          - listitem: 1-10 trên 10 bản ghi
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic: "1"
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+  - generic [ref=e2109]:
+    - 'generic "icon: check-circle" [ref=e2110]':
+      - img [ref=e2111]
+    - text: Cập nhật thành công!

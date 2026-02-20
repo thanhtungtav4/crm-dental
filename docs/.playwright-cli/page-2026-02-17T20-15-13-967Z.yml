@@ -1,0 +1,716 @@
+- generic [ref=e6]:
+  - generic [ref=e8]:
+    - img [ref=e13] [cursor=pointer]
+    - generic [ref=e16]:
+      - generic [ref=e18]:
+        - link [ref=e20] [cursor=pointer]:
+          - /url: /
+          - img [ref=e22]
+        - link [ref=e25] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e27]
+        - button [expanded] [ref=e33] [cursor=pointer]:
+          - link [ref=e34]:
+            - /url: /customer-care
+            - img [ref=e36]
+        - button [ref=e44] [cursor=pointer]:
+          - link [ref=e45]:
+            - /url: /calendar
+            - img [ref=e47]
+        - link [ref=e50] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e52]
+        - link [ref=e55] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e57]
+        - button [ref=e63] [cursor=pointer]:
+          - img [ref=e66]
+        - button [ref=e72] [cursor=pointer]:
+          - img [ref=e75]
+        - link [ref=e78] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e80]
+        - link [ref=e83] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e85]
+        - button [ref=e94] [cursor=pointer]:
+          - img [ref=e97]
+      - generic [ref=e100] [cursor=pointer]:
+        - img [ref=e102]
+        - paragraph [ref=e104]: "18"
+  - generic [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e111]: Chăm sóc khách hàng
+      - generic [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - heading "Báo cáo mới" [level=3] [ref=e116]
+            - img [ref=e118] [cursor=pointer]
+          - switch [checked] [ref=e121] [cursor=pointer]
+        - img [ref=e126] [cursor=pointer]
+    - generic [ref=e139]:
+      - tablist [active] [ref=e140]:
+        - generic [ref=e141]:
+          - generic:
+            - generic:
+              - 'generic "icon: left"':
+                - img
+          - generic:
+            - generic:
+              - 'generic "icon: right"':
+                - img
+          - generic [ref=e145]:
+            - tab "Lịch chăm sóc" [ref=e146] [cursor=pointer]
+            - tab "Nhắc lịch hẹn" [selected] [ref=e147] [cursor=pointer]
+            - tab "Nhắc lịch uống thuốc" [ref=e148] [cursor=pointer]
+            - tab "Hỏi thăm sau điều trị" [ref=e149] [cursor=pointer]
+            - tab "Ngày sinh nhật" [ref=e150] [cursor=pointer]
+      - generic [ref=e152]:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - img
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: ~
+                                              - generic:
+                                                - img
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - combobox:
+                                            - generic:
+                                              - generic: Trạng thái chăm sóc
+                                            - generic:
+                                              - generic:
+                                                - img
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - combobox:
+                                            - generic:
+                                              - generic: Nhân viên chăm sóc
+                                            - generic:
+                                              - generic:
+                                                - img
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - combobox:
+                                            - generic:
+                                              - generic: Loại chăm sóc
+                                            - generic:
+                                              - generic:
+                                                - img
+                    - generic:
+                      - generic:
+                        - generic:
+                          - button:
+                            - generic:
+                              - img
+                            - generic: Hiển thị 10/10
+                      - generic:
+                        - generic:
+                          - button:
+                            - generic:
+                              - img
+                            - generic: Export
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - table:
+                                  - rowgroup:
+                                    - row:
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Mã hồ sơ
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Họ tên
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Điện thoại
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Loại chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Trạng thái chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Kênh chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thời gian chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nhân viên chăm sóc
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nội dung
+                                  - rowgroup:
+                                    - row:
+                                      - cell:
+                                        - generic: "329320993"
+                                      - cell:
+                                        - generic:
+                                          - link:
+                                            - /url: /patient-record-detail/92828561#patientCareHistory
+                                            - text: Nguyễn Văn An
+                                      - cell:
+                                        - generic:
+                                          - generic: "0393874646"
+                                      - cell:
+                                        - generic: Khác
+                                      - cell:
+                                        - generic: Hoàn thành
+                                      - cell:
+                                        - generic: Tin nhắn
+                                      - cell:
+                                        - generic: 17/02/2026, 21:44
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell:
+                                        - generic: Chăm sóc sau điều trị - gọi điện xác nhận tình trạng
+                                    - row:
+                                      - cell:
+                                        - generic: "329320991"
+                                      - cell:
+                                        - generic:
+                                          - link:
+                                            - /url: /patient-record-detail/91467898#patientCareHistory
+                                            - text: Nguyễn Văn A
+                                      - cell:
+                                        - generic:
+                                          - generic: "0985219085"
+                                      - cell:
+                                        - generic: Khác
+                                      - cell:
+                                        - generic: Chưa chăm sóc
+                                      - cell
+                                      - cell:
+                                        - generic: 05/02/2026, 16:31
+                                      - cell:
+                                        - generic: ĐÀO TUYẾN
+                                      - cell:
+                                        - generic: cs
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - table:
+                                    - rowgroup:
+                                      - row:
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Thao tác
+                                    - rowgroup:
+                                      - row:
+                                        - cell:
+                                          - generic:
+                                            - generic:
+                                              - img
+                                            - generic:
+                                              - img
+                                      - row:
+                                        - cell:
+                                          - generic:
+                                            - generic:
+                                              - img
+                                            - generic:
+                                              - img
+                        - list:
+                          - listitem: 1-2 trên 2 bản ghi
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic: "1"
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic:
+                              - combobox:
+                                - generic:
+                                  - generic: 15 / page
+                                - generic:
+                                  - generic:
+                                    - img
+        - tabpanel [ref=e420]:
+          - generic [ref=e424]:
+            - generic [ref=e426]:
+              - generic [ref=e430]:
+                - generic [ref=e436]:
+                  - textbox "Tìm theo mã hồ sơ, số điện thoại, họ tên" [ref=e437]
+                  - img [ref=e439] [cursor=pointer]
+                - generic [ref=e450] [cursor=pointer]:
+                  - textbox "Ngày bắt đầu" [ref=e451]: 01-02-2026
+                  - generic: ~
+                  - textbox "Ngày kết thúc" [ref=e452]: 28-02-2026
+                  - img [ref=e454]
+                - combobox [ref=e463] [cursor=pointer]:
+                  - generic [ref=e465]: Trạng thái chăm sóc
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+                - combobox [ref=e473] [cursor=pointer]:
+                  - generic [ref=e475]: Trạng thái lịch
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+                - combobox [ref=e483] [cursor=pointer]:
+                  - generic [ref=e485]: Bác sĩ
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+                - combobox [ref=e493] [cursor=pointer]:
+                  - generic [ref=e495]: Nhân viên phụ trách
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e496]:
+                - button "Hiển thị 11/11" [ref=e499] [cursor=pointer]:
+                  - generic:
+                    - img
+                  - generic: Hiển thị 11/11
+                - button "Export" [ref=e502] [cursor=pointer]:
+                  - generic:
+                    - img
+                  - generic: Export
+            - generic [ref=e508]:
+              - generic [ref=e510]:
+                - table [ref=e513]:
+                  - rowgroup [ref=e526]:
+                    - row "Mã hồ sơ Họ tên Điện thoại Thời gian hẹn Bác sĩ Trạng thái lịch Trạng thái chăm sóc Kênh chăm sóc Thời gian chăm sóc Nội dung" [ref=e527]:
+                      - columnheader "Mã hồ sơ" [ref=e528]:
+                        - generic [ref=e532]: Mã hồ sơ
+                      - columnheader "Họ tên" [ref=e533]:
+                        - generic [ref=e537]: Họ tên
+                      - columnheader "Điện thoại" [ref=e538]:
+                        - generic [ref=e542]: Điện thoại
+                      - columnheader "Thời gian hẹn" [ref=e543]:
+                        - generic [ref=e547]: Thời gian hẹn
+                      - columnheader "Bác sĩ" [ref=e548]:
+                        - generic [ref=e552]: Bác sĩ
+                      - columnheader "Trạng thái lịch" [ref=e553]:
+                        - generic [ref=e557]: Trạng thái lịch
+                      - columnheader "Trạng thái chăm sóc" [ref=e558]:
+                        - generic [ref=e562]: Trạng thái chăm sóc
+                      - columnheader "Kênh chăm sóc" [ref=e563]:
+                        - generic [ref=e567]: Kênh chăm sóc
+                      - columnheader "Thời gian chăm sóc" [ref=e568]:
+                        - generic [ref=e572]: Thời gian chăm sóc
+                      - columnheader "Nội dung" [ref=e573]:
+                        - generic [ref=e577]: Nội dung
+                  - rowgroup [ref=e578]:
+                    - row "329320993 Nguyễn Văn An 0393874646 17/02/2026, 21:45 MAI HOÀNG YẾN Không đến Chưa chăm sóc" [ref=e579]:
+                      - cell "329320993" [ref=e580]:
+                        - generic [ref=e581]: "329320993"
+                      - cell "Nguyễn Văn An" [ref=e582]:
+                        - link "Nguyễn Văn An" [ref=e584] [cursor=pointer]:
+                          - /url: /patient-record-detail/92828561#patientCareHistory
+                      - cell "0393874646" [ref=e585]:
+                        - generic [ref=e587]: "0393874646"
+                      - cell "17/02/2026, 21:45" [ref=e588]:
+                        - generic [ref=e589]: 17/02/2026, 21:45
+                      - cell "MAI HOÀNG YẾN" [ref=e590]
+                      - cell "Không đến" [ref=e591]:
+                        - generic [ref=e592]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e593]:
+                        - generic [ref=e594]: Chưa chăm sóc
+                      - cell [ref=e595]
+                      - cell [ref=e596]
+                      - cell [ref=e597]
+                    - row "329320976 Nguyễn Văn Việt 0985934868 16/02/2026, 17:15 MAI HOÀNG YẾN Không đến Hoàn thành Zalo SMS 16/02/2026, 16:15 Chăm sóc tự động" [ref=e598]:
+                      - cell "329320976" [ref=e599]:
+                        - generic [ref=e600]: "329320976"
+                      - cell "Nguyễn Văn Việt" [ref=e601]:
+                        - link "Nguyễn Văn Việt" [ref=e603] [cursor=pointer]:
+                          - /url: /patient-record-detail/86217595#patientCareHistory
+                      - cell "0985934868" [ref=e604]:
+                        - generic [ref=e606]: "0985934868"
+                      - cell "16/02/2026, 17:15" [ref=e607]:
+                        - generic [ref=e608]: 16/02/2026, 17:15
+                      - cell "MAI HOÀNG YẾN" [ref=e609]
+                      - cell "Không đến" [ref=e610]:
+                        - generic [ref=e611]: Không đến
+                      - cell "Hoàn thành" [ref=e612]:
+                        - generic [ref=e613]: Hoàn thành
+                      - cell "Zalo SMS" [ref=e614]:
+                        - generic [ref=e615]: Zalo SMS
+                      - cell "16/02/2026, 16:15" [ref=e616]:
+                        - generic [ref=e617]: 16/02/2026, 16:15
+                      - cell "Chăm sóc tự động" [ref=e618]:
+                        - generic [ref=e619]: Chăm sóc tự động
+                    - row "329320932 Nguyễn Hữu Hoằng 0985934868 12/02/2026, 18:00 BS Nguyễn Thành Trung Không đến Hoàn thành Zalo SMS 12/02/2026, 17:00 Chăm sóc tự động" [ref=e620]:
+                      - cell "329320932" [ref=e621]:
+                        - generic [ref=e622]: "329320932"
+                      - cell "Nguyễn Hữu Hoằng" [ref=e623]:
+                        - link "Nguyễn Hữu Hoằng" [ref=e625] [cursor=pointer]:
+                          - /url: /patient-record-detail/65498201#patientCareHistory
+                      - cell "0985934868" [ref=e626]:
+                        - generic [ref=e628]: "0985934868"
+                      - cell "12/02/2026, 18:00" [ref=e629]:
+                        - generic [ref=e630]: 12/02/2026, 18:00
+                      - cell "BS Nguyễn Thành Trung" [ref=e631]
+                      - cell "Không đến" [ref=e632]:
+                        - generic [ref=e633]: Không đến
+                      - cell "Hoàn thành" [ref=e634]:
+                        - generic [ref=e635]: Hoàn thành
+                      - cell "Zalo SMS" [ref=e636]:
+                        - generic [ref=e637]: Zalo SMS
+                      - cell "12/02/2026, 17:00" [ref=e638]:
+                        - generic [ref=e639]: 12/02/2026, 17:00
+                      - cell "Chăm sóc tự động" [ref=e640]:
+                        - generic [ref=e641]: Chăm sóc tự động
+                    - row "329320932 Nguyễn Hữu Hoằng 0985934868 11/02/2026, 18:45 BS Nguyễn Thành Trung Không đến Hoàn thành Zalo SMS 11/02/2026, 17:45 Chăm sóc tự động" [ref=e642]:
+                      - cell "329320932" [ref=e643]:
+                        - generic [ref=e644]: "329320932"
+                      - cell "Nguyễn Hữu Hoằng" [ref=e645]:
+                        - link "Nguyễn Hữu Hoằng" [ref=e647] [cursor=pointer]:
+                          - /url: /patient-record-detail/65498201#patientCareHistory
+                      - cell "0985934868" [ref=e648]:
+                        - generic [ref=e650]: "0985934868"
+                      - cell "11/02/2026, 18:45" [ref=e651]:
+                        - generic [ref=e652]: 11/02/2026, 18:45
+                      - cell "BS Nguyễn Thành Trung" [ref=e653]
+                      - cell "Không đến" [ref=e654]:
+                        - generic [ref=e655]: Không đến
+                      - cell "Hoàn thành" [ref=e656]:
+                        - generic [ref=e657]: Hoàn thành
+                      - cell "Zalo SMS" [ref=e658]:
+                        - generic [ref=e659]: Zalo SMS
+                      - cell "11/02/2026, 17:45" [ref=e660]:
+                        - generic [ref=e661]: 11/02/2026, 17:45
+                      - cell "Chăm sóc tự động" [ref=e662]:
+                        - generic [ref=e663]: Chăm sóc tự động
+                    - row "329320992 abc 10/02/2026, 19:15 BS Nguyễn Thành Trung Không đến Chưa chăm sóc" [ref=e664]:
+                      - cell "329320992" [ref=e665]:
+                        - generic [ref=e666]: "329320992"
+                      - cell "abc" [ref=e667]:
+                        - link "abc" [ref=e669] [cursor=pointer]:
+                          - /url: /patient-record-detail/92419025#patientCareHistory
+                      - cell [ref=e670]
+                      - cell "10/02/2026, 19:15" [ref=e671]:
+                        - generic [ref=e672]: 10/02/2026, 19:15
+                      - cell "BS Nguyễn Thành Trung" [ref=e673]
+                      - cell "Không đến" [ref=e674]:
+                        - generic [ref=e675]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e676]:
+                        - generic [ref=e677]: Chưa chăm sóc
+                      - cell [ref=e678]
+                      - cell [ref=e679]
+                      - cell [ref=e680]
+                    - row "25 Nguyễn Thị Chinh 0917323221 10/02/2026, 18:15 BS Nguyễn Thành Trung Không đến Chưa chăm sóc" [ref=e681]:
+                      - cell "25" [ref=e682]:
+                        - generic [ref=e683]: "25"
+                      - cell "Nguyễn Thị Chinh" [ref=e684]:
+                        - link "Nguyễn Thị Chinh" [ref=e686] [cursor=pointer]:
+                          - /url: /patient-record-detail/7767466#patientCareHistory
+                      - cell "0917323221" [ref=e687]:
+                        - generic [ref=e689]: "0917323221"
+                      - cell "10/02/2026, 18:15" [ref=e690]:
+                        - generic [ref=e691]: 10/02/2026, 18:15
+                      - cell "BS Nguyễn Thành Trung" [ref=e692]
+                      - cell "Không đến" [ref=e693]:
+                        - generic [ref=e694]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e695]:
+                        - generic [ref=e696]: Chưa chăm sóc
+                      - cell [ref=e697]
+                      - cell [ref=e698]
+                      - cell [ref=e699]
+                    - row "25 Nguyễn Thị Chinh 0917323221 10/02/2026, 18:15 MAI HOÀNG YẾN Không đến Chưa chăm sóc" [ref=e700]:
+                      - cell "25" [ref=e701]:
+                        - generic [ref=e702]: "25"
+                      - cell "Nguyễn Thị Chinh" [ref=e703]:
+                        - link "Nguyễn Thị Chinh" [ref=e705] [cursor=pointer]:
+                          - /url: /patient-record-detail/7767466#patientCareHistory
+                      - cell "0917323221" [ref=e706]:
+                        - generic [ref=e708]: "0917323221"
+                      - cell "10/02/2026, 18:15" [ref=e709]:
+                        - generic [ref=e710]: 10/02/2026, 18:15
+                      - cell "MAI HOÀNG YẾN" [ref=e711]
+                      - cell "Không đến" [ref=e712]:
+                        - generic [ref=e713]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e714]:
+                        - generic [ref=e715]: Chưa chăm sóc
+                      - cell [ref=e716]
+                      - cell [ref=e717]
+                      - cell [ref=e718]
+                    - row "25 Nguyễn Thị Chinh 0917323221 09/02/2026, 13:15 Phạm Văn Nam Đã đến Chưa chăm sóc" [ref=e719]:
+                      - cell "25" [ref=e720]:
+                        - generic [ref=e721]: "25"
+                      - cell "Nguyễn Thị Chinh" [ref=e722]:
+                        - link "Nguyễn Thị Chinh" [ref=e724] [cursor=pointer]:
+                          - /url: /patient-record-detail/7767466#patientCareHistory
+                      - cell "0917323221" [ref=e725]:
+                        - generic [ref=e727]: "0917323221"
+                      - cell "09/02/2026, 13:15" [ref=e728]:
+                        - generic [ref=e729]: 09/02/2026, 13:15
+                      - cell "Phạm Văn Nam" [ref=e730]
+                      - cell "Đã đến" [ref=e731]:
+                        - generic [ref=e732]: Đã đến
+                      - cell "Chưa chăm sóc" [ref=e733]:
+                        - generic [ref=e734]: Chưa chăm sóc
+                      - cell [ref=e735]
+                      - cell [ref=e736]
+                      - cell [ref=e737]
+                    - row "329320972 hoang van trung 0986457890 04/02/2026, 11:00 BS Nguyễn Thành Trung Không đến Chưa chăm sóc" [ref=e738]:
+                      - cell "329320972" [ref=e739]:
+                        - generic [ref=e740]: "329320972"
+                      - cell "hoang van trung" [ref=e741]:
+                        - link "hoang van trung" [ref=e743] [cursor=pointer]:
+                          - /url: /patient-record-detail/83970197#patientCareHistory
+                      - cell "0986457890" [ref=e744]:
+                        - generic [ref=e746]: "0986457890"
+                      - cell "04/02/2026, 11:00" [ref=e747]:
+                        - generic [ref=e748]: 04/02/2026, 11:00
+                      - cell "BS Nguyễn Thành Trung" [ref=e749]
+                      - cell "Không đến" [ref=e750]:
+                        - generic [ref=e751]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e752]:
+                        - generic [ref=e753]: Chưa chăm sóc
+                      - cell [ref=e754]
+                      - cell [ref=e755]
+                      - cell [ref=e756]
+                    - row "25 Nguyễn Thị Chinh 0917323221 04/02/2026, 11:00 Phạm Văn Nam Đã hẹn lại Chưa chăm sóc" [ref=e757]:
+                      - cell "25" [ref=e758]:
+                        - generic [ref=e759]: "25"
+                      - cell "Nguyễn Thị Chinh" [ref=e760]:
+                        - link "Nguyễn Thị Chinh" [ref=e762] [cursor=pointer]:
+                          - /url: /patient-record-detail/7767466#patientCareHistory
+                      - cell "0917323221" [ref=e763]:
+                        - generic [ref=e765]: "0917323221"
+                      - cell "04/02/2026, 11:00" [ref=e766]:
+                        - generic [ref=e767]: 04/02/2026, 11:00
+                      - cell "Phạm Văn Nam" [ref=e768]
+                      - cell "Đã hẹn lại" [ref=e769]:
+                        - generic [ref=e770]: Đã hẹn lại
+                      - cell "Chưa chăm sóc" [ref=e771]:
+                        - generic [ref=e772]: Chưa chăm sóc
+                      - cell [ref=e773]
+                      - cell [ref=e774]
+                      - cell [ref=e775]
+                    - row "329320948 Nguyễn Ngọc Nguyên 03982765273 04/02/2026, 11:00 BS Nguyễn Thành Trung Không đến Chưa chăm sóc" [ref=e776]:
+                      - cell "329320948" [ref=e777]:
+                        - generic [ref=e778]: "329320948"
+                      - cell "Nguyễn Ngọc Nguyên" [ref=e779]:
+                        - link "Nguyễn Ngọc Nguyên" [ref=e781] [cursor=pointer]:
+                          - /url: /patient-record-detail/68292961#patientCareHistory
+                      - cell "03982765273" [ref=e782]:
+                        - generic [ref=e784]: "03982765273"
+                      - cell "04/02/2026, 11:00" [ref=e785]:
+                        - generic [ref=e786]: 04/02/2026, 11:00
+                      - cell "BS Nguyễn Thành Trung" [ref=e787]
+                      - cell "Không đến" [ref=e788]:
+                        - generic [ref=e789]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e790]:
+                        - generic [ref=e791]: Chưa chăm sóc
+                      - cell [ref=e792]
+                      - cell [ref=e793]
+                      - cell [ref=e794]
+                    - row "329320932 Nguyễn Hữu Hoằng 0985934868 04/02/2026, 11:00 MAI HƯƠNG GIANG Đã hẹn lại Chưa chăm sóc" [ref=e795]:
+                      - cell "329320932" [ref=e796]:
+                        - generic [ref=e797]: "329320932"
+                      - cell "Nguyễn Hữu Hoằng" [ref=e798]:
+                        - link "Nguyễn Hữu Hoằng" [ref=e800] [cursor=pointer]:
+                          - /url: /patient-record-detail/65498201#patientCareHistory
+                      - cell "0985934868" [ref=e801]:
+                        - generic [ref=e803]: "0985934868"
+                      - cell "04/02/2026, 11:00" [ref=e804]:
+                        - generic [ref=e805]: 04/02/2026, 11:00
+                      - cell "MAI HƯƠNG GIANG" [ref=e806]
+                      - cell "Đã hẹn lại" [ref=e807]:
+                        - generic [ref=e808]: Đã hẹn lại
+                      - cell "Chưa chăm sóc" [ref=e809]:
+                        - generic [ref=e810]: Chưa chăm sóc
+                      - cell [ref=e811]
+                      - cell [ref=e812]
+                      - cell [ref=e813]
+                    - row "329320976 Nguyễn Văn Việt 0985934868 04/02/2026, 11:00 Phạm Văn Nam Đã hẹn lại Chưa chăm sóc" [ref=e814]:
+                      - cell "329320976" [ref=e815]:
+                        - generic [ref=e816]: "329320976"
+                      - cell "Nguyễn Văn Việt" [ref=e817]:
+                        - link "Nguyễn Văn Việt" [ref=e819] [cursor=pointer]:
+                          - /url: /patient-record-detail/86217595#patientCareHistory
+                      - cell "0985934868" [ref=e820]:
+                        - generic [ref=e822]: "0985934868"
+                      - cell "04/02/2026, 11:00" [ref=e823]:
+                        - generic [ref=e824]: 04/02/2026, 11:00
+                      - cell "Phạm Văn Nam" [ref=e825]
+                      - cell "Đã hẹn lại" [ref=e826]:
+                        - generic [ref=e827]: Đã hẹn lại
+                      - cell "Chưa chăm sóc" [ref=e828]:
+                        - generic [ref=e829]: Chưa chăm sóc
+                      - cell [ref=e830]
+                      - cell [ref=e831]
+                      - cell [ref=e832]
+                    - row "20070661 DƯƠNG THỊ HIÊN 0352990478 04/02/2026, 11:00 MAI HƯƠNG GIANG Không đến Chưa chăm sóc" [ref=e833]:
+                      - cell "20070661" [ref=e834]:
+                        - generic [ref=e835]: "20070661"
+                      - cell "DƯƠNG THỊ HIÊN" [ref=e836]:
+                        - link "DƯƠNG THỊ HIÊN" [ref=e838] [cursor=pointer]:
+                          - /url: /patient-record-detail/60932145#patientCareHistory
+                      - cell "0352990478" [ref=e839]:
+                        - generic [ref=e841]: "0352990478"
+                      - cell "04/02/2026, 11:00" [ref=e842]:
+                        - generic [ref=e843]: 04/02/2026, 11:00
+                      - cell "MAI HƯƠNG GIANG" [ref=e844]
+                      - cell "Không đến" [ref=e845]:
+                        - generic [ref=e846]: Không đến
+                      - cell "Chưa chăm sóc" [ref=e847]:
+                        - generic [ref=e848]: Chưa chăm sóc
+                      - cell [ref=e849]
+                      - cell [ref=e850]
+                      - cell [ref=e851]
+                - table [ref=e855]:
+                  - rowgroup [ref=e858]:
+                    - row "Thao tác" [ref=e859]:
+                      - columnheader "Thao tác" [ref=e860]:
+                        - generic [ref=e864]: Thao tác
+                  - rowgroup [ref=e865]:
+                    - row [ref=e866]:
+                      - cell [ref=e867]:
+                        - generic [ref=e868]:
+                          - img [ref=e870] [cursor=pointer]
+                          - img [ref=e873] [cursor=pointer]
+                    - row [ref=e877]:
+                      - cell [ref=e878]:
+                        - generic [ref=e879]:
+                          - img [ref=e881] [cursor=pointer]
+                          - img [ref=e884] [cursor=pointer]
+                    - row [ref=e888]:
+                      - cell [ref=e889]:
+                        - generic [ref=e890]:
+                          - img [ref=e892] [cursor=pointer]
+                          - img [ref=e895] [cursor=pointer]
+                    - row [ref=e899]:
+                      - cell [ref=e900]:
+                        - generic [ref=e901]:
+                          - img [ref=e903] [cursor=pointer]
+                          - img [ref=e906] [cursor=pointer]
+                    - row [ref=e910]:
+                      - cell [ref=e911]:
+                        - generic [ref=e912]:
+                          - img [ref=e914] [cursor=pointer]
+                          - img [ref=e917] [cursor=pointer]
+                    - row [ref=e921]:
+                      - cell [ref=e922]:
+                        - generic [ref=e923]:
+                          - img [ref=e925] [cursor=pointer]
+                          - img [ref=e928] [cursor=pointer]
+                    - row [ref=e932]:
+                      - cell [ref=e933]:
+                        - generic [ref=e934]:
+                          - img [ref=e936] [cursor=pointer]
+                          - img [ref=e939] [cursor=pointer]
+                    - row [ref=e943]:
+                      - cell [ref=e944]:
+                        - generic [ref=e945]:
+                          - img [ref=e947] [cursor=pointer]
+                          - img [ref=e950] [cursor=pointer]
+                    - row [ref=e954]:
+                      - cell [ref=e955]:
+                        - generic [ref=e956]:
+                          - img [ref=e958] [cursor=pointer]
+                          - img [ref=e961] [cursor=pointer]
+                    - row [ref=e965]:
+                      - cell [ref=e966]:
+                        - generic [ref=e967]:
+                          - img [ref=e969] [cursor=pointer]
+                          - img [ref=e972] [cursor=pointer]
+                    - row [ref=e976]:
+                      - cell [ref=e977]:
+                        - generic [ref=e978]:
+                          - img [ref=e980] [cursor=pointer]
+                          - img [ref=e983] [cursor=pointer]
+                    - row [ref=e987]:
+                      - cell [ref=e988]:
+                        - generic [ref=e989]:
+                          - img [ref=e991] [cursor=pointer]
+                          - img [ref=e994] [cursor=pointer]
+                    - row [ref=e998]:
+                      - cell [ref=e999]:
+                        - generic [ref=e1000]:
+                          - img [ref=e1002] [cursor=pointer]
+                          - img [ref=e1005] [cursor=pointer]
+                    - row [ref=e1009]:
+                      - cell [ref=e1010]:
+                        - generic [ref=e1011]:
+                          - img [ref=e1013] [cursor=pointer]
+                          - img [ref=e1016] [cursor=pointer]
+              - list [ref=e1020]:
+                - listitem [ref=e1021]: 1-14 trên 14 bản ghi
+                - listitem "Previous Page" [ref=e1022]:
+                  - 'generic "icon: left" [ref=e1024]':
+                    - img [ref=e1025]
+                - listitem "1" [ref=e1027] [cursor=pointer]:
+                  - generic [ref=e1028]: "1"
+                - listitem "Next Page" [ref=e1029]:
+                  - 'generic "icon: right" [ref=e1031]':
+                    - img [ref=e1032]
+                - listitem [ref=e1034]:
+                  - combobox [ref=e1036] [cursor=pointer]:
+                    - generic "15 / page" [ref=e1038]
+                    - 'generic "icon: down" [ref=e1040]':
+                      - img [ref=e1041]

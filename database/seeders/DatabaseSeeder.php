@@ -3,26 +3,23 @@
 namespace Database\Seeders;
 
 use App\Models\Appointment;
-use App\Models\Billing;
 use App\Models\Branch;
 use App\Models\BranchLog;
 use App\Models\Customer;
-use App\Models\Invoice;
+use App\Models\CustomerGroup;
 use App\Models\Material;
-use App\Models\Patient;
-use App\Models\User;
-use Illuminate\Support\Str;
 use App\Models\Note;
-use App\Models\Payment;
+use App\Models\Patient;
 use App\Models\PlanItem;
-use App\Models\TreatmentMaterial;
+use App\Models\PromotionGroup;
+use App\Models\Service;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
-use App\Models\Service;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -35,31 +32,35 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
-            ToothConditionSeeder::class,
+            SystemSettingsSeeder::class,
         ]);
 
         // Branches
         $branches = Branch::factory()->count(2)->create();
 
         // Super Admin
-        $admin = User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'branch_id' => $branches->first()->id,
-        ]);
-        $admin->assignRole('Admin');
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('password'),
+                'branch_id' => $branches->first()->id,
+            ],
+        );
+        $admin->syncRoles(['Admin']);
 
         // Manager, Doctor, CSKH
         $roles = ['Manager', 'Doctor', 'CSKH'];
         foreach ($roles as $i => $roleName) {
-            $user = User::factory()->create([
-                'name' => $roleName . ' User',
-                'email' => strtolower($roleName) . '@example.com',
-                'password' => Hash::make('password'),
-                'branch_id' => $branches[$i % $branches->count()]->id,
-            ]);
-            $user->assignRole($roleName);
+            $user = User::updateOrCreate(
+                ['email' => strtolower($roleName) . '@example.com'],
+                [
+                    'name' => $roleName . ' User',
+                    'password' => Hash::make('password'),
+                    'branch_id' => $branches[$i % $branches->count()]->id,
+                ],
+            );
+            $user->syncRoles([$roleName]);
         }
 
         // Domain seeds (VI): Vật tư cơ bản theo chi nhánh
@@ -88,10 +89,6 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Leads & Patients
-        Customer::factory()->count(20)->create();
-        Patient::factory()->count(10)->create();
-
         // Create additional doctors as Users with Doctor role if needed
         if (\App\Models\User::role('Doctor')->count() < 3) {
             for ($i = 0; $i < 3; $i++) {
@@ -102,49 +99,147 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        $doctorIds = User::role('Doctor')->pluck('id');
+        $ownerStaffIds = User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['CSKH', 'Manager']))
+            ->pluck('id');
+        $customerGroupIds = CustomerGroup::query()
+            ->where('is_active', true)
+            ->pluck('id');
+        $promotionGroupIds = PromotionGroup::query()
+            ->where('is_active', true)
+            ->pluck('id');
+
+        // Leads
+        $customers = Customer::factory()->count(24)->create();
+        $customers->each(function (Customer $customer) use ($customerGroupIds, $promotionGroupIds, $ownerStaffIds, $admin): void {
+            $customerGroupId = $customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null;
+            $promotionGroupId = $promotionGroupIds->isNotEmpty() && fake()->boolean(45)
+                ? $promotionGroupIds->random()
+                : null;
+
+            $customer->update([
+                'birthday' => fake()->optional(0.75)->dateTimeBetween('-60 years', '-18 years')?->format('Y-m-d'),
+                'gender' => fake()->randomElement(['male', 'female', 'other']),
+                'address' => fake()->address(),
+                'customer_group_id' => $customerGroupId,
+                'promotion_group_id' => $promotionGroupId,
+                'assigned_to' => $ownerStaffIds->isNotEmpty() ? $ownerStaffIds->random() : null,
+                'next_follow_up_at' => fake()->optional(0.6)->dateTimeBetween('now', '+21 days')?->format('Y-m-d'),
+                'status' => fake()->randomElement(['lead', 'contacted', 'confirmed']),
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ]);
+        });
+
+        // Patients
+        $patients = Patient::factory()->count(14)->create();
+        $occupations = [
+            'Nhân viên văn phòng',
+            'Kinh doanh tự do',
+            'Giáo viên',
+            'Kỹ sư',
+            'Sinh viên',
+            'Nội trợ',
+            'Bác sĩ',
+            'Tài xế',
+        ];
+        $firstVisitReasons = [
+            'Đau răng kéo dài',
+            'Tư vấn trồng Implant',
+            'Niềng răng thẩm mỹ',
+            'Khám tổng quát định kỳ',
+            'Tẩy trắng răng',
+            'Nhổ răng khôn',
+        ];
+
+        $patients->each(function (Patient $patient) use ($customerGroupIds, $promotionGroupIds, $doctorIds, $ownerStaffIds, $firstVisitReasons, $occupations, $admin): void {
+            $linkedCustomer = $patient->customer;
+
+            $customerGroupId = $linkedCustomer?->customer_group_id
+                ?: ($customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null);
+            $promotionGroupId = $linkedCustomer?->promotion_group_id
+                ?: ($promotionGroupIds->isNotEmpty() && fake()->boolean(40) ? $promotionGroupIds->random() : null);
+
+            $patient->update([
+                'birthday' => $patient->birthday ?? fake()->dateTimeBetween('-70 years', '-6 years')?->format('Y-m-d'),
+                'cccd' => fake()->numerify('############'),
+                'phone_secondary' => fake()->optional(0.45)->numerify('09########'),
+                'occupation' => fake()->randomElement($occupations),
+                'customer_group_id' => $customerGroupId,
+                'promotion_group_id' => $promotionGroupId,
+                'primary_doctor_id' => $doctorIds->isNotEmpty() ? $doctorIds->random() : null,
+                'owner_staff_id' => $ownerStaffIds->isNotEmpty() ? $ownerStaffIds->random() : null,
+                'first_visit_reason' => fake()->randomElement($firstVisitReasons),
+                'note' => fake()->optional(0.7)->sentence(),
+                'status' => fake()->randomElement(['active', 'active', 'active', 'inactive']),
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ]);
+
+            if ($linkedCustomer) {
+                $linkedCustomer->update([
+                    'status' => 'converted',
+                    'customer_group_id' => $customerGroupId,
+                    'promotion_group_id' => $promotionGroupId,
+                    'assigned_to' => $patient->owner_staff_id,
+                    'updated_by' => $admin->id,
+                ]);
+            }
+        });
+
         // Appointments
         Appointment::factory()->count(15)->create();
 
-        // Services (VI)
-        $services = collect([
-            ['name' => 'Nhổ răng khôn', 'code' => 'NHO-RANG-KHON', 'unit' => 'lần', 'default_price' => 800000],
-            ['name' => 'Trám răng', 'code' => 'TRAM-RANG', 'unit' => 'răng', 'default_price' => 500000],
-            ['name' => 'Điều trị tủy', 'code' => 'DIEU-TRI-TUY', 'unit' => 'răng', 'default_price' => 1200000],
-        ]);
-        foreach ($services as $svc) {
-            Service::updateOrCreate(['code' => $svc['code']], $svc);
+        $availableServices = Service::query()
+            ->where('active', true)
+            ->get(['id', 'name', 'default_price']);
+
+        if ($availableServices->isEmpty()) {
+            $fallbackServices = [
+                ['name' => 'Nhổ răng khôn', 'code' => 'NHO-RANG-KHON', 'unit' => 'lần', 'default_price' => 1500000],
+                ['name' => 'Trám răng', 'code' => 'TRAM-RANG', 'unit' => 'răng', 'default_price' => 500000],
+                ['name' => 'Điều trị tủy', 'code' => 'DIEU-TRI-TUY', 'unit' => 'răng', 'default_price' => 1200000],
+            ];
+
+            foreach ($fallbackServices as $service) {
+                Service::updateOrCreate(
+                    ['code' => $service['code']],
+                    $service + ['active' => true],
+                );
+            }
+
+            $availableServices = Service::query()
+                ->where('active', true)
+                ->get(['id', 'name', 'default_price']);
         }
 
-        // Treatment Plans (VI): Kế hoạch + hạng mục + buổi điều trị với vật tư dự kiến
-        $patients = Patient::take(5)->get();
-        foreach ($patients as $p) {
+        // Treatment Plans (VI): Kế hoạch + hạng mục + buổi điều trị với dữ liệu gần thực tế
+        $patientsForPlans = Patient::query()->inRandomOrder()->take(6)->get();
+        foreach ($patientsForPlans as $patient) {
             $plan = TreatmentPlan::factory()->create([
-                'patient_id' => $p->id,
+                'patient_id' => $patient->id,
                 'doctor_id' => User::role('Doctor')->inRandomOrder()->value('id'),
-                'branch_id' => $p->branch_id ?? $branches->first()->id,
+                'branch_id' => $patient->first_branch_id ?? $branches->first()->id,
                 'status' => 'draft',
                 'total_estimated_cost' => 0,
             ]);
 
-            $planServices = [
-                ['code' => 'NHO-RANG-KHON', 'supplies' => [['Composite' => 1], ['Thuốc tê' => 2], ['Kim tiêm' => 2]]],
-                ['code' => 'TRAM-RANG', 'supplies' => [['Composite' => 2], ['Bông gạc' => 1]]],
-                ['code' => 'DIEU-TRI-TUY', 'supplies' => [['Thuốc tê' => 1], ['Kim tiêm' => 1]]],
-            ];
+            $itemCount = min($availableServices->count(), random_int(2, 4));
+            $selectedServices = $availableServices->shuffle()->take(max($itemCount, 1));
 
-            $estimatedTotal = 0;
-            foreach (array_rand($planServices, 2) as $idx) {
-                $svcMeta = $planServices[$idx];
-                $svc = Service::where('code', $svcMeta['code'])->first();
+            $estimatedTotal = 0.0;
+            foreach ($selectedServices as $service) {
                 $item = PlanItem::create([
                     'treatment_plan_id' => $plan->id,
-                    'name' => $svc->name,
-                    'service_id' => $svc->id,
+                    'name' => $service->name,
+                    'service_id' => $service->id,
                     'quantity' => 1,
-                    'price' => $svc->default_price,
-                    'estimated_supplies' => $svcMeta['supplies'],
+                    'price' => $service->default_price,
+                    'estimated_supplies' => [],
                 ]);
-                $estimatedTotal += $svc->default_price;
+
+                $estimatedTotal += (float) $item->price;
 
                 // One scheduled session per item (no inventory yet)
                 TreatmentSession::factory()->create([

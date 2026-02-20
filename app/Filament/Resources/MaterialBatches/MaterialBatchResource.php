@@ -32,7 +32,7 @@ class MaterialBatchResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return '5️⃣ Quản lý kho';
+        return 'Quản lý kho';
     }
 
     public static function form(Schema $schema): Schema

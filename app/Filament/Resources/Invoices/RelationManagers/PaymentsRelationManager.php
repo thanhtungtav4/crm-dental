@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\RelationManagers;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -46,16 +47,22 @@ class PaymentsRelationManager extends RelationManager
                             ->minValue(0)
                             ->default(fn () => $this->getOwnerRecord()->calculateBalance())
                             ->helperText(fn () => 'Còn lại: ' . number_format($this->getOwnerRecord()->calculateBalance(), 0, ',', '.') . 'đ'),
+
+                        Select::make('direction')
+                            ->label('Loại phiếu')
+                            ->required()
+                            ->options([
+                                'receipt' => 'Phiếu thu',
+                                'refund' => 'Phiếu hoàn',
+                            ])
+                            ->default('receipt')
+                            ->native(false)
+                            ->reactive(),
                         
                         Select::make('method')
                             ->label('Phương thức')
                             ->required()
-                            ->options([
-                                'cash' => '💵 Tiền mặt',
-                                'card' => '💳 Thẻ tín dụng/ghi nợ',
-                                'transfer' => '🏦 Chuyển khoản',
-                                'other' => '📝 Khác',
-                            ])
+                            ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true))
                             ->default('cash')
                             ->native(false)
                             ->reactive()
@@ -76,8 +83,14 @@ class PaymentsRelationManager extends RelationManager
                         TextInput::make('transaction_ref')
                             ->label('Mã giao dịch')
                             ->maxLength(255)
-                            ->visible(fn ($get) => in_array($get('method'), ['card', 'transfer']))
+                            ->visible(fn ($get) => in_array($get('method'), ['card', 'transfer', 'vnpay']))
                             ->helperText('Mã tham chiếu từ ngân hàng hoặc cổng thanh toán'),
+
+                        Textarea::make('refund_reason')
+                            ->label('Lý do hoàn')
+                            ->rows(2)
+                            ->visible(fn ($get) => $get('direction') === 'refund')
+                            ->required(fn ($get) => $get('direction') === 'refund'),
                         
                         Select::make('payment_source')
                             ->label('Nguồn thanh toán')
@@ -128,8 +141,13 @@ class PaymentsRelationManager extends RelationManager
                     ->label('Số tiền')
                     ->money('VND')
                     ->weight('bold')
-                    ->color(fn ($record) => $record->getMethodBadgeColor())
+                    ->color(fn ($record) => $record->direction === 'refund' ? 'danger' : $record->getMethodBadgeColor())
                     ->sortable(),
+
+                BadgeColumn::make('direction')
+                    ->label('Loại phiếu')
+                    ->formatStateUsing(fn ($record) => $record->getDirectionLabel())
+                    ->color(fn ($record) => $record->direction === 'refund' ? 'danger' : 'success'),
                 
                 BadgeColumn::make('method')
                     ->label('Phương thức')
@@ -163,17 +181,18 @@ class PaymentsRelationManager extends RelationManager
                     ->limit(30)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('refund_reason')
+                    ->label('Lý do hoàn')
+                    ->limit(30)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('method')
                     ->label('Phương thức')
                     ->multiple()
-                    ->options([
-                        'cash' => '💵 Tiền mặt',
-                        'card' => '💳 Thẻ',
-                        'transfer' => '🏦 Chuyển khoản',
-                        'other' => '📝 Khác',
-                    ]),
+                    ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)),
                 
                 SelectFilter::make('payment_source')
                     ->label('Nguồn')
@@ -182,6 +201,14 @@ class PaymentsRelationManager extends RelationManager
                         'patient' => '👤 Bệnh nhân',
                         'insurance' => '🏥 Bảo hiểm',
                         'other' => '📄 Khác',
+                    ]),
+
+                SelectFilter::make('direction')
+                    ->label('Loại phiếu')
+                    ->multiple()
+                    ->options([
+                        'receipt' => 'Phiếu thu',
+                        'refund' => 'Phiếu hoàn',
                     ]),
             ])
             ->headerActions([
@@ -195,6 +222,12 @@ class PaymentsRelationManager extends RelationManager
             ->recordActions([
                 ViewAction::make()
                     ->label('Xem'),
+                \Filament\Actions\Action::make('print')
+                    ->label('In')
+                    ->icon(Heroicon::OutlinedPrinter)
+                    ->color('gray')
+                    ->url(fn ($record) => route('payments.print', $record))
+                    ->openUrlInNewTab(),
                 DeleteAction::make()
                     ->label('Xóa')
                     ->after(function () {

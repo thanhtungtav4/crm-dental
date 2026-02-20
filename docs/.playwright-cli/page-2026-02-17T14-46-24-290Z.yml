@@ -1,0 +1,527 @@
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - img [ref=e13] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e22]
+          - link [ref=e25] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e27]
+          - button [ref=e33] [cursor=pointer]:
+            - link [ref=e34]:
+              - /url: /customer-care
+              - img [ref=e36]
+          - button [ref=e44] [cursor=pointer]:
+            - link [ref=e45]:
+              - /url: /calendar
+              - img [ref=e47]
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e52]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e57]
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e66]
+          - button [ref=e72] [cursor=pointer]:
+            - img [ref=e75]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e85]
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e97]
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - paragraph [ref=e104]: "17"
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e167]: Nguyễn Văn An
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - heading "Báo cáo mới" [level=3] [ref=e112]
+              - img [ref=e114] [cursor=pointer]
+            - switch [checked] [ref=e117] [cursor=pointer]
+          - img [ref=e122] [cursor=pointer]
+      - generic [ref=e136]:
+        - tablist [ref=e137]:
+          - button "In" [ref=e142] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e143]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e147]:
+              - tab "Thông tin cơ bản" [ref=e148] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e149] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e150] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e151] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [ref=e152] [cursor=pointer]
+              - tab "Lịch hẹn" [ref=e153] [cursor=pointer]
+              - tab "Thanh toán" [ref=e154] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e155] [cursor=pointer]
+              - tab "Chăm sóc" [selected] [ref=e156] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e157] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Danh sách lịch hẹn
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: ~
+                              - generic:
+                                - img
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic: Thêm lịch hẹn
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - table:
+                                  - rowgroup:
+                                    - row:
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Ngày
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Khung giờ
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Bác sĩ
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Nội dung
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Phân loại
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Loại lịch hẹn
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Ghi chú
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Lý do hẹn lại / hủy lịch
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Trạng thái
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thao tác
+                                  - rowgroup:
+                                    - row:
+                                      - cell:
+                                        - generic: 17/02/2026
+                                      - cell:
+                                        - generic: 21:45 - 22:00
+                                      - cell:
+                                        - generic: MAI HOÀNG YẾN
+                                      - cell
+                                      - cell:
+                                        - generic: Khám mới
+                                      - cell:
+                                        - generic: Đặt trước
+                                      - cell
+                                      - cell
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - text: Chưa đến
+                                            - generic:
+                                              - img
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                          - generic:
+                                            - img
+                                          - generic:
+                                            - img
+                        - list:
+                          - listitem: 1-1 trên 1 bản ghi
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic: "1"
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+          - tabpanel [ref=e789]:
+            - generic [ref=e791]:
+              - generic [ref=e793]:
+                - heading "Lịch chăm sóc" [level=3] [ref=e795]
+                - generic [ref=e797]:
+                  - generic [ref=e801] [cursor=pointer]:
+                    - textbox "Ngày bắt đầu" [ref=e802]
+                    - generic: ~
+                    - textbox "Ngày kết thúc" [ref=e803]
+                    - img [ref=e805]
+                  - button "Thêm chăm sóc" [ref=e808] [cursor=pointer]:
+                    - generic: Thêm chăm sóc
+                  - button "Đặt lịch chăm sóc" [ref=e810] [cursor=pointer]:
+                    - generic: Đặt lịch chăm sóc
+              - generic [ref=e815]:
+                - table [ref=e820]:
+                  - rowgroup [ref=e829]:
+                    - row "Thời gian chăm sóc Loại chăm sóc Kênh chăm sóc Nhân viên chăm sóc Nội dung Trạng thái chăm sóc Thao tác" [ref=e830]:
+                      - columnheader "Thời gian chăm sóc" [ref=e831]:
+                        - generic [ref=e835]: Thời gian chăm sóc
+                      - columnheader "Loại chăm sóc" [ref=e836]:
+                        - generic [ref=e840]: Loại chăm sóc
+                      - columnheader "Kênh chăm sóc" [ref=e841]:
+                        - generic [ref=e845]: Kênh chăm sóc
+                      - columnheader "Nhân viên chăm sóc" [ref=e846]:
+                        - generic [ref=e850]: Nhân viên chăm sóc
+                      - columnheader "Nội dung" [ref=e851]:
+                        - generic [ref=e855]: Nội dung
+                      - columnheader "Trạng thái chăm sóc" [ref=e856]:
+                        - generic [ref=e860]: Trạng thái chăm sóc
+                      - columnheader "Thao tác" [ref=e861]:
+                        - generic [ref=e865]: Thao tác
+                  - rowgroup [ref=e1007]:
+                    - row "17/02/2026, 21:44 Khác Tin nhắn MAI HOÀNG YẾN Chăm sóc sau điều trị - gọi điện xác nhận tình trạng Hoàn thành" [ref=e1008]:
+                      - cell "17/02/2026, 21:44" [ref=e1009]:
+                        - generic [ref=e1010]: 17/02/2026, 21:44
+                      - cell "Khác" [ref=e1011]:
+                        - generic [ref=e1012]: Khác
+                      - cell "Tin nhắn" [ref=e1013]:
+                        - generic [ref=e1014]: Tin nhắn
+                      - cell "MAI HOÀNG YẾN" [ref=e1015]:
+                        - generic [ref=e1016]: MAI HOÀNG YẾN
+                      - cell "Chăm sóc sau điều trị - gọi điện xác nhận tình trạng" [ref=e1017]:
+                        - generic [ref=e1018]: Chăm sóc sau điều trị - gọi điện xác nhận tình trạng
+                      - cell "Hoàn thành" [ref=e1019]:
+                        - generic [ref=e1020]: Hoàn thành
+                      - cell [ref=e1021]:
+                        - generic [ref=e1022]:
+                          - img [ref=e1024]
+                          - img [ref=e1027]
+                - list [ref=e1029]:
+                  - listitem [ref=e1030]: 1-1 trên 1 bản ghi
+                  - listitem "Previous Page" [ref=e1031]:
+                    - 'generic "icon: left" [ref=e1033]':
+                      - img [ref=e1034]
+                  - listitem "1" [ref=e1036] [cursor=pointer]:
+                    - generic [ref=e1037]: "1"
+                  - listitem "Next Page" [ref=e1038]:
+                    - 'generic "icon: right" [ref=e1040]':
+                      - img [ref=e1041]
+  - dialog [ref=e1049]:
+    - document:
+      - generic [ref=e1051]:
+        - generic [ref=e1052]:
+          - heading "Đặt lịch chăm sóc" [level=2] [ref=e1054]
+          - img [ref=e1056] [cursor=pointer]
+        - generic [ref=e1061]:
+          - generic [ref=e1062]:
+            - generic [ref=e1063]:
+              - generic [ref=e1066]:
+                - generic [ref=e1067]: Thời gian *
+                - generic [ref=e1072] [cursor=pointer]:
+                  - textbox "dd-mm-yyyy" [ref=e1073]: 17-02-2026
+                  - 'generic "icon: close-circle"':
+                    - img
+                  - img [ref=e1075]
+              - generic [ref=e1083]:
+                - textbox "Chọn thời gian" [ref=e1084]: 21:46
+                - 'generic "icon: clock-circle" [ref=e1086]':
+                  - img [ref=e1087]
+                - 'generic "icon: close-circle"':
+                  - img
+            - generic [ref=e1090]:
+              - generic [ref=e1093]:
+                - generic [ref=e1094]: Loại chăm sóc *
+                - combobox [ref=e1099] [cursor=pointer]:
+                  - generic "Khác" [ref=e1101]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e1104]:
+                - generic [ref=e1105]: Nhân viên chăm sóc *
+                - combobox [expanded] [ref=e1110] [cursor=pointer]:
+                  - generic [ref=e1111]:
+                    - generic [ref=e1112]: Nhân viên chăm sóc
+                    - textbox [active] [ref=e1136]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+            - generic [ref=e1116]:
+              - generic [ref=e1117]: Nội dung chăm sóc *
+              - textbox "Nội dung chăm sóc" [ref=e1121]
+            - generic [ref=e1125] [cursor=pointer]:
+              - checkbox "Chăm sóc định kỳ" [ref=e1127]
+              - text: Chăm sóc định kỳ
+          - generic [ref=e1129]:
+            - button "Hủy bỏ" [ref=e1131] [cursor=pointer]:
+              - generic: Hủy bỏ
+            - button "Lưu thông tin" [ref=e1133] [cursor=pointer]:
+              - generic: Lưu thông tin
+  - listbox [ref=e1139]:
+    - option "VAN SUU" [ref=e1140] [cursor=pointer]
+    - option "ĐÀO TUYẾN" [ref=e1141] [cursor=pointer]
+    - option "Phương Lan" [ref=e1142] [cursor=pointer]
+    - option "Phạm Văn Nam" [ref=e1143] [cursor=pointer]
+    - option "BS Nguyễn Thành Trung" [ref=e1144] [cursor=pointer]
+    - option "Bác sĩ Vũ Việt Đức" [ref=e1145] [cursor=pointer]
+    - option "Dương Thắng" [ref=e1146] [cursor=pointer]
+    - option "BS Lý Đức Duy" [ref=e1147] [cursor=pointer]
+    - option "BS Phan Hoàng Hải" [ref=e1148] [cursor=pointer]
+    - option "BS Nguyễn Hồng Ân" [ref=e1149] [cursor=pointer]
+    - option "Hà Quang Hảo" [ref=e1150] [cursor=pointer]
+    - option "Đặng Thu Hương" [ref=e1151] [cursor=pointer]
+    - option "Phạm Anh Thư" [ref=e1152] [cursor=pointer]
+    - option "Hoàng Thị Thảo" [ref=e1153] [cursor=pointer]
+    - option "Hoàng Thị Huỳnh" [ref=e1154] [cursor=pointer]
+    - option "Hoàng Thị Huyền Trang" [ref=e1155] [cursor=pointer]
+    - option "Phạm Đình Doanh" [ref=e1156] [cursor=pointer]
+    - option "HÀ PHƯƠNG DUNG" [ref=e1157] [cursor=pointer]
+    - option "NGUYỄN LỆ MỸ" [ref=e1158] [cursor=pointer]
+    - option "NÔNG QUỐC ÁNH" [ref=e1159] [cursor=pointer]
+    - option "Bác sĩ" [ref=e1160] [cursor=pointer]
+    - option "ntyhf" [ref=e1161] [cursor=pointer]
+    - option "Nha khoa Osaka" [ref=e1162] [cursor=pointer]
+    - option "MAI HOÀNG YẾN" [ref=e1163] [cursor=pointer]
+    - option "G-Lux Dental" [ref=e1164] [cursor=pointer]
+    - option "Tạ Anh Cường" [ref=e1165] [cursor=pointer]
+    - option "Bác sĩ Hải Trình" [ref=e1166] [cursor=pointer]
+    - option "Nguyễn Văn Hà" [ref=e1167] [cursor=pointer]
+    - option "BS Minh Quyên" [ref=e1168] [cursor=pointer]
+    - option "BS. Nguyễn Văn Thái" [ref=e1169] [cursor=pointer]
+    - option "Nha khoa Thẩm mỹ Ánh Dương" [ref=e1170] [cursor=pointer]
+    - option "NHH" [ref=e1171] [cursor=pointer]
+    - option "Bùi Minh Thu" [ref=e1172] [cursor=pointer]
+    - option "Phòng khám Demo Standard" [ref=e1173] [cursor=pointer]
+    - option "Bác sĩ phụ" [ref=e1174] [cursor=pointer]
+    - option "Dr Hồ Đình Đức" [ref=e1175] [cursor=pointer]
+    - option "Dr. Trần Tú" [ref=e1176] [cursor=pointer]
+    - option "Lê Đỗ Tuấn Kiệt" [ref=e1177] [cursor=pointer]
+    - option "Nha khoa Dr Việt Trang" [ref=e1178] [cursor=pointer]
+    - option "Hải Minh Dental" [ref=e1179] [cursor=pointer]
+    - option "Nguyễn Lê Hải Yên" [ref=e1180] [cursor=pointer]
+    - option "Vũ Thị Hoan" [ref=e1181] [cursor=pointer]
+    - option "Khang Vũ Dental" [ref=e1182] [cursor=pointer]
+    - option "NGUYEN KIEU TRINH" [ref=e1183] [cursor=pointer]
+    - option "kỹ thuật viên" [ref=e1184] [cursor=pointer]
+    - option "Nha khoa Labhair" [ref=e1185] [cursor=pointer]
+    - option "Phương Lan" [ref=e1186] [cursor=pointer]
+    - option "MAI HƯƠNG GIANG" [ref=e1187] [cursor=pointer]
+    - option "Test 99" [ref=e1188] [cursor=pointer]
+    - option "Nguyễn Thị Thanh Thủy" [ref=e1189] [cursor=pointer]
+    - option "Tạ Thị Hồng Ly" [ref=e1190] [cursor=pointer]
+    - option "Mon Dental Clinic" [ref=e1191] [cursor=pointer]
+    - option "Nguyệt" [ref=e1192] [cursor=pointer]
+    - option "Nguyệt" [ref=e1193] [cursor=pointer]
+    - option "Nguyệt" [ref=e1194] [cursor=pointer]
+    - option "NGUYỄN TUYẾT NHUNG" [ref=e1195] [cursor=pointer]
+    - option "Nha khoa Á Âu" [ref=e1196] [cursor=pointer]
+    - option "Nha khoa Alliance" [ref=e1197] [cursor=pointer]
+    - option "Ann dentist" [ref=e1198] [cursor=pointer]
+    - option "Nha khoa My Auris" [ref=e1199] [cursor=pointer]
+    - option "Nha khoa Bác sĩ Hòa" [ref=e1200] [cursor=pointer]
+    - option "Nha khoa Cường Thảo" [ref=e1201] [cursor=pointer]
+    - option "Nha khoa Detec" [ref=e1202] [cursor=pointer]
+    - option "Nha khoa thẩm mỹ Dr. Năng" [ref=e1203] [cursor=pointer]
+    - option "Nha khoa Đức Anh" [ref=e1204] [cursor=pointer]
+    - option "Nha khoa Hạnh Phúc" [ref=e1205] [cursor=pointer]
+    - option "Anh Trung Nghĩa" [ref=e1206] [cursor=pointer]
+    - option "Nha khoa KBI" [ref=e1207] [cursor=pointer]
+    - option "Nha khoa KEN" [ref=e1208] [cursor=pointer]
+    - option "Nha khoa Kim Khôi" [ref=e1209] [cursor=pointer]
+    - option "Nha khoa thẩm mỹ Korea" [ref=e1210] [cursor=pointer]
+    - option "Nha Khoa Luxury Smile" [ref=e1211] [cursor=pointer]
+    - option "Nha khoa Meddental" [ref=e1212] [cursor=pointer]
+    - option "Nha khoa Merden" [ref=e1213] [cursor=pointer]
+    - option "Nha Khoa Minh Phương" [ref=e1214] [cursor=pointer]
+    - option "Nha Khoa Minh Tân" [ref=e1215] [cursor=pointer]
+    - option "Nha khoa Mira" [ref=e1216] [cursor=pointer]
+    - option "Dr. Đặng Ngọc Cường" [ref=e1217] [cursor=pointer]
+    - option "Nha khoa Ngọc Anh" [ref=e1218] [cursor=pointer]
+    - option "Nha Khoa Ngọc Tâm" [ref=e1219] [cursor=pointer]
+    - option "Nha Khoa Nhật Hoàng" [ref=e1220] [cursor=pointer]
+    - option "Nha khoa NH Dental" [ref=e1221] [cursor=pointer]
+    - option "Ocean Dental" [ref=e1222] [cursor=pointer]
+    - option "Nha Khoa Pacific Dental" [ref=e1223] [cursor=pointer]
+    - option "Nha khoa Phúc An" [ref=e1224] [cursor=pointer]
+    - option "Nha Khoa Phúc Đồng" [ref=e1225] [cursor=pointer]
+    - option "Nha khoa Phương Sen" [ref=e1226] [cursor=pointer]
+    - option "Nha Khoa Quang Anh" [ref=e1227] [cursor=pointer]
+    - option "Nha khoa Quốc Đạt" [ref=e1228] [cursor=pointer]
+    - option "Nha khoa Quốc Khánh" [ref=e1229] [cursor=pointer]
+    - option "Nha khoa Quỳnh Nha" [ref=e1230] [cursor=pointer]
+    - option "Nha khoa Sài Gòn - Thủ Thừa" [ref=e1231] [cursor=pointer]
+    - option "Nha Khoa San Dentis" [ref=e1232] [cursor=pointer]
+    - option "Nha khoa San Dentist" [ref=e1233] [cursor=pointer]
+    - option "Nha khoa Sdental" [ref=e1234] [cursor=pointer]
+    - option "Nha khoa Singae" [ref=e1235] [cursor=pointer]
+    - option "Nha khoa Sơn Quỳnh" [ref=e1236] [cursor=pointer]
+    - option "Nha khoa Sundentist" [ref=e1237] [cursor=pointer]
+    - option "Nha Khoa Toàn Ý" [ref=e1238] [cursor=pointer]
+    - option "Nha Khoa Thảo Nguyên" [ref=e1239] [cursor=pointer]
+    - option "Nha khoa Thiện An" [ref=e1240] [cursor=pointer]
+    - option "Nha Khoa Thiện Mỹ" [ref=e1241] [cursor=pointer]
+    - option "Nha khoa Thu Trang" [ref=e1242] [cursor=pointer]
+    - option "Nha khoa Vân Anh" [ref=e1243] [cursor=pointer]
+    - option "Nha Khoa VT" [ref=e1244] [cursor=pointer]
+    - option "Nha khoa Xuân Toán" [ref=e1245] [cursor=pointer]
+    - option "Nha Khoa Y Dental" [ref=e1246] [cursor=pointer]
+    - option "Nông Phương Lan" [ref=e1247] [cursor=pointer]
+    - option "Nha khoa Nụ Cười Xinh" [ref=e1248] [cursor=pointer]
+    - option "Pegadent" [ref=e1249] [cursor=pointer]
+    - option "Phạm Thị Ngọc Châu" [ref=e1250] [cursor=pointer]
+    - option "Hồ Thị Mỹ Ngọc" [ref=e1251] [cursor=pointer]
+    - option "Nha khoa Lê Sinh" [ref=e1252] [cursor=pointer]
+    - option "phúc" [ref=e1253] [cursor=pointer]
+    - option "Phòng khám Gia An" [ref=e1254] [cursor=pointer]
+    - option "Phòng khám Y học cổ truyền Sài Gòn" [ref=e1255] [cursor=pointer]
+    - option "Võ Thị Thúy Quỳnh" [ref=e1256] [cursor=pointer]
+    - option "Bác sĩ H" [ref=e1257] [cursor=pointer]
+    - option "Nha khoa Sunny" [ref=e1258] [cursor=pointer]
+    - option "A" [ref=e1259] [cursor=pointer]
+    - option "NGUYỄN THỊ LAN ANH" [ref=e1260] [cursor=pointer]
+    - option "Phạm Trang" [ref=e1261] [cursor=pointer]
+    - option "Trần Vương" [ref=e1262] [cursor=pointer]
+    - option "Nguyễn Việt" [ref=e1263] [cursor=pointer]
+    - option "VIHAT" [ref=e1264] [cursor=pointer]
+    - option "Nguyễn Thị Yến Ngọc (Demo)" [ref=e1265] [cursor=pointer]
+    - option "Nguyễn Thị Yến Ngọc" [ref=e1266] [cursor=pointer]
+    - option "Nguyễn Thị Hải Yến" [ref=e1267] [cursor=pointer]
+    - option "BS Hồ Văn Trung" [ref=e1268] [cursor=pointer]

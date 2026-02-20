@@ -1,0 +1,32 @@
+- generic [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - img "Logo IDENT Dental CRM" [ref=e8]
+        - heading "Đăng nhập" [level=1] [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e13]:
+          - generic [ref=e17]:
+            - generic [ref=e20]:
+              - generic [ref=e24]:
+                - text: Địa chỉ email
+                - superscript [ref=e25]: "*"
+              - textbox "Địa chỉ email*" [active] [ref=e29]
+            - generic [ref=e32]:
+              - generic [ref=e36]:
+                - text: Mật khẩu
+                - superscript [ref=e37]: "*"
+              - generic [ref=e39]:
+                - textbox "Mật khẩu*" [ref=e41]
+                - button "Hiện mật khẩu" [ref=e44] [cursor=pointer]:
+                  - img [ref=e45]
+            - generic [ref=e53]:
+              - checkbox "Ghi nhớ đăng nhập" [ref=e54]
+              - generic [ref=e55]: Ghi nhớ đăng nhập
+          - button "Đăng nhập" [ref=e61] [cursor=pointer]:
+            - generic [ref=e62]: Đăng nhập
+        - button "passkeys::passkeys.authenticate_using_passkey" [ref=e65] [cursor=pointer]:
+          - img [ref=e66]
+          - text: passkeys::passkeys.authenticate_using_passkey
+  - generic:
+    - status

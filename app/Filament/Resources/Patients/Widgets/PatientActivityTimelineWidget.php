@@ -35,7 +35,7 @@ class PatientActivityTimelineWidget extends Widget
                     default => 'gray',
                 },
                 'title' => 'Lịch hẹn',
-                'description' => $appointment->title ?? 'Lịch hẹn',
+                'description' => $appointment->chief_complaint ?: ($appointment->note ?: 'Lịch hẹn'),
                 'meta' => [
                     'Bác sĩ' => $appointment->doctor?->name ?? 'N/A',
                     'Trạng thái' => __(ucfirst(str_replace('_', ' ', $appointment->status))),
@@ -59,9 +59,9 @@ class PatientActivityTimelineWidget extends Widget
                     default => 'gray',
                 },
                 'title' => 'Kế hoạch điều trị',
-                'description' => $plan->name,
+                'description' => $plan->title,
                 'meta' => [
-                    'Mã KH' => $plan->plan_code,
+                    'Mã KH' => 'KH-' . $plan->id,
                     'Bác sĩ' => $plan->doctor?->name ?? 'N/A',
                     'Trạng thái' => __(ucfirst($plan->status)),
                     'Tổng chi phí' => number_format($plan->total_cost, 0, ',', '.') . 'đ',
@@ -71,22 +71,21 @@ class PatientActivityTimelineWidget extends Widget
         });
 
         // Invoices
-        $this->record->invoices()->with('treatmentPlan')->get()->each(function ($invoice) use ($activities) {
+        $this->record->invoices()->with('plan')->get()->each(function ($invoice) use ($activities) {
             $activities->push([
-                'date' => $invoice->invoice_date,
+                'date' => $invoice->issued_at ?? $invoice->created_at,
                 'type' => 'invoice',
                 'icon' => 'heroicon-o-document-text',
                 'color' => match($invoice->status) {
                     'paid' => 'success',
-                    'overdue' => 'danger',
                     'partial' => 'warning',
                     'cancelled' => 'gray',
                     default => 'info',
                 },
                 'title' => 'Hóa đơn',
-                'description' => 'Hóa đơn #' . $invoice->invoice_number,
+                'description' => 'Hóa đơn #' . $invoice->invoice_no,
                 'meta' => [
-                    'Kế hoạch' => $invoice->treatmentPlan?->name ?? 'Không có',
+                    'Kế hoạch' => $invoice->plan?->title ?? 'Không có',
                     'Tổng tiền' => number_format($invoice->total_amount, 0, ',', '.') . 'đ',
                     'Đã thanh toán' => number_format($invoice->paid_amount, 0, ',', '.') . 'đ',
                     'Trạng thái' => __(ucfirst($invoice->status)),
@@ -96,18 +95,18 @@ class PatientActivityTimelineWidget extends Widget
         });
 
         // Payments
-        $this->record->invoices()->with('payments.paymentMethod')->get()->flatMap->payments->each(function ($payment) use ($activities) {
+        $this->record->invoices()->with('payments')->get()->flatMap->payments->each(function ($payment) use ($activities) {
             $activities->push([
-                'date' => $payment->payment_date,
+                'date' => $payment->paid_at ?? $payment->created_at,
                 'type' => 'payment',
                 'icon' => 'heroicon-o-banknotes',
                 'color' => 'success',
                 'title' => 'Thanh toán',
-                'description' => 'Thanh toán cho hóa đơn #' . $payment->invoice->invoice_number,
+                'description' => 'Thanh toán cho hóa đơn #' . ($payment->invoice?->invoice_no ?? '-'),
                 'meta' => [
                     'Số tiền' => number_format($payment->amount, 0, ',', '.') . 'đ',
-                    'Phương thức' => $payment->paymentMethod?->name ?? 'N/A',
-                    'Mã giao dịch' => $payment->transaction_id ?? 'N/A',
+                    'Phương thức' => $payment->getMethodLabel(),
+                    'Mã giao dịch' => $payment->transaction_ref ?? 'N/A',
                 ],
                 'url' => route('filament.admin.resources.payments.edit', ['record' => $payment->id]),
             ]);
@@ -121,10 +120,28 @@ class PatientActivityTimelineWidget extends Widget
                 'icon' => 'heroicon-o-chat-bubble-left-right',
                 'color' => 'gray',
                 'title' => 'Ghi chú',
-                'description' => $note->note,
+                'description' => $note->content,
                 'meta' => [
                     'Người tạo' => $note->user?->name ?? 'N/A',
-                    'Loại' => __(ucfirst(str_replace('_', ' ', $note->note_type ?? 'general'))),
+                    'Loại' => __(ucfirst(str_replace('_', ' ', $note->type ?? 'general'))),
+                ],
+                'url' => null,
+            ]);
+        });
+
+        // Branch logs
+        $this->record->branchLogs()->with(['fromBranch', 'toBranch', 'mover'])->get()->each(function ($log) use ($activities) {
+            $activities->push([
+                'date' => $log->created_at,
+                'type' => 'branch_log',
+                'icon' => 'heroicon-o-building-office',
+                'color' => 'info',
+                'title' => 'Chuyển chi nhánh',
+                'description' => $log->note ?: 'Cập nhật chi nhánh bệnh nhân',
+                'meta' => [
+                    'Từ' => $log->fromBranch?->name ?? '-',
+                    'Đến' => $log->toBranch?->name ?? '-',
+                    'Người thực hiện' => $log->mover?->name ?? 'N/A',
                 ],
                 'url' => null,
             ]);

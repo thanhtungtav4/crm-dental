@@ -1,0 +1,187 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e10]: Internal Server Error
+    - button "Copy as Markdown" [ref=e11] [cursor=pointer]:
+      - img [ref=e12]
+      - generic [ref=e15]: Copy as Markdown
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "BadMethodCallException" [level=1] [ref=e20]
+      - generic [ref=e22]: vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:67
+      - paragraph [ref=e23]: Call to undefined method App\Models\User::canPerformIdentification()
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: LARAVEL
+          - generic [ref=e28]: 12.36.1
+        - generic [ref=e29]:
+          - generic [ref=e30]: PHP
+          - generic [ref=e31]: 8.4.13
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - text: UNHANDLED
+      - generic [ref=e36]: CODE 0
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - img [ref=e40]
+        - text: "500"
+      - generic [ref=e43]:
+        - img [ref=e44]
+        - text: GET
+      - generic [ref=e47]: http://crm.test/admin
+      - button [ref=e48] [cursor=pointer]:
+        - img [ref=e49]
+  - generic [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - img [ref=e57]
+        - heading "Exception trace" [level=3] [ref=e60]
+      - generic [ref=e61]:
+        - generic [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e68]: 3 vendor frames
+          - button [ref=e69]:
+            - img [ref=e70]
+        - generic [ref=e74]:
+          - generic [ref=e75] [cursor=pointer]:
+            - generic [ref=e78]:
+              - code [ref=e82]:
+                - generic [ref=e83]: App\Filament\Widgets\DuplicateDetectionWidget::canView()
+              - generic [ref=e85]: app/Filament/Widgets/DuplicateDetectionWidget.php:168
+            - button [ref=e87]:
+              - img [ref=e88]
+          - code [ref=e96]:
+            - generic [ref=e97]: 163 ->orderBy('confidence_score', 'desc');
+            - generic [ref=e98]: "164 }"
+            - generic [ref=e99]: "165"
+            - generic [ref=e100]: "166 public static function canView(): bool"
+            - generic [ref=e101]: "167 {"
+            - generic [ref=e102]: 168 return auth()->user()?->canPerformIdentification() ?? false;
+            - generic [ref=e103]: "169 }"
+            - generic [ref=e104]: "170}"
+        - generic [ref=e106] [cursor=pointer]:
+          - img [ref=e107]
+          - generic [ref=e111]: 9 vendor frames
+          - button [ref=e112]:
+            - img [ref=e113]
+        - generic [ref=e118] [cursor=pointer]:
+          - generic [ref=e121]:
+            - code [ref=e125]:
+              - generic [ref=e126]: resources/views/vendor/filament-panels/pages/page.blade.php
+            - generic [ref=e128]: resources/views/vendor/filament-panels/pages/page.blade.php:2
+          - button [ref=e130]:
+            - img [ref=e131]
+        - generic [ref=e136] [cursor=pointer]:
+          - img [ref=e137]
+          - generic [ref=e141]: 54 vendor frames
+          - button [ref=e142]:
+            - img [ref=e143]
+        - generic [ref=e148] [cursor=pointer]:
+          - generic [ref=e151]:
+            - code [ref=e155]:
+              - generic [ref=e156]: App\Http\Middleware\SecurityHeaders->handle(object(Illuminate\Http\Request), object(Closure))
+            - generic [ref=e158]: app/Http/Middleware/SecurityHeaders.php:12
+          - button [ref=e160]:
+            - img [ref=e161]
+        - generic [ref=e166] [cursor=pointer]:
+          - img [ref=e167]
+          - generic [ref=e171]: 23 vendor frames
+          - button [ref=e172]:
+            - img [ref=e173]
+        - generic [ref=e178] [cursor=pointer]:
+          - generic [ref=e181]:
+            - code [ref=e185]:
+              - generic [ref=e186]: public/index.php
+            - generic [ref=e188]: public/index.php:20
+          - button [ref=e190]:
+            - img [ref=e191]
+        - generic [ref=e196] [cursor=pointer]:
+          - img [ref=e197]
+          - generic [ref=e201]: 1 vendor frame
+          - button [ref=e202]:
+            - img [ref=e203]
+    - generic [ref=e207]:
+      - generic [ref=e208]:
+        - generic [ref=e209]:
+          - img [ref=e211]
+          - heading "Queries" [level=3] [ref=e213]
+        - generic [ref=e215]: 1-3 of 3
+      - generic [ref=e216]:
+        - generic [ref=e217]:
+          - generic [ref=e218]:
+            - generic [ref=e219]:
+              - img [ref=e220]
+              - generic [ref=e222]: mysql
+            - code [ref=e226]:
+              - generic [ref=e227]: "select * from `sessions` where `id` = 'jYGxoxLo78E4ivnF2mWob8jv6JtRNmzhmpDtccfX' limit 1"
+          - generic [ref=e228]: 2.33ms
+        - generic [ref=e229]:
+          - generic [ref=e230]:
+            - generic [ref=e231]:
+              - img [ref=e232]
+              - generic [ref=e234]: mysql
+            - code [ref=e238]:
+              - generic [ref=e239]: "select * from `users` where `id` = 1 limit 1"
+          - generic [ref=e240]: 0.64ms
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - generic [ref=e243]:
+              - img [ref=e244]
+              - generic [ref=e246]: mysql
+            - code [ref=e250]:
+              - generic [ref=e251]: "select `breezy_sessions`.* from `breezy_sessions` inner join (select MAX(`breezy_sessions`.`id`) as `id_aggregate`, `breezy_sessions`.`authenticatable_id`, `breezy_sessions`.`authenticatable_type` from `breezy_sessions` where `breezy_sessions`.`authenticatable_type` = 'App\\Models\\User' and `breezy_sessions`.`authenticatable_id` = 1 and `breezy_sessions`.`authenticatable_id` is not null and `panel_id` = 'admin' group by `breezy_sessions`.`authenticatable_id`, `breezy_sessions`.`authenticatable_type`) as `breezySession` on `breezySession`.`id_aggregate` = `breezy_sessions`.`id` and `breezySession`.`authenticatable_type` = `breezy_sessions`.`authenticatable_type` and `breezySession`.`authenticatable_id` = `breezy_sessions`.`authenticatable_id` where `breezy_sessions`.`authenticatable_type` = 'App\\Models\\User' and `breezy_sessions`.`authenticatable_id` = 1 and `breezy_sessions`.`authenticatable_id` is not null and `panel_id` = 'admin' limit 1"
+          - generic [ref=e252]: 2.26ms
+  - generic [ref=e254]:
+    - generic [ref=e255]:
+      - heading "Headers" [level=2] [ref=e256]
+      - generic [ref=e257]:
+        - generic [ref=e258]:
+          - generic [ref=e259]: cookie
+          - generic [ref=e261]: XSRF-TOKEN=eyJpdiI6Ink5aVIyVXpORUd1UGNUekRBNFZKQ3c9PSIsInZhbHVlIjoicStwQWEvYnUwZjZQWlhsQnVVb2lPZlFxelNhQmdESm4zL2V2YXN4eTY2R0lJck0vRzJ4aTlVc010RkxmYmlTSzNYcDYyS3ViZElGMlZycDVkdUlKeDRSNmxVRUlVaGxnbUhPYTZxOC85VnFjRHFWQkZVQktVZ3VMTmFhMlNUbS8iLCJtYWMiOiIxNTRkMTk5NTgwNTdmMGRkNWQ5NzE3NmFmYmRlZjcwNjljM2U5NDE5ZTVkN2ViMmNmNGViYTlmMzkyZmU2NzNmIiwidGFnIjoiIn0%3D; ident-dental-crm-session=eyJpdiI6ImdrUjExdGdTS1FJUzVWa2kwc2pPMnc9PSIsInZhbHVlIjoiRlRXU29kWWVRejVRUWJJeWRMTGxjWVRVVEdpN3ppeVZHbHJ4bHc0S2pHREZVVWlDcHdVU1dtY01vNU5SdXRLRk9OZmZNejFZMUFoSnRlK1VPUHdJMmhVRDhTNkxydWYxTFFMLzRIN1NnK3hQS2ZOU1BvdkthVWdiL1A0QWpIbk0iLCJtYWMiOiIzNjUxOGM1NTM1ZTU1NGE5NTNlYTVlN2UzY2I0NmYwZmU0NzEwNTFhZWMxMDY4MDRmZjA3ZGYwNjgyMWE0ZjdkIiwidGFnIjoiIn0%3D
+        - generic [ref=e262]:
+          - generic [ref=e263]: accept-language
+          - generic [ref=e265]: en-US,en;q=0.9
+        - generic [ref=e266]:
+          - generic [ref=e267]: accept-encoding
+          - generic [ref=e269]: gzip, deflate
+        - generic [ref=e270]:
+          - generic [ref=e271]: referer
+          - generic [ref=e273]: http://crm.test/admin/login
+        - generic [ref=e274]:
+          - generic [ref=e275]: accept
+          - generic [ref=e277]: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+        - generic [ref=e278]:
+          - generic [ref=e279]: user-agent
+          - generic [ref=e281]: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36
+        - generic [ref=e282]:
+          - generic [ref=e283]: upgrade-insecure-requests
+          - generic [ref=e285]: "1"
+        - generic [ref=e286]:
+          - generic [ref=e287]: connection
+          - generic [ref=e289]: keep-alive
+        - generic [ref=e290]:
+          - generic [ref=e291]: host
+          - generic [ref=e293]: crm.test
+    - generic [ref=e294]:
+      - heading "Body" [level=2] [ref=e295]
+      - generic [ref=e296]: // No request body
+    - generic [ref=e297]:
+      - heading "Routing" [level=2] [ref=e298]
+      - generic [ref=e299]:
+        - generic [ref=e300]:
+          - generic [ref=e301]: controller
+          - generic [ref=e303]: Filament\Pages\Dashboard
+        - generic [ref=e304]:
+          - generic [ref=e305]: route name
+          - generic [ref=e307]: filament.admin.pages.dashboard
+        - generic [ref=e308]:
+          - generic [ref=e309]: middleware
+          - generic [ref=e311]: panel:admin, Illuminate\Cookie\Middleware\EncryptCookies, Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse, Illuminate\Session\Middleware\StartSession, Filament\Http\Middleware\AuthenticateSession, Illuminate\View\Middleware\ShareErrorsFromSession, Illuminate\Foundation\Http\Middleware\VerifyCsrfToken, Illuminate\Routing\Middleware\SubstituteBindings, Filament\Http\Middleware\DisableBladeIconComponents, Filament\Http\Middleware\DispatchServingFilamentEvent, Jeffgreco13\FilamentBreezy\Middleware\MustTwoFactor, Filament\Http\Middleware\Authenticate
+    - generic [ref=e312]:
+      - heading "Routing parameters" [level=2] [ref=e313]
+      - generic [ref=e314]: // No routing parameters
+  - generic [ref=e317]:
+    - img [ref=e319]
+    - img [ref=e321]

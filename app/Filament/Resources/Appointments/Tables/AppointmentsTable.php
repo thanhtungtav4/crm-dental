@@ -62,6 +62,9 @@ class AppointmentsTable
                     ->label('Thời gian')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                TextColumn::make('time_range_label')
+                    ->label('Khung giờ')
+                    ->toggleable(),
                 TextColumn::make('appointment_type')
                     ->label('Loại')
                     ->badge()
@@ -80,6 +83,11 @@ class AppointmentsTable
                         default => 'gray',
                     })
                     ->sortable(),
+                TextColumn::make('appointment_kind')
+                    ->label('Loại lịch hẹn')
+                    ->badge()
+                    ->formatStateUsing(fn ($state, $record) => $record->appointment_kind_label)
+                    ->color(fn (?string $state): string => $state === 're_exam' ? 'warning' : 'primary'),
                 TextColumn::make('duration_minutes')
                     ->label('Thời lượng')
                     ->suffix(' phút')
@@ -96,6 +104,10 @@ class AppointmentsTable
                     ->limit(50)
                     ->toggleable()
                     ->searchable(),
+                TextColumn::make('cancellation_reason')
+                    ->label('Lý do hủy')
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -142,7 +154,11 @@ class AppointmentsTable
                                 'first_branch_id' => $record->branch_id,
                                 'full_name' => $customer->full_name,
                                 'phone' => $customer->phone,
+                                'email' => $customer->email,
                                 'address' => $customer->address ?? null,
+                                'customer_group_id' => $customer->customer_group_id,
+                                'promotion_group_id' => $customer->promotion_group_id,
+                                'owner_staff_id' => $customer->assigned_to,
                                 'created_by' => auth()->id(),
                                 'updated_by' => auth()->id(),
                             ]);

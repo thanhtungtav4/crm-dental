@@ -1,0 +1,451 @@
+- generic [ref=e6]:
+  - generic [ref=e8]:
+    - img [ref=e13] [cursor=pointer]
+    - generic [ref=e16]:
+      - generic [ref=e18]:
+        - link [ref=e20] [cursor=pointer]:
+          - /url: /
+          - img [ref=e22]
+        - link [ref=e25] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e27]
+        - button [expanded] [ref=e33] [cursor=pointer]:
+          - link [ref=e34]:
+            - /url: /customer-care
+            - img [ref=e36]
+        - button [ref=e44] [cursor=pointer]:
+          - link [ref=e45]:
+            - /url: /calendar
+            - img [ref=e47]
+        - link [ref=e50] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e52]
+        - link [ref=e55] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e57]
+        - button [ref=e63] [cursor=pointer]:
+          - img [ref=e66]
+        - button [ref=e72] [cursor=pointer]:
+          - img [ref=e75]
+        - link [ref=e78] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e80]
+        - link [ref=e83] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e85]
+        - button [ref=e94] [cursor=pointer]:
+          - img [ref=e97]
+      - generic [ref=e100] [cursor=pointer]:
+        - img [ref=e102]
+        - paragraph [ref=e104]: "18"
+  - generic [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e111]: Chiến dịch CSKH
+      - generic [ref=e112]:
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - heading "Báo cáo mới" [level=3] [ref=e116]
+            - img [ref=e118] [cursor=pointer]
+          - switch [checked] [ref=e121] [cursor=pointer]
+        - img [ref=e126] [cursor=pointer]
+    - generic [ref=e140]:
+      - tablist [ref=e141]:
+        - generic [ref=e142]:
+          - generic:
+            - generic:
+              - 'generic "icon: left"':
+                - img
+          - generic:
+            - generic:
+              - 'generic "icon: right"':
+                - img
+          - generic [ref=e146]:
+            - tab "Mẫu tin" [ref=e147] [cursor=pointer]
+            - tab "Chiến dịch" [selected] [ref=e148] [cursor=pointer]
+      - generic [ref=e150]:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - table:
+                                  - rowgroup:
+                                    - row:
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Template ID
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Tên mẫu ZNS
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Loại mẫu ZNS
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Loại Tag
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Ngày tạo
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Đơn giá
+                                      - columnheader:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Thao tác
+                                  - rowgroup:
+                                    - row:
+                                      - cell:
+                                        - generic: "328582"
+                                      - cell:
+                                        - generic: Tin chào mừng
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG2
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328580"
+                                      - cell:
+                                        - generic: Hỏi thăm sau điều trị
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG2
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328575"
+                                      - cell:
+                                        - generic: Nhắc lịch uống thuốc
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG1
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328567"
+                                      - cell:
+                                        - generic: Thông báo thanh toán dịch vụ
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG1
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328547"
+                                      - cell:
+                                        - generic: Xác nhận hủy đặt lịch
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG1
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328544"
+                                      - cell:
+                                        - generic: Xác nhận đặt lịch
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG1
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328573"
+                                      - cell:
+                                        - generic: Thông báo nhắc lịch hẹn
+                                      - cell:
+                                        - generic: Dạng bảng
+                                      - cell:
+                                        - generic: TAG1
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "300"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                    - row:
+                                      - cell:
+                                        - generic: "328593"
+                                      - cell:
+                                        - generic: Đánh giá chất lượng dịch vụ
+                                      - cell:
+                                        - generic: Dạng đánh giá dịch vụ
+                                      - cell:
+                                        - generic: TAG2
+                                      - cell:
+                                        - generic: 10/04/2024
+                                      - cell:
+                                        - generic: "440"
+                                      - cell:
+                                        - generic:
+                                          - generic:
+                                            - img
+                        - list:
+                          - listitem: 1-8 trên 8 bản ghi
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+                          - listitem:
+                            - generic: "1"
+                          - listitem:
+                            - generic:
+                              - generic:
+                                - img
+        - tabpanel [ref=e369]:
+          - generic [ref=e373]:
+            - generic [ref=e375]:
+              - generic [ref=e385]:
+                - textbox "Nhập tên chiến dịch để tìm kiếm" [ref=e386]
+                - img [ref=e388] [cursor=pointer]
+              - button "Thêm mới" [ref=e393] [cursor=pointer]:
+                - generic: Thêm mới
+            - generic [ref=e399]:
+              - table [ref=e404]:
+                - rowgroup [ref=e412]:
+                  - row "Tên chiến dịch Ngày tạo Ngày gửi Số lượng gửi Trạng thái Thao tác" [ref=e413]:
+                    - columnheader "Tên chiến dịch" [ref=e414]:
+                      - generic [ref=e418]: Tên chiến dịch
+                    - columnheader "Ngày tạo" [ref=e419]:
+                      - generic [ref=e423]: Ngày tạo
+                    - columnheader "Ngày gửi" [ref=e424]:
+                      - generic [ref=e428]: Ngày gửi
+                    - columnheader "Số lượng gửi" [ref=e429]:
+                      - generic [ref=e433]: Số lượng gửi
+                    - columnheader "Trạng thái" [ref=e434]:
+                      - generic [ref=e438]: Trạng thái
+                    - columnheader "Thao tác" [ref=e439]:
+                      - generic [ref=e443]: Thao tác
+                - rowgroup [ref=e444]:
+                  - row "Nhắc 02/07/2025, 10:50 02/07/2025, 10:50 1 Đã gửi" [ref=e445]:
+                    - cell "Nhắc" [ref=e446]:
+                      - generic [ref=e447] [cursor=pointer]: Nhắc
+                    - cell "02/07/2025, 10:50" [ref=e448]:
+                      - generic [ref=e449]: 02/07/2025, 10:50
+                    - cell "02/07/2025, 10:50" [ref=e450]:
+                      - generic [ref=e451]: 02/07/2025, 10:50
+                    - cell "1" [ref=e452]:
+                      - generic [ref=e453]: "1"
+                    - cell "Đã gửi" [ref=e454]:
+                      - generic [ref=e455]: Đã gửi
+                    - cell [ref=e456]:
+                      - img [ref=e459] [cursor=pointer]
+                  - row "NHẮC LỊCH 04/04/2025, 18:26 1 Chưa gửi" [ref=e463]:
+                    - cell "NHẮC LỊCH" [ref=e464]:
+                      - generic [ref=e465] [cursor=pointer]: NHẮC LỊCH
+                    - cell "04/04/2025, 18:26" [ref=e466]:
+                      - generic [ref=e467]: 04/04/2025, 18:26
+                    - cell [ref=e468]
+                    - cell "1" [ref=e469]:
+                      - generic [ref=e470]: "1"
+                    - cell "Chưa gửi" [ref=e471]:
+                      - generic [ref=e472]: Chưa gửi
+                    - cell [ref=e473]:
+                      - generic [ref=e474]:
+                        - img [ref=e476] [cursor=pointer]
+                        - img [ref=e479] [cursor=pointer]
+                        - img [ref=e482] [cursor=pointer]
+                  - row "NHẮC LỊCH 04/04/2025, 18:01 02/05/2025, 09:00 1 Đã gửi" [ref=e486]:
+                    - cell "NHẮC LỊCH" [ref=e487]:
+                      - generic [ref=e488] [cursor=pointer]: NHẮC LỊCH
+                    - cell "04/04/2025, 18:01" [ref=e489]:
+                      - generic [ref=e490]: 04/04/2025, 18:01
+                    - cell "02/05/2025, 09:00" [ref=e491]:
+                      - generic [ref=e492]: 02/05/2025, 09:00
+                    - cell "1" [ref=e493]:
+                      - generic [ref=e494]: "1"
+                    - cell "Đã gửi" [ref=e495]:
+                      - generic [ref=e496]: Đã gửi
+                    - cell [ref=e497]:
+                      - img [ref=e500] [cursor=pointer]
+                  - row "nhắc lịch 25/03/2025, 13:43 348 Chưa gửi" [ref=e504]:
+                    - cell "nhắc lịch" [ref=e505]:
+                      - generic [ref=e506] [cursor=pointer]: nhắc lịch
+                    - cell "25/03/2025, 13:43" [ref=e507]:
+                      - generic [ref=e508]: 25/03/2025, 13:43
+                    - cell [ref=e509]
+                    - cell "348" [ref=e510]:
+                      - generic [ref=e511]: "348"
+                    - cell "Chưa gửi" [ref=e512]:
+                      - generic [ref=e513]: Chưa gửi
+                    - cell [ref=e514]:
+                      - generic [ref=e515]:
+                        - img [ref=e517] [cursor=pointer]
+                        - img [ref=e520] [cursor=pointer]
+                        - img [ref=e523] [cursor=pointer]
+                  - row "nhắc lịch 25/02/2025, 20:14 26/02/2025, 17:45 348 Đã gửi" [ref=e527]:
+                    - cell "nhắc lịch" [ref=e528]:
+                      - generic [ref=e529] [cursor=pointer]: nhắc lịch
+                    - cell "25/02/2025, 20:14" [ref=e530]:
+                      - generic [ref=e531]: 25/02/2025, 20:14
+                    - cell "26/02/2025, 17:45" [ref=e532]:
+                      - generic [ref=e533]: 26/02/2025, 17:45
+                    - cell "348" [ref=e534]:
+                      - generic [ref=e535]: "348"
+                    - cell "Đã gửi" [ref=e536]:
+                      - generic [ref=e537]: Đã gửi
+                    - cell [ref=e538]:
+                      - img [ref=e541] [cursor=pointer]
+                  - row "Test 20/02/2025, 15:12 20/02/2025, 15:12 1 Đã gửi" [ref=e545]:
+                    - cell "Test" [ref=e546]:
+                      - generic [ref=e547] [cursor=pointer]: Test
+                    - cell "20/02/2025, 15:12" [ref=e548]:
+                      - generic [ref=e549]: 20/02/2025, 15:12
+                    - cell "20/02/2025, 15:12" [ref=e550]:
+                      - generic [ref=e551]: 20/02/2025, 15:12
+                    - cell "1" [ref=e552]:
+                      - generic [ref=e553]: "1"
+                    - cell "Đã gửi" [ref=e554]:
+                      - generic [ref=e555]: Đã gửi
+                    - cell [ref=e556]:
+                      - img [ref=e559] [cursor=pointer]
+                  - row "Nhắc lịch hẹn 18/12/2024, 15:26 18/12/2024, 15:26 1 Đã gửi" [ref=e563]:
+                    - cell "Nhắc lịch hẹn" [ref=e564]:
+                      - generic [ref=e565] [cursor=pointer]: Nhắc lịch hẹn
+                    - cell "18/12/2024, 15:26" [ref=e566]:
+                      - generic [ref=e567]: 18/12/2024, 15:26
+                    - cell "18/12/2024, 15:26" [ref=e568]:
+                      - generic [ref=e569]: 18/12/2024, 15:26
+                    - cell "1" [ref=e570]:
+                      - generic [ref=e571]: "1"
+                    - cell "Đã gửi" [ref=e572]:
+                      - generic [ref=e573]: Đã gửi
+                    - cell [ref=e574]:
+                      - img [ref=e577] [cursor=pointer]
+                  - row "test 1 27/11/2024, 14:30 27/11/2024, 14:30 1 Đã gửi" [ref=e581]:
+                    - cell "test 1" [ref=e582]:
+                      - generic [ref=e583] [cursor=pointer]: test 1
+                    - cell "27/11/2024, 14:30" [ref=e584]:
+                      - generic [ref=e585]: 27/11/2024, 14:30
+                    - cell "27/11/2024, 14:30" [ref=e586]:
+                      - generic [ref=e587]: 27/11/2024, 14:30
+                    - cell "1" [ref=e588]:
+                      - generic [ref=e589]: "1"
+                    - cell "Đã gửi" [ref=e590]:
+                      - generic [ref=e591]: Đã gửi
+                    - cell [ref=e592]:
+                      - img [ref=e595] [cursor=pointer]
+                  - row "test 27/11/2024, 14:28 27/11/2024, 14:28 1 Đã gửi" [ref=e599]:
+                    - cell "test" [ref=e600]:
+                      - generic [ref=e601] [cursor=pointer]: test
+                    - cell "27/11/2024, 14:28" [ref=e602]:
+                      - generic [ref=e603]: 27/11/2024, 14:28
+                    - cell "27/11/2024, 14:28" [ref=e604]:
+                      - generic [ref=e605]: 27/11/2024, 14:28
+                    - cell "1" [ref=e606]:
+                      - generic [ref=e607]: "1"
+                    - cell "Đã gửi" [ref=e608]:
+                      - generic [ref=e609]: Đã gửi
+                    - cell [ref=e610]:
+                      - img [ref=e613] [cursor=pointer]
+                  - row "Chăm soc 25/11/2024, 10:00 25/11/2024, 10:00 1 Đã gửi" [ref=e617]:
+                    - cell "Chăm soc" [ref=e618]:
+                      - generic [ref=e619] [cursor=pointer]: Chăm soc
+                    - cell "25/11/2024, 10:00" [ref=e620]:
+                      - generic [ref=e621]: 25/11/2024, 10:00
+                    - cell "25/11/2024, 10:00" [ref=e622]:
+                      - generic [ref=e623]: 25/11/2024, 10:00
+                    - cell "1" [ref=e624]:
+                      - generic [ref=e625]: "1"
+                    - cell "Đã gửi" [ref=e626]:
+                      - generic [ref=e627]: Đã gửi
+                    - cell [ref=e628]:
+                      - img [ref=e631] [cursor=pointer]
+                  - row "Chăm sóc khách 10/10/2024, 10:31 10/10/2024, 10:31 1 Đã gửi" [ref=e635]:
+                    - cell "Chăm sóc khách" [ref=e636]:
+                      - generic [ref=e637] [cursor=pointer]: Chăm sóc khách
+                    - cell "10/10/2024, 10:31" [ref=e638]:
+                      - generic [ref=e639]: 10/10/2024, 10:31
+                    - cell "10/10/2024, 10:31" [ref=e640]:
+                      - generic [ref=e641]: 10/10/2024, 10:31
+                    - cell "1" [ref=e642]:
+                      - generic [ref=e643]: "1"
+                    - cell "Đã gửi" [ref=e644]:
+                      - generic [ref=e645]: Đã gửi
+                    - cell [ref=e646]:
+                      - img [ref=e649] [cursor=pointer]
+              - list [ref=e653]:
+                - listitem [ref=e654]: 1-11 trên 11 bản ghi
+                - listitem "Previous Page" [ref=e655]:
+                  - 'generic "icon: left" [ref=e657]':
+                    - img [ref=e658]
+                - listitem "1" [ref=e660] [cursor=pointer]:
+                  - generic [ref=e661]: "1"
+                - listitem "Next Page" [ref=e662]:
+                  - 'generic "icon: right" [ref=e664]':
+                    - img [ref=e665]
+                - listitem [ref=e667]:
+                  - combobox [ref=e669] [cursor=pointer]:
+                    - generic "15 / page" [ref=e671]
+                    - 'generic "icon: down" [ref=e673]':
+                      - img [ref=e674]

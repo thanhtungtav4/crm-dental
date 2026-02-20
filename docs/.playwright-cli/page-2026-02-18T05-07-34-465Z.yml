@@ -1,0 +1,440 @@
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - img [ref=e13] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e22]
+          - link [ref=e25] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e27]
+          - button [ref=e33] [cursor=pointer]:
+            - link [ref=e34]:
+              - /url: /customer-care
+              - img [ref=e36]
+          - button [ref=e44] [cursor=pointer]:
+            - link [ref=e45]:
+              - /url: /calendar
+              - img [ref=e47]
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e52]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e57]
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e66]
+          - button [ref=e72] [cursor=pointer]:
+            - img [ref=e75]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e85]
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e97]
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - paragraph [ref=e104]: "18"
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e111]: Quản lý nhân sự
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "Báo cáo mới" [level=3] [ref=e116]
+              - img [ref=e118] [cursor=pointer]
+            - switch [checked] [ref=e121] [cursor=pointer]
+          - generic [ref=e124] [cursor=pointer]:
+            - img [ref=e126]
+            - superscript [ref=e129]
+      - generic [ref=e139]:
+        - generic [ref=e141]:
+          - generic [ref=e145]:
+            - generic [ref=e151]:
+              - textbox "Tìm theo email, số điện thoại, họ tên" [ref=e152]
+              - img [ref=e154] [cursor=pointer]
+            - combobox [ref=e164] [cursor=pointer]:
+              - generic "Đang làm việc" [ref=e166]
+              - 'generic "icon: close-circle" [ref=e168]':
+                - img [ref=e169]
+              - generic:
+                - 'generic "icon: down"':
+                  - img
+          - generic [ref=e171]:
+            - button "Hiển thị 7/12" [ref=e174] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Hiển thị 7/12
+            - button "Thêm mới" [ref=e176] [cursor=pointer]:
+              - generic: Thêm mới
+        - table [ref=e187]:
+          - rowgroup [ref=e196]:
+            - row "Đang làm việc Họ tên Tên đăng nhập Vai trò Màu lịch Thứ tự trên lịch hẹn Thao tác" [ref=e197]:
+              - columnheader "Đang làm việc" [ref=e198]:
+                - generic [ref=e202]: Đang làm việc
+              - columnheader "Họ tên" [ref=e203]:
+                - generic [ref=e207]: Họ tên
+              - columnheader "Tên đăng nhập" [ref=e208]:
+                - generic [ref=e212]: Tên đăng nhập
+              - columnheader "Vai trò" [ref=e213]:
+                - generic [ref=e217]: Vai trò
+              - columnheader "Màu lịch" [ref=e218]:
+                - generic [ref=e222]: Màu lịch
+              - columnheader "Thứ tự trên lịch hẹn" [ref=e223]:
+                - generic [ref=e227]: Thứ tự trên lịch hẹn
+              - columnheader "Thao tác" [ref=e228]:
+                - generic [ref=e232]: Thao tác
+          - rowgroup [ref=e233]:
+            - row "ĐÀO TUYẾN hienhtm Bác sĩ 1" [ref=e234]:
+              - cell [ref=e235]:
+                - checkbox [checked] [ref=e239] [cursor=pointer]
+              - cell "ĐÀO TUYẾN" [ref=e241]:
+                - generic [ref=e242]: ĐÀO TUYẾN
+              - cell "hienhtm" [ref=e243]:
+                - generic [ref=e244]: hienhtm
+              - cell "Bác sĩ" [ref=e245]:
+                - generic [ref=e246]: Bác sĩ
+              - cell [ref=e247]
+              - cell "1" [ref=e249]:
+                - generic [ref=e250]: "1"
+              - cell [ref=e251]:
+                - img [ref=e254] [cursor=pointer]
+            - row "Phạm Văn Nam nam123 Bác sĩ 1" [ref=e256]:
+              - cell [ref=e257]:
+                - checkbox [checked] [ref=e261] [cursor=pointer]
+              - cell "Phạm Văn Nam" [ref=e263]:
+                - generic [ref=e264]: Phạm Văn Nam
+              - cell "nam123" [ref=e265]:
+                - generic [ref=e266]: nam123
+              - cell "Bác sĩ" [ref=e267]:
+                - generic [ref=e268]: Bác sĩ
+              - cell [ref=e269]
+              - cell "1" [ref=e271]:
+                - generic [ref=e272]: "1"
+              - cell [ref=e273]:
+                - img [ref=e276] [cursor=pointer]
+            - row "BS Nguyễn Thành Trung phuong Lễ tân, Bác sĩ, Quản trị viên 3" [ref=e278]:
+              - cell [ref=e279]:
+                - checkbox [checked] [ref=e283] [cursor=pointer]
+              - cell "BS Nguyễn Thành Trung" [ref=e285]:
+                - generic [ref=e286]: BS Nguyễn Thành Trung
+              - cell "phuong" [ref=e287]:
+                - generic [ref=e288]: phuong
+              - cell "Lễ tân, Bác sĩ, Quản trị viên" [ref=e289]:
+                - generic [ref=e290]: Lễ tân, Bác sĩ, Quản trị viên
+              - cell [ref=e291]
+              - cell "3" [ref=e293]:
+                - generic [ref=e294]: "3"
+              - cell [ref=e295]:
+                - img [ref=e298] [cursor=pointer]
+            - row "Bác sĩ bacsi Bác sĩ 129" [ref=e300]:
+              - cell [ref=e301]:
+                - checkbox [checked] [ref=e305] [cursor=pointer]
+              - cell "Bác sĩ" [ref=e307]:
+                - generic [ref=e308]: Bác sĩ
+              - cell "bacsi" [ref=e309]:
+                - generic [ref=e310]: bacsi
+              - cell "Bác sĩ" [ref=e311]:
+                - generic [ref=e312]: Bác sĩ
+              - cell [ref=e313]
+              - cell "129" [ref=e315]:
+                - generic [ref=e316]: "129"
+              - cell [ref=e317]:
+                - img [ref=e320] [cursor=pointer]
+            - row "MAI HOÀNG YẾN admin01 Bác sĩ, Quản trị viên" [ref=e322]:
+              - cell [ref=e323]:
+                - checkbox [checked] [disabled] [ref=e327]
+              - cell "MAI HOÀNG YẾN" [ref=e329]:
+                - generic [ref=e330]: MAI HOÀNG YẾN
+              - cell "admin01" [ref=e331]:
+                - generic [ref=e332]: admin01
+              - cell "Bác sĩ, Quản trị viên" [ref=e333]:
+                - generic [ref=e334]: Bác sĩ, Quản trị viên
+              - cell [ref=e335]
+              - cell [ref=e337]
+              - cell [ref=e338]:
+                - img [ref=e341] [cursor=pointer]
+            - row "G-Lux Dental admin1 Quản trị viên" [ref=e343]:
+              - cell [ref=e344]:
+                - checkbox [checked] [ref=e348] [cursor=pointer]
+              - cell "G-Lux Dental" [ref=e350]:
+                - generic [ref=e351]: G-Lux Dental
+              - cell "admin1" [ref=e352]:
+                - generic [ref=e353]: admin1
+              - cell "Quản trị viên" [ref=e354]:
+                - generic [ref=e355]: Quản trị viên
+              - cell [ref=e356]
+              - cell [ref=e358]
+              - cell [ref=e359]:
+                - img [ref=e362] [cursor=pointer]
+            - row "Phòng khám Demo Standard demo_standard Quản trị viên" [ref=e364]:
+              - cell [ref=e365]:
+                - checkbox [checked] [ref=e369] [cursor=pointer]
+              - cell "Phòng khám Demo Standard" [ref=e371]:
+                - generic [ref=e372]: Phòng khám Demo Standard
+              - cell "demo_standard" [ref=e373]:
+                - generic [ref=e374]: demo_standard
+              - cell "Quản trị viên" [ref=e375]:
+                - generic [ref=e376]: Quản trị viên
+              - cell [ref=e377]
+              - cell [ref=e379]
+              - cell [ref=e380]:
+                - img [ref=e383] [cursor=pointer]
+            - row "Phương Lan lan1234 Lễ tân" [ref=e385]:
+              - cell [ref=e386]:
+                - checkbox [checked] [ref=e390] [cursor=pointer]
+              - cell "Phương Lan" [ref=e392]:
+                - generic [ref=e393]: Phương Lan
+              - cell "lan1234" [ref=e394]:
+                - generic [ref=e395]: lan1234
+              - cell "Lễ tân" [ref=e396]:
+                - generic [ref=e397]: Lễ tân
+              - cell [ref=e398]
+              - cell [ref=e400]
+              - cell [ref=e401]:
+                - img [ref=e404] [cursor=pointer]
+            - row "MAI HƯƠNG GIANG lannnn Lễ tân, Bác sĩ" [ref=e406]:
+              - cell [ref=e407]:
+                - checkbox [checked] [ref=e411] [cursor=pointer]
+              - cell "MAI HƯƠNG GIANG" [ref=e413]:
+                - generic [ref=e414]: MAI HƯƠNG GIANG
+              - cell "lannnn" [ref=e415]:
+                - generic [ref=e416]: lannnn
+              - cell "Lễ tân, Bác sĩ" [ref=e417]:
+                - generic [ref=e418]: Lễ tân, Bác sĩ
+              - cell [ref=e419]
+              - cell [ref=e421]
+              - cell [ref=e422]:
+                - img [ref=e425] [cursor=pointer]
+            - row "Nguyệt nguyet Quản lý" [ref=e427]:
+              - cell [ref=e428]:
+                - checkbox [checked] [ref=e432] [cursor=pointer]
+              - cell "Nguyệt" [ref=e434]:
+                - generic [ref=e435]: Nguyệt
+              - cell "nguyet" [ref=e436]:
+                - generic [ref=e437]: nguyet
+              - cell "Quản lý" [ref=e438]:
+                - generic [ref=e439]: Quản lý
+              - cell [ref=e440]
+              - cell [ref=e442]
+              - cell [ref=e443]:
+                - img [ref=e446] [cursor=pointer]
+            - row "Nguyệt nguyetnguyen Lễ tân" [ref=e448]:
+              - cell [ref=e449]:
+                - checkbox [checked] [ref=e453] [cursor=pointer]
+              - cell "Nguyệt" [ref=e455]:
+                - generic [ref=e456]: Nguyệt
+              - cell "nguyetnguyen" [ref=e457]:
+                - generic [ref=e458]: nguyetnguyen
+              - cell "Lễ tân" [ref=e459]:
+                - generic [ref=e460]: Lễ tân
+              - cell [ref=e461]
+              - cell [ref=e463]
+              - cell [ref=e464]:
+                - img [ref=e467] [cursor=pointer]
+            - row "Ann dentist nk_an Quản trị viên" [ref=e469]:
+              - cell [ref=e470]:
+                - checkbox [checked] [ref=e474] [cursor=pointer]
+              - cell "Ann dentist" [ref=e476]:
+                - generic [ref=e477]: Ann dentist
+              - cell "nk_an" [ref=e478]:
+                - generic [ref=e479]: nk_an
+              - cell "Quản trị viên" [ref=e480]:
+                - generic [ref=e481]: Quản trị viên
+              - cell [ref=e482]
+              - cell [ref=e484]
+              - cell [ref=e485]:
+                - img [ref=e488] [cursor=pointer]
+            - row "Nha khoa Hạnh Phúc nk_hanhphuc Quản trị viên" [ref=e490]:
+              - cell [ref=e491]:
+                - checkbox [checked] [ref=e495] [cursor=pointer]
+              - cell "Nha khoa Hạnh Phúc" [ref=e497]:
+                - generic [ref=e498]: Nha khoa Hạnh Phúc
+              - cell "nk_hanhphuc" [ref=e499]:
+                - generic [ref=e500]: nk_hanhphuc
+              - cell "Quản trị viên" [ref=e501]:
+                - generic [ref=e502]: Quản trị viên
+              - cell [ref=e503]
+              - cell [ref=e505]
+              - cell [ref=e506]:
+                - img [ref=e509] [cursor=pointer]
+            - row "Nha khoa Phương Sen nk_phuongsen Quản trị viên" [ref=e511]:
+              - cell [ref=e512]:
+                - checkbox [checked] [ref=e516] [cursor=pointer]
+              - cell "Nha khoa Phương Sen" [ref=e518]:
+                - generic [ref=e519]: Nha khoa Phương Sen
+              - cell "nk_phuongsen" [ref=e520]:
+                - generic [ref=e521]: nk_phuongsen
+              - cell "Quản trị viên" [ref=e522]:
+                - generic [ref=e523]: Quản trị viên
+              - cell [ref=e524]
+              - cell [ref=e526]
+              - cell [ref=e527]:
+                - img [ref=e530] [cursor=pointer]
+            - row "Nha Khoa Thiện Mỹ nk_thienmy Quản trị viên" [ref=e532]:
+              - cell [ref=e533]:
+                - checkbox [checked] [ref=e537] [cursor=pointer]
+              - cell "Nha Khoa Thiện Mỹ" [ref=e539]:
+                - generic [ref=e540]: Nha Khoa Thiện Mỹ
+              - cell "nk_thienmy" [ref=e541]:
+                - generic [ref=e542]: nk_thienmy
+              - cell "Quản trị viên" [ref=e543]:
+                - generic [ref=e544]: Quản trị viên
+              - cell [ref=e545]
+              - cell [ref=e547]
+              - cell [ref=e548]:
+                - img [ref=e551] [cursor=pointer]
+            - row "Nha Khoa Y Dental nk_ydental Quản trị viên" [ref=e553]:
+              - cell [ref=e554]:
+                - checkbox [checked] [ref=e558] [cursor=pointer]
+              - cell "Nha Khoa Y Dental" [ref=e560]:
+                - generic [ref=e561]: Nha Khoa Y Dental
+              - cell "nk_ydental" [ref=e562]:
+                - generic [ref=e563]: nk_ydental
+              - cell "Quản trị viên" [ref=e564]:
+                - generic [ref=e565]: Quản trị viên
+              - cell [ref=e566]
+              - cell [ref=e568]
+              - cell [ref=e569]:
+                - img [ref=e572] [cursor=pointer]
+            - row "Nông Phương Lan nplan Lễ tân, Kế toán, Bác sĩ" [ref=e574]:
+              - cell [ref=e575]:
+                - checkbox [checked] [ref=e579] [cursor=pointer]
+              - cell "Nông Phương Lan" [ref=e581]:
+                - generic [ref=e582]: Nông Phương Lan
+              - cell "nplan" [ref=e583]:
+                - generic [ref=e584]: nplan
+              - cell "Lễ tân, Kế toán, Bác sĩ" [ref=e585]:
+                - generic [ref=e586]: Lễ tân, Kế toán, Bác sĩ
+              - cell [ref=e587]
+              - cell [ref=e589]
+              - cell [ref=e590]:
+                - img [ref=e593] [cursor=pointer]
+            - row "NGUYỄN THỊ LAN ANH thanhpham Điều dưỡng viên" [ref=e595]:
+              - cell [ref=e596]:
+                - checkbox [checked] [ref=e600] [cursor=pointer]
+              - cell "NGUYỄN THỊ LAN ANH" [ref=e602]:
+                - generic [ref=e603]: NGUYỄN THỊ LAN ANH
+              - cell "thanhpham" [ref=e604]:
+                - generic [ref=e605]: thanhpham
+              - cell "Điều dưỡng viên" [ref=e606]:
+                - generic [ref=e607]: Điều dưỡng viên
+              - cell [ref=e608]
+              - cell [ref=e610]
+              - cell [ref=e611]:
+                - img [ref=e614] [cursor=pointer]
+  - dialog [ref=e805]:
+    - document:
+      - generic [ref=e807]:
+        - generic [ref=e808]:
+          - heading "Cập nhật nhân viên" [level=2] [ref=e810]
+          - img [ref=e812] [cursor=pointer]
+        - generic [ref=e816]:
+          - generic [ref=e818]:
+            - tablist [ref=e819]:
+              - generic [ref=e820]:
+                - generic:
+                  - generic:
+                    - 'generic "icon: left"':
+                      - img
+                - generic:
+                  - generic:
+                    - 'generic "icon: right"':
+                      - img
+                - generic [ref=e824]:
+                  - tab "Thông tin cơ bản" [selected] [ref=e825] [cursor=pointer]
+                  - tab "Thông tin tài khoản" [ref=e826] [cursor=pointer]
+            - generic [ref=e828]:
+              - tabpanel [ref=e829]:
+                - generic [ref=e831]:
+                  - generic [ref=e832]:
+                    - button "Thêm ảnh hoặc kéo thả" [ref=e838] [cursor=pointer]:
+                      - generic [ref=e842]:
+                        - img [ref=e844]
+                        - generic [ref=e846]: Thêm ảnh
+                        - text: hoặc kéo thả
+                        - textbox "Paste image to here" [ref=e847]
+                    - generic [ref=e848]:
+                      - generic [ref=e849]:
+                        - generic [ref=e850]: Họ tên *
+                        - textbox "Họ tên" [ref=e855]: ĐÀO TUYẾN
+                      - generic [ref=e856]:
+                        - generic [ref=e857]: Ngày sinh
+                        - generic [ref=e863]:
+                          - textbox "dd-mm-yyyy" [ref=e864]: 21-06-1983
+                          - 'generic "icon: close-circle"':
+                            - img
+                          - 'generic "icon: calendar" [ref=e865]':
+                            - img [ref=e866]
+                      - generic [ref=e868]:
+                        - generic [ref=e869]: Giới tính
+                        - combobox [ref=e876] [cursor=pointer]:
+                          - generic "Nữ" [ref=e878]
+                          - 'generic "icon: close-circle" [ref=e880]':
+                            - img [ref=e881]
+                          - generic:
+                            - 'generic "icon: down"':
+                              - img
+                  - generic [ref=e883]:
+                    - generic [ref=e885]:
+                      - generic [ref=e886]: Số điện thoại
+                      - textbox "Số điện thoại" [ref=e891]: "0906039383"
+                    - generic [ref=e893]:
+                      - generic [ref=e894]: Email *
+                      - textbox "Email" [ref=e899]: hoabattu83@gmail.com
+                  - generic [ref=e900]:
+                    - generic [ref=e901]: Địa chỉ
+                    - textbox "Địa chỉ" [ref=e907]: Hà Nội
+                  - generic [ref=e908]:
+                    - generic [ref=e910]:
+                      - generic [ref=e911]:
+                        - generic [ref=e912]:
+                          - generic [ref=e913]: Vai trò
+                          - img [ref=e915] [cursor=pointer]
+                        - text: "*"
+                      - combobox [ref=e923]:
+                        - generic [ref=e924]:
+                          - list:
+                            - generic [ref=e925]: Bác sĩ
+                            - 'generic "icon: close" [ref=e927] [cursor=pointer]':
+                              - img [ref=e928]
+                            - listitem [ref=e930]:
+                              - textbox [ref=e932]
+                        - 'generic "icon: close-circle" [ref=e934] [cursor=pointer]':
+                          - img [ref=e935]
+                    - generic:
+                      - generic [ref=e939]: Màu lịch
+                      - generic [ref=e948]:
+                        - generic [ref=e950]:
+                          - generic [ref=e951]: Thứ tự trên lịch hẹn
+                          - img [ref=e953] [cursor=pointer]
+                        - spinbutton [ref=e959]: "1"
+                      - generic [ref=e961]:
+                        - generic [ref=e963]:
+                          - generic [ref=e964]: Mã liên thông quốc gia
+                          - img [ref=e966] [cursor=pointer]
+                        - textbox "Mã liên thông quốc gia" [ref=e972]
+                      - generic [ref=e974]:
+                        - generic [ref=e975]: Mật khẩu
+                        - generic [ref=e980]:
+                          - textbox "Mật khẩu" [ref=e981]
+                          - 'generic "icon: eye-invisible" [ref=e983] [cursor=pointer]':
+                            - img [ref=e984]
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: Tên đăng nhập *
+                - generic:
+                  - generic: Cấp lại mật khẩu
+          - generic [ref=e987]:
+            - separator [ref=e988]
+            - generic [ref=e989]:
+              - button "Cập nhật" [ref=e991] [cursor=pointer]:
+                - generic: Cập nhật
+              - button "Hủy bỏ" [ref=e993] [cursor=pointer]:
+                - generic: Hủy bỏ

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\Tables;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -79,32 +80,6 @@ class InvoicesTable
                             ->orderBy('balance', $direction);
                     }),
                 
-                BadgeColumn::make('installment_status')
-                    ->label('Trả góp')
-                    ->formatStateUsing(function ($record) {
-                        if (!$record->hasInstallmentPlan()) {
-                            return 'Không';
-                        }
-                        $plan = $record->installmentPlan;
-                        return $plan->number_of_installments . ' kỳ';
-                    })
-                    ->description(function ($record) {
-                        if ($record->hasInstallmentPlan()) {
-                            $plan = $record->installmentPlan;
-                            return $plan->getStatusLabel();
-                        }
-                        return null;
-                    })
-                    ->color(function ($record) {
-                        if (!$record->hasInstallmentPlan()) return 'gray';
-                        return $record->installmentPlan->getStatusBadgeColor();
-                    })
-                    ->icon(function ($record) {
-                        if (!$record->hasInstallmentPlan()) return null;
-                        return Heroicon::OutlinedCreditCard;
-                    })
-                    ->toggleable(),
-                
                 BadgeColumn::make('status')
                     ->label('Trạng thái')
                     ->formatStateUsing(fn ($record) => $record->getPaymentStatusLabel())
@@ -118,6 +93,12 @@ class InvoicesTable
                             default => null,
                         };
                     }),
+
+                BadgeColumn::make('invoice_exported')
+                    ->label('Xuất HĐ')
+                    ->formatStateUsing(fn (bool $state): string => $state ? 'Đã xuất' : 'Chưa xuất')
+                    ->color(fn (bool $state): string => $state ? 'success' : 'gray')
+                    ->toggleable(),
                 
                 TextColumn::make('due_date')
                     ->label('Ngày đến hạn')
@@ -169,21 +150,6 @@ class InvoicesTable
                         'cancelled' => '❌ Đã hủy',
                     ]),
                 
-                SelectFilter::make('has_installment')
-                    ->label('Trả góp')
-                    ->options([
-                        'yes' => 'Có kế hoạch trả góp',
-                        'no' => 'Không trả góp',
-                    ])
-                    ->query(function ($query, $state) {
-                        if ($state['value'] === 'yes') {
-                            return $query->has('installmentPlan');
-                        }
-                        if ($state['value'] === 'no') {
-                            return $query->doesntHave('installmentPlan');
-                        }
-                    }),
-                
                 SelectFilter::make('payment_progress')
                     ->label('Tiến độ thanh toán')
                     ->options([
@@ -228,13 +194,25 @@ class InvoicesTable
                         Select::make('method')
                             ->label('Phương thức')
                             ->required()
-                            ->options([
-                                'cash' => '💵 Tiền mặt',
-                                'card' => '💳 Thẻ tín dụng/ghi nợ',
-                                'transfer' => '🏦 Chuyển khoản',
-                            ])
+                            ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true))
                             ->default('cash')
                             ->native(false),
+
+                        Select::make('direction')
+                            ->label('Loại phiếu')
+                            ->required()
+                            ->options([
+                                'receipt' => 'Phiếu thu',
+                                'refund' => 'Phiếu hoàn',
+                            ])
+                            ->default('receipt')
+                            ->native(false)
+                            ->reactive(),
+
+                        TextInput::make('refund_reason')
+                            ->label('Lý do hoàn')
+                            ->visible(fn (callable $get) => $get('direction') === 'refund')
+                            ->required(fn (callable $get) => $get('direction') === 'refund'),
                         
                         DateTimePicker::make('paid_at')
                             ->label('Ngày thanh toán')
@@ -248,16 +226,18 @@ class InvoicesTable
                             $data['amount'],
                             $data['method'],
                             'Thanh toán hóa đơn ' . $record->invoice_no,
-                            $data['paid_at']
+                            $data['paid_at'],
+                            $data['direction'] ?? 'receipt',
+                            $data['refund_reason'] ?? null
                         );
                         
                         Notification::make()
                             ->success()
-                            ->title('Thanh toán thành công')
-                            ->body('Đã ghi nhận thanh toán ' . number_format($data['amount'], 0, ',', '.') . 'đ')
+                            ->title(($data['direction'] ?? 'receipt') === 'refund' ? 'Đã ghi nhận hoàn tiền' : 'Thanh toán thành công')
+                            ->body('Đã ghi nhận ' . number_format($data['amount'], 0, ',', '.') . 'đ')
                             ->send();
                     })
-                    ->visible(fn ($record) => $record->calculateBalance() > 0)
+                    ->visible(fn ($record) => $record->status !== 'cancelled' && ($record->calculateBalance() > 0 || $record->hasPayments()))
                     ->modalWidth('md'),
                 
                 Action::make('view_payments')
@@ -268,6 +248,13 @@ class InvoicesTable
                         'tableFilters' => ['invoice_id' => ['value' => $record->id]],
                     ]))
                     ->visible(fn ($record) => $record->hasPayments())
+                    ->openUrlInNewTab(),
+
+                Action::make('print')
+                    ->label('In hóa đơn')
+                    ->icon(Heroicon::OutlinedPrinter)
+                    ->color('gray')
+                    ->url(fn ($record) => route('invoices.print', $record))
                     ->openUrlInNewTab(),
             ])
             ->toolbarActions([

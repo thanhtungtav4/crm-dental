@@ -1,8 +1,13 @@
 <x-filament-panels::page>
-    <div x-data="{ activeTab: $wire.entangle('activeTab') }" x-init="
+    <div class="crm-patient-record-page" x-data="{ activeTab: $wire.entangle('activeTab') }" x-init="
+        const tabQueryMap = {
+            payments: 'payment',
+            appointments: 'appointment',
+        };
+
         $watch('activeTab', (val) => {
             const url = new URL(window.location);
-            url.searchParams.set('tab', val);
+            url.searchParams.set('tab', tabQueryMap[val] ?? val);
             window.history.replaceState({}, '', url);
         });
     ">
@@ -181,48 +186,50 @@
 
         {{-- Tabs Navigation --}}
         <div class="mb-8">
-            <div
-                class="bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 px-4 p-2">
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 px-4 py-3">
                 @php
                     $tpTotal = $this->record->treatmentPlans()->count();
-                    $tpActive = $this->record->treatmentPlans()->whereIn('status', ['approved', 'in_progress'])->count();
                     $invTotal = $this->record->invoices()->count();
-                    $unpaidInvoices = $this->record->invoices()->whereIn('status', ['issued', 'partial', 'overdue'])->count();
-                    $totalOwed = (float) $this->record->invoices()->whereIn('status', ['issued', 'partial', 'overdue'])->sum(\DB::raw('total_amount - paid_amount'));
-                    $apptTotal = $this->record->appointments()->count();
-                    $upcomingAppointments = $this->record->appointments()->where('date', '>', now())->whereIn('status', ['scheduled', 'confirmed'])->count();
+                    $appointmentTotal = $this->record->appointments()->count();
                     $notesCount = $this->record->notes()->count();
                     $clinicalNotesCount = $this->record->clinicalNotes()->count();
                     $photosCount = $this->record->photos()->count();
+                    $prescriptionCount = $this->record->prescriptions()->count();
+                    $paymentCount = $this->record->payments()->count();
+                    $materialCount = \App\Models\TreatmentMaterial::query()
+                        ->whereHas('session.treatmentPlan', fn($query) => $query->where('patient_id', $this->record->id))
+                        ->count();
+                    $activityCount = $this->record->appointments()->count()
+                        + $this->record->treatmentPlans()->count()
+                        + $this->record->invoices()->count()
+                        + $this->record->payments()->count()
+                        + $this->record->notes()->count()
+                        + $this->record->branchLogs()->count();
                 @endphp
-                <nav class="flex space-x-2 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-2 mt-5 mb-5"
-                    aria-label="Tabs"
-                    style="padding: 10px; margin: 15px 0 15px 0; border-radius: 12px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                <nav class="crm-top-tabs mt-2" aria-label="Tabs">
                     @php
                         $tabs = [
-                            ['id' => 'overview', 'label' => 'Tổng quan', 'count' => null],
+                            ['id' => 'basic-info', 'label' => 'Thông tin cơ bản', 'count' => null],
                             ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $clinicalNotesCount + $tpTotal],
-                            ['id' => 'invoices', 'label' => 'Hóa đơn', 'count' => $invTotal],
-                            ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $upcomingAppointments],
-                            ['id' => 'notes', 'label' => 'Ghi chú', 'count' => $notesCount],
-                            ['id' => 'clinical-notes', 'label' => 'Khám lâm sàng', 'count' => $clinicalNotesCount],
+                            ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $prescriptionCount],
                             ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $photosCount],
+                            ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $materialCount],
+                            ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $appointmentTotal],
+                            ['id' => 'payments', 'label' => 'Thanh toán', 'count' => $invTotal + $paymentCount],
+                            ['id' => 'forms', 'label' => 'Biểu mẫu', 'count' => $prescriptionCount + $invTotal],
+                            ['id' => 'care', 'label' => 'Chăm sóc', 'count' => $notesCount],
+                            ['id' => 'activity-log', 'label' => 'Lịch sử thao tác', 'count' => $activityCount],
                         ];
                     @endphp
 
                     @foreach($tabs as $tab)
-                        <button wire:click="setActiveTab('{{ $tab['id'] }}')" @class([
-                            'px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2',
-                            'bg-primary-50 text-primary-600 dark:bg-primary-900/10 dark:text-primary-400' => $activeTab === $tab['id'],
-                            'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800' => $activeTab !== $tab['id'],
-                        ])
-                            style="{{ $activeTab === $tab['id'] ? 'background-color: #eff6ff; color: #2563eb;' : 'color: #6b7280;' }}">
-                            {{ $tab['label'] }}
+                        <button
+                            wire:click="setActiveTab('{{ $tab['id'] }}')"
+                            class="crm-top-tab {{ $activeTab === $tab['id'] ? 'is-active' : '' }}"
+                        >
+                            <span>{{ $tab['label'] }}</span>
                             @if($tab['count'] !== null)
-                                <span class="rounded-full px-5 py-0.5 text-sm font-bold"
-                                    style="{{ $activeTab === $tab['id'] ? 'background-color: #dbeafe; color: #1e40af;' : 'background-color: #f3f4f6; color: #4b5563;' }}">
-                                    {{ $tab['count'] }}
-                                </span>
+                                <span class="crm-top-tab-count">{{ $tab['count'] }}</span>
                             @endif
                         </button>
                     @endforeach
@@ -230,170 +237,359 @@
             </div>
 
 
-            {{-- Tab Content - Load all at once, show/hide with CSS --}}
+            {{-- Tab Content --}}
             <div>
-                {{-- Overview Tab --}}
-                <div x-show="activeTab === 'overview'" x-cloak class="space-y-6">
-                    @if($this->record)
-                        {{-- Stats grid (concise) --}}
-                        <div>
-                            @livewire(\App\Filament\Resources\Patients\Widgets\PatientOverviewWidget::class, ['record' => $this->record], key('patient-' . $this->record->id . '-overview'))
-                        </div>
-
-                        {{-- Activity timeline (collapsible, full width) --}}
-                        <div x-data="{open:false}" style="margin-top: 34px;">
-                            <button type="button" @click="open=!open"
-                                style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; font-size: 15px; font-weight: 600; border-radius: 12px; background: white; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s;"
-                                class="dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <span style="display: flex; align-items: center; gap: 10px; color: #111827;"
-                                    class="dark:text-white">
-                                    <svg style="width: 20px; height: 20px; color: #6b7280;" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Lịch sử hoạt động
-                                </span>
-                                <svg x-show="!open"
-                                    style="width: 20px; height: 20px; color: #6b7280; transition: transform 0.2s;"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <svg x-show="open"
-                                    style="width: 20px; height: 20px; color: #6b7280; transition: transform 0.2s;"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M5 15l7-7 7 7" />
-                                </svg>
-                            </button>
-                            <div x-show="open" x-cloak style="margin-top: 16px;">
-                                @livewire(\App\Filament\Resources\Patients\Widgets\PatientActivityTimelineWidget::class, ['record' => $this->record], key('patient-' . $this->record->id . '-timeline'))
+                @if($activeTab === 'basic-info')
+                    <div class="space-y-6" wire:key="patient-{{ $this->record->id }}-basic-info">
+                        @if($this->record)
+                            <div>
+                                @livewire(\App\Filament\Resources\Patients\Widgets\PatientOverviewWidget::class, ['record' => $this->record], key('patient-' . $this->record->id . '-overview'))
                             </div>
-                        </div>
-                    @else
-                        <div class="text-center py-12">
-                            <p class="text-gray-500">Không thể tải dữ liệu bệnh nhân</p>
-                        </div>
-                    @endif
-                </div>
 
-                {{-- Exam & Treatment Tab --}}
-                <div x-show="activeTab === 'exam-treatment'" x-cloak
-                    wire:key="patient-{{ $this->record->id }}-exam-treatment">
-                    <div class="space-y-4">
-                        {{-- Header with Add Button --}}
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Khám & Điều trị</h3>
-                        </div>
-
-                        {{-- Accordion Sections --}}
-                        <div x-data="{ openSection: 'general' }" class="space-y-3">
-                            @livewire('patient-exam-form', ['patient' => $this->record])
-
-                            {{-- 3. Chẩn đoán và điều trị --}}
-                            <div
-                                class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                                <button type="button"
-                                    @click="openSection = openSection === 'diagnosis' ? '' : 'diagnosis'"
-                                    class="w-full flex justify-between items-center px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                    <span class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                        </svg>
-                                        Chẩn đoán và điều trị
-                                    </span>
-                                    <svg class="w-5 h-5 text-gray-400 transition-transform"
-                                        :class="openSection === 'diagnosis' ? 'rotate-180' : ''" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                                <div x-show="openSection === 'diagnosis'" x-collapse
-                                    class="border-t border-gray-100 dark:border-gray-700">
-                                    <div class="p-5">
-                                        <p class="text-sm text-gray-500 mb-4 italic">Click vào răng để thêm tình trạng.
-                                            Mã tình trạng sẽ hiển thị trên răng.</p>
-                                        @livewire(\App\Filament\Resources\Patients\RelationManagers\ClinicalNotesRelationManager::class, [
-                                            'ownerRecord' => $this->record,
-                                            'pageClass' => static::class,
-                                        ])
+                            <div class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-5 bg-white dark:bg-gray-900">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Lịch sử thao tác</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Xem timeline cập nhật ở tab chuyên biệt để tránh trùng lặp nội dung.</p>
                                     </div>
+                                    <button type="button"
+                                        wire:click="setActiveTab('activity-log')"
+                                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                                        Mở lịch sử thao tác
+                                    </button>
                                 </div>
                             </div>
+                        @else
+                            <div class="text-center py-12">
+                                <p class="text-gray-500">Không thể tải dữ liệu bệnh nhân</p>
+                            </div>
+                        @endif
+                    </div>
+                @elseif($activeTab === 'exam-treatment')
+                    @php
+                        $formatMoney = fn($value) => number_format((float) $value, 0, ',', '.');
 
-                            {{-- 4. Kế hoạch điều trị --}}
-                            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                                <button type="button" @click="openSection = openSection === 'treatment-plan' ? '' : 'treatment-plan'" 
-                                    class="w-full flex justify-between items-center px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                    <span class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                                        </svg>
-                                        Kế hoạch điều trị ({{ $tpTotal }})
-                                    </span>
-                                    <svg class="w-5 h-5 text-gray-400 transition-transform" :class="openSection === 'treatment-plan' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <div x-show="openSection === 'treatment-plan'" x-collapse class="border-t border-gray-100 dark:border-gray-700">
-                                    <div class="p-5">
-                                        @livewire(\App\Filament\Resources\Patients\RelationManagers\TreatmentPlansRelationManager::class, [
-                                            'ownerRecord' => $this->record,
-                                            'pageClass' => static::class,
-                                        ])
+                        $treatmentProgress = $this->record->treatmentSessions()
+                            ->with(['doctor:id,name', 'assistant:id,name', 'planItem:id,name,tooth_number,tooth_ids,quantity,price,status'])
+                            ->latest('performed_at')
+                            ->latest('id')
+                            ->limit(50)
+                            ->get();
+
+                    @endphp
+                    <div class="space-y-6" wire:key="patient-{{ $this->record->id }}-exam-treatment">
+                        @livewire('patient-exam-form', ['patient' => $this->record], key('patient-' . $this->record->id . '-exam-form'))
+
+                        @livewire('patient-treatment-plan-section', ['patientId' => $this->record->id], key('patient-' . $this->record->id . '-treatment-plan'))
+
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="crm-section-label">Tiến trình điều trị</h3>
+                                <span class="crm-section-badge">{{ $treatmentProgress->count() }} phiên</span>
+                            </div>
+
+                            <div class="crm-treatment-card rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" style="border-radius: 8px; overflow: hidden;">
+                                <div class="crm-treatment-subhead flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                    <div class="crm-treatment-subhead-title text-sm font-semibold text-gray-900 dark:text-white">Tiến trình điều trị</div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="crm-treatment-subhead-count text-xs text-gray-600 dark:text-gray-300">Hiển thị {{ $treatmentProgress->count() }}/{{ $treatmentProgress->count() }}</span>
+                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', ['patient_id' => $this->record->id]) }}"
+                                           class="crm-btn crm-btn-primary h-8 px-3 text-xs"
+                                        >
+                                            Thêm ngày điều trị
+                                        </a>
                                     </div>
+                                </div>
+
+                                <div class="crm-treatment-table-wrap" style="overflow-x: auto;">
+                                    <table class="crm-treatment-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                        <thead style="background: #4b4b4b; color: #ffffff;">
+                                            <tr>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Ngày điều trị</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Răng số</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Thủ thuật</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Nội dung thủ thuật</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Bác sĩ</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Trợ thủ</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">S.L</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Đơn giá</th>
+                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Tình trạng</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($treatmentProgress as $session)
+                                                @php
+                                                    $performedAt = $session->performed_at ?? $session->start_at ?? $session->created_at;
+                                                    $statusLabel = match ($session->status) {
+                                                        'done' => 'Hoàn thành',
+                                                        'follow_up' => 'Tái khám',
+                                                        default => 'Đã lên lịch',
+                                                    };
+                                                    $statusClass = match ($session->status) {
+                                                        'done' => 'is-completed',
+                                                        'follow_up' => 'is-progress',
+                                                        default => 'is-default',
+                                                    };
+                                                    $toothLabel = $session->planItem?->tooth_number ?: (is_array($session->planItem?->tooth_ids) ? implode(' ', $session->planItem?->tooth_ids) : '-');
+                                                    $sessionQty = $session->planItem?->quantity ?? 1;
+                                                    $sessionPrice = (float) ($session->planItem?->price ?? 0);
+                                                @endphp
+                                                <tr>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $performedAt?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $toothLabel }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->planItem?->name ?? '-' }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->procedure ?: ($session->notes ?: '-') }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->doctor?->name ?? '-' }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->assistant?->name ?? '-' }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db; text-align: center;">{{ $sessionQty }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($sessionPrice) }}</td>
+                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">
+                                                        <span class="crm-treatment-status {{ $statusClass }}">
+                                                            {{ $statusLabel }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="9" class="crm-treatment-empty" style="padding: 18px; text-align: center; color: #6b7280;">
+                                                        Chưa có tiến trình điều trị cho bệnh nhân này.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @elseif($activeTab === 'prescriptions')
+                    <div class="crm-rel-tab crm-rel-tab-prescriptions" wire:key="patient-{{ $this->record->id }}-prescriptions">
+                        @livewire(\App\Filament\Resources\Patients\RelationManagers\PrescriptionsRelationManager::class, [
+                            'ownerRecord' => $this->record,
+                            'pageClass' => static::class,
+                        ])
+                    </div>
+                @elseif($activeTab === 'photos')
+                    <div class="crm-rel-tab crm-rel-tab-photos" wire:key="patient-{{ $this->record->id }}-photos">
+                        @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPhotosRelationManager::class, [
+                            'ownerRecord' => $this->record,
+                            'pageClass' => static::class,
+                        ])
+                    </div>
+                @elseif($activeTab === 'lab-materials')
+                    @php
+                        $materialUsages = \App\Models\TreatmentMaterial::query()
+                            ->with(['session', 'material', 'user'])
+                            ->whereHas('session.treatmentPlan', fn($query) => $query->where('patient_id', $this->record->id))
+                            ->latest('created_at')
+                            ->limit(100)
+                            ->get();
+                    @endphp
+                    <div class="space-y-4" wire:key="patient-{{ $this->record->id }}-lab-materials">
+                        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Danh sách vật tư tiêu hao</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Theo dõi vật tư đã sử dụng trong các phiên điều trị của bệnh nhân.</p>
+                                </div>
+                                <a href="{{ route('filament.admin.resources.treatment-materials.create') }}"
+                                    class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                                    Thêm phiếu xuất
+                                </a>
+                            </div>
+                        </div>
 
-            {{-- Invoices Tab --}}
-                
-       <div x-show="activeTab === 'invoices'" x-cloak wire:key="patient-{{ $this->record->id }}-invoices">
-            @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
-                'ownerRecord' => $this->record,
-                'pageClass' => static::class,
-            ])
-                </div>
-         
-                               {{-- Appointments Tab --}}
-                <div x-show="activeTab === 'appointments'" x-cloak wire:key="patient-{{ $this->record->id }}-appointments">
-                            @livewire(\App\Filament\Resources\Patients\RelationManagers\AppointmentsRelationManager::class, [
+                        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                                    <thead class="bg-gray-50 dark:bg-gray-800">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ngày xuất</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Phiên điều trị</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Tên vật tư</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Số lượng</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Đơn giá</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Tổng tiền</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Người xuất</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                                        @forelse($materialUsages as $usage)
+                                            <tr>
+                                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $usage->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">#{{ $usage->treatment_session_id ?? '-' }}</td>
+                                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ $usage->material?->name ?? 'N/A' }}</td>
+                                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ number_format((float) $usage->quantity, 0, ',', '.') }}</td>
+                                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ number_format((float) $usage->cost, 0, ',', '.') }}đ</td>
+                                                <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">{{ number_format((float) $usage->quantity * (float) $usage->cost, 0, ',', '.') }}đ</td>
+                                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $usage->user?->name ?? 'N/A' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                    Chưa có dữ liệu vật tư cho bệnh nhân này.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @elseif($activeTab === 'appointments')
+                    <div class="crm-rel-tab crm-rel-tab-appointments" wire:key="patient-{{ $this->record->id }}-appointments">
+                        @livewire(\App\Filament\Resources\Patients\RelationManagers\AppointmentsRelationManager::class, [
+                            'ownerRecord' => $this->record,
+                            'pageClass' => static::class,
+                        ])
+                    </div>
+                @elseif($activeTab === 'payments')
+                    @php
+                        $totalTreatmentAmount = (float) $this->record->invoices()->sum('total_amount');
+                        $totalDiscountAmount = (float) $this->record->invoices()->sum('discount_amount');
+                        $mustPayAmount = max(0, $totalTreatmentAmount - $totalDiscountAmount);
+                        $receiptAmount = (float) $this->record->payments()->where('direction', 'receipt')->sum('amount');
+                        $refundAmount = abs((float) $this->record->payments()->where('direction', 'refund')->sum('amount'));
+                        $netCollectedAmount = $receiptAmount - $refundAmount;
+                        $remainingAmount = max(0, $mustPayAmount - $netCollectedAmount);
+                        $balanceAmount = $netCollectedAmount - $mustPayAmount;
+                        $openInvoice = $this->record->invoices()
+                            ->whereNotIn('status', ['paid', 'cancelled'])
+                            ->latest('created_at')
+                            ->first();
+                        $latestInvoice = $openInvoice ?: $this->record->invoices()->latest('created_at')->first();
+                        $createPaymentUrl = route(
+                            'filament.admin.resources.payments.create',
+                            $latestInvoice ? ['invoice_id' => $latestInvoice->id] : []
+                        );
+                    @endphp
+                    <div class="crm-payment-tab space-y-4" wire:key="patient-{{ $this->record->id }}-payments">
+                        <div class="crm-payment-summary">
+                            <div class="crm-payment-summary-head">
+                                <h3 class="crm-payment-summary-title">Thông tin thanh toán</h3>
+                                <div class="crm-payment-summary-actions">
+                                    <div class="crm-payment-balance">
+                                        Số dư:
+                                        <strong class="{{ $balanceAmount >= 0 ? 'is-positive' : 'is-negative' }}">
+                                            {{ number_format($balanceAmount, 0, ',', '.') }}đ
+                                        </strong>
+                                    </div>
+                                    <a href="{{ $createPaymentUrl }}" class="crm-btn crm-btn-primary h-8 px-3 text-xs">
+                                        Phiếu thu
+                                    </a>
+                                    <a href="{{ $createPaymentUrl }}" class="crm-btn crm-btn-primary h-8 px-3 text-xs">
+                                        Thanh toán
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="crm-payment-metrics">
+                                <div class="crm-payment-metric">
+                                    <span>Tổng tiền điều trị</span>
+                                    <strong>{{ number_format($totalTreatmentAmount, 0, ',', '.') }}</strong>
+                                </div>
+                                <div class="crm-payment-metric">
+                                    <span>Giảm giá</span>
+                                    <strong>{{ number_format($totalDiscountAmount, 0, ',', '.') }}</strong>
+                                </div>
+                                <div class="crm-payment-metric">
+                                    <span>Phải thanh toán</span>
+                                    <strong>{{ number_format($mustPayAmount, 0, ',', '.') }}</strong>
+                                </div>
+                                <div class="crm-payment-metric">
+                                    <span>Đã thu</span>
+                                    <strong class="is-positive">{{ number_format($netCollectedAmount, 0, ',', '.') }}</strong>
+                                </div>
+                                <div class="crm-payment-metric">
+                                    <span>Còn lại</span>
+                                    <strong class="is-negative">{{ number_format($remainingAmount, 0, ',', '.') }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="crm-payment-block">
+                            <div class="crm-payment-block-title">HÓA ĐƠN ĐIỀU TRỊ</div>
+                            @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
                                 'ownerRecord' => $this->record,
                                 'pageClass' => static::class,
                             ])
-    
-                               </div>
-    
-                            {{-- Notes Tab --}}
-                <div x-show="activeTab === 'notes'" x-cloak wire:key="patient-{{ $this->record->id }}-notes">
-                    @livewire(\App\Filament\Resources\Patients\Relations\PatientNotesRelationManager::class, [
-                        'ownerRecord' => $this->record,
-                        'pageClass' => static::class,
-                    ])
-        </div>
+                        </div>
 
-        {{-- Clinical Notes Tab --}}
-        <div x-show="activeTab === 'clinical-notes'" x-cloak wire:key="patient-{{ $this->record->id }}-clinical-notes">
-            @livewire(\App\Filament\Resources\Patients\RelationManagers\ClinicalNotesRelationManager::class, [
-                'ownerRecord' => $this->record,
-                'pageClass' => static::class,
-            ])
-        </div>
+                        <div class="crm-payment-block">
+                            <div class="crm-payment-block-title">DANH SÁCH PHIẾU THU - HOÀN ỨNG</div>
+                            @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class, [
+                                'ownerRecord' => $this->record,
+                                'pageClass' => static::class,
+                            ])
+                        </div>
+                    </div>
+                @elseif($activeTab === 'forms')
+                    @php
+                        $latestPrescriptions = $this->record->prescriptions()->latest('created_at')->limit(5)->get();
+                        $latestInvoices = $this->record->invoices()->latest('created_at')->limit(5)->get();
+                    @endphp
+                    <div class="space-y-4" wire:key="patient-{{ $this->record->id }}-forms">
+                        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Biểu mẫu & tài liệu</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Truy cập nhanh biểu mẫu in theo hồ sơ bệnh nhân (đơn thuốc, hóa đơn, phiếu thu).
+                            </p>
+                        </div>
 
-        {{-- Photos Tab --}}
-        <div x-show="activeTab === 'photos'" x-cloak wire:key="patient-{{ $this->record->id }}-photos">
-            @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPhotosRelationManager::class, [
-                'ownerRecord' => $this->record,
-                'pageClass' => static::class,
-            ])
-        </div>
-    </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Đơn thuốc gần nhất</h4>
+                                <div class="space-y-2">
+                                    @forelse($latestPrescriptions as $prescription)
+                                        <a href="{{ route('prescriptions.print', $prescription) }}"
+                                            target="_blank"
+                                            class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                            <span class="text-sm text-gray-700 dark:text-gray-300">
+                                                {{ $prescription->prescription_code }} - {{ $prescription->treatment_date?->format('d/m/Y') ?? '-' }}
+                                            </span>
+                                            <span class="text-xs font-semibold text-primary-600">In</span>
+                                        </a>
+                                    @empty
+                                        <p class="text-sm text-gray-500">Chưa có đơn thuốc để in.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Hóa đơn gần nhất</h4>
+                                <div class="space-y-2">
+                                    @forelse($latestInvoices as $invoice)
+                                        <a href="{{ route('invoices.print', $invoice) }}"
+                                            target="_blank"
+                                            class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                            <span class="text-sm text-gray-700 dark:text-gray-300">
+                                                #{{ $invoice->invoice_no }} - {{ $invoice->issued_at?->format('d/m/Y') ?? $invoice->created_at?->format('d/m/Y') }}
+                                            </span>
+                                            <span class="text-xs font-semibold text-primary-600">In</span>
+                                        </a>
+                                    @empty
+                                        <p class="text-sm text-gray-500">Chưa có hóa đơn để in.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @elseif($activeTab === 'care')
+                    <div class="crm-care-tab space-y-4" wire:key="patient-{{ $this->record->id }}-care">
+                        <div class="crm-care-manager">
+                            @livewire(\App\Filament\Resources\Patients\Relations\PatientNotesRelationManager::class, [
+                                'ownerRecord' => $this->record,
+                                'pageClass' => static::class,
+                            ])
+                        </div>
+                    </div>
+                @elseif($activeTab === 'activity-log')
+                    <div wire:key="patient-{{ $this->record->id }}-activity-log">
+                        @livewire(\App\Filament\Resources\Patients\Widgets\PatientActivityTimelineWidget::class, [
+                            'record' => $this->record,
+                        ])
+                    </div>
+                @endif
+            </div>
 
     </div>
 </x-filament-panels::page>

@@ -17,6 +17,7 @@ class PatientMedicalRecord extends Model
         'insurance_expiry_date',
         'emergency_contact_name',
         'emergency_contact_phone',
+        'emergency_contact_email',
         'emergency_contact_relationship',
         'blood_type',
         'additional_notes',

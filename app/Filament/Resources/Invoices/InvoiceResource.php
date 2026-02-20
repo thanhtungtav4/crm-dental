@@ -27,7 +27,7 @@ class InvoiceResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '2️⃣ Tài chính';
+        return 'Tài chính';
     }
     
     protected static ?int $navigationSort = 11;
@@ -46,7 +46,6 @@ class InvoiceResource extends Resource
     {
         return [
             RelationManagers\PaymentsRelationManager::class,
-            RelationManagers\InstallmentPlanRelationManager::class,
         ];
     }
 

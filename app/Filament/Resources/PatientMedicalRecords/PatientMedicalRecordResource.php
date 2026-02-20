@@ -26,11 +26,11 @@ class PatientMedicalRecordResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Hồ sơ y tế';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
     
     public static function getNavigationGroup(): ?string
     {
-        return '1️⃣ Hoạt động hàng ngày';
+        return 'Hoạt động hàng ngày';
     }
 
     public static function form(Schema $schema): Schema

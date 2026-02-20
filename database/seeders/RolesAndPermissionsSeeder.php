@@ -31,6 +31,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'Branch',
             'User',
             'Customer',
+            'CustomerGroup',
+            'PromotionGroup',
             'Patient',
             'TreatmentPlan',
             'TreatmentSession',
@@ -40,12 +42,25 @@ class RolesAndPermissionsSeeder extends Seeder
             'TreatmentMaterial',
             'Invoice',
             'Payment',
+            'ReceiptExpense',
             'Note',
             'Appointment',
             'Service',
             'ServiceCategory',
             'Supplier',
+            'DiseaseGroup',
+            'Disease',
+            'ToothCondition',
             'Role',
+        ];
+
+        $pages = [
+            'SystemSettings',
+            'IntegrationSettings',
+        ];
+
+        $extraPermissions = [
+            'View:IntegrationSettingsAuditLog',
         ];
 
         // Ensure permissions exist (compatible with Shield)
@@ -53,6 +68,14 @@ class RolesAndPermissionsSeeder extends Seeder
             foreach ($adminOnlyPrefixes as $prefix) {
                 Permission::firstOrCreate(['name' => $prefix . ':' . $res]);
             }
+        }
+
+        foreach ($pages as $page) {
+            Permission::firstOrCreate(['name' => 'View:' . $page]);
+        }
+
+        foreach ($extraPermissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         $admin = Role::findByName('Admin');
@@ -70,6 +93,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 $managerPerms[] = $prefix . ':' . $res; // e.g. ViewAny:Customer
             }
         }
+        foreach ($pages as $page) {
+            $managerPerms[] = 'View:' . $page;
+        }
+        $managerPerms[] = 'View:IntegrationSettingsAuditLog';
         $manager->syncPermissions($managerPerms);
 
         // Doctor: View/Update Patients & Plans. Manage Sessions.

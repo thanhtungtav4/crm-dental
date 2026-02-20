@@ -52,6 +52,9 @@ class PatientConversionService
                     'gender' => $customer->gender ?? 'other', // Assuming gender might be on customer or default
                     'birthday' => $customer->birthday ?? null,
                     'address' => $customer->address ?? null,
+                    'customer_group_id' => $customer->customer_group_id,
+                    'promotion_group_id' => $customer->promotion_group_id,
+                    'owner_staff_id' => $customer->assigned_to,
                     'created_by' => auth()->id() ?? $customer->created_by,
                     'updated_by' => auth()->id() ?? $customer->updated_by,
                 ]);

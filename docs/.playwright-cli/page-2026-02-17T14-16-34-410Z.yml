@@ -1,0 +1,424 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "17"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e165]: Nguyễn Văn An
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - heading "Báo cáo mới" [level=3] [ref=e110]
+              - img [ref=e112] [cursor=pointer]
+            - switch [checked] [ref=e115] [cursor=pointer]
+          - img [ref=e120] [cursor=pointer]
+      - generic [ref=e134]:
+        - tablist [ref=e135]:
+          - button "In" [ref=e140] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e141]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e145]:
+              - tab "Thông tin cơ bản" [ref=e146] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e147] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e148] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e149] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [selected] [ref=e150] [cursor=pointer]
+              - tab "Lịch hẹn" [ref=e151] [cursor=pointer]
+              - tab "Thanh toán" [ref=e152] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e153] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e154] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e155] [cursor=pointer]
+        - generic [ref=e157]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Danh sách đơn thuốc
+                  - generic:
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic: Thêm đơn thuốc
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - table:
+                                    - rowgroup:
+                                      - row:
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày điều trị
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày tạo
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Mã đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Tên đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Bác sĩ kê đơn
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Thao tác
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - img
+                                      - paragraph: Chưa có dữ liệu
+          - tabpanel [ref=e982]:
+            - generic [ref=e984]:
+              - generic [ref=e987]:
+                - 'button "icon: right Danh sách đặt xưởng Thêm phiếu chi Thêm đặt xưởng" [expanded] [ref=e988] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e989]':
+                    - img [ref=e990]
+                  - generic [ref=e993]:
+                    - generic [ref=e994]: Danh sách đặt xưởng
+                    - generic [ref=e995]:
+                      - button "Thêm phiếu chi" [ref=e998]:
+                        - generic: Thêm phiếu chi
+                      - button "Thêm đặt xưởng" [ref=e1001]:
+                        - generic: Thêm đặt xưởng
+                - generic [ref=e1010]:
+                  - generic [ref=e1011]:
+                    - table [ref=e1013]:
+                      - rowgroup [ref=e1030]:
+                        - row "Ngày điều trị Đơn vị Xưởng/Labo Vật liệu S.L Đơn giá Chi phí Chiết khấu (%) Thành tiền Người đặt Người nhận Ngày đặt Ngày trả Ghi chú" [ref=e1031]:
+                          - columnheader "Ngày điều trị" [ref=e1032]:
+                            - generic [ref=e1036]: Ngày điều trị
+                          - columnheader "Đơn vị Xưởng/Labo" [ref=e1037]:
+                            - generic [ref=e1041]: Đơn vị Xưởng/Labo
+                          - columnheader "Vật liệu" [ref=e1042]:
+                            - generic [ref=e1046]: Vật liệu
+                          - columnheader "S.L" [ref=e1047]:
+                            - generic [ref=e1051]: S.L
+                          - columnheader "Đơn giá" [ref=e1052]:
+                            - generic [ref=e1056]: Đơn giá
+                          - columnheader "Chi phí" [ref=e1057]:
+                            - generic [ref=e1061]: Chi phí
+                          - columnheader "Chiết khấu (%)" [ref=e1062]:
+                            - generic [ref=e1066]: Chiết khấu (%)
+                          - columnheader "Thành tiền" [ref=e1067]:
+                            - generic [ref=e1071]: Thành tiền
+                          - columnheader "Người đặt" [ref=e1072]:
+                            - generic [ref=e1076]: Người đặt
+                          - columnheader "Người nhận" [ref=e1077]:
+                            - generic [ref=e1081]: Người nhận
+                          - columnheader "Ngày đặt" [ref=e1082]:
+                            - generic [ref=e1086]: Ngày đặt
+                          - columnheader "Ngày trả" [ref=e1087]:
+                            - generic [ref=e1091]: Ngày trả
+                          - columnheader "Ghi chú" [ref=e1092]:
+                            - generic [ref=e1096]: Ghi chú
+                      - rowgroup
+                    - generic [ref=e1099]:
+                      - img [ref=e1101]
+                      - paragraph [ref=e1107]: Chưa có dữ liệu
+                    - generic [ref=e1111]: "Tổng tiền: 0"
+                  - table [ref=e1115]:
+                    - rowgroup [ref=e1119]:
+                      - row "Trạng thái Thao tác" [ref=e1120]:
+                        - columnheader "Trạng thái" [ref=e1121]:
+                          - generic [ref=e1125]: Trạng thái
+                        - columnheader "Thao tác" [ref=e1126]:
+                          - generic [ref=e1130]: Thao tác
+                    - rowgroup
+              - generic [ref=e1133]:
+                - 'button "icon: right Danh sách vật tư tiêu hao Thêm phiếu xuất" [expanded] [ref=e1134] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e1135]':
+                    - img [ref=e1136]
+                  - generic [ref=e1139]:
+                    - generic [ref=e1140]: Danh sách vật tư tiêu hao
+                    - button "Thêm phiếu xuất" [ref=e1142]:
+                      - generic: Thêm phiếu xuất
+                - generic [ref=e1156]:
+                  - table [ref=e1158]:
+                    - rowgroup [ref=e1170]:
+                      - row "Ngày điều trị Ngày xuất Bác sĩ Thủ thuật Tên vật tư Đơn vị Số lượng Đơn giá Tổng tiền Thao tác" [ref=e1171]:
+                        - columnheader "Ngày điều trị" [ref=e1172]:
+                          - generic [ref=e1176]: Ngày điều trị
+                        - columnheader "Ngày xuất" [ref=e1177]:
+                          - generic [ref=e1181]: Ngày xuất
+                        - columnheader "Bác sĩ" [ref=e1182]:
+                          - generic [ref=e1186]: Bác sĩ
+                        - columnheader "Thủ thuật" [ref=e1187]:
+                          - generic [ref=e1191]: Thủ thuật
+                        - columnheader "Tên vật tư" [ref=e1192]:
+                          - generic [ref=e1196]: Tên vật tư
+                        - columnheader "Đơn vị" [ref=e1197]:
+                          - generic [ref=e1201]: Đơn vị
+                        - columnheader "Số lượng" [ref=e1202]:
+                          - generic [ref=e1206]: Số lượng
+                        - columnheader "Đơn giá" [ref=e1207]:
+                          - generic [ref=e1211]: Đơn giá
+                        - columnheader "Tổng tiền" [ref=e1212]:
+                          - generic [ref=e1216]: Tổng tiền
+                        - columnheader "Thao tác" [ref=e1217]:
+                          - generic [ref=e1221]: Thao tác
+                    - rowgroup
+                  - generic [ref=e1224]:
+                    - img [ref=e1226]
+                    - paragraph [ref=e1232]: Chưa có dữ liệu
+                  - generic [ref=e1236]: "Tổng tiền: 0"
+  - dialog [ref=e1832]:
+    - document:
+      - generic [ref=e1834]:
+        - generic [ref=e1835]:
+          - heading "Thêm phiếu xuất vật tư" [level=2] [ref=e1837]
+          - img [ref=e1839] [cursor=pointer]
+        - generic [ref=e1843]:
+          - generic [ref=e1844]:
+            - generic [ref=e1845]:
+              - generic [ref=e1848]:
+                - generic [ref=e1849]: Ngày lập phiếu *
+                - generic [ref=e1854] [cursor=pointer]:
+                  - textbox "dd-mm-yyyy" [ref=e1855]: 17-02-2026
+                  - img [ref=e1857]
+              - generic [ref=e1861]:
+                - generic [ref=e1862]: Người xuất *
+                - combobox [ref=e1867] [cursor=pointer]:
+                  - generic "MAI HOÀNG YẾN" [ref=e1869]
+                  - 'generic "icon: close-circle" [ref=e1871]':
+                    - img [ref=e1872]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e1876]:
+                - generic [ref=e1877]: Người nhận *
+                - combobox [ref=e1882] [cursor=pointer]:
+                  - generic "MAI HOÀNG YẾN" [ref=e1884]
+                  - 'generic "icon: close-circle" [ref=e1886]':
+                    - img [ref=e1887]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e1891]:
+                - generic [ref=e1892]: Tổng tiền
+                - generic [ref=e1895]: 3,373.63
+            - generic [ref=e1900]:
+              - generic [ref=e1902]:
+                - heading "Danh sách vật tư *" [level=3] [ref=e1904]
+                - generic [ref=e1906]:
+                  - button "Import" [ref=e1909] [cursor=pointer]:
+                    - generic: Import
+                  - button "Chọn vật tư" [ref=e1911] [cursor=pointer]:
+                    - generic: Chọn vật tư
+              - table [ref=e1921]:
+                - rowgroup [ref=e1933]:
+                  - row "STT Mã vật tư Tên vật tư Nhóm/Danh mục vật tư Đơn vị S.L Tồn kho Số lượng Đơn giá Thành tiền Thao tác" [ref=e1934]:
+                    - columnheader "STT" [ref=e1935]:
+                      - generic [ref=e1939]: STT
+                    - columnheader "Mã vật tư" [ref=e1940]:
+                      - generic [ref=e1944]: Mã vật tư
+                    - columnheader "Tên vật tư" [ref=e1945]:
+                      - generic [ref=e1949]: Tên vật tư
+                    - columnheader "Nhóm/Danh mục vật tư" [ref=e1950]:
+                      - generic [ref=e1954]: Nhóm/Danh mục vật tư
+                    - columnheader "Đơn vị" [ref=e1955]:
+                      - generic [ref=e1959]: Đơn vị
+                    - columnheader "S.L Tồn kho" [ref=e1960]:
+                      - generic [ref=e1964]: S.L Tồn kho
+                    - columnheader "Số lượng" [ref=e1965]:
+                      - generic [ref=e1969]: Số lượng
+                    - columnheader "Đơn giá" [ref=e1970]:
+                      - generic [ref=e1974]: Đơn giá
+                    - columnheader "Thành tiền" [ref=e1975]:
+                      - generic [ref=e1979]: Thành tiền
+                    - columnheader "Thao tác" [ref=e1980]:
+                      - generic [ref=e1984]: Thao tác
+                - rowgroup [ref=e2430]:
+                  - row "1 GTS Găng tay size S Tiêu hoa Cặp 1543 1 3373.63 3,373.63" [ref=e2431]:
+                    - cell "1" [ref=e2432]:
+                      - generic [ref=e2433]: "1"
+                    - cell "GTS" [ref=e2434]:
+                      - generic [ref=e2435]: GTS
+                    - cell "Găng tay size S" [ref=e2436]:
+                      - generic [ref=e2437]: Găng tay size S
+                    - cell "Tiêu hoa" [ref=e2438]:
+                      - generic [ref=e2439]: Tiêu hoa
+                    - cell "Cặp" [ref=e2440]:
+                      - generic [ref=e2441]: Cặp
+                    - cell "1543" [ref=e2442]:
+                      - generic [ref=e2443]: "1543"
+                    - cell "1" [ref=e2444]:
+                      - spinbutton [ref=e2452]: "1"
+                    - cell "3373.63" [ref=e2453]:
+                      - spinbutton [ref=e2461]: 3,373.63
+                    - cell "3,373.63" [ref=e2462]:
+                      - generic [ref=e2463]: 3,373.63
+                    - cell [ref=e2464]:
+                      - img [ref=e2468] [cursor=pointer]
+            - generic [ref=e1998]:
+              - generic [ref=e1999]: Ghi chú
+              - generic [ref=e2002]:
+                - toolbar "Editor toolbar" [ref=e2003]:
+                  - generic [ref=e2004]:
+                    - button "Paragraph" [ref=e2006]:
+                      - generic [ref=e2007]: Paragraph
+                      - img
+                    - button "Insert image" [ref=e2009]:
+                      - img [ref=e2010]
+                - textbox "Rich Text Editor, main" [ref=e2012]:
+                  - paragraph [ref=e2013]
+          - generic [ref=e2014]:
+            - button "Hủy bỏ" [ref=e2016] [cursor=pointer]:
+              - generic: Hủy bỏ
+            - button "Thêm mới" [ref=e2018] [cursor=pointer]:
+              - generic: Thêm mới

@@ -1,0 +1,106 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "18"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e109]: Dental Call Center
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - heading "Báo cáo mới" [level=3] [ref=e114]
+              - img [ref=e116] [cursor=pointer]
+            - switch [checked] [ref=e119] [cursor=pointer]
+          - generic [ref=e122] [cursor=pointer]:
+            - img [ref=e124]
+            - superscript [ref=e127]
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - heading "Thiết lập ứng dụng" [level=3] [ref=e140]
+              - generic [ref=e141]:
+                - text: Sau khi cài đặt Call Center thành công, quý khách vẫn chưa thể sử dụng được tính năng gọi điện chăm sóc khách hàng. Quý khách vui lòng liên hệ qua
+                - link "support@dentalflow.vn" [ref=e142] [cursor=pointer]:
+                  - /url: mailto:support@dentalflow.vn
+                - text: hoặc
+                - link "0927741985" [ref=e143] [cursor=pointer]:
+                  - /url: tel:0927741985
+                - text: để được hỗ trợ.
+            - generic [ref=e144]:
+              - heading "Dịch vụ call center" [level=3] [ref=e145]
+              - generic [ref=e148]:
+                - generic [ref=e149] [cursor=pointer]:
+                  - radio "Stringee" [checked] [ref=e151]
+                  - generic [ref=e153]: Stringee
+                - generic [ref=e154] [cursor=pointer]:
+                  - radio "CareSoft" [ref=e156]
+                  - generic [ref=e158]: CareSoft
+          - switch [ref=e161] [cursor=pointer]
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - heading "Thiết lập tích hợp tài khoản Stringee" [level=3] [ref=e167]
+            - img [ref=e169] [cursor=pointer]
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - generic [ref=e175]:
+                - generic [ref=e176]: SID
+                - generic [ref=e180]:
+                  - textbox "SID" [ref=e181]: abc
+                  - 'button "icon: close-circle" [ref=e183] [cursor=pointer]':
+                    - img [ref=e184]
+              - generic [ref=e187]:
+                - generic [ref=e188]: Key
+                - generic [ref=e192]:
+                  - textbox "Key" [ref=e193]: def
+                  - 'button "icon: close-circle" [ref=e195] [cursor=pointer]':
+                    - img [ref=e196]
+            - button "Lưu thông tin" [ref=e200] [cursor=pointer]:
+              - generic: Lưu thông tin
+  - dialog [ref=e202]:
+    - document:
+      - generic [ref=e204]:
+        - generic [ref=e205]:
+          - heading "Thư chúc Tết Xuân Bính Ngọ 2026" [level=2] [ref=e207]
+          - img [ref=e209] [cursor=pointer]
+        - generic [ref=e212]:
+          - paragraph
+          - img "undefined" [ref=e213]
+          - paragraph

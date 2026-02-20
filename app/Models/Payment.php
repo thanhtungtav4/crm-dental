@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ class Payment extends Model
     protected $fillable = [
         'invoice_id',
         'amount',
+        'direction',
         'method',
         'transaction_ref',
         'payment_source',
@@ -20,12 +22,24 @@ class Payment extends Model
         'paid_at',
         'received_by',
         'note',
+        'refund_reason',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $payment) {
+            if ($payment->direction === 'refund') {
+                $payment->amount = -abs((float) $payment->amount);
+            } else {
+                $payment->amount = abs((float) $payment->amount);
+            }
+        });
+    }
 
     // ==================== RELATIONSHIPS ====================
 
@@ -46,13 +60,9 @@ class Payment extends Model
      */
     public function getMethodLabel(): string
     {
-        return match($this->method) {
-            'cash' => 'Tiền mặt',
-            'card' => 'Thẻ tín dụng/ghi nợ',
-            'transfer' => 'Chuyển khoản',
-            'other' => 'Khác',
-            default => 'Không xác định',
-        };
+        $labels = ClinicRuntimeSettings::paymentMethodLabels();
+
+        return $labels[$this->method] ?? 'Không xác định';
     }
 
     /**
@@ -60,13 +70,7 @@ class Payment extends Model
      */
     public function getMethodIcon(): string
     {
-        return match($this->method) {
-            'cash' => 'heroicon-o-banknotes',
-            'card' => 'heroicon-o-credit-card',
-            'transfer' => 'heroicon-o-arrow-path',
-            'other' => 'heroicon-o-ellipsis-horizontal-circle',
-            default => 'heroicon-o-question-mark-circle',
-        };
+        return ClinicRuntimeSettings::paymentMethodIcon($this->method);
     }
 
     /**
@@ -90,6 +94,24 @@ class Payment extends Model
         return number_format($this->amount, 0, ',', '.') . 'đ';
     }
 
+    public function getDirectionLabel(): string
+    {
+        return match ($this->direction) {
+            'refund' => 'Hoàn',
+            default => 'Thu',
+        };
+    }
+
+    public function getSignedAmountAttribute(): float
+    {
+        return (float) $this->amount;
+    }
+
+    public function isRefund(): bool
+    {
+        return $this->direction === 'refund' || (float) $this->amount < 0;
+    }
+
     /**
      * Check if this is an insurance claim
      */
@@ -111,13 +133,7 @@ class Payment extends Model
      */
     public function getMethodBadgeColor(): string
     {
-        return match($this->method) {
-            'cash' => 'success',
-            'card' => 'info',
-            'transfer' => 'warning',
-            'other' => 'gray',
-            default => 'gray',
-        };
+        return ClinicRuntimeSettings::paymentMethodColor($this->method);
     }
 
     /**
@@ -165,6 +181,16 @@ class Payment extends Model
         return $query->whereHas('invoice', function ($q) use ($patientId) {
             $q->where('patient_id', $patientId);
         });
+    }
+
+    public function scopeReceipts($query)
+    {
+        return $query->where('direction', 'receipt');
+    }
+
+    public function scopeRefunds($query)
+    {
+        return $query->where('direction', 'refund');
     }
 
     public function scopeByDateRange($query, string $startDate, string $endDate)

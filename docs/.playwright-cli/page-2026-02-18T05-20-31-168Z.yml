@@ -1,0 +1,238 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - img [ref=e11] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - link [ref=e18] [cursor=pointer]:
+          - /url: /
+          - img [ref=e20]
+        - link [ref=e23] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e25]
+        - button [ref=e31] [cursor=pointer]:
+          - link [ref=e32]:
+            - /url: /customer-care
+            - img [ref=e34]
+        - button [ref=e42] [cursor=pointer]:
+          - link [ref=e43]:
+            - /url: /calendar
+            - img [ref=e45]
+        - link [ref=e48] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e50]
+        - link [ref=e53] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e55]
+        - button [ref=e61] [cursor=pointer]:
+          - img [ref=e64]
+        - button [ref=e70] [cursor=pointer]:
+          - img [ref=e73]
+        - link [ref=e76] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e78]
+        - link [ref=e81] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e83]
+        - button [ref=e92] [cursor=pointer]:
+          - img [ref=e95]
+      - generic [ref=e98] [cursor=pointer]:
+        - img [ref=e100]
+        - paragraph [ref=e102]: "18"
+  - generic [ref=e104]:
+    - generic [ref=e105]:
+      - generic [ref=e109]: Ứng dụng mở rộng
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - heading "Báo cáo mới" [level=3] [ref=e114]
+            - img [ref=e116] [cursor=pointer]
+          - switch [checked] [ref=e119] [cursor=pointer]
+        - generic [ref=e122] [cursor=pointer]:
+          - img [ref=e124]
+          - superscript [ref=e127]
+    - generic [ref=e137]:
+      - generic [ref=e142]:
+        - textbox "Nhập tên ứng dụng để tìm kiếm" [ref=e143]
+        - img [ref=e145] [cursor=pointer]
+      - generic [ref=e150]:
+        - heading "Ứng dụng đã tích hợp" [level=3] [ref=e151]
+        - generic [ref=e153]:
+          - img "2021_10_12_221707248.png" [ref=e155]
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - heading "Dental Google Calendar" [level=3] [ref=e159]
+              - generic [ref=e161]: Dental Google Calendar là tiện ích mở rộng giúp phòng khám có thể đồng bộ lịch hẹn từ phần mềm DentalFlow lên Google Calendar chung của phòng khám.
+              - generic [ref=e162]:
+                - generic [ref=e163]: "Chi phí tích hợp:"
+                - generic [ref=e164]: Miễn phí
+            - generic [ref=e165]:
+              - generic [ref=e167] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e168]: "|"
+              - link "Thiết lập" [ref=e169] [cursor=pointer]:
+                - /url: /dental-app/setting/google-calendar
+                - generic [ref=e170]: Thiết lập
+        - generic [ref=e172]:
+          - img "2024_04_26_121811800.png" [ref=e174]
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - heading "Dental ZNS" [level=3] [ref=e178]
+              - generic [ref=e180]: Dental ZNS là tiện ích mở rộng do Dentalflow phát triển giúp phòng khám có thể chủ động tương tác với khách hàng qua Zalo.
+              - generic [ref=e181]:
+                - generic [ref=e182]: "Chi phí tích hợp:"
+                - generic [ref=e183]: 2,000,000 VND (Thu 1 lần)
+            - generic [ref=e184]:
+              - generic [ref=e186] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e187]: "|"
+              - link "Thiết lập" [ref=e188] [cursor=pointer]:
+                - /url: /dental-app/setting/zalo
+                - generic [ref=e189]: Thiết lập
+        - generic [ref=e191]:
+          - img "2022_02_16_174838593.jpg" [ref=e193]
+          - generic [ref=e194]:
+            - generic [ref=e195]:
+              - heading "Dental Chain" [level=3] [ref=e197]
+              - generic [ref=e199]: Ứng dụng mở rộng quản lý tập trung nhiều cơ sở phòng khám trong 1 chuỗi Nha khoa
+              - generic [ref=e200]:
+                - generic [ref=e201]: "Chi phí tích hợp:"
+                - generic [ref=e202]: Miễn phí
+            - generic [ref=e203]:
+              - generic [ref=e205] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e206]: "|"
+              - link "Thiết lập" [ref=e207] [cursor=pointer]:
+                - /url: /dental-app/setting/chain
+                - generic [ref=e208]: Thiết lập
+        - generic [ref=e210]:
+          - img "2022_02_16_174838597.png" [ref=e212]
+          - generic [ref=e213]:
+            - generic [ref=e214]:
+              - heading "Dental SMS Brandname" [level=3] [ref=e216]
+              - generic [ref=e218]: Dental SMS Brandname là dịch vụ hỗ trợ các nhà cung cấp sản phẩm, dịch vụ sử dụng di động để quảng bá cho nha khoa hoặc chăm sóc khách hàng của mình.
+              - generic [ref=e219]:
+                - generic [ref=e220]: "Chi phí tích hợp:"
+                - generic [ref=e221]: 3,000,000 VND (Thu 1 lần)
+            - generic [ref=e222]:
+              - generic [ref=e224] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e225]: "|"
+              - link "Thiết lập" [ref=e226] [cursor=pointer]:
+                - /url: /dental-app/setting/sms-brand-name
+                - generic [ref=e227]: Thiết lập
+        - generic [ref=e229]:
+          - img "2022_02_16_174838596.png" [ref=e231]
+          - generic [ref=e232]:
+            - generic [ref=e233]:
+              - heading "Dental Call Center" [level=3] [ref=e235]
+              - generic [ref=e237]: Dental Call center là hệ thống có chức năng nhận và chuyển tiếp một lượng lớn các cuộc gọi. Ứng dụng tích hợp trên DentalFlow sẽ tiếp nhận và giải đáp các cuộc gọi đến của khách hàng nha khoa.
+              - generic [ref=e238]:
+                - generic [ref=e239]: "Chi phí tích hợp:"
+                - generic [ref=e240]: 3,000,000 VND ( Thu 1 lần)
+            - generic [ref=e241]:
+              - generic [ref=e243] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e244]: "|"
+              - link "Thiết lập" [ref=e245] [cursor=pointer]:
+                - /url: /dental-app/setting/call-center
+                - generic [ref=e246]: Thiết lập
+        - generic [ref=e248]:
+          - img "2022_02_16_174838598.png" [ref=e250]
+          - generic [ref=e251]:
+            - generic [ref=e252]:
+              - heading "Dental Web Booking" [level=3] [ref=e254]
+              - generic [ref=e256]: Tính năng giúp phòng khám cho phép khách hàng chủ động tạo lịch hẹn trên Website Nha khoa, thông tin lịch hẹn trả về trực tiếp trên phần mềm DentalFlow.
+              - generic [ref=e257]:
+                - generic [ref=e258]: "Chi phí tích hợp:"
+                - generic [ref=e259]: Miễn phí
+            - generic [ref=e260]:
+              - generic [ref=e262] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e263]: "|"
+              - link "Thiết lập" [ref=e264] [cursor=pointer]:
+                - /url: /dental-app/setting/web-booking
+                - generic [ref=e265]: Thiết lập
+        - generic [ref=e267]:
+          - img "2024_03_27_114040765.png" [ref=e269]
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - heading "Dentalflow - Đơn thuốc quốc gia" [level=3] [ref=e273]
+              - generic [ref=e275]: Liên thông với hệ thống Đơn thuốc quốc gia theo chuẩn yêu cầu của Bộ Y tế với các quy chuẩn như chuẩn đơn thuốc điện tử, chuẩn kết nối liên thông đơn thuốc điện tử, chuẩn mã định danh điện tử cho bác sĩ và cơ sở …
+              - generic [ref=e276]:
+                - generic [ref=e277]: "Chi phí tích hợp:"
+                - generic [ref=e278]: Miễn phí
+            - generic [ref=e279]:
+              - generic [ref=e281] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e282]: "|"
+              - link "Thiết lập" [ref=e283] [cursor=pointer]:
+                - /url: /dental-app/setting/e-prescription
+                - generic [ref=e284]: Thiết lập
+        - generic [ref=e286]:
+          - img "2021_10_12_221721931.png" [ref=e288]
+          - generic [ref=e289]:
+            - generic [ref=e290]:
+              - heading "Dental Zalo" [level=3] [ref=e292]
+              - generic [ref=e294]: Dental ZALO là tiện ích mở rộng do DentalFlow phát triển giúp phòng khám có thể chủ động tương tác, chăm sóc khách hàng thông qua qua việc gửi tin ZNS, Chat và Call ngay trên nền tảng Zalo được tích hợp trên DentalFlow.
+              - generic [ref=e295]:
+                - generic [ref=e296]: "Chi phí tích hợp:"
+                - generic [ref=e297]: 3,000,000 VND (Thu 1 lần)
+            - generic [ref=e298]:
+              - generic [ref=e300] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e301]: "|"
+              - link "Thiết lập" [ref=e302] [cursor=pointer]:
+                - /url: /dental-app/setting/zalo-zns
+                - generic [ref=e303]: Thiết lập
+        - generic [ref=e305]:
+          - img "2024_06_06_104211800.png" [ref=e307]
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - heading "DentalFlow - FACEID" [level=3] [ref=e311]
+              - generic [ref=e313]: Ứng dụng công nghệ AI giúp Nha khoa nâng cao quy trình đón tiếp khách hàng và chấm công nhân sự.
+              - generic [ref=e314]:
+                - generic [ref=e315]: "Chi phí tích hợp:"
+                - generic [ref=e316]: Miễn phí
+            - generic [ref=e317]:
+              - generic [ref=e319] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e320]: "|"
+              - link "Thiết lập" [ref=e321] [cursor=pointer]:
+                - /url: /dental-app/setting/face-id
+                - generic [ref=e322]: Thiết lập
+        - generic [ref=e324]:
+          - img "2024_10_11_070000000.png" [ref=e326]
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - heading "Dentalflow - VNPAY" [level=3] [ref=e330]
+              - generic [ref=e332]: DentalFLow - VNPay là tiện ích mở rộng giúp phòng khám tối ưu hệ thống quản lý từ vận hàng đến thanh toán, hướng tới trải nghiệm tốt hơn dành cho khách hàng
+              - generic [ref=e333]:
+                - generic [ref=e334]: "Chi phí tích hợp:"
+                - generic [ref=e335]: Miễn phí
+            - generic [ref=e336]:
+              - generic [ref=e338] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e339]: "|"
+              - link "Thiết lập" [ref=e340] [cursor=pointer]:
+                - /url: /dental-app/setting/vn-pay
+                - generic [ref=e341]: Thiết lập
+        - generic [ref=e343]:
+          - img "2025_05_30_070000000.jpg" [ref=e345]
+          - generic [ref=e346]:
+            - generic [ref=e347]:
+              - heading "Dentalflow - Hóa đơn điện tử" [level=3] [ref=e349]
+              - generic [ref=e351]: DentalFlow - Hóa đơn điện tử cho phép nha khoa kết nối trực tiếp với hệ thống xuất hóa đơn điện tử, giúp phát hành và quản lý hóa đơn một cách nhanh chóng và hiệu quả ngay trên phần mềm DentalFlow.
+              - generic [ref=e352]:
+                - generic [ref=e353]: "Chi phí tích hợp:"
+                - generic [ref=e354]: 1,000,000 VND ( Thu 1 lần )
+            - generic [ref=e355]:
+              - generic [ref=e357] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e358]: "|"
+              - link "Thiết lập" [ref=e359] [cursor=pointer]:
+                - /url: /dental-app/setting/e-invoice
+                - generic [ref=e360]: Thiết lập
+        - generic [ref=e362]:
+          - img "2025_08_23_200000001.png" [ref=e364]
+          - generic [ref=e365]:
+            - generic [ref=e366]:
+              - heading "Dentalflow - Bệnh án điện tử" [level=3] [ref=e368]
+              - generic [ref=e370]: DentalFlow – Bệnh án điện tử phiên bản Beta là tiện ích mở rộng tích hợp trực tiếp vào phần mềm DentalFlow, giúp phòng khám dễ dàng lưu trữ, quản lý và tra cứu hồ sơ bệnh án của khách hàng một cách khoa học, an toàn và đáp ứng theo yêu cầu của Bộ Y tế
+              - generic [ref=e371]:
+                - generic [ref=e372]: "Chi phí tích hợp:"
+                - generic [ref=e373]: Miễn phí (Giai đoạn Beta)
+            - generic [ref=e374]:
+              - generic [ref=e376] [cursor=pointer]: Chi tiết ứng dụng
+              - generic [ref=e377]: "|"
+              - link "Thiết lập" [ref=e378] [cursor=pointer]:
+                - /url: /dental-app/setting/emr
+                - generic [ref=e379]: Thiết lập

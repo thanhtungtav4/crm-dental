@@ -1,0 +1,208 @@
+- generic [ref=e7]:
+  - generic [ref=e9]:
+    - img [ref=e14] [cursor=pointer]
+    - generic [ref=e17]:
+      - generic [ref=e19]:
+        - link [ref=e21] [cursor=pointer]:
+          - /url: /
+          - img [ref=e23]
+        - link [ref=e26] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e28]
+        - button [ref=e34] [cursor=pointer]:
+          - link [ref=e35]:
+            - /url: /customer-care
+            - img [ref=e37]
+        - button [expanded] [ref=e45] [cursor=pointer]:
+          - link [ref=e46]:
+            - /url: /calendar
+            - img [ref=e48]
+        - link [ref=e51] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e53]
+        - link [ref=e56] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e58]
+        - button [ref=e64] [cursor=pointer]:
+          - img [ref=e67]
+        - button [ref=e73] [cursor=pointer]:
+          - img [ref=e76]
+        - link [ref=e79] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e81]
+        - link [ref=e84] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e86]
+        - button [ref=e95] [cursor=pointer]:
+          - img [ref=e98]
+      - generic [ref=e101] [cursor=pointer]:
+        - img [ref=e103]
+        - paragraph [ref=e105]: "17"
+  - generic [ref=e107]:
+    - generic [ref=e108]:
+      - generic [ref=e112]: Lịch hẹn
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - heading "Báo cáo mới" [level=3] [ref=e117]
+            - img [ref=e119] [cursor=pointer]
+          - switch [checked] [ref=e122] [cursor=pointer]
+        - img [ref=e127] [cursor=pointer]
+    - generic [ref=e137]:
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - generic [ref=e142]:
+            - generic [ref=e143] [cursor=pointer]:
+              - generic:
+                - radio "Ngày"
+              - text: Ngày
+            - generic [ref=e144] [cursor=pointer]:
+              - generic:
+                - radio "Tuần" [checked] [active]
+              - text: Tuần
+            - generic [ref=e145] [cursor=pointer]:
+              - generic:
+                - radio "Tháng"
+              - text: Tháng
+          - generic [ref=e146] [cursor=pointer]:
+            - img [ref=e148]
+            - textbox [ref=e151]: Tuần 8 | 16 - 22-02-2026
+            - img [ref=e153]
+        - generic [ref=e157]:
+          - generic [ref=e158] [cursor=pointer]:
+            - generic:
+              - radio [checked]
+            - img [ref=e161]
+          - generic [ref=e163] [cursor=pointer]:
+            - generic:
+              - radio
+            - img [ref=e166]
+          - generic [ref=e168]:
+            - generic:
+              - radio [disabled]
+            - img [ref=e171] [cursor=pointer]
+        - button "Thêm lịch hẹn" [ref=e180] [cursor=pointer]:
+          - generic: Thêm lịch hẹn
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - generic [ref=e186]:
+              - generic [ref=e187]: "Tổng số lịch hẹn:"
+              - generic [ref=e188]: "2"
+            - generic [ref=e190]:
+              - generic [ref=e191]: "Đã xong:"
+              - generic [ref=e192]: "0"
+            - generic [ref=e194]:
+              - generic [ref=e195]: "Điều trị:"
+              - generic [ref=e196]: "0"
+            - generic [ref=e198]:
+              - generic [ref=e199]: "Đã đến:"
+              - generic [ref=e200]: "0"
+            - generic [ref=e202]:
+              - generic [ref=e203]: "Chưa đến:"
+              - generic [ref=e204]: "2"
+            - generic [ref=e206]:
+              - generic [ref=e207]: "Đã hủy:"
+              - generic [ref=e208]: "0"
+            - generic [ref=e210]:
+              - generic [ref=e211]: "Hẹn lại sau:"
+              - generic [ref=e212]: "0"
+            - generic [ref=e214]:
+              - generic [ref=e215]: "Đã hẹn lại:"
+              - generic [ref=e216]: "0"
+          - separator [ref=e217]
+        - generic [ref=e1702]:
+          - generic [ref=e1703]:
+            - heading [level=4] [ref=e1706]:
+              - img [ref=e1708] [cursor=pointer]
+              - img [ref=e1712] [cursor=pointer]
+            - generic [ref=e1715]:
+              - link "16 T2" [ref=e1717] [cursor=pointer]:
+                - /url: "#"
+              - link "17 T3" [ref=e1719] [cursor=pointer]:
+                - /url: "#"
+              - link "18 T4" [ref=e1721] [cursor=pointer]:
+                - /url: "#"
+              - link "19 T5" [ref=e1723] [cursor=pointer]:
+                - /url: "#"
+              - link "20 T6" [ref=e1725] [cursor=pointer]:
+                - /url: "#"
+              - link "21 T7" [ref=e1727] [cursor=pointer]:
+                - /url: "#"
+              - link "22 CN" [ref=e1729] [cursor=pointer]:
+                - /url: "#"
+          - generic [ref=e1730]:
+            - generic [ref=e1731]:
+              - generic [ref=e1733]: 07:00
+              - generic [ref=e1735]: 07:15
+              - generic [ref=e1737]: 07:30
+              - generic [ref=e1739]: 07:45
+              - generic [ref=e1741]: 08:00
+              - generic [ref=e1743]: 08:15
+              - generic [ref=e1745]: 08:30
+              - generic [ref=e1747]: 08:45
+              - generic [ref=e1749]: 09:00
+              - generic [ref=e1751]: 09:15
+              - generic [ref=e1753]: 09:30
+              - generic [ref=e1755]: 09:45
+              - generic [ref=e1757]: 10:00
+              - generic [ref=e1759]: 10:15
+              - generic [ref=e1761]: 10:30
+              - generic [ref=e1763]: 10:45
+              - generic [ref=e1765]: 11:00
+              - generic [ref=e1767]: 11:15
+              - generic [ref=e1769]: 11:30
+              - generic [ref=e1771]: 11:45
+              - generic [ref=e1773]: 12:00
+              - generic [ref=e1775]: 12:15
+              - generic [ref=e1777]: 12:30
+              - generic [ref=e1779]: 12:45
+              - generic [ref=e1781]: 13:00
+              - generic [ref=e1783]: 13:15
+              - generic [ref=e1785]: 13:30
+              - generic [ref=e1787]: 13:45
+              - generic [ref=e1789]: 14:00
+              - generic [ref=e1791]: 14:15
+              - generic [ref=e1793]: 14:30
+              - generic [ref=e1795]: 14:45
+              - generic [ref=e1797]: 15:00
+              - generic [ref=e1799]: 15:15
+              - generic [ref=e1801]: 15:30
+              - generic [ref=e1803]: 15:45
+              - generic [ref=e1805]: 16:00
+              - generic [ref=e1807]: 16:15
+              - generic [ref=e1809]: 16:30
+              - generic [ref=e1811]: 16:45
+              - generic [ref=e1813]: 17:00
+              - generic [ref=e1815]: 17:15
+              - generic [ref=e1817]: 17:30
+              - generic [ref=e1819]: 17:45
+              - generic [ref=e1821]: 18:00
+              - generic [ref=e1823]: 18:15
+              - generic [ref=e1825]: 18:30
+              - generic [ref=e1827]: 18:45
+              - generic [ref=e1829]: 19:00
+              - generic [ref=e1831]: 19:15
+              - generic [ref=e1833]: 19:30
+              - generic [ref=e1835]: 19:45
+              - generic [ref=e1837]: 20:00
+              - generic [ref=e1839]: 20:15
+              - generic [ref=e1841]: 20:30
+              - generic [ref=e1843]: 20:45
+              - generic [ref=e1845]: 21:00
+              - generic [ref=e1847]: 21:15
+              - generic [ref=e1849]: 21:30
+              - generic [ref=e1851]: 21:45
+              - generic [ref=e1853]: 22:00
+              - generic [ref=e1855]: 22:15
+              - generic [ref=e1857]: 22:30
+              - generic [ref=e1859]: 22:45
+              - generic [ref=e1861]: 23:00
+            - generic [ref=e1997] [cursor=pointer]:
+              - generic [ref=e1998]: Nguyễn Văn Việt
+              - 'generic "icon: more" [ref=e2000]':
+                - img [ref=e2001]
+            - generic [ref=e2138] [cursor=pointer]:
+              - generic [ref=e2139]: Nguyễn Văn An
+              - 'generic "icon: more" [ref=e2141]':
+                - img [ref=e2142]

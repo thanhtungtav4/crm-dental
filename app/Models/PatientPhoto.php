@@ -8,7 +8,7 @@ class PatientPhoto extends Model
 {
     protected $fillable = [
         'patient_id',
-        'type', // normal, ortho
+        'type', // normal, ortho, xray
         'date',
         'title',
         'content',

@@ -28,7 +28,7 @@ class FinancialDashboard extends BaseDashboard
     
     public static function getNavigationGroup(): ?string
     {
-        return '2️⃣ Tài chính';
+        return 'Tài chính';
     }
     
     public function getTitle(): string

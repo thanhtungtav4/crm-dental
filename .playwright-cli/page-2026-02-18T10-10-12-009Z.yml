@@ -1,0 +1,453 @@
+- generic [ref=e1]:
+  - iframe [ref=e3]:
+    - generic [ref=f1e2]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - img [ref=f1e7]
+          - generic [ref=f1e10]: Internal Server Error
+        - button "Copy as Markdown" [ref=f1e11] [cursor=pointer]:
+          - img [ref=f1e12]
+          - generic [ref=f1e15]: Copy as Markdown
+      - generic [ref=f1e18]:
+        - generic [ref=f1e19]:
+          - heading "Error" [level=1] [ref=f1e20]
+          - generic [ref=f1e22]: app/Filament/Widgets/DuplicateDetectionWidget.php:80
+          - paragraph [ref=f1e23]: Class "Filament\Tables\Actions\Action" not found
+        - generic [ref=f1e24]:
+          - generic [ref=f1e25]:
+            - generic [ref=f1e26]:
+              - generic [ref=f1e27]: LARAVEL
+              - generic [ref=f1e28]: 12.36.1
+            - generic [ref=f1e29]:
+              - generic [ref=f1e30]: PHP
+              - generic [ref=f1e31]: 8.4.13
+          - generic [ref=f1e32]:
+            - img [ref=f1e33]
+            - text: UNHANDLED
+          - generic [ref=f1e36]: CODE 0
+        - generic [ref=f1e38]:
+          - generic [ref=f1e39]:
+            - img [ref=f1e40]
+            - text: "500"
+          - generic [ref=f1e43]:
+            - img [ref=f1e44]
+            - text: POST
+          - generic [ref=f1e47]: http://crm.test/livewire/update
+          - button [ref=f1e48] [cursor=pointer]:
+            - img [ref=f1e49]
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]:
+          - generic [ref=f1e55]:
+            - img [ref=f1e57]
+            - heading "Exception trace" [level=3] [ref=f1e60]
+          - generic [ref=f1e61]:
+            - generic [ref=f1e62]:
+              - generic [ref=f1e63] [cursor=pointer]:
+                - generic [ref=f1e66]:
+                  - code [ref=f1e70]:
+                    - generic [ref=f1e71]: App\Filament\Widgets\DuplicateDetectionWidget->table(object(Filament\Tables\Table))
+                  - generic [ref=f1e73]: app/Filament/Widgets/DuplicateDetectionWidget.php:80
+                - button [ref=f1e75]:
+                  - img [ref=f1e76]
+              - code [ref=f1e84]:
+                - generic [ref=f1e85]: 75 ->label('Detected')
+                - generic [ref=f1e86]: 76 ->dateTime()
+                - generic [ref=f1e87]: 77 ->sortable(),
+                - generic [ref=f1e88]: 78 ])
+                - generic [ref=f1e89]: 79 ->actions([
+                - generic [ref=f1e90]: 80 Action::make('review')
+                - generic [ref=f1e91]: 81 ->label('Review')
+                - generic [ref=f1e92]: 82 ->icon('heroicon-o-eye')
+                - generic [ref=f1e93]: 83 ->color('info')
+                - generic [ref=f1e94]: 84 ->modalHeading('Review Duplicate Detection')
+                - generic [ref=f1e95]: "85 ->modalContent(function (DuplicateDetection $record) {"
+                - generic [ref=f1e96]: 86 return view('filament.modals.duplicate-review', [
+                - generic [ref=f1e97]: 87 'detection' => $record,
+                - generic [ref=f1e98]: 88 'source' => $record->source,
+                - generic [ref=f1e99]: 89 'match' => $record->potentialMatch,
+                - generic [ref=f1e100]: 90 ]);
+                - generic [ref=f1e101]: "91 })"
+                - generic [ref=f1e102]: "92"
+            - generic [ref=f1e104] [cursor=pointer]:
+              - img [ref=f1e105]
+              - generic [ref=f1e109]: 46 vendor frames
+              - button [ref=f1e110]:
+                - img [ref=f1e111]
+            - generic [ref=f1e116] [cursor=pointer]:
+              - generic [ref=f1e119]:
+                - code [ref=f1e123]:
+                  - generic [ref=f1e124]: App\Http\Middleware\SecurityHeaders->handle(object(Illuminate\Http\Request), object(Closure))
+                - generic [ref=f1e126]: app/Http/Middleware/SecurityHeaders.php:12
+              - button [ref=f1e128]:
+                - img [ref=f1e129]
+            - generic [ref=f1e134] [cursor=pointer]:
+              - img [ref=f1e135]
+              - generic [ref=f1e139]: 21 vendor frames
+              - button [ref=f1e140]:
+                - img [ref=f1e141]
+            - generic [ref=f1e146] [cursor=pointer]:
+              - generic [ref=f1e149]:
+                - code [ref=f1e153]:
+                  - generic [ref=f1e154]: public/index.php
+                - generic [ref=f1e156]: public/index.php:20
+              - button [ref=f1e158]:
+                - img [ref=f1e159]
+            - generic [ref=f1e164] [cursor=pointer]:
+              - img [ref=f1e165]
+              - generic [ref=f1e169]: 1 vendor frame
+              - button [ref=f1e170]:
+                - img [ref=f1e171]
+        - generic [ref=f1e175]:
+          - generic [ref=f1e176]:
+            - generic [ref=f1e177]:
+              - img [ref=f1e179]
+              - heading "Queries" [level=3] [ref=f1e181]
+            - generic [ref=f1e183]: 1-2 of 2
+          - generic [ref=f1e184]:
+            - generic [ref=f1e185]:
+              - generic [ref=f1e186]:
+                - generic [ref=f1e187]:
+                  - img [ref=f1e188]
+                  - generic [ref=f1e190]: mysql
+                - code [ref=f1e194]:
+                  - generic [ref=f1e195]: "select * from `sessions` where `id` = 'qIUlb6jKUjIHSPO6WPyQt9Ud14ot7nNVyF8uyGGN' limit 1"
+              - generic [ref=f1e196]: 2.06ms
+            - generic [ref=f1e197]:
+              - generic [ref=f1e198]:
+                - generic [ref=f1e199]:
+                  - img [ref=f1e200]
+                  - generic [ref=f1e202]: mysql
+                - code [ref=f1e206]:
+                  - generic [ref=f1e207]: "select * from `users` where `id` = 1 limit 1"
+              - generic [ref=f1e208]: 1.27ms
+      - generic [ref=f1e210]:
+        - generic [ref=f1e211]:
+          - heading "Headers" [level=2] [ref=f1e212]
+          - generic [ref=f1e213]:
+            - generic [ref=f1e214]:
+              - generic [ref=f1e215]: cookie
+              - generic [ref=f1e217]: XSRF-TOKEN=eyJpdiI6Im51S2pPdElNcTBXcitoZ3NEaVJWaWc9PSIsInZhbHVlIjoiV0RWVXBXaVM3TVdxMHhER1hwWHQ0WGhvdlZsS1JEd1R2bmJiNE1mNVIreTlrREpzTk8xV29GbzRwYXcyL0NTNUZldUo2VTVKdDk3cmtMcTludzBFTWd0MCtQcUlzQUFWQTAxU3FTNlhUTlZhZEVTb0w4UDVYZm5hNHNWTk0xdXAiLCJtYWMiOiIwODVjMGMxYjA3NjA0N2VmOWZhZjI0NTZmZjk5NzU5MzExNGVhZTM0MzYzOTQyYjVmZjk1MjAxYjA5NmU5ZWM3IiwidGFnIjoiIn0%3D; ident-dental-crm-session=eyJpdiI6IklxM3dBaXR4Nm9SemkvaW9wbnpBNUE9PSIsInZhbHVlIjoiZFJLdnB4OGFZNEFRZ2NIbzBPcUd3MjNQSEJnZU9KeVhFcG9UNmRFaTVldU5PVnBZTURCL3ZmNzkrWTBNZU0vNTZaOEdpNk15ZnBiQmRYM01NL0Urdzd5SDBESTllRjI0OURJOElUWDRMT2swZWExYzUrdlhMRVplWFg4akxWZDMiLCJtYWMiOiI5ZmQxYzlhNTZkYTEzMzEzMTUxMGY2M2EyNzk5NTE1ZGEyZDhiZGVjOWQ5MzZjODlkNGZmOWQwM2JlYzA5NDFjIiwidGFnIjoiIn0%3D
+            - generic [ref=f1e218]:
+              - generic [ref=f1e219]: accept-language
+              - generic [ref=f1e221]: en-US,en;q=0.9
+            - generic [ref=f1e222]:
+              - generic [ref=f1e223]: accept-encoding
+              - generic [ref=f1e225]: gzip, deflate
+            - generic [ref=f1e226]:
+              - generic [ref=f1e227]: referer
+              - generic [ref=f1e229]: http://crm.test/admin
+            - generic [ref=f1e230]:
+              - generic [ref=f1e231]: origin
+              - generic [ref=f1e233]: http://crm.test
+            - generic [ref=f1e234]:
+              - generic [ref=f1e235]: accept
+              - generic [ref=f1e237]: "*/*"
+            - generic [ref=f1e239]: x-livewire
+            - generic [ref=f1e241]:
+              - generic [ref=f1e242]: content-type
+              - generic [ref=f1e244]: application/json
+            - generic [ref=f1e245]:
+              - generic [ref=f1e246]: user-agent
+              - generic [ref=f1e248]: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36
+            - generic [ref=f1e249]:
+              - generic [ref=f1e250]: content-length
+              - generic [ref=f1e252]: "1602"
+            - generic [ref=f1e253]:
+              - generic [ref=f1e254]: connection
+              - generic [ref=f1e256]: keep-alive
+            - generic [ref=f1e257]:
+              - generic [ref=f1e258]: host
+              - generic [ref=f1e260]: crm.test
+        - generic [ref=f1e261]:
+          - heading "Body" [level=2] [ref=f1e262]
+          - code [ref=f1e267]:
+            - generic [ref=f1e268]: "{"
+            - generic [ref=f1e269]: "\"_token\": \"BjsNsd89c9yncvbHos6HSOnndyVd8lJapX0Ni3Mt\","
+            - generic [ref=f1e270]: "\"components\": ["
+            - generic [ref=f1e271]: "{"
+            - generic [ref=f1e272]: "\"snapshot\": \"{\"data\":{\"mountedActions\":[[],{\"s\":\"arr\"}],\"defaultAction\":null,\"defaultActionArguments\":null,\"defaultActionContext\":null,\"defaultTableAction\":null,\"defaultTableActionRecord\":null,\"defaultTableActionArguments\":null,\"componentFileAttachments\":[[],{\"s\":\"arr\"}],\"areSchemaStateUpdateHooksDisabledForTesting\":false,\"discoveredSchemaNames\":[[],{\"s\":\"arr\"}],\"isTableLoaded\":false,\"tableGrouping\":null,\"tableRecordsPerPage\":null,\"isTableReordering\":false,\"tableColumnSearches\":[[],{\"s\":\"arr\"}],\"tableSearch\":\"\",\"tableSort\":null,\"selectedTableRecords\":[[],{\"s\":\"arr\"}],\"deselectedTableRecords\":[[],{\"s\":\"arr\"}],\"isTrackingDeselectedTableRecords\":false,\"tableColumns\":[[],{\"s\":\"arr\"}],\"tableFilters\":null,\"tableDeferredFilters\":null,\"paginators\":[[],{\"s\":\"arr\"}]},\"memo\":{\"id\":\"uD6q7uw3sdIpbRh3pUKL\",\"name\":\"app.filament.widgets.duplicate-detection-widget\",\"path\":\"admin\",\"method\":\"GET\",\"children\":[],\"scripts\":[],\"assets\":[],\"lazyLoaded\":false,\"lazyIsolated\":true,\"errors\":[],\"locale\":\"en\"},\"checksum\":\"bd50fe07979b825b2a02d1a2e18af44f3eaa4ab12c620516e451b3ce77197188\"}\","
+            - generic [ref=f1e273]: "\"updates\": [],"
+            - generic [ref=f1e274]: "\"calls\": ["
+            - generic [ref=f1e275]: "{"
+            - generic [ref=f1e276]: "\"path\": \"\","
+            - generic [ref=f1e277]: "\"method\": \"__lazyLoad\","
+            - generic [ref=f1e278]: "\"params\": ["
+            - generic [ref=f1e279]: "\"eyJkYXRhIjp7ImZvck1vdW50IjpbeyJyZWNvcmQiOm51bGx9LHsicyI6ImFyciJ9XX0sIm1lbW8iOnsiaWQiOiJlZmhVdDRIZGJPWXlyZGc5V0FQQiIsIm5hbWUiOiJfX21vdW50UGFyYW1zQ29udGFpbmVyIn0sImNoZWNrc3VtIjoiOTVhNzMzZWFlNjBmMzZkMjc2NjZjM2YyMmFjODRkZTQ3MGVmNjRmOGFhNjRiZTQ5ZTg0YWNkY2FjMDc1OWY3NSJ9\""
+            - generic [ref=f1e280]: "]"
+            - generic [ref=f1e281]: "}"
+            - generic [ref=f1e282]: "]"
+            - generic [ref=f1e283]: "}"
+            - generic [ref=f1e284]: "]"
+            - generic [ref=f1e285]: "}"
+        - generic [ref=f1e286]:
+          - heading "Routing" [level=2] [ref=f1e287]
+          - generic [ref=f1e288]:
+            - generic [ref=f1e289]:
+              - generic [ref=f1e290]: controller
+              - generic [ref=f1e292]: Livewire\Mechanisms\HandleRequests\HandleRequests@handleUpdate
+            - generic [ref=f1e293]:
+              - generic [ref=f1e294]: route name
+              - generic [ref=f1e296]: livewire.update
+            - generic [ref=f1e297]:
+              - generic [ref=f1e298]: middleware
+              - generic [ref=f1e300]: web
+        - generic [ref=f1e301]:
+          - heading "Routing parameters" [level=2] [ref=f1e302]
+          - generic [ref=f1e303]: // No routing parameters
+      - generic [ref=f1e306]:
+        - img [ref=f1e308]
+        - img [ref=f1e310]
+  - navigation [ref=e5]:
+    - generic [ref=e6]:
+      - button "Collapse sidebar" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+      - link "IDENT Dental CRM logo" [ref=e10] [cursor=pointer]:
+        - /url: http://crm.test/admin
+        - img "IDENT Dental CRM logo" [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: Global search
+        - generic [ref=e17]:
+          - img [ref=e19]
+          - searchbox "Global search" [ref=e22]
+      - button "User menu" [ref=e25] [cursor=pointer]:
+        - img "Avatar of Super Admin" [ref=e26]
+  - generic [ref=e27]:
+    - complementary [ref=e29]:
+      - navigation [ref=e30]:
+        - list [ref=e31]:
+          - listitem [ref=e32]:
+            - list [ref=e33]:
+              - listitem [ref=e34]:
+                - link "Dashboard" [ref=e35] [cursor=pointer]:
+                  - /url: http://crm.test/admin
+                  - img [ref=e36]
+                  - generic [ref=e38]: Dashboard
+          - listitem [ref=e39]:
+            - button "Filament Shield Filament Shield" [ref=e40] [cursor=pointer]:
+              - generic [ref=e41]: Filament Shield
+              - button "Filament Shield" [expanded] [ref=e42]:
+                - img [ref=e43]
+            - list [ref=e45]:
+              - listitem [ref=e46]:
+                - link "Roles" [ref=e47] [cursor=pointer]:
+                  - /url: http://crm.test/admin/shield/roles
+                  - img [ref=e48]
+                  - generic [ref=e50]: Roles
+          - listitem [ref=e51]:
+            - button "2️⃣ Tài chính 2️⃣ Tài chính" [ref=e52] [cursor=pointer]:
+              - generic [ref=e53]: 2️⃣ Tài chính
+              - button "2️⃣ Tài chính" [expanded] [ref=e54]:
+                - img [ref=e55]
+            - list [ref=e57]:
+              - listitem [ref=e58]:
+                - link "Dashboard Tài chính" [ref=e59] [cursor=pointer]:
+                  - /url: http://crm.test/admin/financial-dashboard
+                  - img [ref=e60]
+                  - generic [ref=e62]: Dashboard Tài chính
+              - listitem [ref=e63]:
+                - link "Thanh toán" [ref=e64] [cursor=pointer]:
+                  - /url: http://crm.test/admin/payments
+                  - img [ref=e65]
+                  - generic [ref=e67]: Thanh toán
+              - listitem [ref=e68]:
+                - link "Hóa đơn" [ref=e69] [cursor=pointer]:
+                  - /url: http://crm.test/admin/invoices
+                  - img [ref=e70]
+                  - generic [ref=e72]: Hóa đơn
+          - listitem [ref=e73]:
+            - button "1️⃣ Hoạt động hàng ngày 1️⃣ Hoạt động hàng ngày" [ref=e74] [cursor=pointer]:
+              - generic [ref=e75]: 1️⃣ Hoạt động hàng ngày
+              - button "1️⃣ Hoạt động hàng ngày" [expanded] [ref=e76]:
+                - img [ref=e77]
+            - list [ref=e79]:
+              - listitem [ref=e80]:
+                - link "Lịch hẹn" [ref=e81] [cursor=pointer]:
+                  - /url: http://crm.test/admin/appointments
+                  - img [ref=e82]
+                  - generic [ref=e84]: Lịch hẹn
+              - listitem [ref=e85]:
+                - link "Bệnh nhân" [ref=e86] [cursor=pointer]:
+                  - /url: http://crm.test/admin/patients
+                  - img [ref=e87]
+                  - generic [ref=e89]: Bệnh nhân
+              - listitem [ref=e90]:
+                - link "Kế hoạch điều trị" [ref=e91] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-plans
+                  - img [ref=e92]
+                  - generic [ref=e94]: Kế hoạch điều trị
+              - listitem [ref=e95]:
+                - link "Phiên điều trị" [ref=e96] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-sessions
+                  - img [ref=e97]
+                  - generic [ref=e99]: Phiên điều trị
+          - listitem [ref=e100]:
+            - button "3️⃣ Quản lý khách hàng 3️⃣ Quản lý khách hàng" [ref=e101] [cursor=pointer]:
+              - generic [ref=e102]: 3️⃣ Quản lý khách hàng
+              - button "3️⃣ Quản lý khách hàng" [expanded] [ref=e103]:
+                - img [ref=e104]
+            - list [ref=e106]:
+              - listitem [ref=e107]:
+                - link "Khách hàng (Lead)" [ref=e108] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customers
+                  - img [ref=e109]
+                  - generic [ref=e111]: Khách hàng (Lead)
+              - listitem [ref=e112]:
+                - link "Nhóm khách hàng" [ref=e113] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customer-groups
+                  - img [ref=e114]
+                  - generic [ref=e116]: Nhóm khách hàng
+              - listitem [ref=e117]:
+                - link "Nhóm khuyến mãi" [ref=e118] [cursor=pointer]:
+                  - /url: http://crm.test/admin/promotion-groups
+                  - img [ref=e119]
+                  - generic [ref=e121]: Nhóm khuyến mãi
+          - listitem [ref=e122]:
+            - button "4️⃣ Dịch vụ & Điều trị 4️⃣ Dịch vụ & Điều trị" [ref=e123] [cursor=pointer]:
+              - generic [ref=e124]: 4️⃣ Dịch vụ & Điều trị
+              - button "4️⃣ Dịch vụ & Điều trị" [expanded] [ref=e125]:
+                - img [ref=e126]
+            - list [ref=e128]:
+              - listitem [ref=e129]:
+                - link "Dịch vụ" [ref=e130] [cursor=pointer]:
+                  - /url: http://crm.test/admin/services
+                  - img [ref=e131]
+                  - generic [ref=e133]: Dịch vụ
+              - listitem [ref=e134]:
+                - link "Danh mục dịch vụ" [ref=e135] [cursor=pointer]:
+                  - /url: http://crm.test/admin/service-categories
+                  - img [ref=e136]
+                  - generic [ref=e138]: Danh mục dịch vụ
+              - listitem [ref=e139]:
+                - link "Hạng mục điều trị" [ref=e140] [cursor=pointer]:
+                  - /url: http://crm.test/admin/plan-items
+                  - img [ref=e141]
+                  - generic [ref=e143]: Hạng mục điều trị
+              - listitem [ref=e144]:
+                - link "Vật tư sử dụng" [ref=e145] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-materials
+                  - generic [ref=e149]: Vật tư sử dụng
+          - listitem [ref=e150]:
+            - button "5️⃣ Quản lý kho 5️⃣ Quản lý kho" [ref=e151] [cursor=pointer]:
+              - generic [ref=e152]: 5️⃣ Quản lý kho
+              - button "5️⃣ Quản lý kho" [expanded] [ref=e153]:
+                - img [ref=e154]
+            - list [ref=e156]:
+              - listitem [ref=e157]:
+                - link "Vật tư" [ref=e158] [cursor=pointer]:
+                  - /url: http://crm.test/admin/materials
+                  - img [ref=e159]
+                  - generic [ref=e161]: Vật tư
+              - listitem [ref=e162]:
+                - link "Lô vật tư" [ref=e163] [cursor=pointer]:
+                  - /url: http://crm.test/admin/material-batches
+                  - img [ref=e164]
+                  - generic [ref=e166]: Lô vật tư
+              - listitem [ref=e167]:
+                - link "Nhà cung cấp" [ref=e168] [cursor=pointer]:
+                  - /url: http://crm.test/admin/suppliers
+                  - img [ref=e169]
+                  - generic [ref=e171]: Nhà cung cấp
+          - listitem [ref=e172]:
+            - button "⚙️ Cài đặt ⚙️ Cài đặt" [ref=e173] [cursor=pointer]:
+              - generic [ref=e174]: ⚙️ Cài đặt
+              - button "⚙️ Cài đặt" [expanded] [ref=e175]:
+                - img [ref=e176]
+            - list [ref=e178]:
+              - listitem [ref=e179]:
+                - link "Nhóm bệnh" [ref=e180] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases/disease-groups
+                  - img [ref=e181]
+                  - generic [ref=e183]: Nhóm bệnh
+              - listitem [ref=e184]:
+                - link "Danh sách bệnh" [ref=e185] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases
+                  - img [ref=e186]
+                  - generic [ref=e188]: Danh sách bệnh
+          - listitem [ref=e189]:
+            - button "6️⃣ Hệ thống 6️⃣ Hệ thống" [ref=e190] [cursor=pointer]:
+              - generic [ref=e191]: 6️⃣ Hệ thống
+              - button "6️⃣ Hệ thống" [expanded] [ref=e192]:
+                - img [ref=e193]
+            - list [ref=e195]:
+              - listitem [ref=e196]:
+                - link "Người dùng" [ref=e197] [cursor=pointer]:
+                  - /url: http://crm.test/admin/users
+                  - img [ref=e198]
+                  - generic [ref=e200]: Người dùng
+              - listitem [ref=e201]:
+                - link "Chi nhánh" [ref=e202] [cursor=pointer]:
+                  - /url: http://crm.test/admin/branches
+                  - img [ref=e203]
+                  - generic [ref=e205]: Chi nhánh
+    - main [ref=e207]:
+      - generic [ref=e209]:
+        - heading "Dashboard" [level=1] [ref=e212]
+        - generic [ref=e219]:
+          - generic [ref=e223]:
+            - img "Avatar of Super Admin" [ref=e224]
+            - generic [ref=e225]:
+              - heading "Welcome" [level=2] [ref=e226]
+              - paragraph [ref=e227]: Super Admin
+            - button "Sign out" [ref=e229] [cursor=pointer]:
+              - img [ref=e230]
+              - text: Sign out
+          - generic [ref=e236]:
+            - generic [ref=e237]:
+              - link "Filament" [ref=e238] [cursor=pointer]:
+                - /url: https://filamentphp.com
+                - img "Filament" [ref=e239]
+              - paragraph [ref=e242]: v4.1.10
+            - generic [ref=e243]:
+              - link "Documentation" [ref=e244] [cursor=pointer]:
+                - /url: https://filamentphp.com/docs
+                - img [ref=e245]
+                - text: Documentation
+              - link "GitHub" [ref=e247] [cursor=pointer]:
+                - /url: https://github.com/filamentphp/filament
+                - img [ref=e249]
+                - text: GitHub
+          - generic [ref=e259]:
+            - generic [ref=e263]:
+              - generic [ref=e265]: Khách hàng mới (Hôm nay)
+              - generic [ref=e266]: "0"
+              - generic [ref=e267]:
+                - generic [ref=e268]: Lead & Khách vãng lai
+                - img [ref=e269]
+            - generic [ref=e274]:
+              - generic [ref=e276]: Lịch hẹn hôm nay
+              - generic [ref=e277]: "0"
+              - generic [ref=e278]:
+                - generic [ref=e279]: Tổng số ca đặt lịch
+                - img [ref=e280]
+            - generic [ref=e286]:
+              - generic [ref=e288]: Chờ xác nhận
+              - generic [ref=e289]: "0"
+              - generic [ref=e290]:
+                - generic [ref=e291]: Lịch hẹn chưa xác nhận
+                - img [ref=e292]
+          - generic [ref=e301]:
+            - generic "Tổng doanh thu từ các khoản thanh toán hôm nay" [ref=e304]:
+              - generic [ref=e305]:
+                - generic [ref=e307]: Doanh thu hôm nay
+                - generic [ref=e308]: 0đ
+                - generic [ref=e309]:
+                  - generic [ref=e310]: Không có thay đổi
+                  - img [ref=e311]
+            - generic "Tổng doanh thu tháng 02/2026" [ref=e317]:
+              - generic [ref=e318]:
+                - generic [ref=e320]: Doanh thu tháng này
+                - generic [ref=e321]: 0đ
+                - generic [ref=e322]:
+                  - generic [ref=e323]: Không có thay đổi
+                  - img [ref=e324]
+            - link "Tổng công nợ 0đ Không có quá hạn" [ref=e328] [cursor=pointer]:
+              - /url: http://crm.test/admin/invoices?tableFilters%5Bstatus%5D%5Bvalues%5D%5B0%5D=overdue&tableFilters%5Bstatus%5D%5Bvalues%5D%5B1%5D=partial
+              - generic [ref=e329]:
+                - generic [ref=e331]: Tổng công nợ
+                - generic [ref=e332]: 0đ
+                - generic [ref=e333]:
+                  - generic [ref=e334]: Không có quá hạn
+                  - img [ref=e335]
+  - generic:
+    - status

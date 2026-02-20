@@ -1,0 +1,510 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "17"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e165]: Nguyễn Văn An
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - heading "Báo cáo mới" [level=3] [ref=e110]
+              - img [ref=e112] [cursor=pointer]
+            - switch [checked] [ref=e115] [cursor=pointer]
+          - img [ref=e120] [cursor=pointer]
+      - generic [ref=e134]:
+        - tablist [ref=e135]:
+          - button "In" [ref=e140] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e141]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e145]:
+              - tab "Thông tin cơ bản" [ref=e146] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e147] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e148] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e149] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [ref=e150] [cursor=pointer]
+              - tab "Lịch hẹn" [ref=e151] [cursor=pointer]
+              - tab "Thanh toán" [ref=e152] [cursor=pointer]
+              - tab "Biểu mẫu" [selected] [ref=e153] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e154] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e155] [cursor=pointer]
+        - generic [ref=e157]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Danh sách đơn thuốc
+                  - generic:
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic: Thêm đơn thuốc
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - table:
+                                    - rowgroup:
+                                      - row:
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày điều trị
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày tạo
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Mã đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Tên đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Bác sĩ kê đơn
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Thao tác
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - img
+                                      - paragraph: Chưa có dữ liệu
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - img
+                      - generic:
+                        - generic:
+                          - generic: Danh sách đặt xưởng
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button:
+                                  - generic: Thêm phiếu chi
+                            - generic:
+                              - generic:
+                                - button:
+                                  - generic: Thêm đặt xưởng
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - table:
+                                            - rowgroup:
+                                              - row:
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Ngày điều trị
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Đơn vị Xưởng/Labo
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Vật liệu
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: S.L
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Đơn giá
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Chi phí
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Chiết khấu (%)
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Thành tiền
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Người đặt
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Người nhận
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Ngày đặt
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Ngày trả
+                                                - columnheader:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic: Ghi chú
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - img
+                                              - paragraph: Chưa có dữ liệu
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: "Tổng tiền: 0"
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - table:
+                                              - rowgroup:
+                                                - row:
+                                                  - columnheader:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic:
+                                                          - generic: Trạng thái
+                                                  - columnheader:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic:
+                                                          - generic: Thao tác
+              - generic:
+                - generic:
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - img
+                      - generic:
+                        - generic:
+                          - generic: Danh sách vật tư tiêu hao
+                          - generic:
+                            - button:
+                              - generic: Thêm phiếu xuất
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - table:
+                                                    - rowgroup:
+                                                      - row:
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Ngày điều trị
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Ngày xuất
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Bác sĩ
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Thủ thuật
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Tên vật tư
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Đơn vị
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Số lượng
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Đơn giá
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Tổng tiền
+                                                        - columnheader:
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - generic: Thao tác
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - img
+                                                      - paragraph: Chưa có dữ liệu
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic: "Tổng tiền: 0"
+          - tabpanel [ref=e2470]:
+            - generic [ref=e2472]:
+              - generic [ref=e2474]:
+                - heading "Biểu mẫu" [level=3] [ref=e2476]
+                - combobox [ref=e3184] [cursor=pointer]:
+                  - generic "Thêm biểu mẫu" [ref=e3186]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e2491]:
+                - table [ref=e2493]:
+                  - rowgroup [ref=e2498]:
+                    - row "Ngày tạo Biểu mẫu Thao tác" [ref=e2499]:
+                      - columnheader "Ngày tạo" [ref=e2500]:
+                        - generic [ref=e2504]: Ngày tạo
+                      - columnheader "Biểu mẫu" [ref=e2505]:
+                        - generic [ref=e2509]: Biểu mẫu
+                      - columnheader "Thao tác" [ref=e2510]:
+                        - generic [ref=e2514]: Thao tác
+                  - rowgroup
+                - generic [ref=e3189]:
+                  - img [ref=e3191]
+                  - paragraph [ref=e3197]: Chưa có dữ liệu
+  - iframe [ref=e2943]:
+    - generic [ref=f2e3]:
+      - generic [ref=f2e10]:
+        - generic [ref=f2e11]: "[T] Nha khoa DentalFlow"
+        - generic [ref=f2e12]: "Địa chỉ: 361 PHAN VĂN KHẢI ẤP THƯỢNG XÃ CỦ CHI .TPHCM"
+        - generic [ref=f2e13]: "Số điện thoại: 0938719000"
+        - generic [ref=f2e14]: "Giấy phép KCB: 78HY/KCB"
+      - generic [ref=f2e16]:
+        - generic [ref=f2e17]: "Mã hồ sơ: 329320993"
+        - generic [ref=f2e18]: "Họ và tên: Nguyễn Văn An"
+        - generic [ref=f2e19]: "Ngày sinh: 08-02-1999"
+        - generic [ref=f2e20]: "Điện thoại: 0393874646"
+        - generic [ref=f2e21]: "Giới tính: Nam"
+        - generic [ref=f2e22]: "Số CCCD:"
+        - generic [ref=f2e23]: "Địa chỉ: abc"
+      - generic [ref=f2e24]:
+        - paragraph [ref=f2e25]:
+          - strong [ref=f2e27]: KẾ HOẠCH ĐIỀU TRỊ PHẪU THUẬT CHỈNH HÌNH XƯƠNG HÀM
+        - paragraph [ref=f2e28]:
+          - strong [ref=f2e30]: "Chẩn đoán:"
+        - paragraph [ref=f2e31]:
+          - strong [ref=f2e33]: "Mục tiêu điều trị:"
+        - paragraph [ref=f2e34]:
+          - strong [ref=f2e36]: "Chi phí dự kiến:"
+        - paragraph [ref=f2e37]:
+          - generic [ref=f2e38]:
+            - strong [ref=f2e39]: Kế hoạch điều trị dự kiến
+            - text: "(có thể thay đổi trong quá trình điều trị, bác sĩ sẽ trao đổi với bệnh nhân/gia đình bệnh nhân khi có thay đổi):"
+        - paragraph [ref=f2e40]
+        - paragraph [ref=f2e41]: Tôi đồng ý chấp nhận để Bác sĩ , khoa phẫu thuật hàm mặt, cùng các bác sĩ đồng nghiệp khác thực hiện phẫu thuật chỉnh hình xương hàm Tôi đã được giải thích và hiểu rõ kế hoạch phẫu thuật và hiểu rõ các phương án điều trị khác.
+        - list [ref=f2e42]:
+          - listitem [ref=f2e43]: Tôi đã được giải thích và hiểu rõ các nguy cơ không mong muốn trong quá trình phẫu thuật, sử dụng thuốc, gây mê hoặc các can thiệp khác như đau, nhiễm trùng, sưng nề, chảy máu có thể cần truyền máu hoặc các nguy cơ khác như tê bì, loạn cảm giác, đổi màu… vùng lưỡi, môi, cằm, gò má, lợi…(có thể tạm thời hoặc vĩnh viễn). Thay đổi khớp cắn không thuận lợi, loạn năng khớp thái dương hàm, tổn thương phần mềm và các răng bên cạnh hoặc phục hình răng bên cạnh, đau đầu, đau cổ…
+          - listitem [ref=f2e44]: Các nguy cơ tiềm tàng khác như buồn nôn, nôn, dị ứng, gãy xương, bầm tím, chậm lành thương, biến chứng xoang hàm, mũi, vách ngăn mũi lệch…
+          - listitem [ref=f2e45]: Các thay đổi không mong muốn thẩm mỹ hình thể mũi, khuôn mặt, bất cân xứng mặt, cần phẫu thuật thêm khuyết xương hoặc mất răng, hạn chế há ngậm miệng, không lành đoạn xương, răng chết tủy cần điều trị tủy, tái phát xương hoặc khớp cắn sau phẫu thuật, các tổn thương nha chu, ống tuyến nước bọt, thị lực. Các sẹo ngoài da có thể có do đường rạch ngoài da. Có thể cần tháo các phương tiện kết hợp xương sau phẫu thuật.
+          - listitem [ref=f2e46]: Các tổn thương khác có thể xảy ra không được nêu trên.
+          - listitem [ref=f2e47]: Tôi cũng được giải thích và hiểu việc cần cố định hai hàm sau phẫu thuật có thể gây các biến chứng cấp cứu và đã được hướng dẫn tự cắt dây thép cố định trong trường hợp khẩn cấp.
+          - listitem [ref=f2e48]: Tôi chấp nhận các quy định an toàn chung sau phẫu thuật đã được giải thích bởi bác sĩ gây mê và chấp nhận các nguy cơ có thể xảy ra do gây mê toàn thân.
+          - listitem [ref=f2e49]: Tôi đã được giải thích và chấp nhận tuân thủ các hướng dẫn của bác sĩ sau phẫu thuật.
+          - listitem [ref=f2e50]: Tôi đã được giải thích và chấp nhận các chi phí phẫu thuật và phát sinh nếu có, tôi cũng hiểu và chấp nhận các tình trạng sức khỏe sau phẫu thuật có thể diễn biến ngoài mong đợi và không đảm bảo kết quả hoàn hảo.
+          - listitem [ref=f2e51]: Tôi tự nguyện đồng ý để BS và các bác sĩ đồng nghiệp khác tại nha khoa thực hiện điều trị chỉnh nha tại nha khoa và đồng ý để các bác sỹ phòng khám nha khoa toàn quyền sử dụng hình ảnh, phim chụp, mẫu hàm và tư liệu bệnh án.
+        - paragraph [ref=f2e52]:
+          - generic [ref=f2e53]: Tôi tự nguyện viết giấy cam đoan này đồng ý xin thực hiện phẫu thuật/thủ thuật và để giấy này làm bằng. Hà Nội, ngày tháng năm
+        - paragraph [ref=f2e54]: Bác sĩ Người bệnh/Đại diện cho gia đình
+  - generic [ref=e3199]:
+    - 'generic "icon: check-circle" [ref=e3200]':
+      - img [ref=e3201]
+    - text: Đã xóa thành công

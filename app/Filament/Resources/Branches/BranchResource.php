@@ -29,10 +29,10 @@ class BranchResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '6️⃣ Hệ thống';
+        return 'Quản lý chi nhánh';
     }
     
-    protected static ?int $navigationSort = 53;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

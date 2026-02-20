@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PatientMedicalRecords\Schemas;
 
+use App\Models\Disease;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -25,6 +26,7 @@ class PatientMedicalRecordForm
                             ->relationship('patient', 'full_name')
                             ->searchable()
                             ->preload()
+                            ->default(fn () => request()->integer('patient_id') ?: null)
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->helperText('Mỗi bệnh nhân chỉ có một hồ sơ y tế')
@@ -54,16 +56,15 @@ class PatientMedicalRecordForm
                             ->placeholder('Nhấn Enter sau mỗi bệnh')
                             ->helperText('VD: Tiểu đường, Cao huyết áp, Hen suyễn, Tim mạch')
                             ->columnSpanFull()
-                            ->suggestions([
-                                'Tiểu đường (Diabetes)',
-                                'Cao huyết áp',
-                                'Bệnh tim mạch',
-                                'Hen suyễn',
-                                'Bệnh phổi tắc nghẽn mãn tính (COPD)',
-                                'Loãng xương',
-                                'Bệnh thận mãn tính',
-                                'Bệnh gan',
-                            ]),
+                            ->suggestions(
+                                fn () => Disease::query()
+                                    ->active()
+                                    ->orderBy('code')
+                                    ->limit(80)
+                                    ->get()
+                                    ->map(fn (Disease $disease) => $disease->full_name)
+                                    ->all()
+                            ),
                         Repeater::make('current_medications')
                             ->label('Thuốc đang sử dụng')
                             ->schema([
@@ -141,13 +142,19 @@ class PatientMedicalRecordForm
                             ->maxLength(20)
                             ->placeholder('VD: 0901234567')
                             ->columnSpan(1),
+                        TextInput::make('emergency_contact_email')
+                            ->label('Email')
+                            ->email()
+                            ->maxLength(255)
+                            ->placeholder('VD: contact@example.com')
+                            ->columnSpan(1),
                         TextInput::make('emergency_contact_relationship')
                             ->label('Quan hệ')
                             ->maxLength(100)
                             ->placeholder('VD: Vợ/chồng, Con, Anh/chị/em')
                             ->columnSpan(1),
                     ])
-                    ->columns(3)
+                    ->columns(4)
                     ->collapsible(),
 
                 Section::make('Ghi chú bổ sung')

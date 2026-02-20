@@ -23,7 +23,7 @@ class TreatmentMaterialResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '4️⃣ Dịch vụ & Điều trị';
+        return 'Dịch vụ & điều trị';
     }
     
     protected static ?int $navigationSort = 34;

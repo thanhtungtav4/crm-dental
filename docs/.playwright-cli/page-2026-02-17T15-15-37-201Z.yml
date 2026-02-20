@@ -1,0 +1,238 @@
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - img [ref=e13] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e22]
+          - link [ref=e25] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e27]
+          - button [ref=e33] [cursor=pointer]:
+            - link [ref=e34]:
+              - /url: /customer-care
+              - img [ref=e36]
+          - button [expanded] [ref=e44] [cursor=pointer]:
+            - link [ref=e45]:
+              - /url: /calendar
+              - img [ref=e47]
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e52]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e57]
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e66]
+          - button [ref=e72] [cursor=pointer]:
+            - img [ref=e75]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e85]
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e97]
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - paragraph [ref=e104]: "17"
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e111]: Lịch hẹn
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "Báo cáo mới" [level=3] [ref=e116]
+              - img [ref=e118] [cursor=pointer]
+            - switch [checked] [ref=e121] [cursor=pointer]
+          - img [ref=e126] [cursor=pointer]
+      - generic [ref=e137]:
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e142]:
+              - generic [ref=e143] [cursor=pointer]:
+                - generic:
+                  - radio "Ngày" [checked]
+                - text: Ngày
+              - generic [ref=e144] [cursor=pointer]:
+                - generic:
+                  - radio "Tuần"
+                - text: Tuần
+              - generic [ref=e145] [cursor=pointer]:
+                - generic:
+                  - radio "Tháng"
+                - text: Tháng
+            - generic [ref=e146] [cursor=pointer]:
+              - img [ref=e148]
+              - textbox [ref=e151]: thứ ba, 17-02-2026
+              - img [ref=e153]
+          - generic [ref=e157]:
+            - generic [ref=e158] [cursor=pointer]:
+              - generic:
+                - radio [checked]
+              - img [ref=e161]
+            - generic [ref=e163] [cursor=pointer]:
+              - generic:
+                - radio
+              - img [ref=e166]
+            - generic [ref=e168] [cursor=pointer]:
+              - generic:
+                - radio
+              - img [ref=e171]
+          - button "Thêm lịch hẹn" [ref=e180] [cursor=pointer]:
+            - generic: Thêm lịch hẹn
+        - generic [ref=e182]:
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - generic [ref=e186]:
+                - generic [ref=e187]: "Tổng số lịch hẹn:"
+                - generic [ref=e188]: "1"
+              - generic [ref=e190]:
+                - generic [ref=e191]: "Đã xong:"
+                - generic [ref=e192]: "0"
+              - generic [ref=e194]:
+                - generic [ref=e195]: "Điều trị:"
+                - generic [ref=e196]: "0"
+              - generic [ref=e198]:
+                - generic [ref=e199]: "Đã đến:"
+                - generic [ref=e200]: "1"
+              - generic [ref=e202]:
+                - generic [ref=e203]: "Chưa đến:"
+                - generic [ref=e204]: "0"
+              - generic [ref=e206]:
+                - generic [ref=e207]: "Đã hủy:"
+                - generic [ref=e208]: "0"
+              - generic [ref=e210]:
+                - generic [ref=e211]: "Hẹn lại sau:"
+                - generic [ref=e212]: "0"
+              - generic [ref=e214]:
+                - generic [ref=e215]: "Đã hẹn lại:"
+                - generic [ref=e216]: "0"
+            - separator [ref=e217]
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - heading [level=4] [ref=e224]:
+                - img [ref=e226] [cursor=pointer]
+                - img [ref=e230] [cursor=pointer]
+              - generic "ĐÀO TUYẾN" [ref=e235]:
+                - generic [ref=e239]: ĐÀO TUYẾN
+                - 'generic "icon: more" [ref=e241] [cursor=pointer]':
+                  - img [ref=e242]
+              - generic "Phạm Văn Nam" [ref=e247]:
+                - generic [ref=e251]: Phạm Văn Nam
+                - 'generic "icon: more" [ref=e253] [cursor=pointer]':
+                  - img [ref=e254]
+              - generic "BS Nguyễn Thành Trung" [ref=e259]:
+                - generic [ref=e263]: BS Nguyễn Thành Trung
+                - 'generic "icon: more" [ref=e265] [cursor=pointer]':
+                  - img [ref=e266]
+              - generic "Bác sĩ" [ref=e271]:
+                - generic [ref=e275]: Bác sĩ
+                - 'generic "icon: more" [ref=e277] [cursor=pointer]':
+                  - img [ref=e278]
+              - generic "MAI HOÀNG YẾN" [ref=e283]:
+                - generic [ref=e287]: MAI HOÀNG YẾN
+                - 'generic "icon: more" [ref=e289] [cursor=pointer]':
+                  - img [ref=e290]
+              - generic "MAI HƯƠNG GIANG" [ref=e295]:
+                - generic [ref=e299]: MAI HƯƠNG GIANG
+                - 'generic "icon: more" [ref=e301] [cursor=pointer]':
+                  - img [ref=e302]
+              - generic "Nông Phương Lan" [ref=e307]:
+                - generic [ref=e311]: Nông Phương Lan
+                - 'generic "icon: more" [ref=e313] [cursor=pointer]':
+                  - img [ref=e314]
+            - generic [ref=e316]:
+              - generic [ref=e317]:
+                - generic [ref=e319]: 07:00
+                - generic [ref=e321]: 07:15
+                - generic [ref=e323]: 07:30
+                - generic [ref=e325]: 07:45
+                - generic [ref=e327]: 08:00
+                - generic [ref=e329]: 08:15
+                - generic [ref=e331]: 08:30
+                - generic [ref=e333]: 08:45
+                - generic [ref=e335]: 09:00
+                - generic [ref=e337]: 09:15
+                - generic [ref=e339]: 09:30
+                - generic [ref=e341]: 09:45
+                - generic [ref=e343]: 10:00
+                - generic [ref=e345]: 10:15
+                - generic [ref=e347]: 10:30
+                - generic [ref=e349]: 10:45
+                - generic [ref=e351]: 11:00
+                - generic [ref=e353]: 11:15
+                - generic [ref=e355]: 11:30
+                - generic [ref=e357]: 11:45
+                - generic [ref=e359]: 12:00
+                - generic [ref=e361]: 12:15
+                - generic [ref=e363]: 12:30
+                - generic [ref=e365]: 12:45
+                - generic [ref=e367]: 13:00
+                - generic [ref=e369]: 13:15
+                - generic [ref=e371]: 13:30
+                - generic [ref=e373]: 13:45
+                - generic [ref=e375]: 14:00
+                - generic [ref=e377]: 14:15
+                - generic [ref=e379]: 14:30
+                - generic [ref=e381]: 14:45
+                - generic [ref=e383]: 15:00
+                - generic [ref=e385]: 15:15
+                - generic [ref=e387]: 15:30
+                - generic [ref=e389]: 15:45
+                - generic [ref=e391]: 16:00
+                - generic [ref=e393]: 16:15
+                - generic [ref=e395]: 16:30
+                - generic [ref=e397]: 16:45
+                - generic [ref=e399]: 17:00
+                - generic [ref=e401]: 17:15
+                - generic [ref=e403]: 17:30
+                - generic [ref=e405]: 17:45
+                - generic [ref=e407]: 18:00
+                - generic [ref=e409]: 18:15
+                - generic [ref=e411]: 18:30
+                - generic [ref=e413]: 18:45
+                - generic [ref=e415]: 19:00
+                - generic [ref=e417]: 19:15
+                - generic [ref=e419]: 19:30
+                - generic [ref=e421]: 19:45
+                - generic [ref=e423]: 20:00
+                - generic [ref=e425]: 20:15
+                - generic [ref=e427]: 20:30
+                - generic [ref=e429]: 20:45
+                - generic [ref=e431]: 21:00
+                - generic [ref=e433]: 21:15
+                - generic [ref=e435]: 21:30
+                - generic [ref=e437]: 21:45
+                - generic [ref=e439]: 22:00
+                - generic [ref=e441]: 22:15
+                - generic [ref=e443]: 22:30
+                - generic [ref=e445]: 22:45
+                - generic [ref=e447]: 23:00
+              - generic [ref=e1112] [cursor=pointer]:
+                - generic [ref=e1113]: Nguyễn Văn An
+                - generic [ref=e1435]:
+                  - 'generic "icon: more" [active] [ref=e1115]':
+                    - img [ref=e1116]
+                  - generic [ref=e1437]: L30-0
+  - menu [ref=e1399]:
+    - menuitem "KH chưa đến" [ref=e1400] [cursor=pointer]:
+      - generic [ref=e1401]: KH chưa đến
+    - menuitem "Khách hàng đến" [disabled] [ref=e1404]:
+      - text: Khách hàng đến
+      - img [ref=e1443]
+    - menuitem "Điều trị" [ref=e1405] [cursor=pointer]
+    - menuitem "Đã xong" [ref=e1406] [cursor=pointer]
+    - menuitem "Hủy lịch hẹn" [ref=e1408] [cursor=pointer]
+    - menuitem "Hẹn lại sau" [ref=e1407] [cursor=pointer]
+    - listitem [ref=e1409]
+    - menuitem "Sửa lịch hẹn" [ref=e1410] [cursor=pointer]
+  - 'tooltip "21:45 - 22:00 Nguyễn Văn An - 0393874646 Đặt trước - Khám mới Đã chờ: 0 phút" [ref=e1445]':
+    - paragraph [ref=e1434]:
+      - text: 21:45 - 22:00
+      - text: Nguyễn Văn An - 0393874646
+      - text: Đặt trước - Khám mới
+      - text: "Đã chờ: 0 phút"

@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Prescription;
+use Illuminate\Http\Response;
+
+class PrescriptionController extends Controller
+{
+    public function print(Prescription $prescription): Response
+    {
+        $prescription->load(['patient', 'doctor', 'items']);
+
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && request()->boolean('pdf', true)) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('prescriptions.print', [
+                'prescription' => $prescription,
+                'isPdf' => true,
+            ]);
+
+            /** @var Response $response */
+            $response = $pdf->stream("don-thuoc-{$prescription->prescription_code}.pdf");
+            return $response;
+        }
+
+        return response()
+            ->view('prescriptions.print', [
+                'prescription' => $prescription,
+                'isPdf' => false,
+            ]);
+    }
+}

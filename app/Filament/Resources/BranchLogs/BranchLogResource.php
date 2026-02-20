@@ -27,7 +27,7 @@ class BranchLogResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '3️⃣ Quản lý khách hàng';
+        return 'Quản lý khách hàng';
     }
     
     protected static ?int $navigationSort = 23;

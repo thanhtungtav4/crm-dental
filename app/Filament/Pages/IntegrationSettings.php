@@ -1,0 +1,306 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\ClinicSetting;
+use App\Models\ClinicSettingLog;
+use BackedEnum;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
+use UnitEnum;
+
+class IntegrationSettings extends Page
+{
+    use HasPageShield;
+
+    public const AUDIT_LOG_PERMISSION = 'View:IntegrationSettingsAuditLog';
+
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-link';
+
+    protected static ?string $navigationLabel = 'Cài đặt tích hợp';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Cài đặt hệ thống';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $slug = 'integration-settings';
+
+    protected string $view = 'filament.pages.integration-settings';
+
+    public array $settings = [];
+
+    public function mount(): void
+    {
+        $this->hydrateSettings();
+    }
+
+    public function getHeading(): string
+    {
+        return 'Cài đặt tích hợp';
+    }
+
+    public function getTitle(): string
+    {
+        return $this->getHeading();
+    }
+
+    public function getSubheading(): string
+    {
+        return 'Quản lý cấu hình kết nối Zalo, ZNS, Google Calendar, VNPay, EMR và runtime CSKH.';
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getProviders(): array
+    {
+        return [
+            [
+                'group' => 'zalo',
+                'title' => 'Zalo OA',
+                'description' => 'Thiết lập thông tin kết nối OA và webhook.',
+                'fields' => [
+                    ['state' => 'zalo_enabled', 'key' => 'zalo.enabled', 'label' => 'Bật tích hợp Zalo OA', 'type' => 'boolean', 'default' => false, 'sort_order' => 10],
+                    ['state' => 'zalo_oa_id', 'key' => 'zalo.oa_id', 'label' => 'OA ID', 'type' => 'text', 'default' => '', 'sort_order' => 20],
+                    ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
+                    ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
+                    ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
+                ],
+            ],
+            [
+                'group' => 'zns',
+                'title' => 'Zalo ZNS',
+                'description' => 'Thiết lập token và mẫu tin ZNS cho các luồng CSKH.',
+                'fields' => [
+                    ['state' => 'zns_enabled', 'key' => 'zns.enabled', 'label' => 'Bật tích hợp ZNS', 'type' => 'boolean', 'default' => false, 'sort_order' => 110],
+                    ['state' => 'zns_access_token', 'key' => 'zns.access_token', 'label' => 'Access Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 120],
+                    ['state' => 'zns_refresh_token', 'key' => 'zns.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 130],
+                    ['state' => 'zns_template_appointment', 'key' => 'zns.template_appointment', 'label' => 'Template nhắc lịch hẹn', 'type' => 'text', 'default' => '', 'sort_order' => 140],
+                    ['state' => 'zns_template_payment', 'key' => 'zns.template_payment', 'label' => 'Template nhắc thanh toán', 'type' => 'text', 'default' => '', 'sort_order' => 150],
+                ],
+            ],
+            [
+                'group' => 'google_calendar',
+                'title' => 'Google Calendar',
+                'description' => 'Đồng bộ lịch hẹn với Google Calendar.',
+                'fields' => [
+                    ['state' => 'google_calendar_enabled', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'type' => 'boolean', 'default' => false, 'sort_order' => 210],
+                    ['state' => 'google_calendar_client_id', 'key' => 'google_calendar.client_id', 'label' => 'Client ID', 'type' => 'text', 'default' => '', 'sort_order' => 220],
+                    ['state' => 'google_calendar_client_secret', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 230],
+                    ['state' => 'google_calendar_calendar_id', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'type' => 'text', 'default' => '', 'sort_order' => 240],
+                    ['state' => 'google_calendar_sync_mode', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'type' => 'text', 'default' => 'two_way', 'sort_order' => 250],
+                ],
+            ],
+            [
+                'group' => 'vnpay',
+                'title' => 'VNPay',
+                'description' => 'Cấu hình thanh toán online qua cổng VNPay.',
+                'fields' => [
+                    ['state' => 'vnpay_enabled', 'key' => 'vnpay.enabled', 'label' => 'Bật tích hợp VNPay', 'type' => 'boolean', 'default' => false, 'sort_order' => 310],
+                    ['state' => 'vnpay_tmn_code', 'key' => 'vnpay.tmn_code', 'label' => 'TMN Code', 'type' => 'text', 'default' => '', 'sort_order' => 320],
+                    ['state' => 'vnpay_hash_secret', 'key' => 'vnpay.hash_secret', 'label' => 'Hash Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 330],
+                    ['state' => 'vnpay_return_url', 'key' => 'vnpay.return_url', 'label' => 'Return URL', 'type' => 'url', 'default' => '', 'sort_order' => 340],
+                    ['state' => 'vnpay_ipn_url', 'key' => 'vnpay.ipn_url', 'label' => 'IPN URL', 'type' => 'url', 'default' => '', 'sort_order' => 350],
+                    ['state' => 'vnpay_sandbox', 'key' => 'vnpay.sandbox', 'label' => 'Chế độ Sandbox', 'type' => 'boolean', 'default' => true, 'sort_order' => 360],
+                ],
+            ],
+            [
+                'group' => 'emr',
+                'title' => 'EMR',
+                'description' => 'Thiết lập tích hợp bệnh án điện tử (EMR).',
+                'fields' => [
+                    ['state' => 'emr_enabled', 'key' => 'emr.enabled', 'label' => 'Bật tích hợp EMR', 'type' => 'boolean', 'default' => false, 'sort_order' => 410],
+                    ['state' => 'emr_provider', 'key' => 'emr.provider', 'label' => 'Nhà cung cấp', 'type' => 'text', 'default' => 'internal', 'sort_order' => 420],
+                    ['state' => 'emr_base_url', 'key' => 'emr.base_url', 'label' => 'Base URL', 'type' => 'url', 'default' => '', 'sort_order' => 430],
+                    ['state' => 'emr_api_key', 'key' => 'emr.api_key', 'label' => 'API Key', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 440],
+                    ['state' => 'emr_clinic_code', 'key' => 'emr.clinic_code', 'label' => 'Mã cơ sở', 'type' => 'text', 'default' => '', 'sort_order' => 450],
+                ],
+            ],
+            [
+                'group' => 'care',
+                'title' => 'Runtime CSKH',
+                'description' => 'Cấu hình thời gian nhắc việc và kênh mặc định cho các ticket CSKH tự động.',
+                'fields' => [
+                    ['state' => 'care_medication_reminder_offset_days', 'key' => 'care.medication_reminder_offset_days', 'label' => 'Số ngày nhắc uống thuốc (sau ngày điều trị)', 'type' => 'integer', 'default' => 0, 'sort_order' => 510],
+                    ['state' => 'care_post_treatment_follow_up_offset_days', 'key' => 'care.post_treatment_follow_up_offset_days', 'label' => 'Số ngày hỏi thăm sau điều trị', 'type' => 'integer', 'default' => 3, 'sort_order' => 520],
+                    [
+                        'state' => 'care_default_channel',
+                        'key' => 'care.default_channel',
+                        'label' => 'Kênh CSKH mặc định',
+                        'type' => 'select',
+                        'default' => 'call',
+                        'options' => [
+                            'call' => 'Gọi điện',
+                            'zalo' => 'Zalo OA',
+                            'zns' => 'ZNS',
+                            'sms' => 'SMS',
+                            'email' => 'Email',
+                            'facebook' => 'Facebook',
+                            'other' => 'Khác',
+                        ],
+                        'sort_order' => 530,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public function save(): void
+    {
+        $rules = [];
+
+        foreach ($this->getProviders() as $provider) {
+            foreach ($provider['fields'] as $field) {
+                $attribute = "settings.{$field['state']}";
+
+                $rules[$attribute] = match ($field['type']) {
+                    'boolean' => ['boolean'],
+                    'url' => ['nullable', 'url', 'max:500'],
+                    'integer' => ['nullable', 'integer'],
+                    'select' => ['required', Rule::in(array_keys($field['options'] ?? []))],
+                    default => ['nullable', 'string', 'max:3000'],
+                };
+            }
+        }
+
+        $validated = $this->validate($rules);
+
+        foreach ($this->getProviders() as $provider) {
+            foreach ($provider['fields'] as $field) {
+                $statePath = "settings.{$field['state']}";
+                $valueType = match ($field['type']) {
+                    'url', 'select' => 'text',
+                    default => $field['type'],
+                };
+                $value = data_get($validated, $statePath, $field['default'] ?? null);
+                $normalizedNewValue = $this->normalizeValueForCompare($value, $valueType);
+                $oldValue = ClinicSetting::getValue(
+                    key: $field['key'],
+                    default: $field['default'] ?? null,
+                );
+                $normalizedOldValue = $this->normalizeValueForCompare($oldValue, $valueType);
+
+                $record = ClinicSetting::setValue(
+                    key: $field['key'],
+                    value: $value,
+                    meta: [
+                        'group' => $provider['group'],
+                        'label' => $field['label'],
+                        'value_type' => $valueType,
+                        'is_secret' => (bool) ($field['is_secret'] ?? false),
+                        'is_active' => true,
+                        'sort_order' => (int) ($field['sort_order'] ?? 0),
+                    ],
+                );
+
+                if ($normalizedOldValue === $normalizedNewValue) {
+                    continue;
+                }
+
+                $this->logSettingChange(
+                    setting: $record,
+                    oldValue: $normalizedOldValue,
+                    newValue: $normalizedNewValue,
+                    isSecret: (bool) ($field['is_secret'] ?? false),
+                );
+            }
+        }
+
+        Notification::make()
+            ->title('Đã lưu cài đặt tích hợp')
+            ->success()
+            ->send();
+    }
+
+    protected function hydrateSettings(): void
+    {
+        $state = [];
+
+        foreach ($this->getProviders() as $provider) {
+            foreach ($provider['fields'] as $field) {
+                $state[$field['state']] = ClinicSetting::getValue(
+                    key: $field['key'],
+                    default: $field['default'] ?? null,
+                );
+            }
+        }
+
+        $this->settings = $state;
+    }
+
+    public function getRecentLogs(): Collection
+    {
+        if (! $this->canViewAuditLogs() || ! Schema::hasTable('clinic_setting_logs')) {
+            return collect();
+        }
+
+        return ClinicSettingLog::query()
+            ->with('changedBy:id,name')
+            ->latest('changed_at')
+            ->limit(20)
+            ->get();
+    }
+
+    protected function normalizeValueForCompare(mixed $value, string $type): mixed
+    {
+        return match ($type) {
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'integer' => is_numeric($value) ? (int) $value : 0,
+            'json' => is_string($value) ? (json_decode($value, true) ?? []) : (array) $value,
+            default => filled($value) ? trim((string) $value) : null,
+        };
+    }
+
+    protected function logSettingChange(
+        ClinicSetting $setting,
+        mixed $oldValue,
+        mixed $newValue,
+        bool $isSecret = false,
+    ): void {
+        if (! Schema::hasTable('clinic_setting_logs')) {
+            return;
+        }
+
+        ClinicSettingLog::query()->create([
+            'clinic_setting_id' => $setting->id,
+            'setting_group' => $setting->group ?? 'integration',
+            'setting_key' => $setting->key,
+            'setting_label' => $setting->label,
+            'old_value' => $this->valueForAuditLog($oldValue, $isSecret),
+            'new_value' => $this->valueForAuditLog($newValue, $isSecret),
+            'is_secret' => $isSecret,
+            'changed_by' => auth()->id(),
+            'changed_at' => now(),
+        ]);
+    }
+
+    public function canViewAuditLogs(): bool
+    {
+        return (bool) auth()->user()?->can(static::AUDIT_LOG_PERMISSION);
+    }
+
+    protected function valueForAuditLog(mixed $value, bool $isSecret): ?string
+    {
+        if ($isSecret) {
+            return '••••••';
+        }
+
+        if ($value === null || $value === '') {
+            return '(trống)';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Bật' : 'Tắt';
+        }
+
+        if (is_array($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE) ?: '(trống)';
+        }
+
+        return (string) $value;
+    }
+}

@@ -1,0 +1,109 @@
+- generic [ref=e1]:
+  - generic [ref=e7]:
+    - generic [ref=e9]:
+      - img [ref=e14] [cursor=pointer]
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - link [ref=e21] [cursor=pointer]:
+            - /url: /
+            - img [ref=e23]
+          - link [ref=e26] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e28]
+          - button [ref=e34] [cursor=pointer]:
+            - link [ref=e35]:
+              - /url: /customer-care
+              - img [ref=e37]
+          - button [ref=e45] [cursor=pointer]:
+            - link [ref=e46]:
+              - /url: /calendar
+              - img [ref=e48]
+          - link [ref=e51] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e53]
+          - link [ref=e56] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e58]
+          - button [ref=e64] [cursor=pointer]:
+            - img [ref=e67]
+          - button [ref=e73] [cursor=pointer]:
+            - img [ref=e76]
+          - link [ref=e79] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e81]
+          - link [ref=e84] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e86]
+          - button [ref=e95] [cursor=pointer]:
+            - img [ref=e98]
+        - generic [ref=e101] [cursor=pointer]:
+          - img [ref=e103]
+          - paragraph [ref=e105]: "18"
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - generic [ref=e112]: Dental Call Center
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - heading "Báo cáo mới" [level=3] [ref=e117]
+              - img [ref=e119] [cursor=pointer]
+            - switch [checked] [ref=e122] [cursor=pointer]
+          - img [ref=e127] [cursor=pointer]
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - heading "Thiết lập ứng dụng" [level=3] [ref=e142]
+              - generic [ref=e143]:
+                - text: Sau khi cài đặt Call Center thành công, quý khách vẫn chưa thể sử dụng được tính năng gọi điện chăm sóc khách hàng. Quý khách vui lòng liên hệ qua
+                - link "support@dentalflow.vn" [ref=e144] [cursor=pointer]:
+                  - /url: mailto:support@dentalflow.vn
+                - text: hoặc
+                - link "0927741985" [ref=e145] [cursor=pointer]:
+                  - /url: tel:0927741985
+                - text: để được hỗ trợ.
+            - generic [ref=e146]:
+              - heading "Dịch vụ call center" [level=3] [ref=e147]
+              - generic [ref=e150]:
+                - generic [ref=e151] [cursor=pointer]:
+                  - radio "Stringee" [checked] [ref=e153]
+                  - generic [ref=e155]: Stringee
+                - generic [ref=e156] [cursor=pointer]:
+                  - radio "CareSoft" [ref=e158]
+                  - generic [ref=e160]: CareSoft
+          - 'switch "icon: loading" [disabled] [ref=e195]':
+            - 'generic "icon: loading" [ref=e196]':
+              - img [ref=e197]
+        - generic [ref=e166]:
+          - generic [ref=e167]:
+            - heading "Thiết lập tích hợp tài khoản Stringee" [level=3] [ref=e169]
+            - img [ref=e171] [cursor=pointer]
+          - generic [ref=e174]:
+            - generic [ref=e175]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: SID
+                - textbox "SID" [ref=e183]
+              - generic [ref=e185]:
+                - generic [ref=e186]: Key
+                - textbox "Key" [ref=e191]
+            - button "Lưu thông tin" [ref=e194] [cursor=pointer]:
+              - generic: Lưu thông tin
+  - dialog [ref=e200]:
+    - document:
+      - generic [ref=e202]:
+        - generic [ref=e204]:
+          - heading "Thông báo xác nhận" [level=2] [ref=e205]
+          - img [ref=e207] [cursor=pointer]
+        - generic [ref=e209]:
+          - paragraph [ref=e210]:
+            - text: Sau khi bật Call Center có thể sử dụng được
+            - text: tính năng gọi điện chăm sóc khách hàng.
+            - text: Bạn có chắc chắn muốn
+            - strong [ref=e211]: bật tính năng này
+            - text: hay không?
+          - paragraph
+        - generic [ref=e214]:
+          - button "Xác nhận" [ref=e216] [cursor=pointer]:
+            - generic: Xác nhận
+          - button "Hủy bỏ" [ref=e218] [cursor=pointer]:
+            - generic: Hủy bỏ

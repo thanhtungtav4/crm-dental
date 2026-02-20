@@ -29,7 +29,7 @@ class MaterialResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '5️⃣ Quản lý kho';
+        return 'Quản lý kho';
     }
     
     protected static ?int $navigationSort = 41;

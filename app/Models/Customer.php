@@ -15,14 +15,22 @@ class Customer extends Model
         'full_name',
         'phone',
         'email',
-    'address',
+        'birthday',
+        'gender',
+        'address',
         'source',
+        'customer_group_id',
+        'promotion_group_id',
         'status',
-    'assigned_to',
-    'next_follow_up_at',
+        'assigned_to',
+        'next_follow_up_at',
         'notes',
         'created_by',
         'updated_by',
+    ];
+
+    protected $casts = [
+        'birthday' => 'date',
     ];
 
     public function branch()
@@ -38,6 +46,16 @@ class Customer extends Model
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function customerGroup()
+    {
+        return $this->belongsTo(CustomerGroup::class);
+    }
+
+    public function promotionGroup()
+    {
+        return $this->belongsTo(PromotionGroup::class);
     }
 
     public function creator()

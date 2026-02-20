@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\Section;
@@ -27,6 +28,7 @@ class PaymentForm
                             ->relationship('invoice', 'invoice_no')
                             ->searchable()
                             ->preload()
+                            ->default(fn () => request()->integer('invoice_id') ?: null)
                             ->required()
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(function ($record) {
@@ -42,18 +44,28 @@ class PaymentForm
                             ->numeric()
                             ->prefix('VNĐ')
                             ->suffix('đ')
-                            ->minValue(0)
-                            ->helperText('Nhập số tiền bệnh nhân thanh toán')
+                            ->afterStateHydrated(function ($state, callable $set) {
+                                if ($state !== null) {
+                                    $set('amount', abs((float) $state));
+                                }
+                            })
+                            ->helperText('Nhập số tiền dương. Phiếu hoàn sẽ tự trừ vào công nợ.')
                             ->reactive(),
+
+                        Select::make('direction')
+                            ->label('Loại phiếu')
+                            ->options([
+                                'receipt' => 'Phiếu thu',
+                                'refund' => 'Phiếu hoàn',
+                            ])
+                            ->default('receipt')
+                            ->required()
+                            ->reactive()
+                            ->native(false),
                         
                         Select::make('method')
                             ->label('Phương thức thanh toán')
-                            ->options([
-                                'cash' => '💵 Tiền mặt',
-                                'card' => '💳 Thẻ tín dụng/ghi nợ',
-                                'transfer' => '🏦 Chuyển khoản',
-                                'other' => '📝 Khác',
-                            ])
+                            ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true))
                             ->default('cash')
                             ->required()
                             ->reactive()
@@ -76,7 +88,7 @@ class PaymentForm
                         TextInput::make('transaction_ref')
                             ->label('Mã giao dịch')
                             ->helperText('Mã tham chiếu từ ngân hàng/máy POS')
-                            ->visible(fn (Get $get) => in_array($get('method'), ['card', 'transfer']))
+                            ->visible(fn (Get $get) => in_array($get('method'), ['card', 'transfer', 'vnpay']))
                             ->maxLength(255),
                         
                         Select::make('payment_source')
@@ -96,6 +108,12 @@ class PaymentForm
                             ->visible(fn (Get $get) => $get('payment_source') === 'insurance')
                             ->maxLength(255)
                             ->helperText('Mã hồ sơ yêu cầu bảo hiểm'),
+                        Textarea::make('refund_reason')
+                            ->label('Lý do hoàn tiền')
+                            ->rows(2)
+                            ->visible(fn (Get $get) => $get('direction') === 'refund')
+                            ->required(fn (Get $get) => $get('direction') === 'refund')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->columnSpanFull()

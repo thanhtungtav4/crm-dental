@@ -29,7 +29,7 @@ class PaymentResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '2️⃣ Tài chính';
+        return 'Tài chính';
     }
     
     protected static ?int $navigationSort = 12;

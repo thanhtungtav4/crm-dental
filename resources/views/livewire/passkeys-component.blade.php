@@ -1,7 +1,7 @@
 <x-filament::section 
     :aside="true" 
-    heading="Passkeys" 
-    description="Passkeys cho phép bạn đăng nhập mà không cần mật khẩu. Thay vì mật khẩu, bạn có thể tạo passkey sẽ được lưu trữ trong 1Password, ứng dụng mật khẩu của MacOS, hoặc các ứng dụng tương tự trên hệ điều hành của bạn."
+    heading="Khóa truy cập (Passkey)" 
+    description="Khóa truy cập (passkey) cho phép bạn đăng nhập mà không cần mật khẩu. Thay vì mật khẩu, bạn có thể tạo passkey sẽ được lưu trữ trong 1Password, ứng dụng mật khẩu của MacOS, hoặc các ứng dụng tương tự trên hệ điều hành của bạn."
 >
     {{-- Check WebAuthn support --}}
     <div x-data="{ 

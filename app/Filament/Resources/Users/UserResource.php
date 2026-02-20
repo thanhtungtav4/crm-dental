@@ -27,10 +27,10 @@ class UserResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '6️⃣ Hệ thống';
+        return 'Quản lý nhân sự';
     }
     
-    protected static ?int $navigationSort = 51;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

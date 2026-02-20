@@ -18,12 +18,27 @@ class Patient extends Model
         'full_name',
         'email',
         'birthday',
+        'cccd',
         'gender',
         'phone',
+        'phone_secondary',
+        'occupation',
         'address',
+        'customer_group_id',
+        'promotion_group_id',
+        'primary_doctor_id',
+        'owner_staff_id',
+        'first_visit_reason',
+        'note',
+        'status',
         'medical_history',
         'created_by',
         'updated_by',
+    ];
+
+    protected $casts = [
+        'birthday' => 'date',
+        'last_verified_at' => 'datetime',
     ];
 
     public function customer()
@@ -61,6 +76,16 @@ class Patient extends Model
         return $this->hasMany(Appointment::class);
     }
 
+    public function payments()
+    {
+        return $this->hasManyThrough(
+            Payment::class,
+            Invoice::class,
+            'patient_id',
+            'invoice_id'
+        );
+    }
+
     public function clinicalNotes()
     {
         return $this->hasMany(ClinicalNote::class);
@@ -71,9 +96,54 @@ class Patient extends Model
         return $this->hasMany(PatientPhoto::class);
     }
 
+    public function treatmentSessions()
+    {
+        return $this->hasManyThrough(
+            TreatmentSession::class,
+            TreatmentPlan::class,
+            'patient_id',
+            'treatment_plan_id'
+        );
+    }
+
+    public function prescriptions()
+    {
+        return $this->hasMany(Prescription::class);
+    }
+
     public function medicalRecord()
     {
         return $this->hasOne(PatientMedicalRecord::class);
+    }
+
+    public function customerGroup()
+    {
+        return $this->belongsTo(CustomerGroup::class);
+    }
+
+    public function promotionGroup()
+    {
+        return $this->belongsTo(PromotionGroup::class);
+    }
+
+    public function primaryDoctor()
+    {
+        return $this->belongsTo(User::class, 'primary_doctor_id');
+    }
+
+    public function ownerStaff()
+    {
+        return $this->belongsTo(User::class, 'owner_staff_id');
+    }
+
+    public function getGenderLabel(): string
+    {
+        return match ($this->gender) {
+            'male' => 'Nam',
+            'female' => 'Nữ',
+            'other' => 'Khác',
+            default => 'Chưa xác định',
+        };
     }
 
     protected static function booted(): void
@@ -92,8 +162,11 @@ class Patient extends Model
                 $customer->phone = $patient->phone;
                 $customer->email = $patient->email ?? null;
                 $customer->source = 'patient';
+                $customer->customer_group_id = $patient->customer_group_id ?? null;
+                $customer->promotion_group_id = $patient->promotion_group_id ?? null;
                 $customer->status = 'lead';
-                $customer->notes = 'Auto-created from Patient';
+                $customer->notes = $patient->note ?: ($patient->first_visit_reason ?: 'Auto-created from Patient');
+                $customer->assigned_to = $patient->owner_staff_id ?? null;
                 $customer->save();
 
                 $patient->customer_id = $customer->id;

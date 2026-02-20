@@ -23,6 +23,11 @@ class SessionsRelationManager extends RelationManager
                 ->label('Bác sĩ')
                 ->options(fn() => \App\Models\User::role('Doctor')->pluck('name', 'id'))
                 ->searchable()->preload(),
+            Forms\Components\Select::make('assistant_id')
+                ->label('Trợ thủ')
+                ->options(fn() => \App\Models\User::query()->pluck('name', 'id'))
+                ->searchable()->preload()
+                ->nullable(),
             Forms\Components\DateTimePicker::make('start_at')->label('Bắt đầu'),
             Forms\Components\DateTimePicker::make('end_at')->label('Kết thúc'),
             Forms\Components\DateTimePicker::make('performed_at')->label('Thời gian'),
@@ -43,6 +48,7 @@ class SessionsRelationManager extends RelationManager
                 TextColumn::make('start_at')->label('Bắt đầu')->dateTime()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('end_at')->label('Kết thúc')->dateTime()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('doctor.name')->label('Bác sĩ'),
+                TextColumn::make('assistant.name')->label('Trợ thủ'),
                 TextColumn::make('status')->label('Trạng thái')->badge()
                     ->icon(fn(?string $s) => \App\Support\StatusBadge::icon($s))
                     ->color(fn(?string $s) => \App\Support\StatusBadge::color($s)),

@@ -1,0 +1,108 @@
+- generic [ref=e1]:
+  - generic [ref=e7]:
+    - generic [ref=e9]:
+      - img [ref=e14] [cursor=pointer]
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - link [ref=e21] [cursor=pointer]:
+            - /url: /
+            - img [ref=e23]
+          - link [ref=e26] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e28]
+          - button [ref=e34] [cursor=pointer]:
+            - link [ref=e35]:
+              - /url: /customer-care
+              - img [ref=e37]
+          - button [ref=e45] [cursor=pointer]:
+            - link [ref=e46]:
+              - /url: /calendar
+              - img [ref=e48]
+          - link [ref=e51] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e53]
+          - link [ref=e56] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e58]
+          - button [ref=e64] [cursor=pointer]:
+            - img [ref=e67]
+          - button [ref=e73] [cursor=pointer]:
+            - img [ref=e76]
+          - link [ref=e79] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e81]
+          - link [ref=e84] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e86]
+          - button [ref=e95] [cursor=pointer]:
+            - img [ref=e98]
+        - generic [ref=e101] [cursor=pointer]:
+          - img [ref=e103]
+          - paragraph [ref=e105]: "18"
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - generic [ref=e111]:
+          - generic [ref=e116] [cursor=pointer]:
+            - textbox "Ngày bắt đầu" [ref=e117]: 18-02-2026
+            - generic: ~
+            - textbox "Ngày kết thúc" [ref=e118]: 18-02-2026
+            - img [ref=e120]
+          - button "Hiển thị" [ref=e123] [cursor=pointer]:
+            - generic:
+              - img
+            - generic:
+              - generic: Hiển thị
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - heading "Báo cáo mới" [level=3] [ref=e128]
+              - img [ref=e130] [cursor=pointer]
+            - switch [checked] [ref=e133] [cursor=pointer]
+          - generic [ref=e136] [cursor=pointer]:
+            - img [ref=e138]
+            - superscript [ref=e141]
+      - generic [ref=e150]:
+        - generic [ref=e151]:
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - generic [ref=e156]: Tổng doanh thu
+              - img [ref=e158] [cursor=pointer]
+            - generic [ref=e160]: (VND)
+            - generic [ref=e162]: "0"
+          - generic [ref=e165]:
+            - generic [ref=e166]:
+              - generic [ref=e167]: Tổng thực thu
+              - img [ref=e169] [cursor=pointer]
+            - generic [ref=e171]: (VND)
+            - generic [ref=e173]: "0"
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - generic [ref=e178]: Tổng chi phí
+              - img [ref=e180] [cursor=pointer]
+            - generic [ref=e182]: (VND)
+            - generic [ref=e184]: "0"
+          - generic [ref=e187]:
+            - generic [ref=e188]:
+              - generic [ref=e189]: Tổng công nợ
+              - img [ref=e191] [cursor=pointer]
+            - generic [ref=e193]: (VND)
+            - generic [ref=e195]: "0"
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - generic [ref=e201]: Báo cáo lịch hẹn
+            - link "Xem chi tiết" [ref=e203] [cursor=pointer]:
+              - /url: /appointment-statistical
+              - generic [ref=e204]: Xem chi tiết
+              - img [ref=e206]
+          - img [ref=e212]:
+            - generic [ref=e217]: Không có dữ liệu
+  - dialog [ref=e223]:
+    - document:
+      - generic [ref=e225]:
+        - generic [ref=e226]:
+          - heading "Thư chúc Tết Xuân Bính Ngọ 2026" [level=2] [ref=e228]
+          - img [ref=e230] [cursor=pointer]
+        - generic [ref=e233]:
+          - paragraph
+          - img "undefined" [ref=e234]
+          - paragraph

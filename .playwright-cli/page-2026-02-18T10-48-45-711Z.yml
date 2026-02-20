@@ -1,0 +1,714 @@
+- generic [ref=e1]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - button "Collapse sidebar" [ref=e5] [cursor=pointer]:
+        - img [ref=e6]
+      - link "IDENT Dental CRM logo" [ref=e8] [cursor=pointer]:
+        - /url: http://crm.test/admin
+        - img "IDENT Dental CRM logo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Global search
+        - generic [ref=e15]:
+          - img [ref=e17]
+          - searchbox "Global search" [ref=e20]
+      - button "User menu" [ref=e23] [cursor=pointer]:
+        - img "Avatar of Super Admin" [ref=e24]
+  - generic [ref=e25]:
+    - complementary [ref=e27]:
+      - navigation [ref=e28]:
+        - list [ref=e29]:
+          - listitem [ref=e30]:
+            - list [ref=e31]:
+              - listitem [ref=e32]:
+                - link "Dashboard" [ref=e33] [cursor=pointer]:
+                  - /url: http://crm.test/admin
+                  - img [ref=e34]
+                  - generic [ref=e36]: Dashboard
+          - listitem [ref=e37]:
+            - button "Filament Shield Filament Shield" [ref=e38] [cursor=pointer]:
+              - generic [ref=e39]: Filament Shield
+              - button "Filament Shield" [expanded] [ref=e40]:
+                - img [ref=e41]
+            - list [ref=e43]:
+              - listitem [ref=e44]:
+                - link "Roles" [ref=e45] [cursor=pointer]:
+                  - /url: http://crm.test/admin/shield/roles
+                  - img [ref=e46]
+                  - generic [ref=e48]: Roles
+          - listitem [ref=e49]:
+            - button "2️⃣ Tài chính 2️⃣ Tài chính" [ref=e50] [cursor=pointer]:
+              - generic [ref=e51]: 2️⃣ Tài chính
+              - button "2️⃣ Tài chính" [expanded] [ref=e52]:
+                - img [ref=e53]
+            - list [ref=e55]:
+              - listitem [ref=e56]:
+                - link "Dashboard Tài chính" [ref=e57] [cursor=pointer]:
+                  - /url: http://crm.test/admin/financial-dashboard
+                  - img [ref=e58]
+                  - generic [ref=e60]: Dashboard Tài chính
+              - listitem [ref=e61]:
+                - link "Thanh toán" [ref=e62] [cursor=pointer]:
+                  - /url: http://crm.test/admin/payments
+                  - img [ref=e63]
+                  - generic [ref=e65]: Thanh toán
+              - listitem [ref=e66]:
+                - link "Hóa đơn" [ref=e67] [cursor=pointer]:
+                  - /url: http://crm.test/admin/invoices
+                  - img [ref=e68]
+                  - generic [ref=e70]: Hóa đơn
+          - listitem [ref=e71]:
+            - button "1️⃣ Hoạt động hàng ngày 1️⃣ Hoạt động hàng ngày" [ref=e72] [cursor=pointer]:
+              - generic [ref=e73]: 1️⃣ Hoạt động hàng ngày
+              - button "1️⃣ Hoạt động hàng ngày" [expanded] [ref=e74]:
+                - img [ref=e75]
+            - list [ref=e77]:
+              - listitem [ref=e78]:
+                - link "Lịch hẹn" [ref=e79] [cursor=pointer]:
+                  - /url: http://crm.test/admin/appointments
+                  - img [ref=e80]
+                  - generic [ref=e82]: Lịch hẹn
+              - listitem [ref=e83]:
+                - link "Bệnh nhân" [ref=e84] [cursor=pointer]:
+                  - /url: http://crm.test/admin/patients
+                  - img [ref=e85]
+                  - generic [ref=e87]: Bệnh nhân
+              - listitem [ref=e88]:
+                - link "Kế hoạch điều trị" [ref=e89] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-plans
+                  - img [ref=e90]
+                  - generic [ref=e92]: Kế hoạch điều trị
+              - listitem [ref=e93]:
+                - link "Phiên điều trị" [ref=e94] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-sessions
+                  - img [ref=e95]
+                  - generic [ref=e97]: Phiên điều trị
+          - listitem [ref=e98]:
+            - button "3️⃣ Quản lý khách hàng 3️⃣ Quản lý khách hàng" [ref=e99] [cursor=pointer]:
+              - generic [ref=e100]: 3️⃣ Quản lý khách hàng
+              - button "3️⃣ Quản lý khách hàng" [expanded] [ref=e101]:
+                - img [ref=e102]
+            - list [ref=e104]:
+              - listitem [ref=e105]:
+                - link "Khách hàng (Lead)" [ref=e106] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customers
+                  - img [ref=e107]
+                  - generic [ref=e109]: Khách hàng (Lead)
+              - listitem [ref=e110]:
+                - link "Nhóm khách hàng" [ref=e111] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customer-groups
+                  - img [ref=e112]
+                  - generic [ref=e114]: Nhóm khách hàng
+              - listitem [ref=e115]:
+                - link "Nhóm khuyến mãi" [ref=e116] [cursor=pointer]:
+                  - /url: http://crm.test/admin/promotion-groups
+                  - img [ref=e117]
+                  - generic [ref=e119]: Nhóm khuyến mãi
+          - listitem [ref=e120]:
+            - button "4️⃣ Dịch vụ & Điều trị 4️⃣ Dịch vụ & Điều trị" [ref=e121] [cursor=pointer]:
+              - generic [ref=e122]: 4️⃣ Dịch vụ & Điều trị
+              - button "4️⃣ Dịch vụ & Điều trị" [expanded] [ref=e123]:
+                - img [ref=e124]
+            - list [ref=e126]:
+              - listitem [ref=e127]:
+                - link "Dịch vụ" [ref=e128] [cursor=pointer]:
+                  - /url: http://crm.test/admin/services
+                  - img [ref=e129]
+                  - generic [ref=e131]: Dịch vụ
+              - listitem [ref=e132]:
+                - link "Danh mục dịch vụ" [ref=e133] [cursor=pointer]:
+                  - /url: http://crm.test/admin/service-categories
+                  - img [ref=e134]
+                  - generic [ref=e136]: Danh mục dịch vụ
+              - listitem [ref=e137]:
+                - link "Hạng mục điều trị" [ref=e138] [cursor=pointer]:
+                  - /url: http://crm.test/admin/plan-items
+                  - img [ref=e139]
+                  - generic [ref=e141]: Hạng mục điều trị
+              - listitem [ref=e142]:
+                - link "Vật tư sử dụng" [ref=e143] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-materials
+                  - generic [ref=e147]: Vật tư sử dụng
+          - listitem [ref=e148]:
+            - button "5️⃣ Quản lý kho 5️⃣ Quản lý kho" [ref=e149] [cursor=pointer]:
+              - generic [ref=e150]: 5️⃣ Quản lý kho
+              - button "5️⃣ Quản lý kho" [expanded] [ref=e151]:
+                - img [ref=e152]
+            - list [ref=e154]:
+              - listitem [ref=e155]:
+                - link "Vật tư" [ref=e156] [cursor=pointer]:
+                  - /url: http://crm.test/admin/materials
+                  - img [ref=e157]
+                  - generic [ref=e159]: Vật tư
+              - listitem [ref=e160]:
+                - link "Lô vật tư" [ref=e161] [cursor=pointer]:
+                  - /url: http://crm.test/admin/material-batches
+                  - img [ref=e162]
+                  - generic [ref=e164]: Lô vật tư
+              - listitem [ref=e165]:
+                - link "Nhà cung cấp" [ref=e166] [cursor=pointer]:
+                  - /url: http://crm.test/admin/suppliers
+                  - img [ref=e167]
+                  - generic [ref=e169]: Nhà cung cấp
+          - listitem [ref=e170]:
+            - button "⚙️ Cài đặt ⚙️ Cài đặt" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]: ⚙️ Cài đặt
+              - button "⚙️ Cài đặt" [expanded] [ref=e173]:
+                - img [ref=e174]
+            - list [ref=e176]:
+              - listitem [ref=e177]:
+                - link "Nhóm bệnh" [ref=e178] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases/disease-groups
+                  - img [ref=e179]
+                  - generic [ref=e181]: Nhóm bệnh
+              - listitem [ref=e182]:
+                - link "Danh sách bệnh" [ref=e183] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases
+                  - img [ref=e184]
+                  - generic [ref=e186]: Danh sách bệnh
+          - listitem [ref=e187]:
+            - button "6️⃣ Hệ thống 6️⃣ Hệ thống" [ref=e188] [cursor=pointer]:
+              - generic [ref=e189]: 6️⃣ Hệ thống
+              - button "6️⃣ Hệ thống" [expanded] [ref=e190]:
+                - img [ref=e191]
+            - list [ref=e193]:
+              - listitem [ref=e194]:
+                - link "Người dùng" [ref=e195] [cursor=pointer]:
+                  - /url: http://crm.test/admin/users
+                  - img [ref=e196]
+                  - generic [ref=e198]: Người dùng
+              - listitem [ref=e199]:
+                - link "Chi nhánh" [ref=e200] [cursor=pointer]:
+                  - /url: http://crm.test/admin/branches
+                  - img [ref=e201]
+                  - generic [ref=e203]: Chi nhánh
+    - main [ref=e205]:
+      - generic [ref=e207]:
+        - generic [ref=e208]:
+          - generic [ref=e209]:
+            - navigation [ref=e210]:
+              - list [ref=e211]:
+                - listitem [ref=e212]:
+                  - link "Patients" [ref=e213] [cursor=pointer]:
+                    - /url: http://crm.test/admin/patients
+                - listitem [ref=e214]:
+                  - img [ref=e215]
+                  - generic [ref=e217]: View
+            - 'heading "Hồ sơ: Trần Sven" [level=1] [ref=e218]'
+          - generic [ref=e220]:
+            - link "Tạo kế hoạch điều trị" [ref=e221] [cursor=pointer]:
+              - /url: http://crm.test/admin/treatment-plans/create?patient_id=1
+              - img [ref=e222]
+              - text: Tạo kế hoạch điều trị
+            - link "Tạo hóa đơn" [ref=e224] [cursor=pointer]:
+              - /url: http://crm.test/admin/invoices/create?patient_id=1
+              - img [ref=e225]
+              - text: Tạo hóa đơn
+            - link "Đặt lịch hẹn" [ref=e227] [cursor=pointer]:
+              - /url: http://crm.test/admin/appointments/create?patient_id=1
+              - img [ref=e228]
+              - text: Đặt lịch hẹn
+            - link "Chỉnh sửa" [ref=e230] [cursor=pointer]:
+              - /url: http://crm.test/admin/patients/1/edit
+              - img [ref=e231]
+              - text: Chỉnh sửa
+            - button "Xóa" [ref=e233] [cursor=pointer]
+        - generic [ref=e236]:
+          - generic [ref=e238]:
+            - generic [ref=e240]:
+              - generic [ref=e241]: TS
+              - generic [ref=e242]:
+                - generic [ref=e243]:
+                  - heading "Trần Sven" [level=2] [ref=e244]
+                  - generic [ref=e245]: Nữ
+                - paragraph [ref=e246]: PAT-20260119-KCWENT
+                - link "0980817212" [ref=e247] [cursor=pointer]:
+                  - /url: tel:0980817212
+                  - img [ref=e248]
+                  - text: "0980817212"
+            - generic [ref=e250]:
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - img [ref=e255]
+                    - generic [ref=e257]: Điện thoại
+                  - paragraph [ref=e258]:
+                    - link "0980817212" [ref=e259] [cursor=pointer]:
+                      - /url: tel:0980817212
+                - generic [ref=e260]:
+                  - generic [ref=e261]:
+                    - img [ref=e263]
+                    - generic [ref=e266]: Email
+                  - paragraph [ref=e267]:
+                    - link "dtorp@example.net" [ref=e268] [cursor=pointer]:
+                      - /url: mailto:dtorp@example.net
+                - generic [ref=e269]:
+                  - generic [ref=e270]:
+                    - img [ref=e272]
+                    - generic [ref=e274]: Ngày sinh
+                  - paragraph [ref=e275]: Chưa có
+                - generic [ref=e276]:
+                  - generic [ref=e277]:
+                    - img [ref=e279]
+                    - generic [ref=e281]: Chi nhánh
+                  - paragraph [ref=e282]: Chi nhánh Hà Nội
+              - generic [ref=e283]:
+                - generic [ref=e284]:
+                  - img [ref=e286]
+                  - generic [ref=e288]: Địa chỉ
+                - paragraph [ref=e289]: 93268 Mozell Keys Apt. 819, Quận 3
+          - generic [ref=e290]:
+            - navigation "Tabs" [ref=e292]:
+              - button "Thông tin cơ bản" [ref=e293] [cursor=pointer]
+              - button "Khám & Điều trị 2" [active] [ref=e294] [cursor=pointer]:
+                - text: Khám & Điều trị
+                - generic [ref=e295]: "2"
+              - button "Đơn thuốc 0" [ref=e296] [cursor=pointer]:
+                - text: Đơn thuốc
+                - generic [ref=e297]: "0"
+              - button "Thư viện ảnh 0" [ref=e298] [cursor=pointer]:
+                - text: Thư viện ảnh
+                - generic [ref=e299]: "0"
+              - button "Xưởng/Vật tư 0" [ref=e300] [cursor=pointer]:
+                - text: Xưởng/Vật tư
+                - generic [ref=e301]: "0"
+              - button "Lịch hẹn 1" [ref=e302] [cursor=pointer]:
+                - text: Lịch hẹn
+                - generic [ref=e303]: "1"
+              - button "Thanh toán 0" [ref=e304] [cursor=pointer]:
+                - text: Thanh toán
+                - generic [ref=e305]: "0"
+              - button "Biểu mẫu 0" [ref=e306] [cursor=pointer]:
+                - text: Biểu mẫu
+                - generic [ref=e307]: "0"
+              - button "Chăm sóc 2" [ref=e308] [cursor=pointer]:
+                - text: Chăm sóc
+                - generic [ref=e309]: "2"
+              - button "Lịch sử thao tác 4" [ref=e310] [cursor=pointer]:
+                - text: Lịch sử thao tác
+                - generic [ref=e311]: "4"
+            - generic [ref=e375]:
+              - heading "Khám & Điều trị" [level=3] [ref=e377]
+              - generic [ref=e378]:
+                - generic [ref=e379]:
+                  - generic [ref=e380]:
+                    - heading "Khám Tổng Quát & Định Hướng" [level=3] [ref=e381]:
+                      - img [ref=e382]
+                      - text: Khám Tổng Quát & Định Hướng
+                    - generic [ref=e384]:
+                      - generic [ref=e385]:
+                        - generic [ref=e387]: Khám Lâm Sàng
+                        - generic [ref=e388]:
+                          - generic [ref=e389]:
+                            - text: Bác sĩ phụ trách
+                            - generic [ref=e390]:
+                              - textbox "Chọn bác sĩ..." [ref=e391]: CSKH User
+                              - button [ref=e392] [cursor=pointer]:
+                                - img [ref=e393]
+                          - generic [ref=e395]:
+                            - text: Ghi chú lâm sàng
+                            - textbox "Nhập ghi chú..." [ref=e396]: Test
+                      - generic [ref=e397]:
+                        - generic [ref=e399]: Định Hướng Điều Trị
+                        - generic [ref=e400]:
+                          - generic [ref=e401]:
+                            - text: Bác sĩ lên kế hoạch
+                            - generic [ref=e402]:
+                              - textbox "Chọn bác sĩ..." [ref=e403]: Dr. Van Kozey
+                              - button [ref=e404] [cursor=pointer]:
+                                - img [ref=e405]
+                          - generic [ref=e407]:
+                            - text: Kế hoạch đề xuất
+                            - textbox "Nhập kế hoạch..." [ref=e408]: Demo
+                  - generic [ref=e409]:
+                    - generic [ref=e410]:
+                      - heading "Chỉ Định Cận Lâm Sàng" [level=3] [ref=e411]:
+                        - img [ref=e412]
+                        - text: Chỉ Định Cận Lâm Sàng
+                      - generic [ref=e414]: "Đã chọn: 2"
+                    - generic [ref=e415]:
+                      - generic [ref=e417]:
+                        - checkbox [ref=e418]
+                        - generic [ref=e419]: Cephalometric
+                      - generic [ref=e420]:
+                        - generic [ref=e421]:
+                          - checkbox [checked] [ref=e422]
+                          - generic [ref=e423]: Panorama
+                        - generic [ref=e424]:
+                          - generic [ref=e426]:
+                            - img [ref=e427]
+                            - button:
+                              - img
+                          - generic [ref=e429]:
+                            - img [ref=e430]
+                            - generic [ref=e432]: Upload
+                            - button "Upload" [ref=e433]
+                      - generic [ref=e435]:
+                        - checkbox [ref=e436]
+                        - generic [ref=e437]: 3D 5x5
+                      - generic [ref=e439]:
+                        - checkbox [ref=e440]
+                        - generic [ref=e441]: 3D
+                      - generic [ref=e443]:
+                        - checkbox [ref=e444]
+                        - generic [ref=e445]: Ảnh (ext)
+                      - generic [ref=e447]:
+                        - checkbox [ref=e448]
+                        - generic [ref=e449]: Ảnh (int)
+                      - generic [ref=e451]:
+                        - checkbox [ref=e452]
+                        - generic [ref=e453]: Cận chóp
+                      - generic [ref=e455]:
+                        - checkbox [ref=e456]
+                        - generic [ref=e457]: Khác
+                      - generic [ref=e459]:
+                        - checkbox [ref=e460]
+                        - generic [ref=e461]: Xét nghiệm huyết học
+                      - generic [ref=e463]:
+                        - checkbox [ref=e464]
+                        - generic [ref=e465]: Xét nghiệm sinh hóa
+                  - generic [ref=e466]:
+                    - heading "Chẩn Đoán & Thủ Thuật" [level=3] [ref=e468]:
+                      - img [ref=e469]
+                      - text: Chẩn Đoán & Thủ Thuật
+                    - generic [ref=e471]:
+                      - generic [ref=e472]:
+                        - generic [ref=e473]: Bình thường
+                        - generic [ref=e474]: Bệnh lý
+                        - generic [ref=e475]: Hiện trạng
+                        - generic [ref=e476]: Phục hình
+                        - generic [ref=e477]: Khác
+                      - generic [ref=e478]:
+                        - generic [ref=e479]:
+                          - generic [ref=e480]:
+                            - generic [ref=e481]: "18"
+                            - 'generic "Răng 18: Bình thường" [ref=e482]':
+                              - img [ref=e483]
+                          - generic [ref=e486]:
+                            - generic [ref=e487]: "17"
+                            - 'generic "Răng 17: Bình thường" [ref=e488]':
+                              - img [ref=e489]
+                          - generic [ref=e492]:
+                            - generic [ref=e493]: "16"
+                            - 'generic "Răng 16: Bình thường" [ref=e494]':
+                              - img [ref=e495]
+                          - generic [ref=e498]:
+                            - generic [ref=e499]: "15"
+                            - 'generic "Răng 15: Bình thường" [ref=e500]':
+                              - img [ref=e501]
+                          - generic [ref=e504]:
+                            - generic [ref=e505]: "14"
+                            - 'generic "Răng 14: Bình thường" [ref=e506]':
+                              - img [ref=e507]
+                          - generic [ref=e510]:
+                            - generic [ref=e511]: "13"
+                            - 'generic "Răng 13: Bình thường" [ref=e512]':
+                              - img [ref=e513]
+                          - generic [ref=e516]:
+                            - generic [ref=e517]: "12"
+                            - 'generic "Răng 12: Bình thường" [ref=e518]':
+                              - img [ref=e519]
+                          - generic [ref=e522]:
+                            - generic [ref=e523]: "11"
+                            - 'generic "Răng 11: Bình thường" [ref=e524]':
+                              - img [ref=e525]
+                          - generic [ref=e529]:
+                            - generic [ref=e530]: "21"
+                            - 'generic "Răng 21: (MR) Mòn cổ răng" [ref=e531]':
+                              - img [ref=e532]
+                              - generic [ref=e535]: MR
+                          - generic [ref=e536]:
+                            - generic [ref=e537]: "22"
+                            - 'generic "Răng 22: Bình thường" [ref=e538]':
+                              - img [ref=e539]
+                          - generic [ref=e542]:
+                            - generic [ref=e543]: "23"
+                            - 'generic "Răng 23: Bình thường" [ref=e544]':
+                              - img [ref=e545]
+                          - generic [ref=e548]:
+                            - generic [ref=e549]: "24"
+                            - 'generic "Răng 24: Bình thường" [ref=e550]':
+                              - img [ref=e551]
+                          - generic [ref=e554]:
+                            - generic [ref=e555]: "25"
+                            - 'generic "Răng 25: Bình thường" [ref=e556]':
+                              - img [ref=e557]
+                          - generic [ref=e560]:
+                            - generic [ref=e561]: "26"
+                            - 'generic "Răng 26: Bình thường" [ref=e562]':
+                              - img [ref=e563]
+                          - generic [ref=e566]:
+                            - generic [ref=e567]: "27"
+                            - 'generic "Răng 27: Bình thường" [ref=e568]':
+                              - img [ref=e569]
+                          - generic [ref=e572]:
+                            - generic [ref=e573]: "28"
+                            - 'generic "Răng 28: Bình thường" [ref=e574]':
+                              - img [ref=e575]
+                        - generic [ref=e578]:
+                          - generic [ref=e579]:
+                            - 'generic "Răng sữa 55: Bình thường" [ref=e580]':
+                              - img [ref=e581]
+                            - generic [ref=e583]: "55"
+                          - generic [ref=e584]:
+                            - 'generic "Răng sữa 54: Bình thường" [ref=e585]':
+                              - img [ref=e586]
+                            - generic [ref=e588]: "54"
+                          - generic [ref=e589]:
+                            - 'generic "Răng sữa 53: Bình thường" [ref=e590]':
+                              - img [ref=e591]
+                            - generic [ref=e593]: "53"
+                          - generic [ref=e594]:
+                            - 'generic "Răng sữa 52: Bình thường" [ref=e595]':
+                              - img [ref=e596]
+                            - generic [ref=e598]: "52"
+                          - generic [ref=e599]:
+                            - 'generic "Răng sữa 51: Bình thường" [ref=e600]':
+                              - img [ref=e601]
+                            - generic [ref=e603]: "51"
+                          - generic [ref=e605]:
+                            - 'generic "Răng sữa 61: Bình thường" [ref=e606]':
+                              - img [ref=e607]
+                            - generic [ref=e609]: "61"
+                          - generic [ref=e610]:
+                            - 'generic "Răng sữa 62: Bình thường" [ref=e611]':
+                              - img [ref=e612]
+                            - generic [ref=e614]: "62"
+                          - generic [ref=e615]:
+                            - 'generic "Răng sữa 63: Bình thường" [ref=e616]':
+                              - img [ref=e617]
+                            - generic [ref=e619]: "63"
+                          - generic [ref=e620]:
+                            - 'generic "Răng sữa 64: Bình thường" [ref=e621]':
+                              - img [ref=e622]
+                            - generic [ref=e624]: "64"
+                          - generic [ref=e625]:
+                            - 'generic "Răng sữa 65: Bình thường" [ref=e626]':
+                              - img [ref=e627]
+                            - generic [ref=e629]: "65"
+                        - generic [ref=e630]:
+                          - generic [ref=e631]:
+                            - generic [ref=e632]: "85"
+                            - 'generic "Răng sữa 85: Bình thường" [ref=e633]':
+                              - img [ref=e634]
+                          - generic [ref=e636]:
+                            - generic [ref=e637]: "84"
+                            - 'generic "Răng sữa 84: Bình thường" [ref=e638]':
+                              - img [ref=e639]
+                          - generic [ref=e641]:
+                            - generic [ref=e642]: "83"
+                            - 'generic "Răng sữa 83: Bình thường" [ref=e643]':
+                              - img [ref=e644]
+                          - generic [ref=e646]:
+                            - generic [ref=e647]: "82"
+                            - 'generic "Răng sữa 82: Bình thường" [ref=e648]':
+                              - img [ref=e649]
+                          - generic [ref=e651]:
+                            - generic [ref=e652]: "81"
+                            - 'generic "Răng sữa 81: Bình thường" [ref=e653]':
+                              - img [ref=e654]
+                          - generic [ref=e657]:
+                            - generic [ref=e658]: "71"
+                            - 'generic "Răng sữa 71: Bình thường" [ref=e659]':
+                              - img [ref=e660]
+                          - generic [ref=e662]:
+                            - generic [ref=e663]: "72"
+                            - 'generic "Răng sữa 72: Bình thường" [ref=e664]':
+                              - img [ref=e665]
+                          - generic [ref=e667]:
+                            - generic [ref=e668]: "73"
+                            - 'generic "Răng sữa 73: Bình thường" [ref=e669]':
+                              - img [ref=e670]
+                          - generic [ref=e672]:
+                            - generic [ref=e673]: "74"
+                            - 'generic "Răng sữa 74: Bình thường" [ref=e674]':
+                              - img [ref=e675]
+                          - generic [ref=e677]:
+                            - generic [ref=e678]: "75"
+                            - 'generic "Răng sữa 75: Bình thường" [ref=e679]':
+                              - img [ref=e680]
+                        - generic [ref=e682]:
+                          - generic [ref=e683]:
+                            - 'generic "Răng 48: Bình thường" [ref=e684]':
+                              - img [ref=e685]
+                            - generic [ref=e687]: "48"
+                          - generic [ref=e688]:
+                            - 'generic "Răng 47: Bình thường" [ref=e689]':
+                              - img [ref=e690]
+                            - generic [ref=e692]: "47"
+                          - generic [ref=e693]:
+                            - 'generic "Răng 46: Bình thường" [ref=e694]':
+                              - img [ref=e695]
+                            - generic [ref=e697]: "46"
+                          - generic [ref=e698]:
+                            - 'generic "Răng 45: Bình thường" [ref=e699]':
+                              - img [ref=e700]
+                            - generic [ref=e702]: "45"
+                          - generic [ref=e703]:
+                            - 'generic "Răng 44: Bình thường" [ref=e704]':
+                              - img [ref=e705]
+                            - generic [ref=e707]: "44"
+                          - generic [ref=e708]:
+                            - 'generic "Răng 43: Bình thường" [ref=e709]':
+                              - img [ref=e710]
+                            - generic [ref=e712]: "43"
+                          - generic [ref=e713]:
+                            - 'generic "Răng 42: Bình thường" [ref=e714]':
+                              - img [ref=e715]
+                            - generic [ref=e717]: "42"
+                          - generic [ref=e718]:
+                            - 'generic "Răng 41: Bình thường" [ref=e719]':
+                              - img [ref=e720]
+                            - generic [ref=e722]: "41"
+                          - generic [ref=e724]:
+                            - 'generic "Răng 31: Bình thường" [ref=e725]':
+                              - img [ref=e726]
+                            - generic [ref=e728]: "31"
+                          - generic [ref=e729]:
+                            - 'generic "Răng 32: Bình thường" [ref=e730]':
+                              - img [ref=e731]
+                            - generic [ref=e733]: "32"
+                          - generic [ref=e734]:
+                            - 'generic "Răng 33: Bình thường" [ref=e735]':
+                              - img [ref=e736]
+                            - generic [ref=e738]: "33"
+                          - generic [ref=e739]:
+                            - 'generic "Răng 34: Bình thường" [ref=e740]':
+                              - img [ref=e741]
+                            - generic [ref=e743]: "34"
+                          - generic [ref=e744]:
+                            - 'generic "Răng 35: Bình thường" [ref=e745]':
+                              - img [ref=e746]
+                            - generic [ref=e748]: "35"
+                          - generic [ref=e749]:
+                            - 'generic "Răng 36: Bình thường" [ref=e750]':
+                              - img [ref=e751]
+                            - generic [ref=e753]: "36"
+                          - generic [ref=e754]:
+                            - 'generic "Răng 37: Bình thường" [ref=e755]':
+                              - img [ref=e756]
+                            - generic [ref=e758]: "37"
+                          - generic [ref=e759]:
+                            - 'generic "Răng 38: Bình thường" [ref=e760]':
+                              - img [ref=e761]
+                            - generic [ref=e763]: "38"
+                      - generic [ref=e765]:
+                        - text: (*) Chẩn đoán khác / Ghi chú chung
+                        - textbox "Nhập chẩn đoán hoặc ghi chú khác..." [ref=e766]
+                - separator [ref=e767]
+                - generic [ref=e768]:
+                  - heading "Lịch Sử Khám & Điều Trị" [level=3] [ref=e769]:
+                    - img [ref=e770]
+                    - text: Lịch Sử Khám & Điều Trị
+                  - generic [ref=e772]:
+                    - paragraph [ref=e773]: Danh sách các phiếu khám trước đây.
+                    - generic [ref=e780]:
+                      - heading "Phiếu khám" [level=2] [ref=e784]
+                      - table [ref=e786]:
+                        - rowgroup [ref=e787]:
+                          - row "Ngày khám Bác sĩ khám Bác sĩ điều trị Chỉ định Ghi chú Actions" [ref=e788]:
+                            - columnheader "Ngày khám" [ref=e789]:
+                              - button "Ngày khám" [ref=e790] [cursor=pointer]:
+                                - text: Ngày khám
+                                - img [ref=e791]
+                            - columnheader "Bác sĩ khám" [ref=e793]
+                            - columnheader "Bác sĩ điều trị" [ref=e794]
+                            - columnheader "Chỉ định" [ref=e795]
+                            - columnheader "Ghi chú" [ref=e796]
+                            - columnheader "Actions" [ref=e797]
+                        - rowgroup [ref=e798]:
+                          - row "23/01/2026 CSKH User Dr. Van Kozey — — Test" [ref=e799]:
+                            - cell "23/01/2026" [ref=e800]:
+                              - generic [ref=e802]: 23/01/2026
+                            - cell "CSKH User" [ref=e803]:
+                              - generic [ref=e805]: CSKH User
+                            - cell "Dr. Van Kozey" [ref=e806]:
+                              - generic [ref=e808]: Dr. Van Kozey
+                            - cell "— —" [ref=e809]:
+                              - list [ref=e811]:
+                                - listitem [ref=e812]:
+                                  - generic [ref=e813]: —
+                                - listitem [ref=e814]:
+                                  - generic [ref=e815]: —
+                            - cell "Test" [ref=e816]:
+                              - generic [ref=e818]: Test
+                            - cell [ref=e819]
+                      - navigation "Pagination navigation" [ref=e820]:
+                        - generic [ref=e823]:
+                          - generic [ref=e825]: Per page
+                          - combobox "Per page" [ref=e827]:
+                            - option "5"
+                            - option "10" [selected]
+                            - option "25"
+                            - option "50"
+                - generic [ref=e828]:
+                  - generic [ref=e829]:
+                    - heading "Lịch Sử Kế Hoạch Điều Trị" [level=3] [ref=e830]:
+                      - img [ref=e831]
+                      - text: Lịch Sử Kế Hoạch Điều Trị
+                    - generic [ref=e833]: 1 hồ sơ
+                  - generic [ref=e841]:
+                    - generic [ref=e842]:
+                      - heading "Kế hoạch điều trị" [level=2] [ref=e845]
+                      - generic [ref=e847]:
+                        - generic [ref=e848]:
+                          - generic [ref=e849]: Search
+                          - generic [ref=e850]:
+                            - img [ref=e852]
+                            - searchbox "Search" [ref=e855]
+                        - button "Filter" [ref=e858] [cursor=pointer]:
+                          - img [ref=e859]
+                          - generic [ref=e862]: "0"
+                    - table [ref=e864]:
+                      - rowgroup [ref=e865]:
+                        - row "Mã KH Tên kế hoạch Bác sĩ Trạng thái Tổng chi phí Ngày bắt đầu Tiến độ Action" [ref=e866]:
+                          - columnheader "Mã KH" [ref=e867]:
+                            - button "Mã KH" [ref=e868] [cursor=pointer]:
+                              - text: Mã KH
+                              - img [ref=e869]
+                          - columnheader "Tên kế hoạch" [ref=e871]:
+                            - button "Tên kế hoạch" [ref=e872] [cursor=pointer]:
+                              - text: Tên kế hoạch
+                              - img [ref=e873]
+                          - columnheader "Bác sĩ" [ref=e875]:
+                            - button "Bác sĩ" [ref=e876] [cursor=pointer]:
+                              - text: Bác sĩ
+                              - img [ref=e877]
+                          - columnheader "Trạng thái" [ref=e879]
+                          - columnheader "Tổng chi phí" [ref=e880]:
+                            - button "Tổng chi phí" [ref=e881] [cursor=pointer]:
+                              - text: Tổng chi phí
+                              - img [ref=e882]
+                          - columnheader "Ngày bắt đầu" [ref=e884]:
+                            - button "Ngày bắt đầu" [ref=e885] [cursor=pointer]:
+                              - text: Ngày bắt đầu
+                              - img [ref=e886]
+                          - columnheader "Tiến độ" [ref=e888]:
+                            - button "Tiến độ" [ref=e889] [cursor=pointer]:
+                              - text: Tiến độ
+                              - img [ref=e890]
+                          - columnheader "Action" [ref=e892]
+                      - rowgroup [ref=e893]:
+                        - row "Doctor User Đang thực hiện 0 ₫ 50%" [ref=e894]:
+                          - cell [ref=e895]
+                          - cell [ref=e898]
+                          - cell "Doctor User" [ref=e901]:
+                            - generic [ref=e904]: Doctor User
+                          - cell "Đang thực hiện" [ref=e905]:
+                            - generic [ref=e908]: Đang thực hiện
+                          - cell "0 ₫" [ref=e909]:
+                            - generic [ref=e911]: 0 ₫
+                          - cell [ref=e912]
+                          - cell "50%" [ref=e915]:
+                            - generic [ref=e917]: 50%
+                          - cell [ref=e918]
+                    - navigation "Pagination navigation" [ref=e919]:
+                      - generic [ref=e922]:
+                        - generic [ref=e924]: Per page
+                        - combobox "Per page" [ref=e926]:
+                          - option "5"
+                          - option "10" [selected]
+                          - option "25"
+                          - option "50"
+  - generic:
+    - status

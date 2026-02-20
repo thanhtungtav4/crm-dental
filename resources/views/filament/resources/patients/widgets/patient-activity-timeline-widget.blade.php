@@ -23,6 +23,7 @@
                         'treatment_plan' => '#fef3c7',
                         'invoice' => '#f3e8ff',
                         'payment' => '#dcfce7',
+                        'branch_log' => '#e0f2fe',
                         'note' => '#f1f5f9',
                         default => '#f9fafb',
                     };
@@ -31,6 +32,7 @@
                         'treatment_plan' => '#f59e0b',
                         'invoice' => '#8b5cf6',
                         'payment' => '#22c55e',
+                        'branch_log' => '#0284c7',
                         'note' => '#64748b',
                         default => '#9ca3af',
                     };
@@ -39,6 +41,7 @@
                         'treatment_plan' => '#f59e0b',
                         'invoice' => '#8b5cf6',
                         'payment' => '#22c55e',
+                        'branch_log' => '#0284c7',
                         'note' => '#64748b',
                         default => '#9ca3af',
                     };
@@ -47,6 +50,7 @@
                         'treatment_plan' => 'Kế hoạch điều trị',
                         'invoice' => 'Hóa đơn',
                         'payment' => 'Thanh toán',
+                        'branch_log' => 'Chuyển chi nhánh',
                         'note' => 'Ghi chú',
                         default => $activity['type'],
                     };

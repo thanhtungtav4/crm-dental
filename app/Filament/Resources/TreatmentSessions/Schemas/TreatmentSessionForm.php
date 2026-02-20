@@ -24,6 +24,12 @@ class TreatmentSessionForm
                     ->searchable()
                     ->preload()
                     ->nullable(),
+                Forms\Components\Select::make('assistant_id')
+                    ->relationship('assistant', 'name')
+                    ->label('Trợ thủ')
+                    ->searchable()
+                    ->preload()
+                    ->nullable(),
                 Forms\Components\DateTimePicker::make('performed_at')
                     ->label('Thời gian thực hiện')
                     ->nullable(),

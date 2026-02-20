@@ -1,0 +1,69 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "18"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e109]: DentalFlow - Bệnh án điện tử
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - heading "Báo cáo mới" [level=3] [ref=e114]
+              - img [ref=e116] [cursor=pointer]
+            - switch [checked] [ref=e119] [cursor=pointer]
+          - generic [ref=e122] [cursor=pointer]:
+            - img [ref=e124]
+            - superscript [ref=e127]
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - heading "Thiết lập thông tin Bệnh án điện tử" [level=3] [ref=e140]
+          - switch [checked] [ref=e142] [cursor=pointer]
+        - button "Cấu hình Bệnh án điện tử" [ref=e145] [cursor=pointer]:
+          - generic: Cấu hình Bệnh án điện tử
+  - dialog [active] [ref=e147]:
+    - document:
+      - generic [ref=e149]:
+        - generic [ref=e150]:
+          - heading "Thư chúc Tết Xuân Bính Ngọ 2026" [level=2] [ref=e152]
+          - img [ref=e154] [cursor=pointer]
+        - generic [ref=e157]:
+          - paragraph
+          - img "undefined" [ref=e158]
+          - paragraph

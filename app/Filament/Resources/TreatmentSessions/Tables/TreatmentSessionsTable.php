@@ -20,6 +20,9 @@ class TreatmentSessionsTable
                 TextColumn::make('doctor.name')
                     ->label('Bác sĩ')
                     ->toggleable(),
+                TextColumn::make('assistant.name')
+                    ->label('Trợ thủ')
+                    ->toggleable(),
                 TextColumn::make('performed_at')
                     ->label('Thời gian')
                     ->dateTime()

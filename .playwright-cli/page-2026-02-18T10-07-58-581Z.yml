@@ -1,0 +1,351 @@
+- generic [ref=e7]:
+  - generic [ref=e9]:
+    - img [ref=e14] [cursor=pointer]
+    - generic [ref=e17]:
+      - generic [ref=e19]:
+        - link [ref=e21] [cursor=pointer]:
+          - /url: /
+          - img [ref=e23]
+        - link [ref=e26] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e28]
+        - button [ref=e34] [cursor=pointer]:
+          - link [ref=e35]:
+            - /url: /customer-care
+            - img [ref=e37]
+        - button [ref=e45] [cursor=pointer]:
+          - link [ref=e46]:
+            - /url: /calendar
+            - img [ref=e48]
+        - link [ref=e51] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e53]
+        - link [ref=e56] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e58]
+        - button [ref=e64] [cursor=pointer]:
+          - img [ref=e67]
+        - button [ref=e73] [cursor=pointer]:
+          - img [ref=e76]
+        - link [ref=e79] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e81]
+        - link [ref=e84] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e86]
+        - button [ref=e95] [cursor=pointer]:
+          - img [ref=e98]
+      - generic [ref=e101] [cursor=pointer]:
+        - img [ref=e103]
+        - paragraph [ref=e105]: "18"
+  - generic [ref=e107]:
+    - generic [ref=e108]:
+      - generic [ref=e634]: Nguyễn Văn An
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - heading "Báo cáo mới" [level=3] [ref=e113]
+            - img [ref=e115] [cursor=pointer]
+          - switch [checked] [ref=e118] [cursor=pointer]
+        - img [ref=e123] [cursor=pointer]
+    - generic [ref=e638]:
+      - tablist [ref=e639]:
+        - button "In" [ref=e644] [cursor=pointer]:
+          - generic:
+            - img
+        - generic [ref=e645]:
+          - generic:
+            - generic:
+              - 'generic "icon: left"':
+                - img
+          - generic:
+            - generic:
+              - 'generic "icon: right"':
+                - img
+          - generic [ref=e649]:
+            - tab "Thông tin cơ bản" [ref=e650] [cursor=pointer]
+            - tab "Khám & Điều trị" [selected] [ref=e651] [cursor=pointer]
+            - tab "Đơn thuốc" [ref=e652] [cursor=pointer]
+            - tab "Thư viện ảnh" [ref=e653] [cursor=pointer]
+            - tab "Xưởng/Vật tư" [ref=e654] [cursor=pointer]
+            - tab "Lịch hẹn" [ref=e655] [cursor=pointer]
+            - tab "Thanh toán" [ref=e656] [cursor=pointer]
+            - tab "Biểu mẫu" [ref=e657] [cursor=pointer]
+            - tab "Chăm sóc" [ref=e658] [cursor=pointer]
+            - tab "Lịch sử thao tác" [ref=e659] [cursor=pointer]
+      - tabpanel [ref=e662]:
+        - generic [ref=e664]:
+          - generic [ref=e666]:
+            - heading "Khám & Điều trị" [level=3] [ref=e668]
+            - button "Thêm phiếu khám" [ref=e671] [cursor=pointer]:
+              - generic: Thêm phiếu khám
+          - generic [ref=e674]:
+            - 'button "Ngày khám: 10/02/2026 Tạo Bệnh án điện tử" [expanded] [ref=e675] [cursor=pointer]':
+              - generic [ref=e676]:
+                - 'heading "Ngày khám: 10/02/2026" [level=3] [ref=e677]':
+                  - img [ref=e679]
+                  - generic [ref=e681]:
+                    - generic [ref=e682]: "Ngày khám: 10/02/2026"
+                    - img [ref=e684]
+                - generic [ref=e686]:
+                  - button "Tạo Bệnh án điện tử" [ref=e688]:
+                    - generic: Tạo Bệnh án điện tử
+                  - button "Ngày khám đã có tiến trình điều trị nên không thể xóa được." [ref=e690]:
+                    - generic:
+                      - img
+            - generic [ref=e694]:
+              - tablist [ref=e696]:
+                - 'tab "icon: right Khám tổng quát" [ref=e698] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e699]':
+                    - img [ref=e700]
+                  - generic [ref=e703]: Khám tổng quát
+              - tablist [ref=e705]:
+                - 'tab "icon: right Chỉ định(Thêm chỉ định như Chụp X-Quang, Xét nghiệm máu)" [ref=e707] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e708]':
+                    - img [ref=e709]
+                  - generic [ref=e713]: Chỉ định(Thêm chỉ định như Chụp X-Quang, Xét nghiệm máu)
+              - generic [ref=e714]:
+                - tablist [ref=e715]:
+                  - 'tab "icon: right Chẩn đoán và điều trị" [ref=e717] [cursor=pointer]':
+                    - 'generic "icon: right" [ref=e718]':
+                      - img [ref=e719]
+                    - generic [ref=e722]: Chẩn đoán và điều trị
+                - generic [ref=e723]:
+                  - generic [ref=e728]:
+                    - generic [ref=e729]:
+                      - generic [ref=e730]: Kế hoạch điều trị
+                      - generic [ref=e731]:
+                        - button "Sắp xếp kế hoạch điều trị" [disabled] [ref=e733]:
+                          - generic: Sắp xếp kế hoạch điều trị
+                        - button "Thêm kế hoạch điều trị" [ref=e735] [cursor=pointer]:
+                          - generic: Thêm kế hoạch điều trị
+                    - table [ref=e746]:
+                      - rowgroup [ref=e761]:
+                        - row "Răng số Tình trạng răng Tên thủ thuật KH đồng ý S.L Đơn giá Thành tiền Giảm giá (%) Tiền giảm giá Tổng chi phí Ghi chú Tình trạng Thao tác" [ref=e762]:
+                          - columnheader "Răng số" [ref=e763]:
+                            - generic [ref=e767]: Răng số
+                          - columnheader "Tình trạng răng" [ref=e768]:
+                            - generic [ref=e772]: Tình trạng răng
+                          - columnheader "Tên thủ thuật" [ref=e773]:
+                            - generic [ref=e777]: Tên thủ thuật
+                          - columnheader "KH đồng ý" [ref=e778]:
+                            - generic [ref=e782]: KH đồng ý
+                          - columnheader "S.L" [ref=e783]:
+                            - generic [ref=e787]: S.L
+                          - columnheader "Đơn giá" [ref=e788]:
+                            - generic [ref=e792]: Đơn giá
+                          - columnheader "Thành tiền" [ref=e793]:
+                            - generic [ref=e797]: Thành tiền
+                          - columnheader "Giảm giá (%)" [ref=e798]:
+                            - generic [ref=e802]: Giảm giá (%)
+                          - columnheader "Tiền giảm giá" [ref=e803]:
+                            - generic [ref=e807]: Tiền giảm giá
+                          - columnheader "Tổng chi phí" [ref=e808]:
+                            - generic [ref=e812]: Tổng chi phí
+                          - columnheader "Ghi chú" [ref=e813]:
+                            - generic [ref=e817]: Ghi chú
+                          - columnheader "Tình trạng" [ref=e818]:
+                            - generic [ref=e822]: Tình trạng
+                          - columnheader "Thao tác" [ref=e823]:
+                            - generic [ref=e827]: Thao tác
+                      - rowgroup [ref=e828]:
+                        - row "Gắn mắc cài kim loại 1 10,000,000 10,000,000 0 0 10,000,000 Hoàn thành" [ref=e829]:
+                          - cell [ref=e830]
+                          - cell [ref=e831]
+                          - cell "Gắn mắc cài kim loại" [ref=e832]:
+                            - generic [ref=e833]: Gắn mắc cài kim loại
+                          - cell [ref=e834]:
+                            - checkbox [checked] [ref=e838]
+                          - cell "1" [ref=e840]:
+                            - generic [ref=e841]: "1"
+                          - cell "10,000,000" [ref=e842]:
+                            - generic [ref=e843]: 10,000,000
+                          - cell "10,000,000" [ref=e844]:
+                            - generic [ref=e845]: 10,000,000
+                          - cell "0" [ref=e846]:
+                            - generic [ref=e847]: "0"
+                          - cell "0" [ref=e848]:
+                            - generic [ref=e849]: "0"
+                          - cell "10,000,000" [ref=e850]:
+                            - generic [ref=e851]: 10,000,000
+                          - cell [ref=e852]
+                          - cell "Hoàn thành" [ref=e853]:
+                            - generic [ref=e855]: Hoàn thành
+                          - cell [ref=e856]
+                        - row "Implant Osstem HQ 1 12,000,000 12,000,000 0 0 12,000,000 Hoàn thành" [ref=e857]:
+                          - cell [ref=e858]
+                          - cell [ref=e859]
+                          - cell "Implant Osstem HQ" [ref=e860]:
+                            - generic [ref=e861]: Implant Osstem HQ
+                          - cell [ref=e862]:
+                            - checkbox [checked] [ref=e866]
+                          - cell "1" [ref=e868]:
+                            - generic [ref=e869]: "1"
+                          - cell "12,000,000" [ref=e870]:
+                            - generic [ref=e871]: 12,000,000
+                          - cell "12,000,000" [ref=e872]:
+                            - generic [ref=e873]: 12,000,000
+                          - cell "0" [ref=e874]:
+                            - generic [ref=e875]: "0"
+                          - cell "0" [ref=e876]:
+                            - generic [ref=e877]: "0"
+                          - cell "12,000,000" [ref=e878]:
+                            - generic [ref=e879]: 12,000,000
+                          - cell [ref=e880]
+                          - cell "Hoàn thành" [ref=e881]:
+                            - generic [ref=e883]: Hoàn thành
+                          - cell [ref=e884]
+                    - generic [ref=e885]:
+                      - generic [ref=e886]:
+                        - generic [ref=e887]: "Chi phí dự kiến :"
+                        - generic [ref=e888]: 22,000,000
+                      - generic [ref=e889]:
+                        - generic [ref=e890]: "Đã hoàn thành :"
+                        - generic [ref=e891]: 22,000,000
+                      - generic [ref=e892]:
+                        - generic [ref=e893]: "Tiền giảm giá :"
+                        - generic [ref=e894]: "0"
+                      - generic [ref=e895]:
+                        - generic [ref=e896]: "Chưa hoàn thành :"
+                        - generic [ref=e897]: "0"
+                      - generic [ref=e898]:
+                        - generic [ref=e899]: "Tổng chi phí dự kiến :"
+                        - generic [ref=e900]: 22,000,000
+                  - separator [ref=e901]
+              - generic [ref=e908]:
+                - generic [ref=e910]:
+                  - heading "Tiến trình điều trị" [level=4] [ref=e912]
+                  - generic [ref=e913]:
+                    - button "Hiển thị 15/15" [ref=e916] [cursor=pointer]:
+                      - generic:
+                        - img
+                      - generic: Hiển thị 15/15
+                    - button "Thêm ngày điều trị" [ref=e920] [cursor=pointer]:
+                      - generic: Thêm ngày điều trị
+                - table [ref=e929]:
+                  - rowgroup [ref=e946]:
+                    - row "# Răng số Tình trạng răng Tên thủ thuật Nội dung thủ thuật Bác sĩ Trợ thủ S.L Đơn giá Thành tiền Giảm giá (%) Tiền giảm giá Tổng chi phí Tình trạng Thao tác" [ref=e947]:
+                      - columnheader "#" [ref=e948]:
+                        - generic [ref=e952]: "#"
+                      - columnheader "Răng số" [ref=e953]:
+                        - generic [ref=e957]: Răng số
+                      - columnheader "Tình trạng răng" [ref=e958]:
+                        - generic [ref=e962]: Tình trạng răng
+                      - columnheader "Tên thủ thuật" [ref=e963]:
+                        - generic [ref=e967]: Tên thủ thuật
+                      - columnheader "Nội dung thủ thuật" [ref=e968]:
+                        - generic [ref=e972]: Nội dung thủ thuật
+                      - columnheader "Bác sĩ" [ref=e973]:
+                        - generic [ref=e977]: Bác sĩ
+                      - columnheader "Trợ thủ" [ref=e978]:
+                        - generic [ref=e982]: Trợ thủ
+                      - columnheader "S.L" [ref=e983]:
+                        - generic [ref=e987]: S.L
+                      - columnheader "Đơn giá" [ref=e988]:
+                        - generic [ref=e992]: Đơn giá
+                      - columnheader "Thành tiền" [ref=e993]:
+                        - generic [ref=e997]: Thành tiền
+                      - columnheader "Giảm giá (%)" [ref=e998]:
+                        - generic [ref=e1002]: Giảm giá (%)
+                      - columnheader "Tiền giảm giá" [ref=e1003]:
+                        - generic [ref=e1007]: Tiền giảm giá
+                      - columnheader "Tổng chi phí" [ref=e1008]:
+                        - generic [ref=e1012]: Tổng chi phí
+                      - columnheader "Tình trạng" [ref=e1013]:
+                        - generic [ref=e1017]: Tình trạng
+                      - columnheader "Thao tác" [ref=e1018]:
+                        - generic [ref=e1022]: Thao tác
+                  - rowgroup [ref=e1023]:
+                    - 'row "Ngày điều trị: 17-02-2026 Hình ảnh Biểu mẫu Đơn thuốc Xưởng Lịch hẹn tiếp theo Đánh giá Cập nhật Xóa" [ref=e1024]':
+                      - 'cell "Ngày điều trị: 17-02-2026 Hình ảnh Biểu mẫu Đơn thuốc Xưởng Lịch hẹn tiếp theo Đánh giá Cập nhật Xóa" [ref=e1025]':
+                        - generic [ref=e1026]:
+                          - generic [ref=e1028]:
+                            - text: "Ngày điều trị:"
+                            - strong [ref=e1029]: 17-02-2026
+                          - generic [ref=e1030]:
+                            - generic [ref=e1031] [cursor=pointer]: Hình ảnh
+                            - generic [ref=e1032] [cursor=pointer]: Biểu mẫu
+                            - generic [ref=e1033] [cursor=pointer]: Đơn thuốc
+                            - generic [ref=e1034] [cursor=pointer]: Xưởng
+                            - generic [ref=e1035] [cursor=pointer]: Lịch hẹn tiếp theo
+                            - generic [ref=e1036] [cursor=pointer]: Đánh giá
+                            - generic [ref=e1037] [cursor=pointer]: Cập nhật
+                            - generic [ref=e1039]: Xóa
+                    - row "Expand row Gắn mắc cài kim loại MAI HOÀNG YẾN 1 10,000,000 10,000,000 0 0 10,000,000 Hoàn thành" [ref=e1040]:
+                      - cell "Expand row" [ref=e1041]:
+                        - button "Expand row" [ref=e1042] [cursor=pointer]: +
+                      - cell [ref=e1043]
+                      - cell [ref=e1044]
+                      - cell "Gắn mắc cài kim loại" [ref=e1045]:
+                        - strong [ref=e1047]: Gắn mắc cài kim loại
+                      - cell [ref=e1048]
+                      - cell "MAI HOÀNG YẾN" [ref=e1049]:
+                        - generic [ref=e1050]: MAI HOÀNG YẾN
+                      - cell [ref=e1051]
+                      - cell "1" [ref=e1052]:
+                        - generic [ref=e1053]: "1"
+                      - cell "10,000,000" [ref=e1054]:
+                        - generic [ref=e1055]: 10,000,000
+                      - cell "10,000,000" [ref=e1056]:
+                        - generic [ref=e1057]: 10,000,000
+                      - cell "0" [ref=e1058]:
+                        - generic [ref=e1059]: "0"
+                      - cell "0" [ref=e1060]:
+                        - generic [ref=e1061]: "0"
+                      - cell "10,000,000" [ref=e1062]:
+                        - generic [ref=e1063]: 10,000,000
+                      - cell "Hoàn thành" [ref=e1064]:
+                        - generic [ref=e1066] [cursor=pointer]:
+                          - text: Hoàn thành
+                          - img [ref=e1068]
+                      - cell [ref=e1070]:
+                        - generic [ref=e1071]:
+                          - img [ref=e1073] [cursor=pointer]
+                          - img [ref=e1076] [cursor=pointer]
+                    - 'row "Ngày điều trị: 10-02-2026 Hình ảnh Biểu mẫu Đơn thuốc Xưởng Lịch hẹn tiếp theo Đánh giá Cập nhật Xóa" [ref=e1080]':
+                      - 'cell "Ngày điều trị: 10-02-2026 Hình ảnh Biểu mẫu Đơn thuốc Xưởng Lịch hẹn tiếp theo Đánh giá Cập nhật Xóa" [ref=e1081]':
+                        - generic [ref=e1082]:
+                          - generic [ref=e1084]:
+                            - text: "Ngày điều trị:"
+                            - strong [ref=e1085]: 10-02-2026
+                          - generic [ref=e1086]:
+                            - generic [ref=e1087] [cursor=pointer]: Hình ảnh
+                            - generic [ref=e1088] [cursor=pointer]: Biểu mẫu
+                            - generic [ref=e1089] [cursor=pointer]: Đơn thuốc
+                            - generic [ref=e1090] [cursor=pointer]: Xưởng
+                            - generic [ref=e1091] [cursor=pointer]: Lịch hẹn tiếp theo
+                            - generic [ref=e1092] [cursor=pointer]: Đánh giá
+                            - generic [ref=e1094]: Cập nhật
+                            - generic [ref=e1096]: Xóa
+                    - row "Expand row Implant Osstem HQ Quy trình implant MAI HOÀNG YẾN 1 12,000,000 12,000,000 0 0 12,000,000 Hoàn thành" [ref=e1097]:
+                      - cell "Expand row" [ref=e1098]:
+                        - button "Expand row" [ref=e1099] [cursor=pointer]: +
+                      - cell [ref=e1100]
+                      - cell [ref=e1101]
+                      - cell "Implant Osstem HQ" [ref=e1102]:
+                        - strong [ref=e1104]: Implant Osstem HQ
+                      - cell "Quy trình implant" [ref=e1105]:
+                        - generic [ref=e1106]: Quy trình implant
+                      - cell "MAI HOÀNG YẾN" [ref=e1107]:
+                        - generic [ref=e1108]: MAI HOÀNG YẾN
+                      - cell [ref=e1109]
+                      - cell "1" [ref=e1110]:
+                        - generic [ref=e1111]: "1"
+                      - cell "12,000,000" [ref=e1112]:
+                        - generic [ref=e1113]: 12,000,000
+                      - cell "12,000,000" [ref=e1114]:
+                        - generic [ref=e1115]: 12,000,000
+                      - cell "0" [ref=e1116]:
+                        - generic [ref=e1117]: "0"
+                      - cell "0" [ref=e1118]:
+                        - generic [ref=e1119]: "0"
+                      - cell "12,000,000" [ref=e1120]:
+                        - generic [ref=e1121]: 12,000,000
+                      - cell "Hoàn thành" [ref=e1122]:
+                        - generic [ref=e1124] [cursor=pointer]:
+                          - text: Hoàn thành
+                          - img [ref=e1126]
+                      - cell [ref=e1128]:
+                        - generic [ref=e1129]:
+                          - img [ref=e1131] [cursor=pointer]
+                          - img [ref=e1134] [cursor=pointer]

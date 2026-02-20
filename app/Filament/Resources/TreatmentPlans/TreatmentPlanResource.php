@@ -29,10 +29,10 @@ class TreatmentPlanResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '1️⃣ Hoạt động hàng ngày';
+        return 'Hoạt động hàng ngày';
     }
     
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
     {

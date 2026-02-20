@@ -73,4 +73,5 @@ class User extends Authenticatable implements HasPasskeys, FilamentUser
         // In production, you might want to restrict this:
         // return $this->hasRole(['Admin', 'Manager', 'Doctor', 'CSKH']) || $this->email === 'admin@example.com';
     }
+
 }

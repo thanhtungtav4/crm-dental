@@ -1,0 +1,41 @@
+- generic [ref=e5]:
+  - img "background login" [ref=e7]
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - img "logo" [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: Mã phòng khám *
+          - generic [ref=e18]:
+            - 'generic "icon: home" [ref=e20]':
+              - img [ref=e21]
+            - textbox "Mã phòng khám *" [ref=e23]:
+              - /placeholder: Mã phòng khám
+        - generic [ref=e24]:
+          - generic [ref=e25]: Tài khoản *
+          - generic [ref=e29]:
+            - 'generic "icon: user" [ref=e31]':
+              - img [ref=e32]
+            - textbox "Tài khoản *" [ref=e34]:
+              - /placeholder: Tài khoản
+        - generic [ref=e35]:
+          - generic [ref=e36]: Mật khẩu *
+          - generic [ref=e40]:
+            - 'generic "icon: lock" [ref=e42]':
+              - img [ref=e43]
+            - textbox "Mật khẩu *" [ref=e45]:
+              - /placeholder: Mật khẩu
+            - 'generic "icon: eye-invisible" [ref=e47] [cursor=pointer]':
+              - img [ref=e48]
+        - generic [ref=e51]:
+          - generic [ref=e56] [cursor=pointer]:
+            - checkbox "Ghi nhớ tài khoản" [ref=e58]
+            - text: Ghi nhớ tài khoản
+          - link "Quên mật khẩu?" [ref=e60] [cursor=pointer]:
+            - /url: /reset-password
+        - button "Đăng nhập" [ref=e61] [cursor=pointer]:
+          - generic: Đăng nhập
+    - generic [ref=e62]:
+      - generic [ref=e63]: Chưa có tài khoản?
+      - link "Đăng ký tài khoản" [ref=e64] [cursor=pointer]:
+        - /url: /register

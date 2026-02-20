@@ -1,6 +1,1301 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import 'https://fonts.bunny.net/css?family=be-vietnam-pro:400,500,600,700';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../vendor/jeffgreco13/filament-breezy/resources/**/*';
 @source '../../../../vendor/marcelweidum/filament-passkeys/resources/**/*';
+
+:root {
+  --crm-font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --crm-text: #1f2937;
+  --crm-muted: #6b7280;
+  --crm-bg: #f3f4f6;
+  --crm-surface: #ffffff;
+  --crm-border: #d1d5db;
+  --crm-primary: #7c6cf6;
+  --crm-primary-600: #6d5df1;
+  --crm-primary-50: #f3f0ff;
+  --crm-radius: 10px;
+  --crm-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --crm-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.fi-body {
+  font-family: var(--crm-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--crm-text);
+  background: var(--crm-bg);
+  overflow-x: hidden;
+}
+
+.fi-main {
+  padding: 24px 28px;
+  overflow-x: hidden;
+}
+
+.fi-topbar {
+  background: var(--crm-surface);
+  border-bottom: 1px solid var(--crm-border);
+}
+
+.fi-sidebar {
+  background: #f8fafc;
+  border-right: 1px solid var(--crm-border);
+}
+
+.fi-sidebar .fi-sidebar-item-label,
+.fi-sidebar .fi-sidebar-group-label {
+  color: var(--crm-text);
+}
+
+.fi-section,
+.fi-card,
+.fi-ta {
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  box-shadow: var(--crm-shadow-soft);
+}
+
+.fi-section-header,
+.fi-section-header-heading,
+.fi-page-heading,
+.fi-ta-header-heading,
+h1,
+h2,
+h3,
+h4 {
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.fi-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.fi-btn.fi-btn-color-primary {
+  background: var(--crm-primary);
+}
+
+.fi-btn.fi-btn-color-primary:hover {
+  background: var(--crm-primary-600);
+}
+
+.fi-input,
+.fi-select-input,
+.fi-textarea,
+.fi-input-wrp input,
+.fi-input-wrp textarea,
+.fi-input-wrp select,
+input[type='text'],
+input[type='email'],
+input[type='search'],
+input[type='password'],
+textarea,
+select {
+  font-size: 14px;
+  color: var(--crm-text);
+}
+
+.fi-input-wrp,
+.fi-select-input,
+.fi-textarea {
+  border-radius: 8px;
+}
+
+.fi-tabs .fi-tabs-item {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.crm-tabs {
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.crm-tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.crm-tab-count {
+  padding-left: 10px;
+  padding-right: 10px;
+  font-size: 12px;
+}
+
+.fi-ta-table thead th {
+  font-size: 12px;
+  color: var(--crm-muted);
+}
+
+.fi-ta-table tbody td {
+  font-size: 13px;
+}
+
+.fi-breadcrumbs {
+  font-size: 12px;
+  color: var(--crm-muted);
+}
+
+a {
+  color: var(--crm-primary);
+}
+
+.crm-top-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--crm-border);
+  row-gap: 8px;
+  padding-bottom: 8px;
+  overflow: visible;
+}
+
+.crm-top-tab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.75px;
+  font-weight: 600;
+  color: var(--crm-muted);
+  padding: 4px 2px 8px;
+  white-space: nowrap;
+}
+
+.crm-top-tab.is-active {
+  color: var(--crm-primary);
+}
+
+.crm-top-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--crm-primary);
+  border-radius: 2px;
+}
+
+.crm-top-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.crm-top-tab.is-active .crm-top-tab-count {
+  background: var(--crm-primary-50);
+  color: var(--crm-primary);
+}
+
+/* Patient record header actions */
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac-btn-action.fi-btn {
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac-btn-action .fi-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-success.fi-btn {
+  background: #14d970;
+  color: #035c34;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-success.fi-btn:hover {
+  background: #06c863;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-warning.fi-btn {
+  background: #f8bd00;
+  color: #7a4c00;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-warning.fi-btn:hover {
+  background: #ebaf00;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-info.fi-btn {
+  background: #2f66f6;
+  color: #e9efff;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-info.fi-btn:hover {
+  background: #2456dc;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-primary.fi-btn {
+  background: #7c3ef0;
+  color: #f7f1ff;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-primary.fi-btn:hover {
+  background: #6f33df;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-danger.fi-btn {
+  background: #f90b1a;
+  color: #fff;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-danger.fi-btn:hover {
+  background: #e50717;
+}
+
+/* Patient relation manager tables */
+.crm-rel-tab {
+  --crm-rel-border: #d9dce5;
+  --crm-rel-head-bg: #4a4a4d;
+  --crm-rel-head-border: #5b5c60;
+}
+
+.crm-rel-tab .fi-ta {
+  border: 1px solid var(--crm-rel-border);
+  border-radius: 10px;
+  box-shadow: none;
+  overflow: hidden;
+  background: #fff;
+}
+
+.crm-rel-tab .fi-ta-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e8f0;
+}
+
+.crm-rel-tab .fi-ta-header-heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ac-btn-action.fi-btn {
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 14px;
+}
+
+.crm-rel-tab .fi-ta-header-toolbar {
+  padding: 0 16px 10px;
+}
+
+.crm-rel-tab .fi-ta-header-toolbar .fi-input-wrp {
+  min-height: 35px;
+  border-radius: 9px;
+  border-color: #d5d9e3;
+}
+
+.crm-rel-tab .fi-ta-table thead tr {
+  background: var(--crm-rel-head-bg);
+}
+
+.crm-rel-tab .fi-ta-table thead th {
+  background: var(--crm-rel-head-bg);
+  border-right: 1px solid var(--crm-rel-head-border);
+  color: #fff;
+  font-size: 12.8px;
+  font-weight: 600;
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+
+.crm-rel-tab .fi-ta-table thead th:last-child {
+  border-right: 0;
+}
+
+.crm-rel-tab .fi-ta-table thead th button,
+.crm-rel-tab .fi-ta-table thead th span {
+  color: #fff;
+}
+
+.crm-rel-tab .fi-ta-table tbody td {
+  font-size: 13px;
+  color: #374151;
+  padding: 9px 10px;
+}
+
+.crm-rel-tab .fi-ta-empty-state {
+  padding: 42px 16px;
+  border-top: 1px solid #e5e8f0;
+  background: #fff;
+}
+
+.crm-rel-tab .fi-ta-empty-state-heading {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #111827;
+}
+
+.crm-rel-tab .fi-ta-empty-state-description {
+  margin-top: 6px;
+  font-size: 19px;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
+.crm-rel-tab .fi-ta-empty-state .fi-ta-actions .fi-btn {
+  min-height: 38px;
+  border-radius: 9px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.crm-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.crm-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.crm-section-badge {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.crm-section-card {
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+}
+
+.crm-exam-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crm-exam-session {
+  border-bottom: 1px solid var(--crm-border);
+}
+
+.crm-exam-session:last-child {
+  border-bottom: 0;
+}
+
+.crm-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f3f4f6;
+  padding: 10px 14px;
+}
+
+.crm-session-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.crm-session-caret {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.crm-session-caret.is-open {
+  transform: rotate(90deg);
+}
+
+.crm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+}
+
+.crm-btn-primary {
+  background: var(--crm-primary);
+  color: #fff;
+}
+
+.crm-btn-primary:hover {
+  background: var(--crm-primary-600);
+}
+
+.crm-btn-outline {
+  background: #fff;
+  color: #4b5563;
+  border-color: var(--crm-border);
+}
+
+.crm-exam-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+  padding: 10px 0;
+  text-transform: uppercase;
+}
+
+.crm-exam-section-body {
+  padding: 10px 0 16px;
+}
+
+.crm-tooth-chart {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.crm-tooth-grid {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.crm-tooth-number {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.crm-tooth-box {
+  width: 40px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.crm-tooth-box .tooth-status-list {
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.crm-tooth-box--child {
+  width: 36px;
+  height: 28px;
+}
+
+.crm-tooth-box.is-current {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.crm-tooth-box.is-in-treatment {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+.crm-tooth-box.is-completed {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.crm-tooth-box.is-selected {
+  box-shadow: 0 0 0 2px #7c6cf6;
+}
+
+.crm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.crm-modal-card {
+  width: 100%;
+  max-width: 860px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.crm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #f3f4f6;
+  border-bottom: 1px solid var(--crm-border);
+}
+
+.crm-modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.crm-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #f3f4f6;
+  border-top: 1px solid var(--crm-border);
+}
+
+.crm-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  background: #fff;
+}
+
+/* Care tab (patient profile) */
+.crm-care-tab {
+  --crm-care-border: #d9dce5;
+  --crm-care-head-bg: #4a4a4d;
+  --crm-care-head-border: #5a5b5f;
+  --crm-care-row-border: #e7e9ef;
+}
+
+.crm-care-tab .fi-ta {
+  border: 1px solid var(--crm-care-border);
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: hidden;
+  background: #fff;
+}
+
+.crm-care-tab .fi-ta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid #e5e8f0;
+  background: #fff;
+}
+
+.crm-care-tab .fi-ta-header-heading {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.crm-care-tab .fi-ta-header .fi-ta-actions {
+  gap: 8px;
+}
+
+.crm-care-tab .fi-ta-header .fi-ac-btn-action.fi-btn {
+  min-height: 38px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.crm-care-tab .fi-ta-header .fi-ac-btn-action.fi-btn .fi-btn-icon,
+.crm-care-tab .fi-ta-header .fi-ac-btn-action.fi-btn .fi-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-care-tab .fi-ta-header .fi-color-primary.fi-btn {
+  background: #7b6cf6;
+  color: #fff;
+}
+
+.crm-care-tab .fi-ta-header .fi-color-primary.fi-btn:hover {
+  background: #6b5ce8;
+}
+
+.crm-care-tab .fi-ta-header .fi-color-warning.fi-btn {
+  background: #efeaff;
+  border: 1px solid #cfc4ff;
+  color: #6756df;
+}
+
+.crm-care-tab .fi-ta-header .fi-color-warning.fi-btn:hover {
+  background: #e7ddff;
+  color: #5d4ed7;
+}
+
+.crm-care-tab .fi-ta-header-toolbar {
+  margin-top: 0;
+  padding: 0 16px 10px;
+  gap: 8px;
+}
+
+.crm-care-tab .fi-ta-header-toolbar .fi-input-wrp {
+  border-radius: 10px;
+  border-color: #d5d9e3;
+  min-height: 36px;
+}
+
+.crm-care-tab .fi-ta-header-toolbar .fi-btn {
+  min-height: 36px;
+}
+
+.crm-care-tab .fi-ta-table thead tr {
+  background: var(--crm-care-head-bg);
+}
+
+.crm-care-tab .fi-ta-table thead th {
+  background: var(--crm-care-head-bg);
+  border-right: 1px solid var(--crm-care-head-border);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 12px;
+  white-space: nowrap;
+}
+
+.crm-care-tab .fi-ta-table thead th:last-child {
+  border-right: 0;
+  text-align: center;
+}
+
+.crm-care-tab .fi-ta-table thead th button,
+.crm-care-tab .fi-ta-table thead th span {
+  color: #fff;
+}
+
+.crm-care-tab .fi-ta-table tbody tr {
+  border-bottom: 1px solid var(--crm-care-row-border);
+}
+
+.crm-care-tab .fi-ta-table tbody td {
+  padding: 9px 12px;
+  font-size: 14px;
+  color: #374151;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.crm-care-tab .fi-ta-table tbody tr:hover td {
+  background: #f9faff;
+}
+
+.crm-care-tab .fi-ta-table .fi-ta-cell-content .fi-ta-text-item-label {
+  line-height: 1.4;
+}
+
+.crm-care-tab .fi-ta-table .fi-badge {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.crm-care-tab .fi-ta-cell-care-type .fi-badge,
+.crm-care-tab .fi-ta-cell-care-channel .fi-badge {
+  background: #eef1ff;
+  border-color: #ccd5ff;
+  color: #4a5dd2;
+}
+
+.crm-care-tab .fi-ta-cell-care-status .fi-color-success.fi-badge {
+  background: #d9f8e8;
+  border-color: #88ddb5;
+  color: #0fa065;
+}
+
+.crm-care-tab .fi-ta-cell-care-status .fi-color-warning.fi-badge {
+  background: #fff3d8;
+  border-color: #f3cf7c;
+  color: #b67f11;
+}
+
+.crm-care-tab .fi-ta-cell-care-status .fi-color-info.fi-badge {
+  background: #e7f1ff;
+  border-color: #9cc3ff;
+  color: #2e70ca;
+}
+
+.crm-care-tab .fi-ta-cell-care-status .fi-color-danger.fi-badge {
+  background: #ffe7e7;
+  border-color: #f8b7b7;
+  color: #c74d4d;
+}
+
+.crm-care-tab .fi-ta-actions {
+  gap: 6px;
+  justify-content: center;
+}
+
+.crm-care-tab .fi-ta-actions .fi-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  box-shadow: none;
+}
+
+.crm-care-tab .fi-ta-actions .fi-icon-btn .fi-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-care-tab .fi-ta-actions .fi-icon-btn:hover {
+  background: #f1f3f9;
+  color: #4b5563;
+}
+
+.crm-care-tab .fi-ta-actions .fi-color-danger.fi-icon-btn {
+  color: #ef4444;
+}
+
+.crm-care-tab .fi-ta-actions .fi-color-danger.fi-icon-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.crm-care-tab .fi-ta-actions .fi-icon-btn.fi-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: transparent !important;
+}
+
+/* Exam & treatment table alignment */
+.crm-treatment-card {
+  border-color: #d5d9e3;
+  box-shadow: none;
+}
+
+.crm-treatment-subhead {
+  background: #fff;
+}
+
+.crm-treatment-subhead-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.crm-treatment-subhead-count {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.crm-treatment-table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: #c5cad6 transparent;
+}
+
+.crm-treatment-table-wrap::-webkit-scrollbar {
+  height: 7px;
+}
+
+.crm-treatment-table-wrap::-webkit-scrollbar-track {
+  background: #f1f3f8;
+}
+
+.crm-treatment-table-wrap::-webkit-scrollbar-thumb {
+  background: #c5cad6;
+  border-radius: 999px;
+}
+
+.crm-treatment-table thead th {
+  background: #4a4a4d !important;
+  color: #fff !important;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding-top: 9px !important;
+  padding-bottom: 9px !important;
+}
+
+.crm-treatment-table tbody td {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #374151;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.crm-treatment-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.crm-treatment-summary {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4b5563;
+}
+
+.crm-treatment-summary strong {
+  color: #374151;
+  font-weight: 700;
+}
+
+.crm-treatment-empty {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.crm-treatment-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.crm-treatment-status.is-completed {
+  background: #d9f8e8;
+  border-color: #88ddb5;
+  color: #0f9c63;
+}
+
+.crm-treatment-status.is-progress {
+  background: #fff1d5;
+  border-color: #eac46f;
+  color: #9f6a0c;
+}
+
+.crm-treatment-status.is-cancelled {
+  background: #ffe5e8;
+  border-color: #f3aab1;
+  color: #be3f4b;
+}
+
+.crm-treatment-status.is-default {
+  background: #ebedf3;
+  border-color: #d2d7e3;
+  color: #49526a;
+}
+
+.crm-table-icon-btn {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #6b7280;
+  margin-right: 4px;
+  transition: all 0.15s ease;
+}
+
+.crm-table-icon-btn:hover {
+  border-color: #a8b0c3;
+  background: #f7f8fc;
+  color: #4b5563;
+}
+
+.crm-table-icon-btn.is-disabled {
+  color: #9ca3af;
+  background: #fafafa;
+  cursor: not-allowed;
+}
+
+/* Payment tab alignment */
+.crm-payment-tab {
+  --crm-payment-border: #d9dce5;
+  --crm-payment-head-bg: #4a4a4d;
+  --crm-payment-head-border: #5b5c60;
+}
+
+.crm-payment-summary {
+  border: 1px solid var(--crm-payment-border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.crm-payment-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 10px;
+}
+
+.crm-payment-summary-title {
+  margin: 0;
+  font-size: clamp(30px, 2vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.crm-payment-summary-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.crm-payment-summary-actions .crm-btn {
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 0 14px;
+}
+
+.crm-payment-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #5b6281;
+  font-size: clamp(28px, 2.2vw, 44px);
+  font-weight: 700;
+  line-height: 1;
+  margin-right: 2px;
+}
+
+.crm-payment-balance strong {
+  font-size: clamp(28px, 2.2vw, 44px);
+  line-height: 1;
+}
+
+.crm-payment-balance .is-positive {
+  color: #5f56da;
+}
+
+.crm-payment-balance .is-negative {
+  color: #e25763;
+}
+
+.crm-payment-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid #e6e8ef;
+}
+
+.crm-payment-metric {
+  padding: 14px 16px;
+  border-right: 1px solid #e6e8ef;
+}
+
+.crm-payment-metric:last-child {
+  border-right: 0;
+}
+
+.crm-payment-metric span {
+  display: block;
+  color: #5f667d;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.crm-payment-metric strong {
+  display: block;
+  margin-top: 8px;
+  color: #1f2937;
+  font-size: clamp(30px, 2.4vw, 46px);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.crm-payment-metric strong.is-positive {
+  color: #22a45c;
+}
+
+.crm-payment-metric strong.is-negative {
+  color: #e15e66;
+}
+
+.crm-payment-block {
+  border: 1px solid var(--crm-payment-border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.crm-payment-block-title {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3a3f4f;
+}
+
+.crm-payment-tab .fi-ta {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.crm-payment-tab .fi-ta-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e8f0;
+}
+
+.crm-payment-tab .fi-ta-header-heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.crm-payment-tab .fi-ta-header .fi-ac-btn-action.fi-btn {
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 14px;
+}
+
+.crm-payment-tab .fi-ta-header .fi-color-primary.fi-btn {
+  background: #7b6cf6;
+  color: #fff;
+}
+
+.crm-payment-tab .fi-ta-header .fi-color-primary.fi-btn:hover {
+  background: #6b5ce8;
+}
+
+.crm-payment-tab .fi-ta-header .fi-color-warning.fi-btn {
+  background: #efeaff;
+  border: 1px solid #cfc4ff;
+  color: #6756df;
+}
+
+.crm-payment-tab .fi-ta-header .fi-color-warning.fi-btn:hover {
+  background: #e7ddff;
+}
+
+.crm-payment-tab .fi-ta-header-toolbar {
+  padding: 0 16px 10px;
+}
+
+.crm-payment-tab .fi-ta-header-toolbar .fi-input-wrp {
+  min-height: 35px;
+  border-radius: 9px;
+  border-color: #d5d9e3;
+}
+
+.crm-payment-tab .fi-ta-table thead tr {
+  background: var(--crm-payment-head-bg);
+}
+
+.crm-payment-tab .fi-ta-table thead th {
+  background: var(--crm-payment-head-bg);
+  border-right: 1px solid var(--crm-payment-head-border);
+  color: #fff;
+  font-size: 12.8px;
+  font-weight: 600;
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+
+.crm-payment-tab .fi-ta-table thead th:last-child {
+  border-right: 0;
+}
+
+.crm-payment-tab .fi-ta-table thead th button,
+.crm-payment-tab .fi-ta-table thead th span {
+  color: #fff;
+}
+
+.crm-payment-tab .fi-ta-table tbody td {
+  font-size: 13px;
+  color: #374151;
+  padding: 9px 10px;
+}
+
+.crm-payment-tab .fi-ta-empty-state {
+  padding: 52px 16px;
+  border-top: 1px solid #e5e8f0;
+  background: #fff;
+}
+
+.crm-payment-tab .fi-ta-empty-state-content {
+  max-width: 560px;
+}
+
+.crm-payment-tab .fi-ta-empty-state-icon-bg {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f3f7;
+}
+
+.crm-payment-tab .fi-ta-empty-state-icon-bg .fi-icon {
+  width: 24px;
+  height: 24px;
+  color: #8b91a3;
+}
+
+.crm-payment-tab .fi-ta-empty-state-heading {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #111827;
+}
+
+.crm-payment-tab .fi-ta-empty-state-description {
+  margin-top: 6px;
+  font-size: 21px;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
+.crm-payment-tab .fi-ta-empty-state .fi-ta-actions {
+  margin-top: 16px;
+}
+
+.crm-payment-tab .fi-ta-empty-state .fi-ta-actions .fi-btn {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 18px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+  .crm-care-tab .fi-ta-header-heading {
+    font-size: 24px;
+  }
+
+  .crm-care-tab .fi-ta-header .fi-ta-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .crm-payment-summary-head {
+    flex-wrap: wrap;
+  }
+
+  .crm-payment-summary-title {
+    font-size: 30px;
+  }
+
+  .crm-payment-balance,
+  .crm-payment-balance strong {
+    font-size: 30px;
+  }
+
+  .crm-payment-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crm-payment-metric strong {
+    font-size: 32px;
+  }
+
+  .crm-treatment-subhead-title {
+    font-size: 15px;
+  }
+
+  .crm-treatment-summary {
+    font-size: 12px;
+  }
+
+  .crm-treatment-status {
+    font-size: 11px;
+  }
+
+  .crm-payment-tab .fi-ta-empty-state-heading {
+    font-size: 24px;
+  }
+
+  .crm-payment-tab .fi-ta-empty-state-description {
+    font-size: 15px;
+  }
+
+  .crm-payment-tab .fi-ta-empty-state .fi-ta-actions .fi-btn {
+    font-size: 14px;
+  }
+}

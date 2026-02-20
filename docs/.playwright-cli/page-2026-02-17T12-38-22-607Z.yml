@@ -1,0 +1,472 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "17"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e109]: Nguyễn Văn An
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - heading "Báo cáo mới" [level=3] [ref=e114]
+              - img [ref=e116] [cursor=pointer]
+            - switch [checked] [ref=e119] [cursor=pointer]
+          - img [ref=e124] [cursor=pointer]
+      - generic [ref=e138]:
+        - tablist [ref=e139]:
+          - button "In" [ref=e144] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e145]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e149]:
+              - tab "Thông tin cơ bản" [ref=e150] [cursor=pointer]
+              - tab "Khám & Điều trị" [selected] [ref=e151] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e152] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e153] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [ref=e154] [cursor=pointer]
+              - tab "Lịch hẹn" [ref=e155] [cursor=pointer]
+              - tab "Thanh toán" [ref=e156] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e157] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e158] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e159] [cursor=pointer]
+        - tabpanel [ref=e162]:
+          - generic [ref=e164]:
+            - generic [ref=e166]:
+              - heading "Khám & Điều trị" [level=3] [ref=e168]
+              - button "Thêm phiếu khám" [ref=e171] [cursor=pointer]:
+                - generic: Thêm phiếu khám
+            - generic [ref=e174]:
+              - 'button "Ngày khám: 17/02/2026 Tạo Bệnh án điện tử" [expanded] [ref=e175] [cursor=pointer]':
+                - generic [ref=e176]:
+                  - 'heading "Ngày khám: 17/02/2026" [level=3] [ref=e177]':
+                    - img [ref=e179]
+                    - generic [ref=e181]:
+                      - generic [ref=e182]: "Ngày khám: 17/02/2026"
+                      - img [ref=e184]
+                  - generic [ref=e186]:
+                    - button "Tạo Bệnh án điện tử" [ref=e188]:
+                      - generic: Tạo Bệnh án điện tử
+                    - button [ref=e190]:
+                      - generic:
+                        - img
+              - generic [ref=e194]:
+                - tablist [ref=e196]:
+                  - generic [ref=e197]:
+                    - 'tab "icon: right Khám tổng quát" [expanded] [ref=e198] [cursor=pointer]':
+                      - 'generic "icon: right" [ref=e199]':
+                        - img [ref=e200]
+                      - generic [ref=e203]: Khám tổng quát
+                    - tabpanel [ref=e459]:
+                      - generic [ref=e461]:
+                        - generic [ref=e462]:
+                          - generic [ref=e464]:
+                            - generic [ref=e465]: Bác sĩ khám
+                            - combobox [ref=e470] [cursor=pointer]:
+                              - generic "MAI HOÀNG YẾN" [ref=e472]
+                              - 'generic "icon: close-circle" [ref=e474]':
+                                - img [ref=e475]
+                              - generic:
+                                - 'generic "icon: down"':
+                                  - img
+                          - textbox "Nhập khám tổng quát" [ref=e482]
+                        - generic [ref=e483]:
+                          - generic [ref=e485]:
+                            - generic [ref=e486]: Bác sĩ điều trị
+                            - combobox [ref=e491] [cursor=pointer]:
+                              - generic "MAI HOÀNG YẾN" [ref=e493]
+                              - 'generic "icon: close-circle" [ref=e495]':
+                                - img [ref=e496]
+                              - generic:
+                                - 'generic "icon: down"':
+                                  - img
+                          - textbox "Nhập kế hoạch điều trị" [ref=e503]
+                - tablist [ref=e205]:
+                  - generic [ref=e206]:
+                    - 'tab "icon: right Chỉ định(Thêm chỉ định như Chụp X-Quang, Xét nghiệm máu)" [expanded] [ref=e207] [cursor=pointer]':
+                      - 'generic "icon: right" [ref=e208]':
+                        - img [ref=e209]
+                      - generic [ref=e213]: Chỉ định(Thêm chỉ định như Chụp X-Quang, Xét nghiệm máu)
+                    - tabpanel [ref=e506]:
+                      - generic [ref=e513]:
+                        - generic [ref=e515] [cursor=pointer]:
+                          - checkbox "Cephalometric" [ref=e517]
+                          - text: Cephalometric
+                        - generic [ref=e520] [cursor=pointer]:
+                          - checkbox "3D" [ref=e522]
+                          - text: 3D
+                        - generic [ref=e525] [cursor=pointer]:
+                          - checkbox "Cận chóp" [ref=e527]
+                          - text: Cận chóp
+                        - generic [ref=e530] [cursor=pointer]:
+                          - checkbox "Xét nghiệm huyết học" [ref=e532]
+                          - text: Xét nghiệm huyết học
+                        - generic [ref=e535] [cursor=pointer]:
+                          - checkbox "Panorama" [ref=e537]
+                          - text: Panorama
+                        - generic [ref=e540] [cursor=pointer]:
+                          - checkbox "Ảnh (ext)" [ref=e542]
+                          - text: Ảnh (ext)
+                        - generic [ref=e545] [cursor=pointer]:
+                          - checkbox "Ảnh (int)" [ref=e547]
+                          - text: Ảnh (int)
+                        - generic [ref=e550] [cursor=pointer]:
+                          - checkbox "Xét nghiệm sinh hóa" [ref=e552]
+                          - text: Xét nghiệm sinh hóa
+                        - generic [ref=e555] [cursor=pointer]:
+                          - checkbox "3D 5x5" [ref=e557]
+                          - text: 3D 5x5
+                        - generic [ref=e560] [cursor=pointer]:
+                          - checkbox "Khác" [ref=e562]
+                          - text: Khác
+                - generic [ref=e214]:
+                  - tablist [ref=e215]:
+                    - generic [ref=e216]:
+                      - 'tab "icon: right Chẩn đoán và điều trị" [expanded] [ref=e217] [cursor=pointer]':
+                        - 'generic "icon: right" [ref=e218]':
+                          - img [ref=e219]
+                        - generic [ref=e222]: Chẩn đoán và điều trị
+                      - tabpanel [ref=e564]:
+                        - generic [ref=e571]:
+                          - generic [ref=e573]:
+                            - generic [ref=e575]:
+                              - generic [ref=e577]: "18"
+                              - generic [ref=e579]: "17"
+                              - generic [ref=e581]: "16"
+                              - generic [ref=e583]: "15"
+                              - generic [ref=e585]: "14"
+                              - generic [ref=e587]: "13"
+                              - generic [ref=e589]: "12"
+                              - generic [ref=e591]: "11"
+                              - generic [ref=e593]: "21"
+                              - generic [ref=e595]: "22"
+                              - generic [ref=e597]: "23"
+                              - generic [ref=e599]: "24"
+                              - generic [ref=e601]: "25"
+                              - generic [ref=e603]: "26"
+                              - generic [ref=e605]: "27"
+                              - generic [ref=e607]: "28"
+                            - generic [ref=e716]:
+                              - generic [ref=e718]: "55"
+                              - generic [ref=e720]: "54"
+                              - generic [ref=e722]: "53"
+                              - generic [ref=e724]: "52"
+                              - generic [ref=e726]: "51"
+                              - generic [ref=e728]: "61"
+                              - generic [ref=e730]: "62"
+                              - generic [ref=e732]: "63"
+                              - generic [ref=e734]: "64"
+                              - generic [ref=e736]: "65"
+                            - generic [ref=e738]:
+                              - generic [ref=e740]: "85"
+                              - generic [ref=e742]: "84"
+                              - generic [ref=e744]: "83"
+                              - generic [ref=e746]: "82"
+                              - generic [ref=e748]: "81"
+                              - generic [ref=e750]: "71"
+                              - generic [ref=e752]: "72"
+                              - generic [ref=e754]: "73"
+                              - generic [ref=e756]: "74"
+                              - generic [ref=e758]: "75"
+                            - generic [ref=e826] [cursor=pointer]: SR
+                            - generic [ref=e868]:
+                              - generic [ref=e870]: "48"
+                              - generic [ref=e872]: "47"
+                              - generic [ref=e874]: "46"
+                              - generic [ref=e876]: "45"
+                              - generic [ref=e878]: "44"
+                              - generic [ref=e880]: "43"
+                              - generic [ref=e882]: "42"
+                              - generic [ref=e884]: "41"
+                              - generic [ref=e886]: "31"
+                              - generic [ref=e888]: "32"
+                              - generic [ref=e890]: "33"
+                              - generic [ref=e892]: "34"
+                              - generic [ref=e894]: "35"
+                              - generic [ref=e896]: "36"
+                              - generic [ref=e898]: "37"
+                              - generic [ref=e900]: "38"
+                            - generic [ref=e901]:
+                              - text: "* Bạn có thể chọn 1 tình trạng cho nhiều răng khác nhau bằng cách giữ phím"
+                              - strong [ref=e902]: "\"Ctrl\""
+                              - text: + chọn
+                              - strong [ref=e903]: "\"Răng số...\""
+                              - text: mà bạn muốn tạo thủ thuật điều trị.
+                            - generic [ref=e908]:
+                              - generic [ref=e909]: (*) Chẩn đoán khác
+                              - combobox [ref=e912]:
+                                - generic [ref=e913]:
+                                  - list:
+                                    - generic [ref=e919]: (K00) Rối loạn phát triển răng và mọc răng
+                                    - 'generic "icon: close" [ref=e921] [cursor=pointer]':
+                                      - img [ref=e922]
+                                    - generic [ref=e924]: (K00.0) Không đủ răng
+                                    - 'generic "icon: close" [ref=e926] [cursor=pointer]':
+                                      - img [ref=e927]
+                                    - listitem [ref=e929]:
+                                      - textbox [ref=e931]
+                          - generic [ref=e932]:
+                            - generic [ref=e933]:
+                              - generic [ref=e934]: "* chú thích hiện trạng răng"
+                              - generic [ref=e935]:
+                                - generic [ref=e937]:
+                                  - generic [ref=e938]: Tình trạng hiện tại
+                                  - img [ref=e940] [cursor=pointer]
+                                - generic [ref=e943]:
+                                  - generic [ref=e944]: Đang được điều trị
+                                  - img [ref=e946] [cursor=pointer]
+                                - generic [ref=e949]:
+                                  - generic [ref=e950]: Hoàn thành điều trị
+                                  - img [ref=e952] [cursor=pointer]
+                            - generic [ref=e954]: "* chú thích các thuật ngữ"
+                  - generic [ref=e223]:
+                    - generic [ref=e228]:
+                      - generic [ref=e229]:
+                        - generic [ref=e230]: Kế hoạch điều trị
+                        - generic [ref=e231]:
+                          - button "Sắp xếp kế hoạch điều trị" [disabled] [ref=e233]:
+                            - generic: Sắp xếp kế hoạch điều trị
+                          - button "Thêm kế hoạch điều trị" [ref=e235] [cursor=pointer]:
+                            - generic: Thêm kế hoạch điều trị
+                      - table [ref=e246]:
+                        - rowgroup [ref=e261]:
+                          - row "Răng số Tình trạng răng Tên thủ thuật KH đồng ý S.L Đơn giá Thành tiền Giảm giá (%) Tiền giảm giá Tổng chi phí Ghi chú Tình trạng Thao tác" [ref=e262]:
+                            - columnheader "Răng số" [ref=e263]:
+                              - generic [ref=e267]: Răng số
+                            - columnheader "Tình trạng răng" [ref=e268]:
+                              - generic [ref=e272]: Tình trạng răng
+                            - columnheader "Tên thủ thuật" [ref=e273]:
+                              - generic [ref=e277]: Tên thủ thuật
+                            - columnheader "KH đồng ý" [ref=e278]:
+                              - generic [ref=e282]: KH đồng ý
+                            - columnheader "S.L" [ref=e283]:
+                              - generic [ref=e287]: S.L
+                            - columnheader "Đơn giá" [ref=e288]:
+                              - generic [ref=e292]: Đơn giá
+                            - columnheader "Thành tiền" [ref=e293]:
+                              - generic [ref=e297]: Thành tiền
+                            - columnheader "Giảm giá (%)" [ref=e298]:
+                              - generic [ref=e302]: Giảm giá (%)
+                            - columnheader "Tiền giảm giá" [ref=e303]:
+                              - generic [ref=e307]: Tiền giảm giá
+                            - columnheader "Tổng chi phí" [ref=e308]:
+                              - generic [ref=e312]: Tổng chi phí
+                            - columnheader "Ghi chú" [ref=e313]:
+                              - generic [ref=e317]: Ghi chú
+                            - columnheader "Tình trạng" [ref=e318]:
+                              - generic [ref=e322]: Tình trạng
+                            - columnheader "Thao tác" [ref=e323]:
+                              - generic [ref=e327]: Thao tác
+                        - rowgroup [ref=e328]:
+                          - row "Rối loạn phát triển răng và mọc răng Không đủ răng Chọn thủ thuật" [ref=e1880]:
+                            - cell [ref=e1881]
+                            - cell "Rối loạn phát triển răng và mọc răng Không đủ răng" [ref=e1882]:
+                              - generic [ref=e1883]: Rối loạn phát triển răng và mọc răng Không đủ răng
+                            - cell "Chọn thủ thuật" [ref=e1884]:
+                              - button "Chọn thủ thuật" [ref=e1887] [cursor=pointer]:
+                                - generic: Chọn thủ thuật
+                            - cell [ref=e1888]
+                            - cell [ref=e1889]
+                            - cell [ref=e1890]
+                            - cell [ref=e1891]
+                            - cell [ref=e1892]
+                            - cell [ref=e1893]
+                            - cell [ref=e1894]
+                            - cell [ref=e1895]
+                            - cell [ref=e1896]
+                            - cell [ref=e1897]
+                          - row "R43 Sâu răng Chọn thủ thuật" [ref=e1898]:
+                            - cell "R43" [ref=e1899]:
+                              - generic [ref=e1900]: R43
+                            - cell "Sâu răng" [ref=e1901]:
+                              - generic [ref=e1902]: Sâu răng
+                            - cell "Chọn thủ thuật" [ref=e1903]:
+                              - button "Chọn thủ thuật" [ref=e1906] [cursor=pointer]:
+                                - generic: Chọn thủ thuật
+                            - cell [ref=e1907]
+                            - cell [ref=e1908]
+                            - cell [ref=e1909]
+                            - cell [ref=e1910]
+                            - cell [ref=e1911]
+                            - cell [ref=e1912]
+                            - cell [ref=e1913]
+                            - cell [ref=e1914]
+                            - cell [ref=e1915]
+                            - cell [ref=e1916]
+                      - generic [ref=e366]:
+                        - generic [ref=e367]:
+                          - generic [ref=e368]: "Chi phí dự kiến :"
+                          - generic [ref=e369]: "0"
+                        - generic [ref=e370]:
+                          - generic [ref=e371]: "Đã hoàn thành :"
+                          - generic [ref=e372]: "0"
+                        - generic [ref=e373]:
+                          - generic [ref=e374]: "Tiền giảm giá :"
+                          - generic [ref=e375]: "0"
+                        - generic [ref=e376]:
+                          - generic [ref=e377]: "Chưa hoàn thành :"
+                          - generic [ref=e378]: "0"
+                        - generic [ref=e379]:
+                          - generic [ref=e380]: "Tổng chi phí dự kiến :"
+                          - generic [ref=e381]: "0"
+                    - separator [ref=e382]
+            - 'button "Ngày khám: 10/02/2026 Tạo Bệnh án điện tử" [ref=e393] [cursor=pointer]':
+              - generic [ref=e394]:
+                - 'heading "Ngày khám: 10/02/2026" [level=3] [ref=e395]':
+                  - img [ref=e397]
+                  - generic [ref=e399]:
+                    - generic [ref=e400]: "Ngày khám: 10/02/2026"
+                    - img [ref=e402]
+                - generic [ref=e404]:
+                  - button "Tạo Bệnh án điện tử" [ref=e406]:
+                    - generic: Tạo Bệnh án điện tử
+                  - button "Ngày khám đã có tiến trình điều trị nên không thể xóa được." [ref=e408]:
+                    - generic:
+                      - img
+  - dialog [ref=e1923]:
+    - document:
+      - generic [ref=e1925]:
+        - generic [ref=e1926]:
+          - heading "Răng 43" [level=2] [ref=e1928]
+          - img [ref=e1930] [cursor=pointer]
+        - generic [ref=e1933]:
+          - generic [ref=e1934]: Chọn tình trạng của răng
+          - generic [ref=e1935]:
+            - generic [ref=e1936]:
+              - generic [ref=e1938]:
+                - generic [ref=e1940] [cursor=pointer]:
+                  - checkbox "(K 02) K02 Sâu răng" [ref=e1942]
+                  - generic [ref=e1944]:
+                    - generic [ref=e1945]: (K 02)
+                    - text: K02 Sâu răng
+                - generic [ref=e1947] [cursor=pointer]:
+                  - checkbox "(MR) Mòn cổ răng" [ref=e1949]
+                  - generic [ref=e1951]:
+                    - generic [ref=e1952]: (MR)
+                    - text: Mòn cổ răng
+                - generic [ref=e1954] [cursor=pointer]:
+                  - checkbox "(RD) Hàm giả tháo lắp" [ref=e1956]
+                  - generic [ref=e1958]:
+                    - generic [ref=e1959]: (RD)
+                    - text: Hàm giả tháo lắp
+                - generic [ref=e1961] [cursor=pointer]:
+                  - checkbox "(Imp) Implant" [ref=e1963]
+                  - generic [ref=e1965]:
+                    - generic [ref=e1966]: (Imp)
+                    - text: Implant
+                - generic [ref=e1968] [cursor=pointer]:
+                  - checkbox "(SR) Sâu răng" [checked] [ref=e1970]
+                  - generic [ref=e1972]:
+                    - generic [ref=e1973]: (SR)
+                    - text: Sâu răng
+                - generic [ref=e1975] [cursor=pointer]:
+                  - checkbox "(RKK) Răng khấp khểnh" [ref=e1977]
+                  - generic [ref=e1979]:
+                    - generic [ref=e1980]: (RKK)
+                    - text: Răng khấp khểnh
+                - generic [ref=e1982] [cursor=pointer]:
+                  - checkbox "(RV) RĂNG VIÊM" [ref=e1984]
+                  - generic [ref=e1986]:
+                    - generic [ref=e1987]: (RV)
+                    - text: RĂNG VIÊM
+                - generic [ref=e1989] [cursor=pointer]:
+                  - checkbox "(99) Răng siêu khôn" [ref=e1991]
+                  - generic [ref=e1993]:
+                    - generic [ref=e1994]: (99)
+                    - text: Răng siêu khôn
+                - generic [ref=e1996] [cursor=pointer]:
+                  - checkbox "(SL) Sâu lớn lộ tủy" [ref=e1998]
+                  - generic [ref=e2000]:
+                    - generic [ref=e2001]: (SL)
+                    - text: Sâu lớn lộ tủy
+                - generic [ref=e2003] [cursor=pointer]:
+                  - checkbox "(SMN) Sâu răng mặt nhai" [ref=e2005]
+                  - generic [ref=e2007]:
+                    - generic [ref=e2008]: (SMN)
+                    - text: Sâu răng mặt nhai
+                - generic [ref=e2010] [cursor=pointer]:
+                  - checkbox "(A) Miếng trám Amalgam" [ref=e2012]
+                  - generic [ref=e2014]:
+                    - generic [ref=e2015]: (A)
+                    - text: Miếng trám Amalgam
+                - generic [ref=e2017] [cursor=pointer]:
+                  - checkbox "(MR) Mẻ răng" [ref=e2019]
+                  - generic [ref=e2021]:
+                    - generic [ref=e2022]: (MR)
+                    - text: Mẻ răng
+                - generic [ref=e2024] [cursor=pointer]:
+                  - checkbox "(RSHB) Răng sứ hở bờ" [checked] [active] [ref=e2026]
+                  - generic [ref=e2028]:
+                    - generic [ref=e2029]: (RSHB)
+                    - text: Răng sứ hở bờ
+                - generic [ref=e2031] [cursor=pointer]:
+                  - checkbox "(VN) Viêm nướu" [ref=e2033]
+                  - generic [ref=e2035]:
+                    - generic [ref=e2036]: (VN)
+                    - text: Viêm nướu
+                - generic [ref=e2038] [cursor=pointer]:
+                  - checkbox "(HC) Răng sâu" [ref=e2040]
+                  - generic [ref=e2042]:
+                    - generic [ref=e2043]: (HC)
+                    - text: Răng sâu
+                - generic [ref=e2045] [cursor=pointer]:
+                  - checkbox "(RS) Răng sâu" [ref=e2047]
+                  - generic [ref=e2049]:
+                    - generic [ref=e2050]: (RS)
+                    - text: Răng sâu
+              - generic [ref=e2053] [cursor=pointer]:
+                - checkbox "(*) Khác" [ref=e2055]
+                - generic [ref=e2057]:
+                  - generic [ref=e2058]: (*)
+                  - text: Khác
+            - generic [ref=e2060]:
+              - separator [ref=e2061]
+              - generic [ref=e2062]:
+                - button "Chọn" [ref=e2064] [cursor=pointer]:
+                  - generic: Chọn
+                - button "Hủy bỏ" [ref=e2066] [cursor=pointer]:
+                  - generic: Hủy bỏ

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Tables;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -38,13 +39,14 @@ class PaymentsTable
                     ->label('Số tiền')
                     ->money('VND', divideBy: 1)
                     ->sortable()
-                    ->color(fn ($record) => match($record->method) {
-                        'cash' => 'success',
-                        'card' => 'info',
-                        'transfer' => 'warning',
-                        default => 'gray',
-                    })
-                    ->weight('bold'),
+                    ->color(fn ($record) => $record->direction === 'refund' ? 'danger' : $record->getMethodBadgeColor())
+                    ->weight('bold')
+                    ->description(fn ($record) => $record->direction === 'refund' ? 'Phiếu hoàn' : 'Phiếu thu'),
+
+                BadgeColumn::make('direction')
+                    ->label('Loại phiếu')
+                    ->formatStateUsing(fn ($record) => $record->getDirectionLabel())
+                    ->color(fn ($record) => $record->direction === 'refund' ? 'danger' : 'success'),
 
                 // Payment method badge with Vietnamese labels
                 BadgeColumn::make('method')
@@ -79,6 +81,11 @@ class PaymentsTable
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('refund_reason')
+                    ->label('Lý do hoàn')
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 // Invoice status
                 BadgeColumn::make('invoice.status')
                     ->label('TT Hóa đơn')
@@ -103,12 +110,7 @@ class PaymentsTable
                 // Filter by payment method
                 SelectFilter::make('method')
                     ->label('Phương thức')
-                    ->options([
-                        'cash' => '💵 Tiền mặt',
-                        'card' => '💳 Thẻ',
-                        'transfer' => '🏦 Chuyển khoản',
-                        'other' => '📝 Khác',
-                    ])
+                    ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true))
                     ->multiple(),
 
                 // Filter by payment source
@@ -118,6 +120,14 @@ class PaymentsTable
                         'patient' => '👤 Bệnh nhân',
                         'insurance' => '🏥 Bảo hiểm',
                         'other' => '📄 Khác',
+                    ])
+                    ->multiple(),
+
+                SelectFilter::make('direction')
+                    ->label('Loại phiếu')
+                    ->options([
+                        'receipt' => 'Phiếu thu',
+                        'refund' => 'Phiếu hoàn',
                     ])
                     ->multiple(),
 
@@ -159,8 +169,14 @@ class PaymentsTable
                     ->icon('heroicon-o-document-text')
                     ->color('info')
                     ->url(fn ($record) => $record->invoice_id 
-                        ? route('filament.admin.resources.invoices.invoices.edit', ['record' => $record->invoice_id])
+                        ? route('filament.admin.resources.invoices.edit', ['record' => $record->invoice_id])
                         : null)
+                    ->openUrlInNewTab(),
+                \Filament\Actions\Action::make('print')
+                    ->label('In phiếu')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn ($record) => route('payments.print', $record))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

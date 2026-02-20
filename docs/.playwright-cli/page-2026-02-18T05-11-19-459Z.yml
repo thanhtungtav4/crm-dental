@@ -1,0 +1,92 @@
+- generic [ref=e1]:
+  - generic [ref=e7]:
+    - generic [ref=e9]:
+      - img [ref=e14] [cursor=pointer]
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - link [ref=e21] [cursor=pointer]:
+            - /url: /
+            - img [ref=e23]
+          - link [ref=e26] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e28]
+          - button [ref=e34] [cursor=pointer]:
+            - link [ref=e35]:
+              - /url: /customer-care
+              - img [ref=e37]
+          - button [ref=e45] [cursor=pointer]:
+            - link [ref=e46]:
+              - /url: /calendar
+              - img [ref=e48]
+          - link [ref=e51] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e53]
+          - link [ref=e56] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e58]
+          - button [ref=e64] [cursor=pointer]:
+            - img [ref=e67]
+          - button [expanded] [ref=e73] [cursor=pointer]:
+            - img [ref=e76]
+          - link [ref=e79] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e81]
+          - link [ref=e84] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e86]
+          - button [ref=e95] [cursor=pointer]:
+            - img [ref=e98]
+        - generic [ref=e101] [cursor=pointer]:
+          - img [ref=e103]
+          - paragraph [ref=e105]: "18"
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - generic [ref=e112]: Thống kê lịch hẹn
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - heading "Báo cáo mới" [level=3] [ref=e117]
+              - img [ref=e119] [cursor=pointer]
+            - switch [checked] [ref=e122] [cursor=pointer]
+          - generic [ref=e125] [cursor=pointer]:
+            - img [ref=e127]
+            - superscript [ref=e130]
+      - generic [ref=e140]:
+        - generic [ref=e142]:
+          - generic [ref=e155] [cursor=pointer]:
+            - textbox "Ngày bắt đầu" [ref=e156]: 18-02-2026
+            - generic: ~
+            - textbox "Ngày kết thúc" [ref=e157]: 18-02-2026
+            - img [ref=e159]
+          - button "Export" [active] [ref=e163] [cursor=pointer]:
+            - generic:
+              - img
+            - generic: Export
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - generic [ref=e167]:
+              - generic [ref=e169]: Tổng số lịch hẹn
+              - generic [ref=e171]: "0"
+            - generic [ref=e173]:
+              - generic [ref=e175]: Tổng số lịch hẹn mới
+              - generic [ref=e177]: "0"
+            - generic [ref=e179]:
+              - generic [ref=e181]: Tổng số lịch hẹn bị hủy
+              - generic [ref=e183]: 0 (0%)
+            - generic [ref=e185]:
+              - generic [ref=e187]: Tổng số lịch hẹn lại
+              - generic [ref=e189]: 0 (0%)
+            - generic [ref=e191]:
+              - generic [ref=e193]: Thời gian chờ trung bình KH
+              - generic [ref=e195]: 0:00 phút
+          - separator [ref=e196]
+        - generic [ref=e204]:
+          - table [ref=e206]:
+            - rowgroup [ref=e209]:
+              - row [ref=e210]
+            - rowgroup
+          - generic [ref=e214]:
+            - img [ref=e216]
+            - paragraph [ref=e222]: Chưa có dữ liệu
+  - link:
+    - /url: blob:https://app.dentalflow.vn/e329d100-410a-4e06-a7c2-265d52842c1b

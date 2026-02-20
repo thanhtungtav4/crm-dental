@@ -30,7 +30,7 @@ class ServiceResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return '4️⃣ Dịch vụ & Điều trị';
+        return 'Dịch vụ & điều trị';
     }
 
     public static function form(Schema $schema): Schema

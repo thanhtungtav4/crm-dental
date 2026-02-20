@@ -152,6 +152,15 @@ class AppointmentForm
                         $set('duration_minutes', $durations[$state] ?? 30);
                     }),
 
+                Forms\Components\Select::make('appointment_kind')
+                    ->label('Phân loại cuộc hẹn')
+                    ->options([
+                        'booking' => 'Đặt hẹn',
+                        're_exam' => 'Tái khám',
+                    ])
+                    ->default('booking')
+                    ->required(),
+
                 Forms\Components\TextInput::make('duration_minutes')
                     ->label('Thời lượng (phút)')
                     ->numeric()
@@ -172,6 +181,17 @@ class AppointmentForm
                     ])
                     ->default('scheduled')
                     ->live(),
+
+                Forms\Components\Textarea::make('cancellation_reason')
+                    ->label('Lý do hủy lịch')
+                    ->rows(2)
+                    ->visible(fn(callable $get) => $get('status') === 'cancelled')
+                    ->columnSpanFull(),
+
+                Forms\Components\Textarea::make('reschedule_reason')
+                    ->label('Lý do đổi lịch')
+                    ->rows(2)
+                    ->columnSpanFull(),
 
                 Forms\Components\DateTimePicker::make('confirmed_at')
                     ->label('Thời gian xác nhận')

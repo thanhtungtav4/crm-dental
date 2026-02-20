@@ -11,12 +11,44 @@ class ViewPatient extends ViewRecord
 {
     protected static string $resource = PatientResource::class;
 
-    public string $activeTab = 'overview';
+    public string $activeTab = 'basic-info';
+    
+    /**
+     * Tabs rendered in the custom patient workspace view.
+     */
+    protected array $workspaceTabs = [
+        'basic-info',
+        'exam-treatment',
+        'prescriptions',
+        'photos',
+        'lab-materials',
+        'appointments',
+        'payments',
+        'forms',
+        'care',
+        'activity-log',
+    ];
+
+    protected array $legacyTabMap = [
+        'overview' => 'basic-info',
+        'invoices' => 'payments',
+        'notes' => 'care',
+        'payment' => 'payments',
+        'appointment' => 'appointments',
+        'photo' => 'photos',
+        'examAndTreatment' => 'exam-treatment',
+    ];
 
     public function mount($record): void
     {
         parent::mount($record);
-        $this->activeTab = request()->query('tab', 'overview');
+
+        $requestedTab = (string) request()->query('tab', 'basic-info');
+        $requestedTab = $this->legacyTabMap[$requestedTab] ?? $requestedTab;
+
+        $this->activeTab = in_array($requestedTab, $this->workspaceTabs, true)
+            ? $requestedTab
+            : 'basic-info';
     }
 
     public function getView(): string
@@ -31,6 +63,10 @@ class ViewPatient extends ViewRecord
 
     public function setActiveTab(string $tab): void
     {
+        if (!in_array($tab, $this->workspaceTabs, true)) {
+            return;
+        }
+
         $this->activeTab = $tab;
     }
 

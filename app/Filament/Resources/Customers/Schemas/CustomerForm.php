@@ -52,6 +52,18 @@ class CustomerForm
                                         'other' => 'Khác',
                                     ]),
 
+                                Forms\Components\Select::make('customer_group_id')
+                                    ->relationship('customerGroup', 'name', fn ($query) => $query->where('is_active', true))
+                                    ->label('Nhóm khách hàng')
+                                    ->searchable()
+                                    ->preload(),
+
+                                Forms\Components\Select::make('promotion_group_id')
+                                    ->relationship('promotionGroup', 'name', fn ($query) => $query->where('is_active', true))
+                                    ->label('Nhóm khuyến mãi')
+                                    ->searchable()
+                                    ->preload(),
+
                                 Forms\Components\Select::make('status')
                                     ->label('Trạng thái')
                                     ->options([

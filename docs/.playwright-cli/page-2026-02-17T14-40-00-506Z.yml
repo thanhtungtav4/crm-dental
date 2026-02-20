@@ -1,0 +1,280 @@
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - img [ref=e13] [cursor=pointer]
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e22]
+          - link [ref=e25] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e27]
+          - button [ref=e33] [cursor=pointer]:
+            - link [ref=e34]:
+              - /url: /customer-care
+              - img [ref=e36]
+          - button [ref=e44] [cursor=pointer]:
+            - link [ref=e45]:
+              - /url: /calendar
+              - img [ref=e47]
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e52]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e57]
+          - button [ref=e63] [cursor=pointer]:
+            - img [ref=e66]
+          - button [ref=e72] [cursor=pointer]:
+            - img [ref=e75]
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e85]
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e97]
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - paragraph [ref=e104]: "17"
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e167]: Nguyễn Văn An
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - heading "Báo cáo mới" [level=3] [ref=e112]
+              - img [ref=e114] [cursor=pointer]
+            - switch [checked] [ref=e117] [cursor=pointer]
+          - img [ref=e122] [cursor=pointer]
+      - generic [ref=e136]:
+        - tablist [ref=e137]:
+          - button "In" [ref=e142] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e143]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e147]:
+              - tab "Thông tin cơ bản" [ref=e148] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e149] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e150] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e151] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [ref=e152] [cursor=pointer]
+              - tab "Lịch hẹn" [selected] [ref=e153] [cursor=pointer]
+              - tab "Thanh toán" [ref=e154] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e155] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e156] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e157] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - tabpanel [ref=e267]:
+            - generic [ref=e269]:
+              - generic [ref=e271]:
+                - heading "Danh sách lịch hẹn" [level=3] [ref=e273]
+                - generic [ref=e274]:
+                  - generic [ref=e279] [cursor=pointer]:
+                    - textbox "Ngày bắt đầu" [ref=e280]
+                    - generic: ~
+                    - textbox "Ngày kết thúc" [ref=e281]
+                    - img [ref=e283]
+                  - button "Thêm lịch hẹn" [ref=e287] [cursor=pointer]:
+                    - generic: Thêm lịch hẹn
+              - generic [ref=e295]:
+                - table [ref=e297]:
+                  - rowgroup [ref=e309]:
+                    - row "Ngày Khung giờ Bác sĩ Nội dung Phân loại Loại lịch hẹn Ghi chú Lý do hẹn lại / hủy lịch Trạng thái Thao tác" [ref=e310]:
+                      - columnheader "Ngày" [ref=e311]:
+                        - generic [ref=e315]: Ngày
+                      - columnheader "Khung giờ" [ref=e316]:
+                        - generic [ref=e320]: Khung giờ
+                      - columnheader "Bác sĩ" [ref=e321]:
+                        - generic [ref=e325]: Bác sĩ
+                      - columnheader "Nội dung" [ref=e326]:
+                        - generic [ref=e330]: Nội dung
+                      - columnheader "Phân loại" [ref=e331]:
+                        - generic [ref=e335]: Phân loại
+                      - columnheader "Loại lịch hẹn" [ref=e336]:
+                        - generic [ref=e340]: Loại lịch hẹn
+                      - columnheader "Ghi chú" [ref=e341]:
+                        - generic [ref=e345]: Ghi chú
+                      - columnheader "Lý do hẹn lại / hủy lịch" [ref=e346]:
+                        - generic [ref=e350]: Lý do hẹn lại / hủy lịch
+                      - columnheader "Trạng thái" [ref=e351]:
+                        - generic [ref=e355]: Trạng thái
+                      - columnheader "Thao tác" [ref=e356]:
+                        - generic [ref=e360]: Thao tác
+                  - rowgroup
+                - generic [ref=e363]:
+                  - img [ref=e365]
+                  - paragraph [ref=e371]: Chưa có dữ liệu
+  - dialog [ref=e373]:
+    - document:
+      - generic [ref=e375]:
+        - generic [ref=e376]:
+          - heading "Đặt lịch hẹn" [level=2] [ref=e378]
+          - img [ref=e380] [cursor=pointer]
+        - generic [ref=e384]:
+          - generic [ref=e385]:
+            - text: "*"
+            - generic [ref=e387]:
+              - generic [ref=e388]: Bác sĩ *
+              - combobox [ref=e395] [cursor=pointer]:
+                - generic "MAI HOÀNG YẾN" [ref=e397]
+                - 'generic "icon: close-circle" [ref=e399]':
+                  - img [ref=e400]
+                - generic:
+                  - 'generic "icon: down"':
+                    - img
+            - generic [ref=e403]:
+              - generic [ref=e405]:
+                - generic [ref=e406]: Nội dung
+                - img [ref=e408] [cursor=pointer]
+              - combobox [ref=e417] [cursor=pointer]:
+                - generic [ref=e418]:
+                  - generic [ref=e419]: Nội dung
+                  - list:
+                    - listitem [ref=e420]:
+                      - textbox [ref=e422]
+            - generic [ref=e424]:
+              - generic [ref=e426]:
+                - generic [ref=e427]: Phân loại
+                - img [ref=e429] [cursor=pointer]
+              - combobox [ref=e437] [cursor=pointer]:
+                - generic "Khám mới" [ref=e439]
+                - generic:
+                  - 'generic "icon: down"':
+                    - img
+            - generic [ref=e449]:
+              - generic [ref=e450] [cursor=pointer]:
+                - radio "Đặt trước" [checked] [ref=e452]
+                - text: Đặt trước
+              - generic [ref=e454] [cursor=pointer]:
+                - radio "Phát sinh" [ref=e456]
+                - text: Phát sinh
+              - generic [ref=e458] [cursor=pointer]:
+                - radio "Dự kiến" [ref=e460]
+                - text: Dự kiến
+          - generic [ref=e462]:
+            - generic [ref=e464]:
+              - generic [ref=e465]: Thời gian *
+              - generic [ref=e471]:
+                - textbox "dd-mm-yyyy" [ref=e472]: 17-02-2026
+                - 'generic "icon: calendar" [ref=e473]':
+                  - img [ref=e474]
+            - generic [ref=e483]:
+              - textbox "Chọn thời gian" [ref=e484]: 21:45
+              - 'generic "icon: clock-circle" [ref=e486]':
+                - img [ref=e487]
+              - 'generic "icon: close-circle"':
+                - img
+            - combobox [ref=e499] [cursor=pointer]:
+              - generic "15 phút" [ref=e501]
+              - generic:
+                - 'generic "icon: down"':
+                  - img
+          - generic [ref=e502]:
+            - generic [ref=e503]: Ghi chú
+            - textbox "Ghi chú" [ref=e509]
+          - generic [ref=e510]:
+            - separator [ref=e511]
+            - generic [ref=e512]:
+              - button "Thêm mới" [ref=e514] [cursor=pointer]:
+                - generic: Thêm mới
+              - button "Hủy bỏ" [ref=e516] [cursor=pointer]:
+                - generic: Hủy bỏ

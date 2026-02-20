@@ -1,0 +1,666 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e11] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+          - link [ref=e23] [cursor=pointer]:
+            - /url: /patient-records-management
+            - img [ref=e25]
+          - button [ref=e31] [cursor=pointer]:
+            - link [ref=e32]:
+              - /url: /customer-care
+              - img [ref=e34]
+          - button [ref=e42] [cursor=pointer]:
+            - link [ref=e43]:
+              - /url: /calendar
+              - img [ref=e45]
+          - link [ref=e48] [cursor=pointer]:
+            - /url: /user
+            - img [ref=e50]
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /receipts-expense
+            - img [ref=e55]
+          - button [ref=e61] [cursor=pointer]:
+            - img [ref=e64]
+          - button [ref=e70] [cursor=pointer]:
+            - img [ref=e73]
+          - link [ref=e76] [cursor=pointer]:
+            - /url: /dental-chain
+            - img [ref=e78]
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /dental-app
+            - img [ref=e83]
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e95]
+        - generic [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - paragraph [ref=e102]: "17"
+    - generic [ref=e104]:
+      - generic [ref=e105]:
+        - generic [ref=e165]: Nguyễn Văn An
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - heading "Báo cáo mới" [level=3] [ref=e110]
+              - img [ref=e112] [cursor=pointer]
+            - switch [checked] [ref=e115] [cursor=pointer]
+          - img [ref=e120] [cursor=pointer]
+      - generic [ref=e134]:
+        - tablist [ref=e135]:
+          - button "In" [ref=e140] [cursor=pointer]:
+            - generic:
+              - img
+          - generic [ref=e141]:
+            - generic:
+              - generic:
+                - 'generic "icon: left"':
+                  - img
+            - generic:
+              - generic:
+                - 'generic "icon: right"':
+                  - img
+            - generic [ref=e145]:
+              - tab "Thông tin cơ bản" [ref=e146] [cursor=pointer]
+              - tab "Khám & Điều trị" [ref=e147] [cursor=pointer]
+              - tab "Đơn thuốc" [ref=e148] [cursor=pointer]
+              - tab "Thư viện ảnh" [ref=e149] [cursor=pointer]
+              - tab "Xưởng/Vật tư" [selected] [ref=e150] [cursor=pointer]
+              - tab "Lịch hẹn" [ref=e151] [cursor=pointer]
+              - tab "Thanh toán" [ref=e152] [cursor=pointer]
+              - tab "Biểu mẫu" [ref=e153] [cursor=pointer]
+              - tab "Chăm sóc" [ref=e154] [cursor=pointer]
+              - tab "Lịch sử thao tác" [ref=e155] [cursor=pointer]
+        - generic [ref=e157]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=3]: Thông tin cơ bản
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic:
+                            - img
+                          - generic: Cập nhật
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "Mã hồ sơ:"
+                              - generic: "329320993"
+                            - generic:
+                              - generic: "Ngày tạo:"
+                              - generic: 10-02-2026
+                            - generic:
+                              - generic: "Họ tên:"
+                              - generic: Nguyễn Văn An
+                            - generic:
+                              - generic: "Giới tính:"
+                              - generic: Nam
+                            - generic:
+                              - generic: "Email:"
+                            - generic:
+                              - generic: "Ngày sinh:"
+                              - generic: 08-02-1999
+                            - generic:
+                              - generic: "Số CCCD:"
+                            - generic:
+                              - generic: "Số điện thoại 1:"
+                              - generic: "0393874646"
+                            - generic:
+                              - generic: "Số điện thoại 2:"
+                            - generic:
+                              - generic: "Nghề nghiệp:"
+                            - generic:
+                              - generic: "Nguồn khách hàng:"
+                            - generic:
+                              - generic: "Nhóm khuyến mãi:"
+                              - generic: Vàng
+                            - generic:
+                              - generic: "Nhóm khách hàng:"
+                            - generic:
+                              - generic: "Địa chỉ:"
+                              - generic: abc
+                            - generic:
+                              - generic: "Lý do đến khám:"
+                            - generic:
+                              - generic: "Bác sĩ phụ trách:"
+                            - generic:
+                              - generic: "Nhân viên phụ trách:"
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - heading [level=4]: Người thân
+                              - generic:
+                                - generic:
+                                  - generic: "Họ tên:"
+                                - generic:
+                                  - generic: "Quan hệ:"
+                                - generic:
+                                  - generic: "Số điện thoại:"
+                                - generic:
+                                  - generic: "Email:"
+                          - generic:
+                            - heading [level=4]: Tiền sử bệnh
+                            - generic:
+                              - generic: "Mô tả khác:"
+                      - generic:
+                        - generic:
+                          - heading [level=4]: Ghi chú
+              - generic:
+                - generic:
+                  - button:
+                    - generic: Khám & Điều trị
+                    - generic:
+                      - img
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=3]: Danh sách đơn thuốc
+                  - generic:
+                    - generic:
+                      - generic:
+                        - button:
+                          - generic: Thêm đơn thuốc
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - table:
+                                    - rowgroup:
+                                      - row:
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày điều trị
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Ngày tạo
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Mã đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Tên đơn thuốc
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Bác sĩ kê đơn
+                                        - columnheader:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: Thao tác
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - img
+                                      - paragraph: Chưa có dữ liệu
+          - tabpanel [ref=e982]:
+            - generic [ref=e984]:
+              - generic [ref=e987]:
+                - 'button "icon: right Danh sách đặt xưởng Thêm phiếu chi Thêm đặt xưởng" [expanded] [ref=e988] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e989]':
+                    - img [ref=e990]
+                  - generic [ref=e993]:
+                    - generic [ref=e994]: Danh sách đặt xưởng
+                    - generic [ref=e995]:
+                      - button "Thêm phiếu chi" [ref=e998]:
+                        - generic: Thêm phiếu chi
+                      - button "Thêm đặt xưởng" [ref=e1001]:
+                        - generic: Thêm đặt xưởng
+                - generic [ref=e1010]:
+                  - generic [ref=e1011]:
+                    - table [ref=e1013]:
+                      - rowgroup [ref=e1030]:
+                        - row "Ngày điều trị Đơn vị Xưởng/Labo Vật liệu S.L Đơn giá Chi phí Chiết khấu (%) Thành tiền Người đặt Người nhận Ngày đặt Ngày trả Ghi chú" [ref=e1031]:
+                          - columnheader "Ngày điều trị" [ref=e1032]:
+                            - generic [ref=e1036]: Ngày điều trị
+                          - columnheader "Đơn vị Xưởng/Labo" [ref=e1037]:
+                            - generic [ref=e1041]: Đơn vị Xưởng/Labo
+                          - columnheader "Vật liệu" [ref=e1042]:
+                            - generic [ref=e1046]: Vật liệu
+                          - columnheader "S.L" [ref=e1047]:
+                            - generic [ref=e1051]: S.L
+                          - columnheader "Đơn giá" [ref=e1052]:
+                            - generic [ref=e1056]: Đơn giá
+                          - columnheader "Chi phí" [ref=e1057]:
+                            - generic [ref=e1061]: Chi phí
+                          - columnheader "Chiết khấu (%)" [ref=e1062]:
+                            - generic [ref=e1066]: Chiết khấu (%)
+                          - columnheader "Thành tiền" [ref=e1067]:
+                            - generic [ref=e1071]: Thành tiền
+                          - columnheader "Người đặt" [ref=e1072]:
+                            - generic [ref=e1076]: Người đặt
+                          - columnheader "Người nhận" [ref=e1077]:
+                            - generic [ref=e1081]: Người nhận
+                          - columnheader "Ngày đặt" [ref=e1082]:
+                            - generic [ref=e1086]: Ngày đặt
+                          - columnheader "Ngày trả" [ref=e1087]:
+                            - generic [ref=e1091]: Ngày trả
+                          - columnheader "Ghi chú" [ref=e1092]:
+                            - generic [ref=e1096]: Ghi chú
+                      - rowgroup
+                    - generic [ref=e1099]:
+                      - img [ref=e1101]
+                      - paragraph [ref=e1107]: Chưa có dữ liệu
+                    - generic [ref=e1111]: "Tổng tiền: 0"
+                  - table [ref=e1115]:
+                    - rowgroup [ref=e1119]:
+                      - row "Trạng thái Thao tác" [ref=e1120]:
+                        - columnheader "Trạng thái" [ref=e1121]:
+                          - generic [ref=e1125]: Trạng thái
+                        - columnheader "Thao tác" [ref=e1126]:
+                          - generic [ref=e1130]: Thao tác
+                    - rowgroup
+              - generic [ref=e1133]:
+                - 'button "icon: right Danh sách vật tư tiêu hao Thêm phiếu xuất" [expanded] [ref=e1134] [cursor=pointer]':
+                  - 'generic "icon: right" [ref=e1135]':
+                    - img [ref=e1136]
+                  - generic [ref=e1139]:
+                    - generic [ref=e1140]: Danh sách vật tư tiêu hao
+                    - button "Thêm phiếu xuất" [ref=e1142]:
+                      - generic: Thêm phiếu xuất
+                - generic [ref=e1156]:
+                  - table [ref=e1158]:
+                    - rowgroup [ref=e1170]:
+                      - row "Ngày điều trị Ngày xuất Bác sĩ Thủ thuật Tên vật tư Đơn vị Số lượng Đơn giá Tổng tiền Thao tác" [ref=e1171]:
+                        - columnheader "Ngày điều trị" [ref=e1172]:
+                          - generic [ref=e1176]: Ngày điều trị
+                        - columnheader "Ngày xuất" [ref=e1177]:
+                          - generic [ref=e1181]: Ngày xuất
+                        - columnheader "Bác sĩ" [ref=e1182]:
+                          - generic [ref=e1186]: Bác sĩ
+                        - columnheader "Thủ thuật" [ref=e1187]:
+                          - generic [ref=e1191]: Thủ thuật
+                        - columnheader "Tên vật tư" [ref=e1192]:
+                          - generic [ref=e1196]: Tên vật tư
+                        - columnheader "Đơn vị" [ref=e1197]:
+                          - generic [ref=e1201]: Đơn vị
+                        - columnheader "Số lượng" [ref=e1202]:
+                          - generic [ref=e1206]: Số lượng
+                        - columnheader "Đơn giá" [ref=e1207]:
+                          - generic [ref=e1211]: Đơn giá
+                        - columnheader "Tổng tiền" [ref=e1212]:
+                          - generic [ref=e1216]: Tổng tiền
+                        - columnheader "Thao tác" [ref=e1217]:
+                          - generic [ref=e1221]: Thao tác
+                    - rowgroup
+                  - generic [ref=e1224]:
+                    - img [ref=e1226]
+                    - paragraph [ref=e1232]: Chưa có dữ liệu
+                  - generic [ref=e1236]: "Tổng tiền: 0"
+  - dialog [ref=e1832]:
+    - document:
+      - generic [ref=e1834]:
+        - generic [ref=e1835]:
+          - heading "Thêm phiếu xuất vật tư" [level=2] [ref=e1837]
+          - img [ref=e1839] [cursor=pointer]
+        - generic [ref=e1843]:
+          - generic [ref=e1844]:
+            - generic [ref=e1845]:
+              - generic [ref=e1848]:
+                - generic [ref=e1849]: Ngày lập phiếu *
+                - generic [ref=e1854] [cursor=pointer]:
+                  - textbox "dd-mm-yyyy" [ref=e1855]: 17-02-2026
+                  - img [ref=e1857]
+              - generic [ref=e1861]:
+                - generic [ref=e1862]: Người xuất *
+                - combobox [ref=e1867] [cursor=pointer]:
+                  - generic "MAI HOÀNG YẾN" [ref=e1869]
+                  - 'generic "icon: close-circle" [ref=e1871]':
+                    - img [ref=e1872]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e1876]:
+                - generic [ref=e1877]: Người nhận *
+                - combobox [ref=e1882] [cursor=pointer]:
+                  - generic "MAI HOÀNG YẾN" [ref=e1884]
+                  - 'generic "icon: close-circle" [ref=e1886]':
+                    - img [ref=e1887]
+                  - generic:
+                    - 'generic "icon: down"':
+                      - img
+              - generic [ref=e1891]:
+                - generic [ref=e1892]: Tổng tiền
+                - generic [ref=e1895]: "0"
+            - generic [ref=e1900]:
+              - generic [ref=e1902]:
+                - heading "Danh sách vật tư *" [level=3] [ref=e1904]
+                - generic [ref=e1906]:
+                  - button "Import" [ref=e1909] [cursor=pointer]:
+                    - generic: Import
+                  - button "Chọn vật tư" [ref=e1911] [cursor=pointer]:
+                    - generic: Chọn vật tư
+              - generic [ref=e1919]:
+                - table [ref=e1921]:
+                  - rowgroup [ref=e1933]:
+                    - row "STT Mã vật tư Tên vật tư Nhóm/Danh mục vật tư Đơn vị S.L Tồn kho Số lượng Đơn giá Thành tiền Thao tác" [ref=e1934]:
+                      - columnheader "STT" [ref=e1935]:
+                        - generic [ref=e1939]: STT
+                      - columnheader "Mã vật tư" [ref=e1940]:
+                        - generic [ref=e1944]: Mã vật tư
+                      - columnheader "Tên vật tư" [ref=e1945]:
+                        - generic [ref=e1949]: Tên vật tư
+                      - columnheader "Nhóm/Danh mục vật tư" [ref=e1950]:
+                        - generic [ref=e1954]: Nhóm/Danh mục vật tư
+                      - columnheader "Đơn vị" [ref=e1955]:
+                        - generic [ref=e1959]: Đơn vị
+                      - columnheader "S.L Tồn kho" [ref=e1960]:
+                        - generic [ref=e1964]: S.L Tồn kho
+                      - columnheader "Số lượng" [ref=e1965]:
+                        - generic [ref=e1969]: Số lượng
+                      - columnheader "Đơn giá" [ref=e1970]:
+                        - generic [ref=e1974]: Đơn giá
+                      - columnheader "Thành tiền" [ref=e1975]:
+                        - generic [ref=e1979]: Thành tiền
+                      - columnheader "Thao tác" [ref=e1980]:
+                        - generic [ref=e1984]: Thao tác
+                  - rowgroup
+                - generic [ref=e1987]:
+                  - img [ref=e1989]
+                  - paragraph [ref=e1995]:
+                    - generic [ref=e1996]:
+                      - text: Bạn chưa chọn vật tư.
+                      - text: Xin vui lòng bấm nút Chọn vật tư để điền thông tin
+            - generic [ref=e1998]:
+              - generic [ref=e1999]: Ghi chú
+              - generic [ref=e2002]:
+                - toolbar "Editor toolbar" [ref=e2003]:
+                  - generic [ref=e2004]:
+                    - button "Paragraph" [ref=e2006]:
+                      - generic [ref=e2007]: Paragraph
+                      - img
+                    - button "Insert image" [ref=e2009]:
+                      - img [ref=e2010]
+                - textbox "Rich Text Editor, main" [ref=e2012]:
+                  - paragraph [ref=e2013]
+          - generic [ref=e2014]:
+            - button "Hủy bỏ" [ref=e2016] [cursor=pointer]:
+              - generic: Hủy bỏ
+            - button "Thêm mới" [ref=e2018] [cursor=pointer]:
+              - generic: Thêm mới
+  - dialog [ref=e2020]:
+    - document:
+      - generic [ref=e2022]:
+        - generic [ref=e2023]:
+          - heading "Chọn vật tư" [level=2] [ref=e2025]
+          - img [ref=e2027] [cursor=pointer]
+        - generic [ref=e2029]:
+          - generic [ref=e2034]:
+            - textbox "Nhập tên hoặc mã vật tư để tìm kiếm" [ref=e2035]
+            - img [ref=e2037] [cursor=pointer]
+          - generic [ref=e2040]:
+            - generic [ref=e2041]:
+              - generic [ref=e2042]: Nhóm/Danh mục vật tư
+              - generic [ref=e2043]:
+                - generic [ref=e2047] [cursor=pointer]: Tất cả
+                - generic [ref=e2051] [cursor=pointer]: Implant
+                - generic [ref=e2055] [cursor=pointer]: Vật tư chỉnh nha
+                - generic [ref=e2059] [cursor=pointer]: Vật tư tiêu hao
+                - button "Y tế" [ref=e2064] [cursor=pointer]:
+                  - generic [ref=e2065]:
+                    - generic [ref=e2067]: Y tế
+                    - img [ref=e2070]
+                - generic [ref=e2075] [cursor=pointer]: Nhổ răng
+                - button "Chỉnh nha" [ref=e2080] [cursor=pointer]:
+                  - generic [ref=e2081]:
+                    - generic [ref=e2083]: Chỉnh nha
+                    - img [ref=e2086]
+            - generic [ref=e2096]:
+              - table [ref=e2098]:
+                - rowgroup [ref=e2105]:
+                  - row "Mã vật tư Tên vật tư Đơn vị Đơn giá" [ref=e2106]:
+                    - columnheader [ref=e2107]
+                    - columnheader "Mã vật tư" [ref=e2108]:
+                      - generic [ref=e2112]: Mã vật tư
+                    - columnheader "Tên vật tư" [ref=e2113]:
+                      - generic [ref=e2117]: Tên vật tư
+                    - columnheader "Đơn vị" [ref=e2118]:
+                      - generic [ref=e2122]: Đơn vị
+                    - columnheader "Đơn giá" [ref=e2123]:
+                      - generic [ref=e2127]: Đơn giá
+              - table [ref=e2130]:
+                - rowgroup [ref=e2137]:
+                  - row "xquang Máy X quang Cái 0" [ref=e2138] [cursor=pointer]:
+                    - cell [ref=e2139]:
+                      - checkbox [ref=e2143]
+                    - cell "xquang" [ref=e2145]:
+                      - generic [ref=e2146]: xquang
+                    - cell "Máy X quang" [ref=e2147]:
+                      - generic [ref=e2148]: Máy X quang
+                    - cell "Cái" [ref=e2149]:
+                      - generic [ref=e2150]: Cái
+                    - cell "0" [ref=e2151]:
+                      - generic [ref=e2152]: "0"
+                  - row "DTH0001 Chốt sợi thuỷ tinh, màu đỏ, Bao 10 cái/3M RelyX Fiber Post Refill Size 2, 56862 bao 1.77" [ref=e2153] [cursor=pointer]:
+                    - cell [ref=e2154]:
+                      - checkbox [ref=e2158]
+                    - cell "DTH0001" [ref=e2160]:
+                      - generic [ref=e2161]: DTH0001
+                    - cell "Chốt sợi thuỷ tinh, màu đỏ, Bao 10 cái/3M RelyX Fiber Post Refill Size 2, 56862" [ref=e2162]:
+                      - generic [ref=e2163]: Chốt sợi thuỷ tinh, màu đỏ, Bao 10 cái/3M RelyX Fiber Post Refill Size 2, 56862
+                    - cell "bao" [ref=e2164]:
+                      - generic [ref=e2165]: bao
+                    - cell "1.77" [ref=e2166]:
+                      - generic [ref=e2167]: "1.77"
+                  - row "PST01 Test Item 01 Cái 10,000" [ref=e2168] [cursor=pointer]:
+                    - cell [ref=e2169]:
+                      - checkbox [ref=e2173]
+                    - cell "PST01" [ref=e2175]:
+                      - generic [ref=e2176]: PST01
+                    - cell "Test Item 01" [ref=e2177]:
+                      - generic [ref=e2178]: Test Item 01
+                    - cell "Cái" [ref=e2179]:
+                      - generic [ref=e2180]: Cái
+                    - cell "10,000" [ref=e2181]:
+                      - generic [ref=e2182]: 10,000
+                  - row "123456 0929 inventory test name - again 1 10,000" [ref=e2183] [cursor=pointer]:
+                    - cell [ref=e2184]:
+                      - checkbox [ref=e2188]
+                    - cell "123456" [ref=e2190]:
+                      - generic [ref=e2191]: "123456"
+                    - cell "0929 inventory test name - again" [ref=e2192]:
+                      - generic [ref=e2193]: 0929 inventory test name - again
+                    - cell "1" [ref=e2194]:
+                      - generic [ref=e2195]: "1"
+                    - cell "10,000" [ref=e2196]:
+                      - generic [ref=e2197]: 10,000
+                  - row "C01 Cồn ml 10,006.76" [ref=e2198] [cursor=pointer]:
+                    - cell [ref=e2199]:
+                      - checkbox [ref=e2203]
+                    - cell "C01" [ref=e2205]:
+                      - generic [ref=e2206]: C01
+                    - cell "Cồn" [ref=e2207]:
+                      - generic [ref=e2208]: Cồn
+                    - cell "ml" [ref=e2209]:
+                      - generic [ref=e2210]: ml
+                    - cell "10,006.76" [ref=e2211]:
+                      - generic [ref=e2212]: 10,006.76
+                  - row "GTS Găng tay size S Cặp 3,373.63" [ref=e2213] [cursor=pointer]:
+                    - cell [ref=e2214]:
+                      - checkbox [checked] [active] [ref=e2218]
+                    - cell "GTS" [ref=e2220]:
+                      - generic [ref=e2221]: GTS
+                    - cell "Găng tay size S" [ref=e2222]:
+                      - generic [ref=e2223]: Găng tay size S
+                    - cell "Cặp" [ref=e2224]:
+                      - generic [ref=e2225]: Cặp
+                    - cell "3,373.63" [ref=e2226]:
+                      - generic [ref=e2227]: 3,373.63
+                  - row "IM19017 GM Helix 3,5x11,5 Trụ 5,000,000" [ref=e2228] [cursor=pointer]:
+                    - cell [ref=e2229]:
+                      - checkbox [ref=e2233]
+                    - cell "IM19017" [ref=e2235]:
+                      - generic [ref=e2236]: IM19017
+                    - cell "GM Helix 3,5x11,5" [ref=e2237]:
+                      - generic [ref=e2238]: GM Helix 3,5x11,5
+                    - cell "Trụ" [ref=e2239]:
+                      - generic [ref=e2240]: Trụ
+                    - cell "5,000,000" [ref=e2241]:
+                      - generic [ref=e2242]: 5,000,000
+                  - row "123 345 Cái 231.99" [ref=e2243] [cursor=pointer]:
+                    - cell [ref=e2244]:
+                      - checkbox [ref=e2248]
+                    - cell "123" [ref=e2250]:
+                      - generic [ref=e2251]: "123"
+                    - cell "345" [ref=e2252]:
+                      - generic [ref=e2253]: "345"
+                    - cell "Cái" [ref=e2254]:
+                      - generic [ref=e2255]: Cái
+                    - cell "231.99" [ref=e2256]:
+                      - generic [ref=e2257]: "231.99"
+                  - row "LD Lưỡi dao Cái 96,302.52" [ref=e2258] [cursor=pointer]:
+                    - cell [ref=e2259]:
+                      - checkbox [ref=e2263]
+                    - cell "LD" [ref=e2265]:
+                      - generic [ref=e2266]: LD
+                    - cell "Lưỡi dao" [ref=e2267]:
+                      - generic [ref=e2268]: Lưỡi dao
+                    - cell "Cái" [ref=e2269]:
+                      - generic [ref=e2270]: Cái
+                    - cell "96,302.52" [ref=e2271]:
+                      - generic [ref=e2272]: 96,302.52
+                  - row "KVT Khăn vô trùng gói 50,000" [ref=e2273] [cursor=pointer]:
+                    - cell [ref=e2274]:
+                      - checkbox [ref=e2278]
+                    - cell "KVT" [ref=e2280]:
+                      - generic [ref=e2281]: KVT
+                    - cell "Khăn vô trùng" [ref=e2282]:
+                      - generic [ref=e2283]: Khăn vô trùng
+                    - cell "gói" [ref=e2284]:
+                      - generic [ref=e2285]: gói
+                    - cell "50,000" [ref=e2286]:
+                      - generic [ref=e2287]: 50,000
+                  - row "IMS Trụ Implant Straumann Trụ 9,583,333.33" [ref=e2288] [cursor=pointer]:
+                    - cell [ref=e2289]:
+                      - checkbox [ref=e2293]
+                    - cell "IMS" [ref=e2295]:
+                      - generic [ref=e2296]: IMS
+                    - cell "Trụ Implant Straumann" [ref=e2297]:
+                      - generic [ref=e2298]: Trụ Implant Straumann
+                    - cell "Trụ" [ref=e2299]:
+                      - generic [ref=e2300]: Trụ
+                    - cell "9,583,333.33" [ref=e2301]:
+                      - generic [ref=e2302]: 9,583,333.33
+                  - row "CK Chỉ khâu hộp 116,575.34" [ref=e2303] [cursor=pointer]:
+                    - cell [ref=e2304]:
+                      - checkbox [ref=e2308]
+                    - cell "CK" [ref=e2310]:
+                      - generic [ref=e2311]: CK
+                    - cell "Chỉ khâu" [ref=e2312]:
+                      - generic [ref=e2313]: Chỉ khâu
+                    - cell "hộp" [ref=e2314]:
+                      - generic [ref=e2315]: hộp
+                    - cell "116,575.34" [ref=e2316]:
+                      - generic [ref=e2317]: 116,575.34
+                  - row "2000 Dây cung hộp 185,897.44" [ref=e2318] [cursor=pointer]:
+                    - cell [ref=e2319]:
+                      - checkbox [ref=e2323]
+                    - cell "2000" [ref=e2325]:
+                      - generic [ref=e2326]: "2000"
+                    - cell "Dây cung" [ref=e2327]:
+                      - generic [ref=e2328]: Dây cung
+                    - cell "hộp" [ref=e2329]:
+                      - generic [ref=e2330]: hộp
+                    - cell "185,897.44" [ref=e2331]:
+                      - generic [ref=e2332]: 185,897.44
+                  - row "MC1 Mắc cài kim loại 3M bộ 472,613.07" [ref=e2333] [cursor=pointer]:
+                    - cell [ref=e2334]:
+                      - checkbox [ref=e2338]
+                    - cell "MC1" [ref=e2340]:
+                      - generic [ref=e2341]: MC1
+                    - cell "Mắc cài kim loại 3M" [ref=e2342]:
+                      - generic [ref=e2343]: Mắc cài kim loại 3M
+                    - cell "bộ" [ref=e2344]:
+                      - generic [ref=e2345]: bộ
+                    - cell "472,613.07" [ref=e2346]:
+                      - generic [ref=e2347]: 472,613.07
+                  - row "B18 chất gắn hàm Fixxodent 68g e 110,000" [ref=e2348] [cursor=pointer]:
+                    - cell [ref=e2349]:
+                      - checkbox [ref=e2353]
+                    - cell "B18" [ref=e2355]:
+                      - generic [ref=e2356]: B18
+                    - cell "chất gắn hàm Fixxodent 68g" [ref=e2357]:
+                      - generic [ref=e2358]: chất gắn hàm Fixxodent 68g
+                    - cell "e" [ref=e2359]:
+                      - generic [ref=e2360]: e
+                    - cell "110,000" [ref=e2361]:
+                      - generic [ref=e2362]: 110,000
+                  - row "B17 sáp chỉnh nha trung quốc hộp 13,173.59" [ref=e2363] [cursor=pointer]:
+                    - cell [ref=e2364]:
+                      - checkbox [ref=e2368]
+                    - cell "B17" [ref=e2370]:
+                      - generic [ref=e2371]: B17
+                    - cell "sáp chỉnh nha trung quốc" [ref=e2372]:
+                      - generic [ref=e2373]: sáp chỉnh nha trung quốc
+                    - cell "hộp" [ref=e2374]:
+                      - generic [ref=e2375]: hộp
+                    - cell "13,173.59" [ref=e2376]:
+                      - generic [ref=e2377]: 13,173.59
+                  - row "B15 ống hút nước bọt Ý Monoart e 0" [ref=e2378] [cursor=pointer]:
+                    - cell [ref=e2379]:
+                      - checkbox [ref=e2383]
+                    - cell "B15" [ref=e2385]:
+                      - generic [ref=e2386]: B15
+                    - cell "ống hút nước bọt Ý Monoart" [ref=e2387]:
+                      - generic [ref=e2388]: ống hút nước bọt Ý Monoart
+                    - cell "e" [ref=e2389]:
+                      - generic [ref=e2390]: e
+                    - cell "0" [ref=e2391]:
+                      - generic [ref=e2392]: "0"
+                  - row "B14 Bộ kìm người lớn 9 chi tiết trụ 765,000" [ref=e2393] [cursor=pointer]:
+                    - cell [ref=e2394]:
+                      - checkbox [ref=e2398]
+                    - cell "B14" [ref=e2400]:
+                      - generic [ref=e2401]: B14
+                    - cell "Bộ kìm người lớn 9 chi tiết" [ref=e2402]:
+                      - generic [ref=e2403]: Bộ kìm người lớn 9 chi tiết
+                    - cell "trụ" [ref=e2404]:
+                      - generic [ref=e2405]: trụ
+                    - cell "765,000" [ref=e2406]:
+                      - generic [ref=e2407]: 765,000
+                  - row "B13 Que hàn thẩm mỹ đầu vàng Cái 90,000" [ref=e2408] [cursor=pointer]:
+                    - cell [ref=e2409]:
+                      - checkbox [ref=e2413]
+                    - cell "B13" [ref=e2415]:
+                      - generic [ref=e2416]: B13
+                    - cell "Que hàn thẩm mỹ đầu vàng" [ref=e2417]:
+                      - generic [ref=e2418]: Que hàn thẩm mỹ đầu vàng
+                    - cell "Cái" [ref=e2419]:
+                      - generic [ref=e2420]: Cái
+                    - cell "90,000" [ref=e2421]:
+                      - generic [ref=e2422]: 90,000
+          - generic [ref=e2425]:
+            - button "Lưu thông tin" [ref=e2427] [cursor=pointer]:
+              - generic: Lưu thông tin
+            - button "Hủy bỏ" [ref=e2429] [cursor=pointer]:
+              - generic: Hủy bỏ

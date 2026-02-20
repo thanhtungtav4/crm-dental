@@ -1,0 +1,76 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - img [ref=e11] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - link [ref=e18] [cursor=pointer]:
+          - /url: /
+          - img [ref=e20]
+        - link [ref=e23] [cursor=pointer]:
+          - /url: /patient-records-management
+          - img [ref=e25]
+        - button [ref=e31] [cursor=pointer]:
+          - link [ref=e32]:
+            - /url: /customer-care
+            - img [ref=e34]
+        - button [ref=e42] [cursor=pointer]:
+          - link [ref=e43]:
+            - /url: /calendar
+            - img [ref=e45]
+        - link [ref=e48] [cursor=pointer]:
+          - /url: /user
+          - img [ref=e50]
+        - link [ref=e53] [cursor=pointer]:
+          - /url: /receipts-expense
+          - img [ref=e55]
+        - button [ref=e61] [cursor=pointer]:
+          - img [ref=e64]
+        - button [ref=e70] [cursor=pointer]:
+          - img [ref=e73]
+        - link [ref=e76] [cursor=pointer]:
+          - /url: /dental-chain
+          - img [ref=e78]
+        - link [ref=e81] [cursor=pointer]:
+          - /url: /dental-app
+          - img [ref=e83]
+        - button [ref=e92] [cursor=pointer]:
+          - img [ref=e95]
+      - generic [ref=e98] [cursor=pointer]:
+        - img [ref=e100]
+        - paragraph [ref=e102]: "17"
+  - generic [ref=e104]:
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - generic [ref=e108]:
+          - heading "Báo cáo mới" [level=3] [ref=e110]
+          - img [ref=e112] [cursor=pointer]
+        - switch [checked] [ref=e115] [cursor=pointer]
+      - generic [ref=e118] [cursor=pointer]:
+        - img [ref=e120]
+        - superscript [ref=e123]
+    - generic [ref=e134]:
+      - tablist [ref=e135]:
+        - button "In" [ref=e140] [cursor=pointer]:
+          - generic:
+            - img
+        - generic [ref=e141]:
+          - generic:
+            - generic:
+              - 'generic "icon: left"':
+                - img
+          - generic:
+            - generic:
+              - 'generic "icon: right"':
+                - img
+          - generic [ref=e145]:
+            - tab "Thông tin cơ bản" [selected] [ref=e146] [cursor=pointer]
+            - tab "Khám & Điều trị" [ref=e147] [cursor=pointer]
+            - tab "Đơn thuốc" [ref=e148] [cursor=pointer]
+            - tab "Thư viện ảnh" [ref=e149] [cursor=pointer]
+            - tab "Xưởng/Vật tư" [ref=e150] [cursor=pointer]
+            - tab "Lịch hẹn" [ref=e151] [cursor=pointer]
+            - tab "Thanh toán" [ref=e152] [cursor=pointer]
+            - tab "Biểu mẫu" [ref=e153] [cursor=pointer]
+            - tab "Chăm sóc" [ref=e154] [cursor=pointer]
+            - tab "Lịch sử thao tác" [ref=e155] [cursor=pointer]
+      - tabpanel [ref=e158]

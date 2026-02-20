@@ -1,0 +1,256 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e10]: Internal Server Error
+    - button "Copy as Markdown" [ref=e11] [cursor=pointer]:
+      - img [ref=e12]
+      - generic [ref=e15]: Copy as Markdown
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "ErrorException" [level=1] [ref=e20]
+      - generic [ref=e22]: resources/views/filament/resources/patients/pages/view-patient.blade.php:354
+      - paragraph [ref=e23]: Undefined variable $formatMoney
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: LARAVEL
+          - generic [ref=e28]: 12.36.1
+        - generic [ref=e29]:
+          - generic [ref=e30]: PHP
+          - generic [ref=e31]: 8.4.13
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - text: UNHANDLED
+      - generic [ref=e36]: CODE 0
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - img [ref=e40]
+        - text: "500"
+      - generic [ref=e43]:
+        - img [ref=e44]
+        - text: GET
+      - generic [ref=e47]: http://crm.test/admin/patients/1?tab=exam-treatment
+      - button [ref=e48] [cursor=pointer]:
+        - img [ref=e49]
+  - generic [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - img [ref=e57]
+        - heading "Exception trace" [level=3] [ref=e60]
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - generic [ref=e63] [cursor=pointer]:
+            - generic [ref=e66]:
+              - code [ref=e70]:
+                - generic [ref=e71]: resources/views/filament/resources/patients/pages/view-patient.blade.php
+              - generic [ref=e73]: resources/views/filament/resources/patients/pages/view-patient.blade.php:354
+            - button [ref=e75]:
+              - img [ref=e76]
+          - code [ref=e84]:
+            - generic [ref=e85]: "349 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9;\">{{ $session->planItem?->name ?? '-' }}</td>"
+            - generic [ref=e86]: "350 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9;\">{{ $session->procedure ?: ($session->notes ?: '-') }}</td>"
+            - generic [ref=e87]: "351 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9;\">{{ $session->doctor?->name ?? '-' }}</td>"
+            - generic [ref=e88]: "352 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9;\">{{ $session->assistant?->name ?? '-' }}</td>"
+            - generic [ref=e89]: "353 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center;\">{{ $sessionQty }}</td>"
+            - generic [ref=e90]: "354 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;\">{{ $formatMoney($sessionPrice) }}</td>"
+            - generic [ref=e91]: "355 <td style=\"padding: 8px 10px; border-bottom: 1px solid #f1f5f9;\">"
+            - generic [ref=e92]: "356 <span style=\"display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; {{ $statusStyle }}\">"
+            - generic [ref=e93]: "357 {{ $statusLabel }}"
+            - generic [ref=e94]: 358 </span>
+            - generic [ref=e95]: 359 </td>
+            - generic [ref=e96]: 360 </tr>
+            - generic [ref=e97]: 361 @empty
+            - generic [ref=e98]: 362 <tr>
+            - generic [ref=e99]: "363 <td colspan=\"9\" style=\"padding: 18px; text-align: center; color: #6b7280;\">"
+            - generic [ref=e100]: 364 Chưa có tiến trình điều trị cho bệnh nhân này.
+            - generic [ref=e101]: 365 </td>
+            - generic [ref=e102]: "366"
+        - generic [ref=e104] [cursor=pointer]:
+          - img [ref=e105]
+          - generic [ref=e109]: 54 vendor frames
+          - button [ref=e110]:
+            - img [ref=e111]
+        - generic [ref=e116] [cursor=pointer]:
+          - generic [ref=e119]:
+            - code [ref=e123]:
+              - generic [ref=e124]: App\Http\Middleware\SecurityHeaders->handle(object(Illuminate\Http\Request), object(Closure))
+            - generic [ref=e126]: app/Http/Middleware/SecurityHeaders.php:12
+          - button [ref=e128]:
+            - img [ref=e129]
+        - generic [ref=e134] [cursor=pointer]:
+          - img [ref=e135]
+          - generic [ref=e139]: 23 vendor frames
+          - button [ref=e140]:
+            - img [ref=e141]
+        - generic [ref=e146] [cursor=pointer]:
+          - generic [ref=e149]:
+            - code [ref=e153]:
+              - generic [ref=e154]: public/index.php
+            - generic [ref=e156]: public/index.php:20
+          - button [ref=e158]:
+            - img [ref=e159]
+        - generic [ref=e164] [cursor=pointer]:
+          - img [ref=e165]
+          - generic [ref=e169]: 1 vendor frame
+          - button [ref=e170]:
+            - img [ref=e171]
+    - generic [ref=e175]:
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - img [ref=e179]
+          - heading "Queries" [level=3] [ref=e181]
+        - generic [ref=e183]: 1-10 of 48
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]:
+            - generic [ref=e187]:
+              - img [ref=e188]
+              - generic [ref=e190]: mysql
+            - code [ref=e194]:
+              - generic [ref=e195]: "select * from `sessions` where `id` = 'oMPO1I2OZxSVtlhH9RuZtYpFi1QdxlQRitUHamkZ' limit 1"
+          - generic [ref=e196]: 0.66ms
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - img [ref=e200]
+              - generic [ref=e202]: mysql
+            - code [ref=e206]:
+              - generic [ref=e207]: "select * from `users` where `id` = 1 limit 1"
+          - generic [ref=e208]: 0.57ms
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - img [ref=e212]
+              - generic [ref=e214]: mysql
+            - code [ref=e218]:
+              - generic [ref=e219]: "select `breezy_sessions`.* from `breezy_sessions` inner join (select MAX(`breezy_sessions`.`id`) as `id_aggregate`, `breezy_sessions`.`authenticatable_id`, `breezy_sessions`.`authenticatable_type` from `breezy_sessions` where `breezy_sessions`.`authenticatable_type` = 'App\\Models\\User' and `breezy_sessions`.`authenticatable_id` = 1 and `breezy_sessions`.`authenticatable_id` is not null and `panel_id` = 'admin' group by `breezy_sessions`.`authenticatable_id`, `breezy_sessions`.`authenticatable_type`) as `breezySession` on `breezySession`.`id_aggregate` = `breezy_sessions`.`id` and `breezySession`.`authenticatable_type` = `breezy_sessions`.`authenticatable_type` and `breezySession`.`authenticatable_id` = `breezy_sessions`.`authenticatable_id` where `breezy_sessions`.`authenticatable_type` = 'App\\Models\\User' and `breezy_sessions`.`authenticatable_id` = 1 and `breezy_sessions`.`authenticatable_id` is not null and `panel_id` = 'admin' limit 1"
+          - generic [ref=e220]: 4.2ms
+        - generic [ref=e221]:
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - img [ref=e224]
+              - generic [ref=e226]: mysql
+            - code [ref=e230]:
+              - generic [ref=e231]: "select * from `patients` where `id` = '1' limit 1"
+          - generic [ref=e232]: 0.97ms
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - img [ref=e236]
+              - generic [ref=e238]: mysql
+            - code [ref=e242]:
+              - generic [ref=e243]: "select * from `cache` where `key` in ('ident-dental-crm-cache-spatie.permission.cache')"
+          - generic [ref=e244]: 1.04ms
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - generic [ref=e247]:
+              - img [ref=e248]
+              - generic [ref=e250]: mysql
+            - code [ref=e254]:
+              - generic [ref=e255]: "select `permissions`.*, `model_has_permissions`.`model_id` as `pivot_model_id`, `model_has_permissions`.`permission_id` as `pivot_permission_id`, `model_has_permissions`.`model_type` as `pivot_model_type` from `permissions` inner join `model_has_permissions` on `permissions`.`id` = `model_has_permissions`.`permission_id` where `model_has_permissions`.`model_id` in (1) and `model_has_permissions`.`model_type` = 'App\\Models\\User'"
+          - generic [ref=e256]: 0.31ms
+        - generic [ref=e257]:
+          - generic [ref=e258]:
+            - generic [ref=e259]:
+              - img [ref=e260]
+              - generic [ref=e262]: mysql
+            - code [ref=e266]:
+              - generic [ref=e267]: "select `roles`.*, `model_has_roles`.`model_id` as `pivot_model_id`, `model_has_roles`.`role_id` as `pivot_role_id`, `model_has_roles`.`model_type` as `pivot_model_type` from `roles` inner join `model_has_roles` on `roles`.`id` = `model_has_roles`.`role_id` where `model_has_roles`.`model_id` in (1) and `model_has_roles`.`model_type` = 'App\\Models\\User'"
+          - generic [ref=e268]: 0.23ms
+        - generic [ref=e269]:
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - img [ref=e272]
+              - generic [ref=e274]: mysql
+            - code [ref=e278]:
+              - generic [ref=e279]: "select * from `branches` where `branches`.`id` = 1 and `branches`.`deleted_at` is null limit 1"
+          - generic [ref=e280]: 0.59ms
+        - generic [ref=e281]:
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - img [ref=e284]
+              - generic [ref=e286]: mysql
+            - code [ref=e290]:
+              - generic [ref=e291]: "select count(*) as aggregate from `treatment_plans` where `treatment_plans`.`patient_id` = 1 and `treatment_plans`.`patient_id` is not null and `treatment_plans`.`deleted_at` is null"
+          - generic [ref=e292]: 0.22ms
+        - generic [ref=e293]:
+          - generic [ref=e294]:
+            - generic [ref=e295]:
+              - img [ref=e296]
+              - generic [ref=e298]: mysql
+            - code [ref=e302]:
+              - generic [ref=e303]: "select count(*) as aggregate from `invoices` where `invoices`.`patient_id` = 1 and `invoices`.`patient_id` is not null and `invoices`.`deleted_at` is null"
+          - generic [ref=e304]: 0.23ms
+      - generic [ref=e305]:
+        - button [disabled] [ref=e306]:
+          - img [ref=e307]
+        - button [disabled] [ref=e310]:
+          - img [ref=e311]
+        - button "1" [ref=e314] [cursor=pointer]
+        - button "2" [ref=e316] [cursor=pointer]
+        - button "3" [ref=e318] [cursor=pointer]
+        - button "4" [ref=e320] [cursor=pointer]
+        - button "5" [ref=e322] [cursor=pointer]
+        - button [ref=e323] [cursor=pointer]:
+          - img [ref=e324]
+        - button [ref=e326] [cursor=pointer]:
+          - img [ref=e327]
+  - generic [ref=e331]:
+    - generic [ref=e332]:
+      - heading "Headers" [level=2] [ref=e333]
+      - generic [ref=e334]:
+        - generic [ref=e335]:
+          - generic [ref=e336]: cookie
+          - generic [ref=e338]: XSRF-TOKEN=eyJpdiI6Im9Zam5KNm01eDNKZHM2MHFzQ2gvTVE9PSIsInZhbHVlIjoiWnhpdkFSQy9SWmZIa0ExSE0vL1R4SS80eTcybHREMHNDK3ZTaStwcDUrK25sUVd3dTVXTDFmYUU1aUpTM2ppWThBTWZGa25MMzdWTzNlVGVLQkV1bjZXQ1Z6ZTE3VSt6bGNYeEpVNENSRFVLTEFjL3g4TGV5WVQybFBMTS9sMW0iLCJtYWMiOiJjZDg3NzMyYWQ3MmVkNmQxYTVlMTIzZjllMDQyOGMxMGE2NjdhNjljNmJlOGY3YmY3OGJiYjMwMWE2MzhkMzczIiwidGFnIjoiIn0%3D; ident-dental-crm-session=eyJpdiI6IjU5bHFsc0c2QllWSUxsdUx5QUI1R3c9PSIsInZhbHVlIjoiM2lycmdKUDBiclFnbXNvNzdIUjdmb0orRDhNRWhFY0grenI0WnlzQnN0R1AyTjdCZXZMSThoN01xZHVHb3BNT3M4bWNobW9oVzArc3E4clVMa1dCVGNTZk5iaHphbXlEanBPbG12YWJYUFNlU012R0FJbno2aDlGa3pWVXpWY2wiLCJtYWMiOiI3NzczOGYxMzRkMDBiZTYzZjhlZTlkOWI1OWE4YmVhY2IwZmY0ZTQ3MDgwMTQ5YjkyYWNiNDQzMTQ1NDQ0NDE1IiwidGFnIjoiIn0%3D
+        - generic [ref=e339]:
+          - generic [ref=e340]: accept-language
+          - generic [ref=e342]: en-US,en;q=0.9
+        - generic [ref=e343]:
+          - generic [ref=e344]: accept-encoding
+          - generic [ref=e346]: gzip, deflate
+        - generic [ref=e347]:
+          - generic [ref=e348]: referer
+          - generic [ref=e350]: http://crm.test/admin/login
+        - generic [ref=e351]:
+          - generic [ref=e352]: accept
+          - generic [ref=e354]: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+        - generic [ref=e355]:
+          - generic [ref=e356]: user-agent
+          - generic [ref=e358]: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36
+        - generic [ref=e359]:
+          - generic [ref=e360]: upgrade-insecure-requests
+          - generic [ref=e362]: "1"
+        - generic [ref=e363]:
+          - generic [ref=e364]: connection
+          - generic [ref=e366]: keep-alive
+        - generic [ref=e367]:
+          - generic [ref=e368]: host
+          - generic [ref=e370]: crm.test
+    - generic [ref=e371]:
+      - heading "Body" [level=2] [ref=e372]
+      - code [ref=e377]:
+        - generic [ref=e378]: "{"
+        - generic [ref=e379]: "\"tab\": \"exam-treatment\""
+        - generic [ref=e380]: "}"
+    - generic [ref=e381]:
+      - heading "Routing" [level=2] [ref=e382]
+      - generic [ref=e383]:
+        - generic [ref=e384]:
+          - generic [ref=e385]: controller
+          - generic [ref=e387]: App\Filament\Resources\Patients\Pages\ViewPatient
+        - generic [ref=e388]:
+          - generic [ref=e389]: route name
+          - generic [ref=e391]: filament.admin.resources.patients.view
+        - generic [ref=e392]:
+          - generic [ref=e393]: middleware
+          - generic [ref=e395]: panel:admin, Illuminate\Cookie\Middleware\EncryptCookies, Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse, Illuminate\Session\Middleware\StartSession, Filament\Http\Middleware\AuthenticateSession, Illuminate\View\Middleware\ShareErrorsFromSession, Illuminate\Foundation\Http\Middleware\VerifyCsrfToken, Illuminate\Routing\Middleware\SubstituteBindings, Filament\Http\Middleware\DisableBladeIconComponents, Filament\Http\Middleware\DispatchServingFilamentEvent, Jeffgreco13\FilamentBreezy\Middleware\MustTwoFactor, Filament\Http\Middleware\Authenticate
+    - generic [ref=e396]:
+      - heading "Routing parameters" [level=2] [ref=e397]
+      - code [ref=e402]:
+        - generic [ref=e403]: "{"
+        - generic [ref=e404]: "\"record\": \"1\""
+        - generic [ref=e405]: "}"
+  - generic [ref=e408]:
+    - img [ref=e410]
+    - img [ref=e412]

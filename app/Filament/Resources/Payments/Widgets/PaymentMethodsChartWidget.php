@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Payments\Widgets;
 
 use App\Models\Payment;
-use Carbon\Carbon;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Widgets\ChartWidget;
 
 class PaymentMethodsChartWidget extends ChartWidget
@@ -25,18 +25,8 @@ class PaymentMethodsChartWidget extends ChartWidget
                 [
                     'label' => 'Doanh thu theo phương thức',
                     'data' => $data['values'],
-                    'backgroundColor' => [
-                        'rgba(34, 197, 94, 0.8)',   // Green for cash
-                        'rgba(59, 130, 246, 0.8)',   // Blue for card
-                        'rgba(251, 146, 60, 0.8)',   // Orange for transfer
-                        'rgba(156, 163, 175, 0.8)',  // Gray for other
-                    ],
-                    'borderColor' => [
-                        'rgb(34, 197, 94)',
-                        'rgb(59, 130, 246)',
-                        'rgb(251, 146, 60)',
-                        'rgb(156, 163, 175)',
-                    ],
+                    'backgroundColor' => $data['backgroundColor'],
+                    'borderColor' => $data['borderColor'],
                     'borderWidth' => 2,
                 ],
             ],
@@ -102,33 +92,43 @@ class PaymentMethodsChartWidget extends ChartWidget
             default => $query->thisMonth(),
         };
         
-        $methods = [
-            'cash' => '💵 Tiền mặt',
-            'card' => '💳 Thẻ',
-            'transfer' => '🏦 Chuyển khoản',
-            'other' => '📝 Khác',
-        ];
-        
+        $methods = ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true);
+
         $values = [];
         $labels = [];
-        
+        $backgroundColor = [];
+        $borderColor = [];
+        $colorMap = [
+            'cash' => ['rgba(34, 197, 94, 0.8)', 'rgb(34, 197, 94)'],
+            'card' => ['rgba(59, 130, 246, 0.8)', 'rgb(59, 130, 246)'],
+            'transfer' => ['rgba(251, 146, 60, 0.8)', 'rgb(251, 146, 60)'],
+            'vnpay' => ['rgba(99, 102, 241, 0.8)', 'rgb(99, 102, 241)'],
+            'other' => ['rgba(156, 163, 175, 0.8)', 'rgb(156, 163, 175)'],
+        ];
+
         foreach ($methods as $method => $label) {
             $amount = (clone $query)->where('method', $method)->sum('amount');
             if ($amount > 0) {
                 $values[] = $amount;
                 $labels[] = $label;
+                $backgroundColor[] = $colorMap[$method][0] ?? 'rgba(156, 163, 175, 0.8)';
+                $borderColor[] = $colorMap[$method][1] ?? 'rgb(156, 163, 175)';
             }
         }
-        
+
         // If no data, show empty state
         if (empty($values)) {
             $values = [0];
             $labels = ['Chưa có dữ liệu'];
+            $backgroundColor = ['rgba(156, 163, 175, 0.8)'];
+            $borderColor = ['rgb(156, 163, 175)'];
         }
-        
+
         return [
             'values' => $values,
             'labels' => $labels,
+            'backgroundColor' => $backgroundColor,
+            'borderColor' => $borderColor,
         ];
     }
 }

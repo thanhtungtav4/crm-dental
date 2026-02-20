@@ -1,0 +1,499 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - button "Collapse sidebar" [ref=e5] [cursor=pointer]:
+        - img [ref=e6]
+      - link "IDENT Dental CRM logo" [ref=e8] [cursor=pointer]:
+        - /url: http://crm.test/admin
+        - img "IDENT Dental CRM logo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Global search
+        - generic [ref=e15]:
+          - img [ref=e17]
+          - searchbox "Global search" [ref=e20]
+      - button "User menu" [ref=e23] [cursor=pointer]:
+        - img "Avatar of Super Admin" [ref=e24]
+  - generic [ref=e25]:
+    - complementary [ref=e27]:
+      - navigation [ref=e28]:
+        - list [ref=e29]:
+          - listitem [ref=e30]:
+            - list [ref=e31]:
+              - listitem [ref=e32]:
+                - link "Dashboard" [ref=e33] [cursor=pointer]:
+                  - /url: http://crm.test/admin
+                  - img [ref=e34]
+                  - generic [ref=e36]: Dashboard
+          - listitem [ref=e37]:
+            - button "Filament Shield Filament Shield" [ref=e38] [cursor=pointer]:
+              - generic [ref=e39]: Filament Shield
+              - button "Filament Shield" [expanded] [ref=e40]:
+                - img [ref=e41]
+            - list [ref=e43]:
+              - listitem [ref=e44]:
+                - link "Roles" [ref=e45] [cursor=pointer]:
+                  - /url: http://crm.test/admin/shield/roles
+                  - img [ref=e46]
+                  - generic [ref=e48]: Roles
+          - listitem [ref=e49]:
+            - button "2️⃣ Tài chính 2️⃣ Tài chính" [ref=e50] [cursor=pointer]:
+              - generic [ref=e51]: 2️⃣ Tài chính
+              - button "2️⃣ Tài chính" [expanded] [ref=e52]:
+                - img [ref=e53]
+            - list [ref=e55]:
+              - listitem [ref=e56]:
+                - link "Dashboard Tài chính" [ref=e57] [cursor=pointer]:
+                  - /url: http://crm.test/admin/financial-dashboard
+                  - img [ref=e58]
+                  - generic [ref=e60]: Dashboard Tài chính
+              - listitem [ref=e61]:
+                - link "Thanh toán" [ref=e62] [cursor=pointer]:
+                  - /url: http://crm.test/admin/payments
+                  - img [ref=e63]
+                  - generic [ref=e65]: Thanh toán
+              - listitem [ref=e66]:
+                - link "Hóa đơn" [ref=e67] [cursor=pointer]:
+                  - /url: http://crm.test/admin/invoices
+                  - img [ref=e68]
+                  - generic [ref=e70]: Hóa đơn
+          - listitem [ref=e71]:
+            - button "1️⃣ Hoạt động hàng ngày 1️⃣ Hoạt động hàng ngày" [ref=e72] [cursor=pointer]:
+              - generic [ref=e73]: 1️⃣ Hoạt động hàng ngày
+              - button "1️⃣ Hoạt động hàng ngày" [expanded] [ref=e74]:
+                - img [ref=e75]
+            - list [ref=e77]:
+              - listitem [ref=e78]:
+                - link "Lịch hẹn" [ref=e79] [cursor=pointer]:
+                  - /url: http://crm.test/admin/appointments
+                  - img [ref=e80]
+                  - generic [ref=e82]: Lịch hẹn
+              - listitem [ref=e83]:
+                - link "Bệnh nhân" [ref=e84] [cursor=pointer]:
+                  - /url: http://crm.test/admin/patients
+                  - img [ref=e85]
+                  - generic [ref=e87]: Bệnh nhân
+              - listitem [ref=e88]:
+                - link "Kế hoạch điều trị" [ref=e89] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-plans
+                  - img [ref=e90]
+                  - generic [ref=e92]: Kế hoạch điều trị
+              - listitem [ref=e93]:
+                - link "Phiên điều trị" [ref=e94] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-sessions
+                  - img [ref=e95]
+                  - generic [ref=e97]: Phiên điều trị
+          - listitem [ref=e98]:
+            - button "3️⃣ Quản lý khách hàng 3️⃣ Quản lý khách hàng" [ref=e99] [cursor=pointer]:
+              - generic [ref=e100]: 3️⃣ Quản lý khách hàng
+              - button "3️⃣ Quản lý khách hàng" [expanded] [ref=e101]:
+                - img [ref=e102]
+            - list [ref=e104]:
+              - listitem [ref=e105]:
+                - link "Khách hàng (Lead)" [ref=e106] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customers
+                  - img [ref=e107]
+                  - generic [ref=e109]: Khách hàng (Lead)
+              - listitem [ref=e110]:
+                - link "Nhóm khách hàng" [ref=e111] [cursor=pointer]:
+                  - /url: http://crm.test/admin/customer-groups
+                  - img [ref=e112]
+                  - generic [ref=e114]: Nhóm khách hàng
+              - listitem [ref=e115]:
+                - link "Nhóm khuyến mãi" [ref=e116] [cursor=pointer]:
+                  - /url: http://crm.test/admin/promotion-groups
+                  - img [ref=e117]
+                  - generic [ref=e119]: Nhóm khuyến mãi
+          - listitem [ref=e120]:
+            - button "4️⃣ Dịch vụ & Điều trị 4️⃣ Dịch vụ & Điều trị" [ref=e121] [cursor=pointer]:
+              - generic [ref=e122]: 4️⃣ Dịch vụ & Điều trị
+              - button "4️⃣ Dịch vụ & Điều trị" [expanded] [ref=e123]:
+                - img [ref=e124]
+            - list [ref=e126]:
+              - listitem [ref=e127]:
+                - link "Dịch vụ" [ref=e128] [cursor=pointer]:
+                  - /url: http://crm.test/admin/services
+                  - img [ref=e129]
+                  - generic [ref=e131]: Dịch vụ
+              - listitem [ref=e132]:
+                - link "Danh mục dịch vụ" [ref=e133] [cursor=pointer]:
+                  - /url: http://crm.test/admin/service-categories
+                  - img [ref=e134]
+                  - generic [ref=e136]: Danh mục dịch vụ
+              - listitem [ref=e137]:
+                - link "Hạng mục điều trị" [ref=e138] [cursor=pointer]:
+                  - /url: http://crm.test/admin/plan-items
+                  - img [ref=e139]
+                  - generic [ref=e141]: Hạng mục điều trị
+              - listitem [ref=e142]:
+                - link "Vật tư sử dụng" [ref=e143] [cursor=pointer]:
+                  - /url: http://crm.test/admin/treatment-materials
+                  - generic [ref=e147]: Vật tư sử dụng
+          - listitem [ref=e148]:
+            - button "5️⃣ Quản lý kho 5️⃣ Quản lý kho" [ref=e149] [cursor=pointer]:
+              - generic [ref=e150]: 5️⃣ Quản lý kho
+              - button "5️⃣ Quản lý kho" [expanded] [ref=e151]:
+                - img [ref=e152]
+            - list [ref=e154]:
+              - listitem [ref=e155]:
+                - link "Vật tư" [ref=e156] [cursor=pointer]:
+                  - /url: http://crm.test/admin/materials
+                  - img [ref=e157]
+                  - generic [ref=e159]: Vật tư
+              - listitem [ref=e160]:
+                - link "Lô vật tư" [ref=e161] [cursor=pointer]:
+                  - /url: http://crm.test/admin/material-batches
+                  - img [ref=e162]
+                  - generic [ref=e164]: Lô vật tư
+              - listitem [ref=e165]:
+                - link "Nhà cung cấp" [ref=e166] [cursor=pointer]:
+                  - /url: http://crm.test/admin/suppliers
+                  - img [ref=e167]
+                  - generic [ref=e169]: Nhà cung cấp
+          - listitem [ref=e170]:
+            - button "⚙️ Cài đặt ⚙️ Cài đặt" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]: ⚙️ Cài đặt
+              - button "⚙️ Cài đặt" [expanded] [ref=e173]:
+                - img [ref=e174]
+            - list [ref=e176]:
+              - listitem [ref=e177]:
+                - link "Nhóm bệnh" [ref=e178] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases/disease-groups
+                  - img [ref=e179]
+                  - generic [ref=e181]: Nhóm bệnh
+              - listitem [ref=e182]:
+                - link "Danh sách bệnh" [ref=e183] [cursor=pointer]:
+                  - /url: http://crm.test/admin/diseases
+                  - img [ref=e184]
+                  - generic [ref=e186]: Danh sách bệnh
+          - listitem [ref=e187]:
+            - button "6️⃣ Hệ thống 6️⃣ Hệ thống" [ref=e188] [cursor=pointer]:
+              - generic [ref=e189]: 6️⃣ Hệ thống
+              - button "6️⃣ Hệ thống" [expanded] [ref=e190]:
+                - img [ref=e191]
+            - list [ref=e193]:
+              - listitem [ref=e194]:
+                - link "Người dùng" [ref=e195] [cursor=pointer]:
+                  - /url: http://crm.test/admin/users
+                  - img [ref=e196]
+                  - generic [ref=e198]: Người dùng
+              - listitem [ref=e199]:
+                - link "Chi nhánh" [ref=e200] [cursor=pointer]:
+                  - /url: http://crm.test/admin/branches
+                  - img [ref=e201]
+                  - generic [ref=e203]: Chi nhánh
+    - main [ref=e205]:
+      - generic [ref=e207]:
+        - heading "Dashboard" [level=1] [ref=e210]
+        - generic [ref=e217]:
+          - generic [ref=e221]:
+            - img "Avatar of Super Admin" [ref=e222]
+            - generic [ref=e223]:
+              - heading "Welcome" [level=2] [ref=e224]
+              - paragraph [ref=e225]: Super Admin
+            - button "Sign out" [ref=e227] [cursor=pointer]:
+              - img [ref=e228]
+              - text: Sign out
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - link "Filament" [ref=e236] [cursor=pointer]:
+                - /url: https://filamentphp.com
+                - img "Filament" [ref=e237]
+              - paragraph [ref=e240]: v4.1.10
+            - generic [ref=e241]:
+              - link "Documentation" [ref=e242] [cursor=pointer]:
+                - /url: https://filamentphp.com/docs
+                - img [ref=e243]
+                - text: Documentation
+              - link "GitHub" [ref=e245] [cursor=pointer]:
+                - /url: https://github.com/filamentphp/filament
+                - img [ref=e247]
+                - text: GitHub
+          - generic [ref=e258]:
+            - generic [ref=e259]:
+              - heading "Pending Duplicate Detections" [level=2] [ref=e262]
+              - generic [ref=e265]:
+                - generic [ref=e266]: Search
+                - generic [ref=e267]:
+                  - img [ref=e269]
+                  - searchbox "Search" [ref=e272]
+            - table [ref=e274]:
+              - rowgroup [ref=e275]:
+                - row "Select/deselect all items for bulk actions. Source Record Potential Match Confidence Matches Detected Actions" [ref=e276]:
+                  - columnheader "Select/deselect all items for bulk actions." [ref=e277]:
+                    - checkbox "Select/deselect all items for bulk actions." [ref=e278]
+                  - columnheader "Source Record" [ref=e279]
+                  - columnheader "Potential Match" [ref=e280]
+                  - columnheader "Confidence" [ref=e281]:
+                    - button "Confidence" [ref=e282] [cursor=pointer]:
+                      - text: Confidence
+                      - img [ref=e283]
+                  - columnheader "Matches" [ref=e285]
+                  - columnheader "Detected" [ref=e286]:
+                    - button "Detected" [ref=e287] [cursor=pointer]:
+                      - text: Detected
+                      - img [ref=e288]
+                  - columnheader "Actions" [ref=e290]
+              - rowgroup [ref=e291]:
+                - 'row "Select/deselect item 1 for bulk actions. Customer: Đặng Georgiana (ID: 1) Customer: Đặng Georgiana (ID: 1) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e292]':
+                  - cell "Select/deselect item 1 for bulk actions." [ref=e293]:
+                    - checkbox "Select/deselect item 1 for bulk actions." [ref=e294]
+                  - 'cell "Customer: Đặng Georgiana (ID: 1)" [ref=e295]':
+                    - generic [ref=e297]: "Customer: Đặng Georgiana (ID: 1)"
+                  - 'cell "Customer: Đặng Georgiana (ID: 1)" [ref=e298]':
+                    - generic [ref=e300]: "Customer: Đặng Georgiana (ID: 1)"
+                  - cell "95.0%" [ref=e301]:
+                    - generic [ref=e304]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e305]:
+                    - generic [ref=e308]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e309]:
+                    - generic [ref=e311]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e312]:
+                    - generic [ref=e313]:
+                      - button "Review" [ref=e314] [cursor=pointer]:
+                        - img [ref=e315]
+                        - text: Review
+                      - button "Dismiss" [ref=e318] [cursor=pointer]:
+                        - img [ref=e319]
+                        - text: Dismiss
+                - 'row "Select/deselect item 2 for bulk actions. Customer: Huỳnh Miller (ID: 2) Customer: Huỳnh Miller (ID: 2) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e321]':
+                  - cell "Select/deselect item 2 for bulk actions." [ref=e322]:
+                    - checkbox "Select/deselect item 2 for bulk actions." [ref=e323]
+                  - 'cell "Customer: Huỳnh Miller (ID: 2)" [ref=e324]':
+                    - generic [ref=e326]: "Customer: Huỳnh Miller (ID: 2)"
+                  - 'cell "Customer: Huỳnh Miller (ID: 2)" [ref=e327]':
+                    - generic [ref=e329]: "Customer: Huỳnh Miller (ID: 2)"
+                  - cell "95.0%" [ref=e330]:
+                    - generic [ref=e333]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e334]:
+                    - generic [ref=e337]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e338]:
+                    - generic [ref=e340]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e341]:
+                    - generic [ref=e342]:
+                      - button "Review" [ref=e343] [cursor=pointer]:
+                        - img [ref=e344]
+                        - text: Review
+                      - button "Dismiss" [ref=e347] [cursor=pointer]:
+                        - img [ref=e348]
+                        - text: Dismiss
+                - 'row "Select/deselect item 3 for bulk actions. Customer: Phạm Isaac (ID: 3) Customer: Phạm Isaac (ID: 3) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e350]':
+                  - cell "Select/deselect item 3 for bulk actions." [ref=e351]:
+                    - checkbox "Select/deselect item 3 for bulk actions." [ref=e352]
+                  - 'cell "Customer: Phạm Isaac (ID: 3)" [ref=e353]':
+                    - generic [ref=e355]: "Customer: Phạm Isaac (ID: 3)"
+                  - 'cell "Customer: Phạm Isaac (ID: 3)" [ref=e356]':
+                    - generic [ref=e358]: "Customer: Phạm Isaac (ID: 3)"
+                  - cell "95.0%" [ref=e359]:
+                    - generic [ref=e362]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e363]:
+                    - generic [ref=e366]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e367]:
+                    - generic [ref=e369]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e370]:
+                    - generic [ref=e371]:
+                      - button "Review" [ref=e372] [cursor=pointer]:
+                        - img [ref=e373]
+                        - text: Review
+                      - button "Dismiss" [ref=e376] [cursor=pointer]:
+                        - img [ref=e377]
+                        - text: Dismiss
+                - 'row "Select/deselect item 4 for bulk actions. Customer: Hoàng Trevor (ID: 4) Customer: Hoàng Trevor (ID: 4) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e379]':
+                  - cell "Select/deselect item 4 for bulk actions." [ref=e380]:
+                    - checkbox "Select/deselect item 4 for bulk actions." [ref=e381]
+                  - 'cell "Customer: Hoàng Trevor (ID: 4)" [ref=e382]':
+                    - generic [ref=e384]: "Customer: Hoàng Trevor (ID: 4)"
+                  - 'cell "Customer: Hoàng Trevor (ID: 4)" [ref=e385]':
+                    - generic [ref=e387]: "Customer: Hoàng Trevor (ID: 4)"
+                  - cell "95.0%" [ref=e388]:
+                    - generic [ref=e391]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e392]:
+                    - generic [ref=e395]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e396]:
+                    - generic [ref=e398]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e399]:
+                    - generic [ref=e400]:
+                      - button "Review" [ref=e401] [cursor=pointer]:
+                        - img [ref=e402]
+                        - text: Review
+                      - button "Dismiss" [ref=e405] [cursor=pointer]:
+                        - img [ref=e406]
+                        - text: Dismiss
+                - 'row "Select/deselect item 5 for bulk actions. Customer: Hoàng Annamae (ID: 5) Customer: Hoàng Annamae (ID: 5) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e408]':
+                  - cell "Select/deselect item 5 for bulk actions." [ref=e409]:
+                    - checkbox "Select/deselect item 5 for bulk actions." [ref=e410]
+                  - 'cell "Customer: Hoàng Annamae (ID: 5)" [ref=e411]':
+                    - generic [ref=e413]: "Customer: Hoàng Annamae (ID: 5)"
+                  - 'cell "Customer: Hoàng Annamae (ID: 5)" [ref=e414]':
+                    - generic [ref=e416]: "Customer: Hoàng Annamae (ID: 5)"
+                  - cell "95.0%" [ref=e417]:
+                    - generic [ref=e420]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e421]:
+                    - generic [ref=e424]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e425]:
+                    - generic [ref=e427]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e428]:
+                    - generic [ref=e429]:
+                      - button "Review" [ref=e430] [cursor=pointer]:
+                        - img [ref=e431]
+                        - text: Review
+                      - button "Dismiss" [ref=e434] [cursor=pointer]:
+                        - img [ref=e435]
+                        - text: Dismiss
+                - 'row "Select/deselect item 6 for bulk actions. Customer: Trần Carmen (ID: 6) Customer: Trần Carmen (ID: 6) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e437]':
+                  - cell "Select/deselect item 6 for bulk actions." [ref=e438]:
+                    - checkbox "Select/deselect item 6 for bulk actions." [ref=e439]
+                  - 'cell "Customer: Trần Carmen (ID: 6)" [ref=e440]':
+                    - generic [ref=e442]: "Customer: Trần Carmen (ID: 6)"
+                  - 'cell "Customer: Trần Carmen (ID: 6)" [ref=e443]':
+                    - generic [ref=e445]: "Customer: Trần Carmen (ID: 6)"
+                  - cell "95.0%" [ref=e446]:
+                    - generic [ref=e449]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e450]:
+                    - generic [ref=e453]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e454]:
+                    - generic [ref=e456]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e457]:
+                    - generic [ref=e458]:
+                      - button "Review" [ref=e459] [cursor=pointer]:
+                        - img [ref=e460]
+                        - text: Review
+                      - button "Dismiss" [ref=e463] [cursor=pointer]:
+                        - img [ref=e464]
+                        - text: Dismiss
+                - 'row "Select/deselect item 7 for bulk actions. Customer: Trần Rigoberto (ID: 7) Customer: Trần Rigoberto (ID: 7) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e466]':
+                  - cell "Select/deselect item 7 for bulk actions." [ref=e467]:
+                    - checkbox "Select/deselect item 7 for bulk actions." [ref=e468]
+                  - 'cell "Customer: Trần Rigoberto (ID: 7)" [ref=e469]':
+                    - generic [ref=e471]: "Customer: Trần Rigoberto (ID: 7)"
+                  - 'cell "Customer: Trần Rigoberto (ID: 7)" [ref=e472]':
+                    - generic [ref=e474]: "Customer: Trần Rigoberto (ID: 7)"
+                  - cell "95.0%" [ref=e475]:
+                    - generic [ref=e478]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e479]:
+                    - generic [ref=e482]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e483]:
+                    - generic [ref=e485]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e486]:
+                    - generic [ref=e487]:
+                      - button "Review" [ref=e488] [cursor=pointer]:
+                        - img [ref=e489]
+                        - text: Review
+                      - button "Dismiss" [ref=e492] [cursor=pointer]:
+                        - img [ref=e493]
+                        - text: Dismiss
+                - 'row "Select/deselect item 8 for bulk actions. Customer: Phan Randal (ID: 8) Customer: Phan Randal (ID: 8) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e495]':
+                  - cell "Select/deselect item 8 for bulk actions." [ref=e496]:
+                    - checkbox "Select/deselect item 8 for bulk actions." [ref=e497]
+                  - 'cell "Customer: Phan Randal (ID: 8)" [ref=e498]':
+                    - generic [ref=e500]: "Customer: Phan Randal (ID: 8)"
+                  - 'cell "Customer: Phan Randal (ID: 8)" [ref=e501]':
+                    - generic [ref=e503]: "Customer: Phan Randal (ID: 8)"
+                  - cell "95.0%" [ref=e504]:
+                    - generic [ref=e507]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e508]:
+                    - generic [ref=e511]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e512]:
+                    - generic [ref=e514]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e515]:
+                    - generic [ref=e516]:
+                      - button "Review" [ref=e517] [cursor=pointer]:
+                        - img [ref=e518]
+                        - text: Review
+                      - button "Dismiss" [ref=e521] [cursor=pointer]:
+                        - img [ref=e522]
+                        - text: Dismiss
+                - 'row "Select/deselect item 9 for bulk actions. Customer: Võ Janessa (ID: 9) Customer: Võ Janessa (ID: 9) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e524]':
+                  - cell "Select/deselect item 9 for bulk actions." [ref=e525]:
+                    - checkbox "Select/deselect item 9 for bulk actions." [ref=e526]
+                  - 'cell "Customer: Võ Janessa (ID: 9)" [ref=e527]':
+                    - generic [ref=e529]: "Customer: Võ Janessa (ID: 9)"
+                  - 'cell "Customer: Võ Janessa (ID: 9)" [ref=e530]':
+                    - generic [ref=e532]: "Customer: Võ Janessa (ID: 9)"
+                  - cell "95.0%" [ref=e533]:
+                    - generic [ref=e536]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e537]:
+                    - generic [ref=e540]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e541]:
+                    - generic [ref=e543]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e544]:
+                    - generic [ref=e545]:
+                      - button "Review" [ref=e546] [cursor=pointer]:
+                        - img [ref=e547]
+                        - text: Review
+                      - button "Dismiss" [ref=e550] [cursor=pointer]:
+                        - img [ref=e551]
+                        - text: Dismiss
+                - 'row "Select/deselect item 10 for bulk actions. Customer: Đặng Sadye (ID: 10) Customer: Đặng Sadye (ID: 10) 95.0% Name, Phone, Email Jan 24, 2026 15:25:48 Review Dismiss" [ref=e553]':
+                  - cell "Select/deselect item 10 for bulk actions." [ref=e554]:
+                    - checkbox "Select/deselect item 10 for bulk actions." [ref=e555]
+                  - 'cell "Customer: Đặng Sadye (ID: 10)" [ref=e556]':
+                    - generic [ref=e558]: "Customer: Đặng Sadye (ID: 10)"
+                  - 'cell "Customer: Đặng Sadye (ID: 10)" [ref=e559]':
+                    - generic [ref=e561]: "Customer: Đặng Sadye (ID: 10)"
+                  - cell "95.0%" [ref=e562]:
+                    - generic [ref=e565]: 95.0%
+                  - cell "Name, Phone, Email" [ref=e566]:
+                    - generic [ref=e569]: Name, Phone, Email
+                  - cell "Jan 24, 2026 15:25:48" [ref=e570]:
+                    - generic [ref=e572]: Jan 24, 2026 15:25:48
+                  - cell "Review Dismiss" [ref=e573]:
+                    - generic [ref=e574]:
+                      - button "Review" [ref=e575] [cursor=pointer]:
+                        - img [ref=e576]
+                        - text: Review
+                      - button "Dismiss" [ref=e579] [cursor=pointer]:
+                        - img [ref=e580]
+                        - text: Dismiss
+            - navigation "Pagination navigation" [ref=e582]:
+              - generic [ref=e585]:
+                - generic [ref=e587]: Per page
+                - combobox "Per page" [ref=e589]:
+                  - option "10" [selected]
+                  - option "25"
+                  - option "50"
+              - button "Next" [ref=e590] [cursor=pointer]
+          - generic [ref=e597]:
+            - generic [ref=e601]:
+              - generic [ref=e603]: Khách hàng mới (Hôm nay)
+              - generic [ref=e604]: "0"
+              - generic [ref=e605]:
+                - generic [ref=e606]: Lead & Khách vãng lai
+                - img [ref=e607]
+            - generic [ref=e612]:
+              - generic [ref=e614]: Lịch hẹn hôm nay
+              - generic [ref=e615]: "0"
+              - generic [ref=e616]:
+                - generic [ref=e617]: Tổng số ca đặt lịch
+                - img [ref=e618]
+            - generic [ref=e624]:
+              - generic [ref=e626]: Chờ xác nhận
+              - generic [ref=e627]: "0"
+              - generic [ref=e628]:
+                - generic [ref=e629]: Lịch hẹn chưa xác nhận
+                - img [ref=e630]
+          - generic [ref=e638]:
+            - generic "Tổng doanh thu từ các khoản thanh toán hôm nay" [ref=e641]:
+              - generic [ref=e642]:
+                - generic [ref=e644]: Doanh thu hôm nay
+                - generic [ref=e645]: 0đ
+                - generic [ref=e646]:
+                  - generic [ref=e647]: Không có thay đổi
+                  - img [ref=e648]
+            - generic "Tổng doanh thu tháng 02/2026" [ref=e654]:
+              - generic [ref=e655]:
+                - generic [ref=e657]: Doanh thu tháng này
+                - generic [ref=e658]: 0đ
+                - generic [ref=e659]:
+                  - generic [ref=e660]: Không có thay đổi
+                  - img [ref=e661]
+            - link "Tổng công nợ 0đ Không có quá hạn" [ref=e665] [cursor=pointer]:
+              - /url: http://crm.test/admin/invoices?tableFilters%5Bstatus%5D%5Bvalues%5D%5B0%5D=overdue&tableFilters%5Bstatus%5D%5Bvalues%5D%5B1%5D=partial
+              - generic [ref=e666]:
+                - generic [ref=e668]: Tổng công nợ
+                - generic [ref=e669]: 0đ
+                - generic [ref=e670]:
+                  - generic [ref=e671]: Không có quá hạn
+                  - img [ref=e672]
+  - generic:
+    - status

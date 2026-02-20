@@ -3,15 +3,18 @@
 namespace App\Observers;
 
 use App\Models\Appointment;
+use App\Services\CareTicketService;
 use App\Services\PatientConversionService;
 
 class AppointmentObserver
 {
     protected PatientConversionService $conversionService;
+    protected CareTicketService $careTicketService;
 
-    public function __construct(PatientConversionService $conversionService)
+    public function __construct(PatientConversionService $conversionService, CareTicketService $careTicketService)
     {
         $this->conversionService = $conversionService;
+        $this->careTicketService = $careTicketService;
     }
 
     /**
@@ -19,7 +22,7 @@ class AppointmentObserver
      */
     public function created(Appointment $appointment): void
     {
-        //
+        $this->careTicketService->syncAppointment($appointment);
     }
 
     /**
@@ -30,6 +33,10 @@ class AppointmentObserver
         // Tự động chuyển Customer thành Patient khi appointment hoàn thành
         if ($appointment->wasChanged('status') && $appointment->status === 'done') {
             $this->handleConversion($appointment);
+        }
+
+        if ($appointment->wasChanged(['status', 'date', 'assigned_to', 'doctor_id', 'patient_id', 'note'])) {
+            $this->careTicketService->syncAppointment($appointment);
         }
     }
 
@@ -62,7 +69,7 @@ class AppointmentObserver
      */
     public function deleted(Appointment $appointment): void
     {
-        //
+        $this->careTicketService->cancelBySource(Appointment::class, $appointment->id, 'appointment_reminder');
     }
 
     /**

@@ -28,11 +28,11 @@ class ServiceCategoryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Danh mục dịch vụ';
 
-    protected static ?int $navigationSort = 32;
+    protected static ?int $navigationSort = 4;
     
     public static function getNavigationGroup(): ?string
     {
-        return '4️⃣ Dịch vụ & Điều trị';
+        return 'Cài đặt hệ thống';
     }
 
     public static function form(Schema $schema): Schema

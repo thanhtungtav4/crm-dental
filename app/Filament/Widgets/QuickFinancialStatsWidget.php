@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\InstallmentPlan;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Filament\Support\Icons\Heroicon;
@@ -33,12 +32,6 @@ class QuickFinancialStatsWidget extends StatsOverviewWidget
         $transferPayments = Payment::transfer()->sum('amount');
         $nonCashTotal = $cardPayments + $transferPayments;
         $cashPercentage = $totalRevenue > 0 ? round(($cashPayments / $totalRevenue) * 100, 1) : 0;
-        
-        // Installment plans stats
-        $totalPlans = InstallmentPlan::count();
-        $activePlans = InstallmentPlan::active()->count();
-        $completedPlans = InstallmentPlan::completed()->count();
-        $completionRate = $totalPlans > 0 ? round(($completedPlans / $totalPlans) * 100, 1) : 0;
         
         // Average invoice value
         $avgInvoice = $totalInvoices > 0 ? Invoice::avg('total_amount') : 0;
@@ -78,15 +71,6 @@ class QuickFinancialStatsWidget extends StatsOverviewWidget
                 ->color('info')
                 ->extraAttributes([
                     'title' => 'So sánh thanh toán tiền mặt và phi tiền mặt',
-                ]),
-            
-            Stat::make('Kế hoạch trả góp', $totalPlans . ' kế hoạch')
-                ->description("{$completedPlans} hoàn thành ({$completionRate}%) | {$activePlans} đang hoạt động")
-                ->descriptionIcon(Heroicon::OutlinedCreditCard)
-                ->color($activePlans > 0 ? 'success' : 'gray')
-                ->url(route('filament.admin.resources.installment-plans.index'))
-                ->extraAttributes([
-                    'title' => 'Tổng số kế hoạch trả góp và trạng thái',
                 ]),
             
             Stat::make('Giá trị HĐ trung bình', number_format($avgInvoice, 0, ',', '.') . 'đ')
