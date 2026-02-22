@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Table;
@@ -110,7 +111,7 @@ class ToothConditionsRelationManager extends RelationManager
                         DatePicker::make('completed_at')
                             ->label('Ngày hoàn thành')
                             ->visible(
-                                fn(\Filament\Forms\Get $get): bool =>
+                                fn(Get $get): bool =>
                                 $get('treatment_status') === PatientToothCondition::STATUS_COMPLETED
                             ),
 

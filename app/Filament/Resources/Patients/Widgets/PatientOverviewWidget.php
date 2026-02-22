@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Widgets;
 
+use App\Models\Appointment;
 use App\Models\Patient;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -29,20 +30,20 @@ class PatientOverviewWidget extends BaseWidget
         $appointmentsCount = $this->record->appointments()->count();
         $upcomingAppointments = $this->record->appointments()
             ->where('date', '>', now())
-            ->whereIn('status', ['scheduled', 'confirmed'])
+            ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
             ->count();
 
         $totalSpent = $this->record->invoices()->where('status', 'paid')->sum('total_amount');
         $totalPaid = $this->record->invoices()->sum('paid_amount');
 
         $lastVisit = $this->record->appointments()
-            ->where('status', 'completed')
+            ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))
             ->latest('date')
             ->first();
 
         $nextAppointment = $this->record->appointments()
             ->where('date', '>', now())
-            ->whereIn('status', ['scheduled', 'confirmed'])
+            ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
             ->oldest('date')
             ->first();
 

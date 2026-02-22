@@ -1,20 +1,24 @@
 @php
+    use App\Models\Appointment;
+
     // Eager-load relationships to build richer event data
-    $appointments = \App\Models\Appointment::query()
+    $appointments = Appointment::query()
         ->with(['patient:id,full_name,phone,email','doctor:id,name,phone,specialty','branch:id,name'])
         ->get();
 
     $statusColors = [
-        'scheduled' => ['#3b82f6', '#1d4ed8'],    // blue
-        'confirmed' => ['#10b981', '#059669'],    // green
-        'completed' => ['#6b7280', '#4b5563'],    // gray
-        'cancelled' => ['#ef4444', '#b91c1c'],    // red
-        'pending'   => ['#f59e0b', '#d97706'],    // amber (fallback)
+        Appointment::STATUS_SCHEDULED => ['#3b82f6', '#1d4ed8'],      // blue
+        Appointment::STATUS_CONFIRMED => ['#10b981', '#059669'],      // green
+        Appointment::STATUS_IN_PROGRESS => ['#f59e0b', '#d97706'],    // amber
+        Appointment::STATUS_COMPLETED => ['#6b7280', '#4b5563'],      // gray
+        Appointment::STATUS_CANCELLED => ['#ef4444', '#b91c1c'],      // red
+        Appointment::STATUS_NO_SHOW => ['#9ca3af', '#6b7280'],        // muted gray
     ];
 
     $events = $appointments->map(function ($a) use ($statusColors) {
-        $status = $a->status ?: 'pending';
-        [$bg, $bd] = $statusColors[$status] ?? $statusColors['pending'];
+        $status = Appointment::normalizeStatus($a->status) ?? Appointment::DEFAULT_STATUS;
+        $statusLabel = Appointment::statusLabel($status);
+        [$bg, $bd] = $statusColors[$status] ?? $statusColors[Appointment::DEFAULT_STATUS];
         $patient = optional($a->patient);
         $doctor = optional($a->doctor);
         $branch = optional($a->branch);
@@ -29,6 +33,7 @@
             'textColor' => '#ffffff',
             'extendedProps' => [
                 'status' => $status,
+                'statusLabel' => $statusLabel,
                 'note' => $a->note,
                 'patient' => $patient->full_name,
                 'doctor' => $doctor->name,
@@ -65,7 +70,7 @@
         </div>
 
         <div x-data="calendar()" x-init="init(@js($events), @js($statusColors))">
-            <div id="calendar" class="w-full bg-white rounded-lg shadow ring-1 ring-gray-200" style="min-height: 740px;"></div>
+            <div id="calendar" class="w-full bg-white rounded-lg shadow ring-1 ring-gray-200 crm-calendar-shell"></div>
         </div>
     </div>
 </x-filament::section>
@@ -124,7 +129,7 @@ function calendar() {
                         p.patient ? `BN: ${p.patient}` : null,
                         p.doctor ? `BS: ${p.doctor}` : null,
                         p.branch ? `CN: ${p.branch}` : null,
-                        p.status ? `TT: ${p.status}` : null,
+                        p.statusLabel ? `TT: ${p.statusLabel}` : null,
                         p.note ? `Ghi chú: ${p.note}` : null,
                     ].filter(Boolean).join('\n')
                     info.el.setAttribute('title', tip)

@@ -14,36 +14,29 @@
         {{-- Patient Overview Card --}}
         <div class="mb-8">
             <div
-                class="rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 overflow-hidden">
-                {{-- Header with inline style for reliability --}}
-                <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 24px 32px;">
-                    <div style="display: flex; align-items: center; gap: 24px;">
+                class="crm-patient-overview-card rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 overflow-hidden">
+                <div class="crm-patient-overview-header">
+                    <div class="crm-patient-overview-header-inner">
                         {{-- Avatar --}}
-                        <div
-                            style="width: 72px; height: 72px; min-width: 72px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <div class="crm-patient-avatar">
                             {{ strtoupper(substr($this->record->full_name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $this->record->full_name)[count(explode(' ', $this->record->full_name)) - 1] ?? '', 0, 1)) }}
                         </div>
                         {{-- Name & Basic Info --}}
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                <h2 style="font-size: 22px; font-weight: 700; color: white; margin: 0;">
+                        <div class="crm-patient-identity">
+                            <div class="crm-patient-identity-row">
+                                <h2 class="crm-patient-name">
                                     {{ $this->record->full_name }}</h2>
                                 @if($this->record->gender === 'male')
-                                    <span
-                                        style="background: rgba(96,165,250,0.5); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white;">Nam</span>
+                                    <span class="crm-patient-gender-badge is-male">Nam</span>
                                 @elseif($this->record->gender === 'female')
-                                    <span
-                                        style="background: rgba(244,114,182,0.5); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white;">Nữ</span>
+                                    <span class="crm-patient-gender-badge is-female">Nữ</span>
                                 @endif
                             </div>
-                            <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 6px 0 0 0;">
+                            <p class="crm-patient-code">
                                 {{ $this->record->patient_code }}</p>
                             @if($this->record->phone)
-                                <a href="tel:{{ $this->record->phone }}"
-                                    style="display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 8px; color: white; font-size: 14px; font-weight: 500; text-decoration: none; transition: background 0.2s;"
-                                    onmouseover="this.style.background='rgba(255,255,255,0.25)'"
-                                    onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-                                    <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
+                                <a href="tel:{{ $this->record->phone }}" class="crm-patient-phone-chip">
+                                    <svg class="crm-patient-phone-chip-icon" fill="currentColor" viewBox="0 0 20 20">
                                         <path
                                             d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                     </svg>
@@ -55,128 +48,101 @@
                 </div>
                 {{-- Info Grid with Cards --}}
                 <div class="p-6">
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;"
-                        class="lg:!grid-cols-4">
+                    <div class="crm-patient-info-grid">
                         {{-- Phone Card --}}
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 16px;"
-                            class="dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div style="width: 32px; height: 32px; background: #dbeafe; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
-                                    class="dark:bg-blue-900/30">
-                                    <svg style="color: #2563eb; width: 16px; height: 16px;" class="dark:text-blue-400"
-                                        fill="currentColor" viewBox="0 0 20 20">
+                        <div class="crm-patient-info-card is-phone">
+                            <div class="crm-patient-info-card-head">
+                                <div class="crm-patient-info-icon">
+                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path
                                             d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                     </svg>
                                 </div>
-                                <span
-                                    style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 500;">Điện
-                                    thoại</span>
+                                <span class="crm-patient-info-label">Điện thoại</span>
                             </div>
-                            <p style="color: #111827; font-weight: 600; font-size: 14px;" class="dark:text-white">
+                            <p class="crm-patient-info-value">
                                 @if($this->record->phone)
                                     <a href="tel:{{ $this->record->phone }}"
-                                        class="hover:text-blue-600">{{ $this->record->phone }}</a>
+                                        class="crm-patient-info-link">{{ $this->record->phone }}</a>
                                 @else
-                                    <span style="color: #9ca3af;">Chưa có</span>
+                                    <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
                             </p>
                         </div>
                         {{-- Email Card --}}
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 16px;"
-                            class="dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div style="width: 32px; height: 32px; background: #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
-                                    class="dark:bg-green-900/30">
-                                    <svg style="color: #16a34a; width: 16px; height: 16px;" class="dark:text-green-400"
-                                        fill="currentColor" viewBox="0 0 20 20">
+                        <div class="crm-patient-info-card is-email">
+                            <div class="crm-patient-info-card-head">
+                                <div class="crm-patient-info-icon">
+                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path
                                             d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                                         <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                     </svg>
                                 </div>
-                                <span
-                                    style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 500;">Email</span>
+                                <span class="crm-patient-info-label">Email</span>
                             </div>
-                            <p style="color: #111827; font-weight: 600; font-size: 14px;"
-                                class="dark:text-white truncate" title="{{ $this->record->email }}">
+                            <p class="crm-patient-info-value is-truncate" title="{{ $this->record->email }}">
                                 @if($this->record->email)
                                     <a href="mailto:{{ $this->record->email }}"
-                                        class="hover:text-blue-600">{{ $this->record->email }}</a>
+                                        class="crm-patient-info-link">{{ $this->record->email }}</a>
                                 @else
-                                    <span style="color: #9ca3af;">Chưa có</span>
+                                    <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
                             </p>
                         </div>
                         {{-- Birthday Card --}}
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 16px;"
-                            class="dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div style="width: 32px; height: 32px; background: #f3e8ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
-                                    class="dark:bg-purple-900/30">
-                                    <svg style="color: #9333ea; width: 16px; height: 16px;" class="dark:text-purple-400"
-                                        fill="currentColor" viewBox="0 0 20 20">
+                        <div class="crm-patient-info-card is-birthday">
+                            <div class="crm-patient-info-card-head">
+                                <div class="crm-patient-info-icon">
+                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
                                             d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
                                             clip-rule="evenodd" />
                                     </svg>
                                 </div>
-                                <span
-                                    style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 500;">Ngày
-                                    sinh</span>
+                                <span class="crm-patient-info-label">Ngày sinh</span>
                             </div>
-                            <p style="color: #111827; font-weight: 600; font-size: 14px;" class="dark:text-white">
+                            <p class="crm-patient-info-value">
                                 @if($this->record->birthday)
                                     {{ \Carbon\Carbon::parse($this->record->birthday)->format('d/m/Y') }}
-                                    <span
-                                        style="color: #6b7280; font-weight: 400; font-size: 12px; margin-left: 4px;">({{ \Carbon\Carbon::parse($this->record->birthday)->age }}
+                                    <span class="crm-patient-info-age">({{ \Carbon\Carbon::parse($this->record->birthday)->age }}
                                         tuổi)</span>
                                 @else
-                                    <span style="color: #9ca3af;">Chưa có</span>
+                                    <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
                             </p>
                         </div>
                         {{-- Branch Card --}}
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 16px;"
-                            class="dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div style="width: 32px; height: 32px; background: #fef3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
-                                    class="dark:bg-amber-900/30">
-                                    <svg style="color: #d97706; width: 16px; height: 16px;" class="dark:text-amber-400"
-                                        fill="currentColor" viewBox="0 0 20 20">
+                        <div class="crm-patient-info-card is-branch">
+                            <div class="crm-patient-info-card-head">
+                                <div class="crm-patient-info-icon">
+                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
                                             d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4z"
                                             clip-rule="evenodd" />
                                     </svg>
                                 </div>
-                                <span
-                                    style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 500;">Chi
-                                    nhánh</span>
+                                <span class="crm-patient-info-label">Chi nhánh</span>
                             </div>
-                            <p style="color: #2563eb; font-weight: 600; font-size: 14px;" class="dark:text-blue-400">
+                            <p class="crm-patient-info-value is-branch">
                                 {{ $this->record->branch?->name ?? 'Chưa phân bổ' }}
                             </p>
                         </div>
                     </div>
                     @if($this->record->address)
                         {{-- Address Card --}}
-                        <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-top: 16px;"
-                            class="dark:bg-gray-800">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div style="width: 32px; height: 32px; background: #fee2e2; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
-                                    class="dark:bg-red-900/30">
-                                    <svg style="color: #dc2626; width: 16px; height: 16px;" class="dark:text-red-400"
-                                        fill="currentColor" viewBox="0 0 20 20">
+                        <div class="crm-patient-address-card is-address">
+                            <div class="crm-patient-info-card-head">
+                                <div class="crm-patient-info-icon">
+                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
                                             d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
                                             clip-rule="evenodd" />
                                     </svg>
                                 </div>
-                                <span
-                                    style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 500;">Địa
-                                    chỉ</span>
+                                <span class="crm-patient-info-label">Địa chỉ</span>
                             </div>
-                            <p style="color: #111827; font-weight: 500; font-size: 14px;" class="dark:text-white">
+                            <p class="crm-patient-address-value">
                                 {{ $this->record->address }}</p>
                         </div>
                     @endif
@@ -288,7 +254,7 @@
                                 <span class="crm-section-badge">{{ $treatmentProgress->count() }} phiên</span>
                             </div>
 
-                            <div class="crm-treatment-card rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" style="border-radius: 8px; overflow: hidden;">
+                            <div class="crm-treatment-card rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                                 <div class="crm-treatment-subhead flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                     <div class="crm-treatment-subhead-title text-sm font-semibold text-gray-900 dark:text-white">Tiến trình điều trị</div>
                                     <div class="flex items-center gap-2">
@@ -301,19 +267,19 @@
                                     </div>
                                 </div>
 
-                                <div class="crm-treatment-table-wrap" style="overflow-x: auto;">
-                                    <table class="crm-treatment-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                                        <thead style="background: #4b4b4b; color: #ffffff;">
+                                <div class="crm-treatment-table-wrap">
+                                    <table class="crm-treatment-table">
+                                        <thead>
                                             <tr>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Ngày điều trị</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Răng số</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Thủ thuật</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Nội dung thủ thuật</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Bác sĩ</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Trợ thủ</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">S.L</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Đơn giá</th>
-                                                <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Tình trạng</th>
+                                                <th>Ngày điều trị</th>
+                                                <th>Răng số</th>
+                                                <th>Thủ thuật</th>
+                                                <th>Nội dung thủ thuật</th>
+                                                <th>Bác sĩ</th>
+                                                <th>Trợ thủ</th>
+                                                <th class="is-center">S.L</th>
+                                                <th class="is-right">Đơn giá</th>
+                                                <th>Tình trạng</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -321,12 +287,12 @@
                                                 @php
                                                     $performedAt = $session->performed_at ?? $session->start_at ?? $session->created_at;
                                                     $statusLabel = match ($session->status) {
-                                                        'done' => 'Hoàn thành',
+                                                        'done', 'completed' => 'Hoàn thành',
                                                         'follow_up' => 'Tái khám',
                                                         default => 'Đã lên lịch',
                                                     };
                                                     $statusClass = match ($session->status) {
-                                                        'done' => 'is-completed',
+                                                        'done', 'completed' => 'is-completed',
                                                         'follow_up' => 'is-progress',
                                                         default => 'is-default',
                                                     };
@@ -335,15 +301,15 @@
                                                     $sessionPrice = (float) ($session->planItem?->price ?? 0);
                                                 @endphp
                                                 <tr>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $performedAt?->format('d/m/Y H:i') ?? '-' }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $toothLabel }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->planItem?->name ?? '-' }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->procedure ?: ($session->notes ?: '-') }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->doctor?->name ?? '-' }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">{{ $session->assistant?->name ?? '-' }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db; text-align: center;">{{ $sessionQty }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($sessionPrice) }}</td>
-                                                    <td style="padding: 8px 10px; border-bottom: 1px solid #d1d5db;">
+                                                    <td>{{ $performedAt?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                    <td>{{ $toothLabel }}</td>
+                                                    <td>{{ $session->planItem?->name ?? '-' }}</td>
+                                                    <td>{{ $session->procedure ?: ($session->notes ?: '-') }}</td>
+                                                    <td>{{ $session->doctor?->name ?? '-' }}</td>
+                                                    <td>{{ $session->assistant?->name ?? '-' }}</td>
+                                                    <td class="is-center">{{ $sessionQty }}</td>
+                                                    <td class="is-right">{{ $formatMoney($sessionPrice) }}</td>
+                                                    <td>
                                                         <span class="crm-treatment-status {{ $statusClass }}">
                                                             {{ $statusLabel }}
                                                         </span>
@@ -351,7 +317,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="9" class="crm-treatment-empty" style="padding: 18px; text-align: center; color: #6b7280;">
+                                                    <td colspan="9" class="crm-treatment-empty">
                                                         Chưa có tiến trình điều trị cho bệnh nhân này.
                                                     </td>
                                                 </tr>
@@ -477,7 +443,7 @@
                                     <a href="{{ $createPaymentUrl }}" class="crm-btn crm-btn-primary h-8 px-3 text-xs">
                                         Phiếu thu
                                     </a>
-                                    <a href="{{ $createPaymentUrl }}" class="crm-btn crm-btn-primary h-8 px-3 text-xs">
+                                    <a href="{{ $createPaymentUrl }}" class="crm-btn crm-btn-outline h-8 px-3 text-xs">
                                         Thanh toán
                                     </a>
                                 </div>

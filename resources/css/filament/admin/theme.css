@@ -1,5 +1,5 @@
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
 @import 'https://fonts.bunny.net/css?family=be-vietnam-pro:400,500,600,700';
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
@@ -28,6 +28,10 @@
   color: var(--crm-text);
   background: var(--crm-bg);
   overflow-x: hidden;
+}
+
+[x-cloak] {
+  display: none !important;
 }
 
 .fi-main {
@@ -155,13 +159,29 @@ a {
 
 .crm-top-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-wrap: nowrap;
+  gap: 8px;
   align-items: center;
   border-bottom: 1px solid var(--crm-border);
-  row-gap: 8px;
   padding-bottom: 8px;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e2 transparent;
+}
+
+.crm-top-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.crm-top-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.crm-top-tabs::-webkit-scrollbar-thumb {
+  background: #cfd5e2;
+  border-radius: 999px;
 }
 
 .crm-top-tab {
@@ -170,7 +190,7 @@ a {
   flex: 0 0 auto;
   align-items: center;
   gap: 6px;
-  font-size: 12.75px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--crm-muted);
   padding: 4px 2px 8px;
@@ -209,6 +229,572 @@ a {
 .crm-top-tab.is-active .crm-top-tab-count {
   background: var(--crm-primary-50);
   color: var(--crm-primary);
+}
+
+/* Patient profile overview */
+.crm-patient-overview-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  padding: 24px 32px;
+}
+
+.crm-patient-overview-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.crm-patient-avatar {
+  display: flex;
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.crm-patient-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.crm-patient-identity-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.crm-patient-name {
+  margin: 0;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.crm-patient-gender-badge {
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.crm-patient-gender-badge.is-male {
+  background: rgba(96, 165, 250, 0.5);
+}
+
+.crm-patient-gender-badge.is-female {
+  background: rgba(244, 114, 182, 0.5);
+}
+
+.crm-patient-code {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.crm-patient-phone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.crm-patient-phone-chip:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.crm-patient-phone-chip-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-patient-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.crm-patient-info-card,
+.crm-patient-address-card {
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 16px;
+  transition: background 0.2s ease;
+}
+
+.crm-patient-info-card:hover {
+  background: #f3f4f6;
+}
+
+.crm-patient-address-card {
+  margin-top: 16px;
+}
+
+.crm-patient-info-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.crm-patient-info-icon {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.crm-patient-info-icon-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-patient-info-label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.crm-patient-info-value,
+.crm-patient-address-value {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.crm-patient-info-value {
+  font-weight: 600;
+}
+
+.crm-patient-address-value {
+  font-weight: 500;
+}
+
+.crm-patient-info-value.is-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-patient-info-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crm-patient-info-link:hover {
+  color: #2563eb;
+}
+
+.crm-patient-info-muted {
+  color: #9ca3af;
+}
+
+.crm-patient-info-age {
+  margin-left: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.crm-patient-info-value.is-branch {
+  color: #2563eb;
+}
+
+.crm-patient-info-card.is-phone .crm-patient-info-icon {
+  background: #dbeafe;
+}
+
+.crm-patient-info-card.is-phone .crm-patient-info-icon-svg {
+  color: #2563eb;
+}
+
+.crm-patient-info-card.is-email .crm-patient-info-icon {
+  background: #dcfce7;
+}
+
+.crm-patient-info-card.is-email .crm-patient-info-icon-svg {
+  color: #16a34a;
+}
+
+.crm-patient-info-card.is-birthday .crm-patient-info-icon {
+  background: #f3e8ff;
+}
+
+.crm-patient-info-card.is-birthday .crm-patient-info-icon-svg {
+  color: #9333ea;
+}
+
+.crm-patient-info-card.is-branch .crm-patient-info-icon {
+  background: #fef3c7;
+}
+
+.crm-patient-info-card.is-branch .crm-patient-info-icon-svg {
+  color: #d97706;
+}
+
+.crm-patient-address-card.is-address .crm-patient-info-icon {
+  background: #fee2e2;
+}
+
+.crm-patient-address-card.is-address .crm-patient-info-icon-svg {
+  color: #dc2626;
+}
+
+.dark .crm-patient-info-card,
+.dark .crm-patient-address-card {
+  background: #1f2937;
+}
+
+.dark .crm-patient-info-card:hover {
+  background: #374151;
+}
+
+.dark .crm-patient-info-value,
+.dark .crm-patient-address-value {
+  color: #f9fafb;
+}
+
+.dark .crm-patient-info-value.is-branch,
+.dark .crm-patient-info-link:hover {
+  color: #60a5fa;
+}
+
+.dark .crm-patient-info-card.is-phone .crm-patient-info-icon {
+  background: rgba(30, 58, 138, 0.3);
+}
+
+.dark .crm-patient-info-card.is-email .crm-patient-info-icon {
+  background: rgba(20, 83, 45, 0.35);
+}
+
+.dark .crm-patient-info-card.is-birthday .crm-patient-info-icon {
+  background: rgba(88, 28, 135, 0.35);
+}
+
+.dark .crm-patient-info-card.is-branch .crm-patient-info-icon {
+  background: rgba(120, 53, 15, 0.35);
+}
+
+.dark .crm-patient-address-card.is-address .crm-patient-info-icon {
+  background: rgba(127, 29, 29, 0.35);
+}
+
+@media (min-width: 1024px) {
+  .crm-patient-info-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Activity timeline widget */
+.crm-activity-widget {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.crm-activity-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.crm-activity-widget-title {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.crm-activity-widget-count {
+  border-radius: 999px;
+  background: #f3f4f6;
+  padding: 4px 12px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.crm-activity-empty {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.crm-activity-empty-title {
+  margin-top: 12px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.crm-activity-empty-desc {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.crm-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crm-activity-item {
+  --crm-activity-accent: #9ca3af;
+  --crm-activity-bg: #f9fafb;
+
+  border-left: 4px solid var(--crm-activity-accent);
+  border-radius: 12px;
+  background: var(--crm-activity-bg);
+  padding: 16px;
+  transition: transform 0.2s ease;
+}
+
+.crm-activity-item:hover {
+  transform: translateX(4px);
+}
+
+.crm-activity-item-layout {
+  display: flex;
+  gap: 16px;
+}
+
+.crm-activity-item-icon-wrap {
+  flex-shrink: 0;
+}
+
+.crm-activity-item-icon {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--crm-activity-accent);
+}
+
+.crm-activity-item-icon-svg {
+  width: 20px;
+  height: 20px;
+  color: #fff;
+}
+
+.crm-activity-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.crm-activity-item-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-activity-item-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.crm-activity-item-type {
+  border: 1px solid var(--crm-activity-accent);
+  border-radius: 12px;
+  background: #fff;
+  padding: 2px 8px;
+  color: var(--crm-activity-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.crm-activity-item-description {
+  margin-top: 4px;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.crm-activity-item-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.crm-activity-item-meta-row {
+  font-size: 12px;
+}
+
+.crm-activity-item-meta-label {
+  color: #6b7280;
+}
+
+.crm-activity-item-meta-value {
+  color: #111827;
+  font-weight: 500;
+}
+
+.crm-activity-item-link-wrap {
+  margin-top: 12px;
+}
+
+.crm-activity-item-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--crm-activity-accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.crm-activity-item-link-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.crm-activity-item-date {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.crm-activity-item-date-day {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.crm-activity-item-date-time {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.crm-activity-item-date-human {
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.crm-activity-item.is-appointment {
+  --crm-activity-accent: #3b82f6;
+  --crm-activity-bg: #eff6ff;
+}
+
+.crm-activity-item.is-treatment-plan {
+  --crm-activity-accent: #f59e0b;
+  --crm-activity-bg: #fef3c7;
+}
+
+.crm-activity-item.is-invoice {
+  --crm-activity-accent: #8b5cf6;
+  --crm-activity-bg: #f3e8ff;
+}
+
+.crm-activity-item.is-payment {
+  --crm-activity-accent: #22c55e;
+  --crm-activity-bg: #dcfce7;
+}
+
+.crm-activity-item.is-branch-log {
+  --crm-activity-accent: #0284c7;
+  --crm-activity-bg: #e0f2fe;
+}
+
+.crm-activity-item.is-note {
+  --crm-activity-accent: #64748b;
+  --crm-activity-bg: #f1f5f9;
+}
+
+.crm-activity-item.is-default {
+  --crm-activity-accent: #9ca3af;
+  --crm-activity-bg: #f9fafb;
+}
+
+.crm-activity-footer {
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+}
+
+.dark .crm-activity-widget {
+  border-color: #374151;
+  background: #111827;
+}
+
+.dark .crm-activity-widget-title,
+.dark .crm-activity-empty-title,
+.dark .crm-activity-item-title,
+.dark .crm-activity-item-meta-value {
+  color: #f9fafb;
+}
+
+.dark .crm-activity-widget-count {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.dark .crm-activity-empty-desc,
+.dark .crm-activity-item-description,
+.dark .crm-activity-item-date-day {
+  color: #d1d5db;
+}
+
+.dark .crm-activity-item-date-time {
+  color: #9ca3af;
+}
+
+.dark .crm-activity-item-date-human,
+.dark .crm-activity-item-meta-label,
+.dark .crm-activity-footer {
+  color: #94a3b8;
+}
+
+.dark .crm-activity-item {
+  background: #1f2937;
+}
+
+.dark .crm-activity-item-type {
+  background: #111827;
+}
+
+@media (max-width: 768px) {
+  .crm-activity-item-layout {
+    flex-direction: column;
+  }
+
+  .crm-activity-item-date {
+    text-align: left;
+  }
+
+  .crm-activity-item-meta-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Patient record header actions */
@@ -301,6 +887,12 @@ a {
 }
 
 .crm-rel-tab .fi-ta-header {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
   padding: 10px 16px;
   border-bottom: 1px solid #e5e8f0;
 }
@@ -310,21 +902,50 @@ a {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
+  text-align: left !important;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-header-heading-ctn {
+  margin-inline-start: 0 !important;
+  margin-inline-end: auto !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.crm-rel-tab .fi-ta-header .fi-input-wrp {
+  margin-inline-start: auto;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-header-heading-ctn + * {
+  margin-inline-start: auto;
 }
 
 .crm-rel-tab .fi-ta-header .fi-ac-btn-action.fi-btn {
-  min-height: 32px;
+  min-height: 34px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   padding: 0 14px;
 }
 
 .crm-rel-tab .fi-ta-header-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   padding: 0 16px 10px;
 }
 
 .crm-rel-tab .fi-ta-header-toolbar .fi-input-wrp {
+  min-width: 210px;
+  max-width: 230px;
   min-height: 35px;
   border-radius: 9px;
   border-color: #d5d9e3;
@@ -356,7 +977,119 @@ a {
 .crm-rel-tab .fi-ta-table tbody td {
   font-size: 13px;
   color: #374151;
-  padding: 9px 10px;
+  padding: 10px 10px;
+  border-bottom: 1px solid #eceff5;
+  vertical-align: middle;
+}
+
+.crm-rel-tab .fi-ta-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.crm-rel-tab .fi-ta-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.crm-rel-tab .fi-ta-table .fi-badge {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-primary.fi-badge {
+  background: #ebe8ff;
+  border-color: #cec6ff;
+  color: #5f52d8;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-success.fi-badge {
+  background: #dff7ea;
+  border-color: #99ddbb;
+  color: #0f9c63;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-warning.fi-badge {
+  background: #fff4df;
+  border-color: #f2d39c;
+  color: #9e6b0f;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-info.fi-badge {
+  background: #e5efff;
+  border-color: #b7cef9;
+  color: #2f66f6;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-danger.fi-badge {
+  background: #ffe8eb;
+  border-color: #f4b3bc;
+  color: #c14450;
+}
+
+.crm-rel-tab .fi-ta-table .fi-color-gray.fi-badge,
+.crm-rel-tab .fi-ta-table .fi-color-secondary.fi-badge {
+  background: #eef1f6;
+  border-color: #d7dce6;
+  color: #596173;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-btn,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-icon-btn {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid #d1d5df;
+  color: #687084;
+  background: #fff;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-btn:hover,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-icon-btn:hover {
+  border-color: #b7bed0;
+  background: #f8f9fc;
+  color: #4b5568;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-btn,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-icon-btn {
+  color: #d6505c;
+  border-color: #eec0c5;
+  background: #fff6f7;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-btn:hover,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-icon-btn:hover {
+  color: #bc3f4b;
+  border-color: #e7a9b0;
+  background: #ffedf0;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-actions .fi-btn,
+.crm-rel-tab .fi-ta-header .fi-ta-actions .fi-icon-btn {
+  min-height: 34px;
+  min-width: unset;
+  padding: 0 14px;
+  border-radius: 8px;
+  border-color: transparent;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-actions .fi-color-primary.fi-btn {
+  background: #7b6cf6;
+  color: #fff;
+}
+
+.crm-rel-tab .fi-ta-header .fi-ta-actions .fi-color-primary.fi-btn:hover {
+  background: #6b5ce8;
 }
 
 .crm-rel-tab .fi-ta-empty-state {
@@ -512,11 +1245,19 @@ a {
   padding: 14px 16px;
 }
 
+.crm-tooth-label-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
 .crm-tooth-grid {
   display: flex;
   justify-content: center;
   gap: 6px;
   margin-bottom: 10px;
+}
+
+.selection-item {
+  text-align: center;
 }
 
 .crm-tooth-number {
@@ -573,6 +1314,16 @@ a {
   box-shadow: 0 0 0 2px #7c6cf6;
 }
 
+.tooth-item-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
 .crm-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -619,6 +1370,242 @@ a {
   border-top: 1px solid var(--crm-border);
 }
 
+.crm-modal-z-50 {
+  z-index: 50;
+}
+
+.crm-modal-z-60 {
+  z-index: 60;
+}
+
+.crm-modal-card-lg {
+  max-width: 72rem;
+}
+
+.crm-modal-close-btn {
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.crm-modal-close-btn:hover {
+  color: #374151;
+}
+
+.crm-tooth-picker-grid-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+.crm-calendar-shell {
+  min-height: 740px;
+}
+
+.crm-main-ctn-visible {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.crm-check-sm {
+  width: 14px;
+  height: 14px;
+  accent-color: #8b5cf6;
+}
+
+.crm-icon-14 {
+  width: 14px;
+  height: 14px;
+}
+
+.crm-treatment-empty-bordered {
+  border: 1px solid #d1d5db !important;
+}
+
+.crm-plan-editor-table-wrap,
+.crm-procedure-services-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.crm-plan-editor-table,
+.crm-procedure-services-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.crm-plan-editor-table thead th,
+.crm-procedure-services-table thead th {
+  border-bottom: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.crm-plan-editor-table tbody td,
+.crm-procedure-services-table tbody td {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 8px 10px;
+}
+
+.crm-plan-editor-table .is-center,
+.crm-procedure-services-table .is-center {
+  text-align: center;
+}
+
+.crm-plan-editor-table .is-right,
+.crm-procedure-services-table .is-right {
+  text-align: right;
+}
+
+.crm-plan-editor-input,
+.crm-procedure-search-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #fff;
+}
+
+.crm-plan-editor-input {
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.crm-plan-editor-select {
+  width: 100%;
+  min-width: 140px;
+  height: 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #fff;
+}
+
+.crm-plan-editor-input.is-qty {
+  width: 60px;
+  text-align: center;
+}
+
+.crm-plan-editor-input.is-price {
+  width: 90px;
+  text-align: right;
+}
+
+.crm-plan-editor-input.is-discount {
+  width: 70px;
+  text-align: right;
+}
+
+.crm-plan-editor-remove-btn {
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.crm-plan-editor-remove-btn:hover {
+  color: #dc2626;
+}
+
+.crm-plan-editor-empty {
+  padding: 18px !important;
+  color: #6b7280;
+  text-align: center;
+}
+
+.crm-procedure-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+}
+
+.crm-procedure-category-panel {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.crm-procedure-category-btn {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #374151;
+  text-align: left;
+  font-size: 13px;
+}
+
+.crm-procedure-category-panel .crm-procedure-category-btn:first-child {
+  margin-top: 0;
+}
+
+.crm-procedure-category-btn.is-active {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+@media (max-width: 1024px) {
+  .crm-procedure-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dark .crm-modal-close-btn {
+  color: #9ca3af;
+}
+
+.dark .crm-modal-close-btn:hover {
+  color: #f3f4f6;
+}
+
+.dark .crm-plan-editor-table-wrap,
+.dark .crm-procedure-services-wrap,
+.dark .crm-procedure-category-panel {
+  border-color: #374151;
+}
+
+.dark .crm-plan-editor-table thead th,
+.dark .crm-procedure-services-table thead th {
+  background: #1f2937;
+  border-bottom-color: #374151;
+  color: #d1d5db;
+}
+
+.dark .crm-plan-editor-table tbody td,
+.dark .crm-procedure-services-table tbody td {
+  border-bottom-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.dark .crm-plan-editor-input,
+.dark .crm-plan-editor-select,
+.dark .crm-procedure-search-input {
+  border-color: #4b5563;
+  background: #111827;
+  color: #f3f4f6;
+}
+
+.dark .crm-procedure-category-btn {
+  color: #d1d5db;
+}
+
+.dark .crm-procedure-category-btn.is-active {
+  background: #312e81;
+  color: #c7d2fe;
+}
+
+.dark .crm-plan-editor-empty {
+  color: #9ca3af;
+}
+
 .crm-textarea {
   width: 100%;
   min-height: 120px;
@@ -627,6 +1614,35 @@ a {
   padding: 10px;
   font-size: 14px;
   background: #fff;
+}
+
+.crm-textarea-sm {
+  min-height: auto;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.crm-other-diagnosis-tag-remove {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.crm-other-diagnosis-tag-remove:hover {
+  color: #374151;
+}
+
+.crm-other-diagnosis-dropdown {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.dark .crm-other-diagnosis-tag-remove {
+  color: #9ca3af;
+}
+
+.dark .crm-other-diagnosis-tag-remove:hover {
+  color: #f3f4f6;
 }
 
 /* Care tab (patient profile) */
@@ -847,7 +1863,9 @@ a {
 /* Exam & treatment table alignment */
 .crm-treatment-card {
   border-color: #d5d9e3;
+  border-radius: 8px;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .crm-treatment-subhead {
@@ -866,8 +1884,15 @@ a {
 }
 
 .crm-treatment-table-wrap {
+  overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: #c5cad6 transparent;
+}
+
+.crm-treatment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
 }
 
 .crm-treatment-table-wrap::-webkit-scrollbar {
@@ -885,20 +1910,38 @@ a {
 
 .crm-treatment-table thead th {
   background: #4a4a4d !important;
+  border: 1px solid #d1d5db;
   color: #fff !important;
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.3;
+  text-align: left;
+  white-space: nowrap;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
   padding-top: 9px !important;
   padding-bottom: 9px !important;
 }
 
 .crm-treatment-table tbody td {
+  border-bottom: 1px solid #d1d5db;
+  border-left: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
   font-size: 13px;
   line-height: 1.35;
   color: #374151;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
+}
+
+.crm-treatment-table .is-center {
+  text-align: center;
+}
+
+.crm-treatment-table .is-right {
+  text-align: right;
 }
 
 .crm-treatment-table tbody tr:hover td {
@@ -917,6 +1960,8 @@ a {
 }
 
 .crm-treatment-empty {
+  padding: 18px !important;
+  text-align: center;
   font-size: 14px;
   color: #6b7280;
 }
@@ -1027,11 +2072,31 @@ a {
   padding: 0 14px;
 }
 
+.crm-payment-summary-actions .crm-btn.crm-btn-primary {
+  background: #7b6cf6;
+  color: #fff;
+}
+
+.crm-payment-summary-actions .crm-btn.crm-btn-primary:hover {
+  background: #6b5ce8;
+}
+
+.crm-payment-summary-actions .crm-btn.crm-btn-outline {
+  background: #fff;
+  border-color: #cfd5e3;
+  color: #4b5563;
+}
+
+.crm-payment-summary-actions .crm-btn.crm-btn-outline:hover {
+  background: #f8f9fc;
+  border-color: #b8c0d2;
+}
+
 .crm-payment-balance {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #5b6281;
+  color: #46506a;
   font-size: clamp(28px, 2.2vw, 44px);
   font-weight: 700;
   line-height: 1;
@@ -1044,7 +2109,7 @@ a {
 }
 
 .crm-payment-balance .is-positive {
-  color: #5f56da;
+  color: #5e51da;
 }
 
 .crm-payment-balance .is-negative {
@@ -1099,7 +2164,7 @@ a {
 }
 
 .crm-payment-block-title {
-  padding: 10px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid #e5e8f0;
   font-size: 14px;
   font-weight: 700;
@@ -1114,6 +2179,12 @@ a {
 }
 
 .crm-payment-tab .fi-ta-header {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
   padding: 10px 16px;
   border-bottom: 1px solid #e5e8f0;
 }
@@ -1123,6 +2194,19 @@ a {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
+  text-align: left !important;
+}
+
+.crm-payment-tab .fi-ta-header .fi-ta-header-heading-ctn {
+  margin-inline-start: 0 !important;
+  margin-inline-end: auto !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.crm-payment-tab .fi-ta-header .fi-ta-header-heading-ctn + * {
+  margin-inline-start: auto;
 }
 
 .crm-payment-tab .fi-ta-header .fi-ac-btn-action.fi-btn {
@@ -1153,10 +2237,15 @@ a {
 }
 
 .crm-payment-tab .fi-ta-header-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   padding: 0 16px 10px;
 }
 
 .crm-payment-tab .fi-ta-header-toolbar .fi-input-wrp {
+  min-width: 210px;
+  max-width: 230px;
   min-height: 35px;
   border-radius: 9px;
   border-color: #d5d9e3;
@@ -1188,7 +2277,95 @@ a {
 .crm-payment-tab .fi-ta-table tbody td {
   font-size: 13px;
   color: #374151;
-  padding: 9px 10px;
+  padding: 10px 10px;
+  border-bottom: 1px solid #eceff5;
+  vertical-align: middle;
+}
+
+.crm-payment-tab .fi-ta-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.crm-payment-tab .fi-ta-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.crm-payment-tab .fi-ta-table .fi-badge {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+}
+
+.crm-payment-tab .fi-ta-table .fi-color-primary.fi-badge {
+  background: #ebe8ff;
+  border-color: #cec6ff;
+  color: #5f52d8;
+}
+
+.crm-payment-tab .fi-ta-table .fi-color-success.fi-badge {
+  background: #dff7ea;
+  border-color: #99ddbb;
+  color: #0f9c63;
+}
+
+.crm-payment-tab .fi-ta-table .fi-color-warning.fi-badge {
+  background: #fff4df;
+  border-color: #f2d39c;
+  color: #9e6b0f;
+}
+
+.crm-payment-tab .fi-ta-table .fi-color-danger.fi-badge {
+  background: #ffe8eb;
+  border-color: #f4b3bc;
+  color: #c14450;
+}
+
+.crm-payment-tab .fi-ta-table .fi-color-gray.fi-badge,
+.crm-payment-tab .fi-ta-table .fi-color-secondary.fi-badge {
+  background: #eef1f6;
+  border-color: #d7dce6;
+  color: #596173;
+}
+
+.crm-payment-tab .fi-ta-table .fi-ta-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-btn,
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-icon-btn {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid #d1d5df;
+  color: #687084;
+  background: #fff;
+}
+
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-btn:hover,
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-icon-btn:hover {
+  border-color: #b7bed0;
+  background: #f8f9fc;
+  color: #4b5568;
+}
+
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-btn,
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-icon-btn {
+  color: #d6505c;
+  border-color: #eec0c5;
+  background: #fff6f7;
+}
+
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-btn:hover,
+.crm-payment-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-icon-btn:hover {
+  color: #bc3f4b;
+  border-color: #e7a9b0;
+  background: #ffedf0;
 }
 
 .crm-payment-tab .fi-ta-empty-state {

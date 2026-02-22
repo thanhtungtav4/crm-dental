@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Widgets;
 
+use App\Models\Appointment;
 use App\Models\Patient;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
@@ -28,17 +29,12 @@ class PatientActivityTimelineWidget extends Widget
                 'date' => $appointment->date,
                 'type' => 'appointment',
                 'icon' => 'heroicon-o-calendar',
-                'color' => match($appointment->status) {
-                    'completed' => 'success',
-                    'cancelled', 'no_show' => 'danger',
-                    'in_progress' => 'info',
-                    default => 'gray',
-                },
+                'color' => Appointment::statusColor($appointment->status),
                 'title' => 'Lịch hẹn',
                 'description' => $appointment->chief_complaint ?: ($appointment->note ?: 'Lịch hẹn'),
                 'meta' => [
                     'Bác sĩ' => $appointment->doctor?->name ?? 'N/A',
-                    'Trạng thái' => __(ucfirst(str_replace('_', ' ', $appointment->status))),
+                    'Trạng thái' => Appointment::statusLabel($appointment->status),
                     'Chi nhánh' => $appointment->branch?->name ?? 'N/A',
                 ],
                 'url' => route('filament.admin.resources.appointments.edit', ['record' => $appointment->id]),

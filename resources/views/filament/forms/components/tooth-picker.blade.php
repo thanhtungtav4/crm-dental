@@ -60,7 +60,7 @@
         </div>
 
         <!-- Modal -->
-        <div x-show="modalOpen" style="display: none;"
+        <div x-show="modalOpen" x-cloak
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" x-transition>
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl p-6 relative flex flex-col max-h-[90vh]">
 
@@ -106,7 +106,7 @@
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
                             </div>
-                            <div class="grid gap-2" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
+                            <div class="grid gap-2 crm-tooth-picker-grid-16">
                                 @foreach($adultTeeth['upper'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
                                         class="h-12 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"
@@ -130,7 +130,7 @@
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
                             </div>
-                            <div class="grid gap-2" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
+                            <div class="grid gap-2 crm-tooth-picker-grid-16">
                                 @foreach($adultTeeth['lower'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
                                         class="h-12 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"

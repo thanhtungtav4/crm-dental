@@ -1,0 +1,12 @@
+=== basic-info ===
+### Ran Playwright code
+```js
+await page.goto('http://crm.test/admin/patients/1?tab=basic-info');
+```
+### Page
+- Page URL: http://crm.test/admin/patients/1?tab=basic-info
+- Page Title: Hồ sơ: Trần Sven - IDENT Dental CRM
+### Snapshot
+- [Snapshot](.playwright-cli/page-2026-02-20T13-35-10-153Z.yml)
+### Result
+- [Console](.playwright-cli/console-2026-02-20T13-35-11-208Z.log)

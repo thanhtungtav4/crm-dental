@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Tables;
 
+use App\Models\Appointment;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
@@ -65,9 +66,9 @@ class PatientsTable
                 Action::make('viewAppointments')
                     ->label('Xem lịch hẹn')
                     ->icon('heroicon-o-eye')
-                    ->visible(fn ($record) => \App\Models\Appointment::query()
+                    ->visible(fn ($record) => Appointment::query()
                         ->where('patient_id', $record->id)
-                        ->whereIn('status', ['scheduled', 'confirmed'])
+                        ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
                         ->where('date', '>=', now())
                         ->exists())
                     ->modalHeading('Lịch hẹn còn hiệu lực')
@@ -75,9 +76,9 @@ class PatientsTable
                         \Filament\Forms\Components\Select::make('appointment_id')
                             ->label('Chọn lịch hẹn')
                             ->options(function ($record) {
-                                return \App\Models\Appointment::query()
+                                return Appointment::query()
                                     ->where('patient_id', $record->id)
-                                    ->whereIn('status', ['scheduled', 'confirmed'])
+                                    ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
                                     ->where('date', '>=', now())
                                     ->orderBy('date')
                                     ->get()
@@ -85,7 +86,7 @@ class PatientsTable
                                         $label = sprintf('%s — %s — %s',
                                             \Carbon\Carbon::parse($a->date)->format('d/m/Y H:i'),
                                             optional($a->doctor)->name ?? 'Chưa chọn bác sĩ',
-                                            ucfirst($a->status)
+                                            Appointment::statusLabel($a->status)
                                         );
                                         return [$a->id => $label];
                                     });
@@ -130,28 +131,24 @@ class PatientsTable
                             ->required(),
                         \Filament\Forms\Components\Select::make('status')
                             ->label('Trạng thái')
-                            ->options([
-                                'scheduled' => 'Đã đặt',
-                                'confirmed' => 'Đã xác nhận',
-                                'completed' => 'Hoàn thành',
-                                'cancelled' => 'Hủy',
-                            ])->default('scheduled'),
+                            ->options(Appointment::statusOptions())
+                            ->default(Appointment::STATUS_SCHEDULED),
                         \Filament\Forms\Components\Textarea::make('cancellation_reason')
                             ->label('Lý do hủy')
-                            ->visible(fn (callable $get) => $get('status') === 'cancelled')
+                            ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
                             ->rows(2),
                         \Filament\Forms\Components\Textarea::make('note')
                             ->label('Ghi chú')
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
-                        \App\Models\Appointment::create([
+                        Appointment::create([
                             'patient_id' => $record->id,
                             'doctor_id' => $data['doctor_id'] ?? null,
                             'branch_id' => $data['branch_id'] ?? $record->first_branch_id,
                             'date' => $data['date'],
                             'appointment_kind' => $data['appointment_kind'] ?? 'booking',
-                            'status' => $data['status'] ?? 'scheduled',
+                            'status' => $data['status'] ?? Appointment::STATUS_SCHEDULED,
                             'cancellation_reason' => $data['cancellation_reason'] ?? null,
                             'note' => $data['note'] ?? null,
                         ]);

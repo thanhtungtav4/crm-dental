@@ -1,0 +1,12 @@
+=== activity-log ===
+### Ran Playwright code
+```js
+await page.goto('http://crm.test/admin/patients/1?tab=activity-log');
+```
+### Page
+- Page URL: http://crm.test/admin/patients/1?tab=activity-log
+- Page Title: Hồ sơ: Trần Sven - IDENT Dental CRM
+### Snapshot
+- [Snapshot](.playwright-cli/page-2026-02-20T13-35-25-046Z.yml)
+### Result
+- [Console](.playwright-cli/console-2026-02-20T13-35-25-603Z.log)

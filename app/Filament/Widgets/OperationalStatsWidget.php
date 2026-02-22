@@ -24,8 +24,8 @@ class OperationalStatsWidget extends BaseWidget
         $appointmentsTodayCount = Appointment::whereDate('date', $today)
             ->count();
 
-        // 3. Pending Confirmations (Appointments in future that are pending)
-        $pendingConfirmations = Appointment::where('status', 'pending')
+        // 3. Pending Confirmations (appointments đã đặt nhưng chưa xác nhận)
+        $pendingConfirmations = Appointment::whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_SCHEDULED]))
             ->where('date', '>=', now())
             ->count();
 

@@ -14,7 +14,7 @@
         </div>
 
     @endif
-    <div style="display: {{ $plainTextToken ? 'none' : '' }}">
+    <div @class(['hidden' => $plainTextToken])>
         {{ $this->table }}
     </div>
 </x-filament::section>

@@ -4,12 +4,10 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -170,7 +168,9 @@ class PrescriptionsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Thêm đơn thuốc')
-                    ->icon('heroicon-o-plus'),
+                    ->icon('heroicon-o-plus')
+                    ->modalHeading('Tạo đơn thuốc')
+                    ->modalSubmitActionLabel('Lưu đơn thuốc'),
             ])
             ->actions([
                 ViewAction::make()
@@ -190,19 +190,8 @@ class PrescriptionsRelationManager extends RelationManager
                     ->url(fn(Prescription $record): string => route('prescriptions.print', $record))
                     ->openUrlInNewTab(),
             ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ])
             ->emptyStateHeading('Chưa có đơn thuốc')
             ->emptyStateDescription('Tạo đơn thuốc mới bằng nút bên trên.')
-            ->emptyStateIcon('heroicon-o-document-text')
-            ->emptyStateActions([
-                CreateAction::make('empty_create')
-                    ->label('Thêm đơn thuốc')
-                    ->icon('heroicon-o-plus')
-                    ->color('primary'),
-            ]);
+            ->emptyStateIcon('heroicon-o-document-text');
     }
 }

@@ -6,6 +6,7 @@ use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Models\Appointment;
 use App\Models\Patient;
 use Filament\Notifications\Notification;
 
@@ -97,8 +98,9 @@ class AppointmentsTable
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->icon(fn (?string $state) => \App\Support\StatusBadge::icon($state))
-                    ->color(fn (?string $state) => \App\Support\StatusBadge::color($state)),
+                    ->formatStateUsing(fn (?string $state): string => Appointment::statusLabel($state))
+                    ->icon(fn (?string $state): string => Appointment::statusIcon($state))
+                    ->color(fn (?string $state): string => Appointment::statusColor($state)),
                 TextColumn::make('chief_complaint')
                     ->label('Lý do khám')
                     ->limit(50)

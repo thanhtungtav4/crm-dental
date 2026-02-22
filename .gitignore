@@ -1,5 +1,8 @@
 *.log
 .DS_Store
+*.swp
+*.tmp
+*.bak
 .env
 .env.backup
 .env.production
@@ -19,6 +22,9 @@
 /storage/*.key
 /storage/pail
 /vendor
+/.playwright-cli
+**/.playwright-cli/
+/database/migrations_backup_*/
 Homestead.json
 Homestead.yaml
 Thumbs.db

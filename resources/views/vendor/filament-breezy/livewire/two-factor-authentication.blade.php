@@ -1,13 +1,13 @@
 @php /** @var \Jeffgreco13\FilamentBreezy\Livewire\TwoFactorAuthentication $this */ @endphp
 <x-filament::section class="breezy-2fa" :aside="true" :heading="__('filament-breezy::default.profile.2fa.title')" :description="__('filament-breezy::default.profile.2fa.description')">
     @if($this->showRequiresTwoFactorAlert())
-        <div style="{{ \Illuminate\Support\Arr::toCssStyles([\Filament\Support\get_color_css_variables('danger',shades: [50, 100, 400, 500, 800])]) }}" class="mb-2 p-4 rounded bg-custom-50 dark:bg-custom-400/10 ring-1 ring-custom-100 dark:ring-custom-500/70">
+        <div class="mb-2 rounded bg-danger-50 p-4 ring-1 ring-danger-100 dark:bg-danger-400/10 dark:ring-danger-500/70">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    @svg('heroicon-s-shield-exclamation', 'w-5 h-5 text-custom-400')
+                    @svg('heroicon-s-shield-exclamation', 'h-5 w-5 text-danger-400')
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm font-medium text-custom-800 dark:text-white">
+                    <p class="text-sm font-medium text-danger-800 dark:text-white">
                         {{ __('filament-breezy::default.profile.2fa.must_enable') }}
                     </p>
                 </div>

@@ -420,7 +420,7 @@
                                     KHÁM TỔNG QUÁT
                                 </button>
 
-                                <div x-show="openSection === 'general'" style="display: none;" class="crm-exam-section-body">
+                                <div x-show="openSection === 'general'" x-cloak class="crm-exam-section-body">
                                     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                                         <div>
                                             <div class="mb-3 flex items-center gap-3">
@@ -440,7 +440,7 @@
                                                         </button>
                                                     @endif
 
-                                                    <div x-show="open" style="display: none;" class="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                                                    <div x-show="open" x-cloak class="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-600 dark:bg-gray-800">
                                                         @forelse($examiningDoctors as $doctor)
                                                             <button type="button" wire:click="selectExaminingDoctor({{ $doctor->id }})" class="block w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">{{ $doctor->name }}</button>
                                                         @empty
@@ -476,7 +476,7 @@
                                                         </button>
                                                     @endif
 
-                                                    <div x-show="open" style="display: none;" class="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                                                    <div x-show="open" x-cloak class="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-600 dark:bg-gray-800">
                                                         @forelse($treatingDoctors as $doctor)
                                                             <button type="button" wire:click="selectTreatingDoctor({{ $doctor->id }})" class="block w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">{{ $doctor->name }}</button>
                                                         @empty
@@ -506,7 +506,7 @@
                                     <span class="text-xs font-normal italic text-gray-500">(Thêm chỉ định như Chụp X-Quang, Xét nghiệm máu)</span>
                                 </button>
 
-                                <div x-show="openSection === 'indications'" style="display: none;" class="crm-exam-section-body">
+                                <div x-show="openSection === 'indications'" x-cloak class="crm-exam-section-body">
                                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                                         @foreach ($indicationTypes as $key => $label)
                                             <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
@@ -587,7 +587,7 @@
                                     CHẨN ĐOÁN VÀ ĐIỀU TRỊ
                                 </button>
 
-                                <div x-show="openSection === 'diagnosis'" style="display: none;" class="crm-exam-section-body">
+                                <div x-show="openSection === 'diagnosis'" x-cloak class="crm-exam-section-body">
                                     <div class="crm-tooth-chart">
                                         <div class="mb-3 flex flex-wrap items-center justify-end gap-2 text-xs text-gray-600 dark:text-gray-300">
                                             <div class="flex items-center gap-2">
@@ -601,11 +601,10 @@
                                             <div class="text-center">
                                                 <div class="crm-tooth-grid">
                                                     @foreach($adultUpper as $t)
-                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''" style="text-align: center;">
+                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <div class="crm-tooth-number mb-1">{{ $t }}</div>
                                                             <button type="button"
                                                                 class="tooth-item-cell"
-                                                                style="cursor: pointer; border: 0; background: transparent; padding: 0;"
                                                                 :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
                                                                 @click="toggleTooth({{ $t }}, $event)"
                                                             >
@@ -619,10 +618,9 @@
 
                                                 <div class="crm-tooth-grid">
                                                     @foreach($childUpper as $t)
-                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''" style="text-align: center;">
+                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <button type="button"
                                                                 class="tooth-item-cell"
-                                                                style="cursor: pointer; border: 0; background: transparent; padding: 0;"
                                                                 :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
                                                                 @click="toggleTooth({{ $t }}, $event)"
                                                             >
@@ -635,11 +633,10 @@
 
                                                 <div class="crm-tooth-grid">
                                                     @foreach($childLower as $t)
-                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''" style="text-align: center;">
+                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <div class="crm-tooth-number mb-1">{{ $t }}</div>
                                                             <button type="button"
                                                                 class="tooth-item-cell"
-                                                                style="cursor: pointer; border: 0; background: transparent; padding: 0;"
                                                                 :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
                                                                 @click="toggleTooth({{ $t }}, $event)"
                                                             >
@@ -651,10 +648,9 @@
 
                                                 <div class="crm-tooth-grid">
                                                     @foreach($adultLower as $t)
-                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''" style="text-align: center;">
+                                                        <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <button type="button"
                                                                 class="tooth-item-cell"
-                                                                style="cursor: pointer; border: 0; background: transparent; padding: 0;"
                                                                 :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
                                                                 @click="toggleTooth({{ $t }}, $event)"
                                                             >
@@ -681,7 +677,7 @@
                                                     <template x-for="(tag, index) in otherDiagnosisTags" :key="tag + index">
                                                         <span class="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-1 text-xs text-primary-700">
                                                             <span x-text="tag"></span>
-                                                            <button type="button" @click="removeOtherDiagnosisTag(index)" style="font-size: 12px; color: #6b7280;">×</button>
+                                                            <button type="button" @click="removeOtherDiagnosisTag(index)" class="crm-other-diagnosis-tag-remove">×</button>
                                                         </span>
                                                     </template>
                                                     <input
@@ -700,8 +696,7 @@
                                                     <div
                                                         x-show="otherDiagnosisOpen"
                                                         x-cloak
-                                                        class="absolute z-40 mt-1 w-full rounded-md border border-gray-200 bg-white text-sm shadow-lg"
-                                                        style="max-height: 240px; overflow-y: auto;"
+                                                        class="crm-other-diagnosis-dropdown absolute z-40 mt-1 w-full rounded-md border border-gray-200 bg-white text-sm shadow-lg"
                                                     >
                                                         <template x-for="group in groupedOtherDiagnosisOptions()" :key="group.group">
                                                             <div>
@@ -761,7 +756,7 @@
 
                                         <div class="mt-4 border-t border-gray-200 pt-3">
                                             <label class="mb-1 block text-sm font-medium text-gray-700">Ghi chú áp dụng cho các răng đã chọn (nếu có)</label>
-                                            <textarea x-model="modalNotes" rows="2" class="w-full rounded-md border-gray-300 bg-white text-sm focus:border-primary-500 focus:ring-primary-500" style="border-radius: 8px; border: 1px solid #d1d5db; padding: 8px 10px;"></textarea>
+                                            <textarea x-model="modalNotes" rows="2" class="crm-textarea crm-textarea-sm focus:border-primary-500 focus:ring-primary-500"></textarea>
                                         </div>
                                     </div>
 

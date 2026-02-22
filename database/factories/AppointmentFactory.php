@@ -26,7 +26,7 @@ class AppointmentFactory extends Factory
             'doctor_id' => $doctor->id,
             'branch_id' => $branch->id,
             'date' => $this->faker->dateTimeBetween('-10 days', '+10 days'),
-            'status' => $this->faker->randomElement(['pending','done','canceled']),
+            'status' => $this->faker->randomElement(Appointment::statusValues()),
             'note' => $this->faker->sentence(),
         ];
     }

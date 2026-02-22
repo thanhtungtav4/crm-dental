@@ -1,0 +1,12 @@
+=== forms ===
+### Ran Playwright code
+```js
+await page.goto('http://crm.test/admin/patients/1?tab=forms');
+```
+### Page
+- Page URL: http://crm.test/admin/patients/1?tab=forms
+- Page Title: Hồ sơ: Trần Sven - IDENT Dental CRM
+### Snapshot
+- [Snapshot](.playwright-cli/page-2026-02-20T13-35-21-577Z.yml)
+### Result
+- [Console](.playwright-cli/console-2026-02-20T13-35-22-285Z.log)

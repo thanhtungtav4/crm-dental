@@ -558,7 +558,16 @@ class CustomerCare extends Page implements HasTable
                 ->query(fn (Builder $query, array $data) => $this->applyDateRangeFilter($query, $data, 'date')),
             SelectFilter::make('status')
                 ->label('Trạng thái lịch')
-                ->options($this->getAppointmentStatusOptions()),
+                ->options($this->getAppointmentStatusOptions())
+                ->query(function (Builder $query, array $data) {
+                    $value = $data['value'] ?? null;
+
+                    if (! $value) {
+                        return $query;
+                    }
+
+                    return $query->whereIn('status', Appointment::statusesForQuery([$value]));
+                }),
             SelectFilter::make('doctor_id')
                 ->label('Bác sĩ')
                 ->relationship('doctor', 'name'),
@@ -681,27 +690,12 @@ class CustomerCare extends Page implements HasTable
 
     protected function formatAppointmentStatus(?string $state): string
     {
-        return match ($state) {
-            'scheduled' => 'Đã đặt',
-            'confirmed' => 'Đã xác nhận',
-            'completed' => 'Đã xong',
-            'no_show' => 'Không đến',
-            'cancelled' => 'Đã hủy',
-            'pending' => 'Chờ xử lý',
-            default => 'Không xác định',
-        };
+        return Appointment::statusLabel($state);
     }
 
     protected function getAppointmentStatusColor(?string $state): string
     {
-        return match ($state) {
-            'confirmed' => 'success',
-            'completed' => 'success',
-            'cancelled' => 'danger',
-            'scheduled' => 'warning',
-            'pending' => 'info',
-            default => 'gray',
-        };
+        return Appointment::statusColor($state);
     }
 
     protected function getCareTypeOptions(): array
@@ -739,14 +733,7 @@ class CustomerCare extends Page implements HasTable
 
     protected function getAppointmentStatusOptions(): array
     {
-        return [
-            'scheduled' => 'Đã đặt',
-            'confirmed' => 'Đã xác nhận',
-            'completed' => 'Đã xong',
-            'no_show' => 'Không đến',
-            'cancelled' => 'Đã hủy',
-            'pending' => 'Chờ xử lý',
-        ];
+        return Appointment::statusOptions();
     }
 
     protected function getMonthOptions(): array

@@ -53,21 +53,9 @@ class AppointmentStatistical extends BaseReportPage
             TextColumn::make('status')
                 ->label('Trạng thái')
                 ->badge()
-                ->formatStateUsing(fn (?string $state) => match ($state) {
-                    'scheduled' => 'Đã đặt',
-                    'confirmed' => 'Đã xác nhận',
-                    'completed' => 'Đã xong',
-                    'cancelled' => 'Đã hủy',
-                    'pending' => 'Chờ xử lý',
-                    default => 'Không xác định',
-                })
-                ->color(fn (?string $state) => match ($state) {
-                    'confirmed', 'completed' => 'success',
-                    'cancelled' => 'danger',
-                    'scheduled' => 'warning',
-                    'pending' => 'info',
-                    default => 'gray',
-                }),
+                ->formatStateUsing(fn (?string $state) => Appointment::statusLabel($state))
+                ->color(fn (?string $state) => Appointment::statusColor($state))
+                ->icon(fn (?string $state) => Appointment::statusIcon($state)),
         ];
     }
 
@@ -86,14 +74,7 @@ class AppointmentStatistical extends BaseReportPage
 
     protected function formatAppointmentStatus(?string $state): string
     {
-        return match ($state) {
-            'scheduled' => 'Đã đặt',
-            'confirmed' => 'Đã xác nhận',
-            'completed' => 'Đã xong',
-            'cancelled' => 'Đã hủy',
-            'pending' => 'Chờ xử lý',
-            default => 'Không xác định',
-        };
+        return Appointment::statusLabel($state);
     }
 
     public function getStats(): array
@@ -102,15 +83,15 @@ class AppointmentStatistical extends BaseReportPage
         $this->applyDateRange($baseQuery, 'date');
 
         $total = (clone $baseQuery)->count();
-        $new = (clone $baseQuery)->where('status', 'scheduled')->count();
-        $cancelled = (clone $baseQuery)->where('status', 'cancelled')->count();
-        $completed = (clone $baseQuery)->where('status', 'completed')->count();
+        $new = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_SCHEDULED]))->count();
+        $cancelled = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CANCELLED]))->count();
+        $completed = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))->count();
 
         return [
             ['label' => 'Tổng lịch hẹn', 'value' => number_format($total)],
             ['label' => 'Lịch hẹn mới', 'value' => number_format($new)],
             ['label' => 'Lịch hẹn bị hủy', 'value' => number_format($cancelled)],
-            ['label' => 'Đã xong', 'value' => number_format($completed)],
+            ['label' => 'Hoàn thành', 'value' => number_format($completed)],
         ];
     }
 }

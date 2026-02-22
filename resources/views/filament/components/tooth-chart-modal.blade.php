@@ -1,3 +1,23 @@
+@php
+    $toothConditionPalette = $toothConditions
+        ->map(fn($item) => $item->condition)
+        ->filter()
+        ->unique('id')
+        ->values();
+@endphp
+
+<style>
+    .crm-tooth-condition-default {
+        color: #666;
+    }
+
+    @foreach($toothConditionPalette as $paletteCondition)
+        .crm-tooth-condition-{{ $paletteCondition->id }} {
+            color: {{ $paletteCondition->color ?? '#666' }};
+        }
+    @endforeach
+</style>
+
 <div class="tooth-chart-modal p-4">
     {{-- Legend --}}
     <div class="flex justify-center gap-6 mb-6 text-sm">
@@ -29,7 +49,7 @@
                         $statusColor = 'bg-white border-gray-300 text-gray-500 hover:border-blue-400';
                         $tooltipText = "Răng $tooth";
                         $displayCode = '';
-                        $codeColor = '#666';
+                        $codeClass = 'crm-tooth-condition-default';
 
                         if ($conditions->isNotEmpty()) {
                             if ($conditions->contains('treatment_status', 'in_treatment')) {
@@ -45,7 +65,9 @@
 
                             $firstCondition = $conditions->first();
                             $displayCode = $conditions->count() > 1 ? '*' . $conditions->count() : ($firstCondition->condition?->code ?? '');
-                            $codeColor = $firstCondition->condition?->color ?? '#666';
+                            $codeClass = $firstCondition->condition?->id
+                                ? 'crm-tooth-condition-' . $firstCondition->condition->id
+                                : 'crm-tooth-condition-default';
                         }
                     @endphp
                     <button type="button"
@@ -54,8 +76,7 @@
                         title="{{ $tooltipText }}">
                         <span class="block">{{ $tooth }}</span>
                         @if($conditions->isNotEmpty())
-                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold"
-                                style="color: {{ $codeColor }}">
+                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold {{ $codeClass }}">
                                 {{ $displayCode }}
                             </span>
                         @endif
@@ -76,7 +97,7 @@
                         $statusColor = 'bg-white border-gray-300 text-gray-400 hover:border-blue-400';
                         $tooltipText = "Răng sữa $tooth";
                         $displayCode = '';
-                        $codeColor = '#666';
+                        $codeClass = 'crm-tooth-condition-default';
 
                         if ($conditions->isNotEmpty()) {
                             if ($conditions->contains('treatment_status', 'in_treatment')) {
@@ -92,7 +113,9 @@
 
                             $firstCondition = $conditions->first();
                             $displayCode = $conditions->count() > 1 ? '*' . $conditions->count() : ($firstCondition->condition?->code ?? '');
-                            $codeColor = $firstCondition->condition?->color ?? '#666';
+                            $codeClass = $firstCondition->condition?->id
+                                ? 'crm-tooth-condition-' . $firstCondition->condition->id
+                                : 'crm-tooth-condition-default';
                         }
                     @endphp
                     <button type="button"
@@ -101,8 +124,7 @@
                         title="{{ $tooltipText }}">
                         <span class="block">{{ $tooth }}</span>
                         @if($conditions->isNotEmpty())
-                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[6px] font-bold"
-                                style="color: {{ $codeColor }}">
+                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[6px] font-bold {{ $codeClass }}">
                                 {{ $displayCode }}
                             </span>
                         @endif
@@ -127,7 +149,7 @@
                         $statusColor = 'bg-white border-gray-300 text-gray-400 hover:border-blue-400';
                         $tooltipText = "Răng sữa $tooth";
                         $displayCode = '';
-                        $codeColor = '#666';
+                        $codeClass = 'crm-tooth-condition-default';
 
                         if ($conditions->isNotEmpty()) {
                             if ($conditions->contains('treatment_status', 'in_treatment')) {
@@ -143,7 +165,9 @@
 
                             $firstCondition = $conditions->first();
                             $displayCode = $conditions->count() > 1 ? '*' . $conditions->count() : ($firstCondition->condition?->code ?? '');
-                            $codeColor = $firstCondition->condition?->color ?? '#666';
+                            $codeClass = $firstCondition->condition?->id
+                                ? 'crm-tooth-condition-' . $firstCondition->condition->id
+                                : 'crm-tooth-condition-default';
                         }
                     @endphp
                     <button type="button"
@@ -152,8 +176,7 @@
                         title="{{ $tooltipText }}">
                         <span class="block">{{ $tooth }}</span>
                         @if($conditions->isNotEmpty())
-                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[6px] font-bold"
-                                style="color: {{ $codeColor }}">
+                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[6px] font-bold {{ $codeClass }}">
                                 {{ $displayCode }}
                             </span>
                         @endif
@@ -175,7 +198,7 @@
                         $statusColor = 'bg-white border-gray-300 text-gray-500 hover:border-blue-400';
                         $tooltipText = "Răng $tooth";
                         $displayCode = '';
-                        $codeColor = '#666';
+                        $codeClass = 'crm-tooth-condition-default';
 
                         if ($conditions->isNotEmpty()) {
                             // Status Logic
@@ -194,7 +217,9 @@
                             // Badge Logic (Show first code or special indicator)
                             $firstCondition = $conditions->first();
                             $displayCode = $conditions->count() > 1 ? '*' . $conditions->count() : ($firstCondition->condition?->code ?? '');
-                            $codeColor = $firstCondition->condition?->color ?? '#666';
+                            $codeClass = $firstCondition->condition?->id
+                                ? 'crm-tooth-condition-' . $firstCondition->condition->id
+                                : 'crm-tooth-condition-default';
                         }
                     @endphp
                     <button type="button"
@@ -202,8 +227,7 @@
                         data-tooth="{{ $tooth }}" title="{{ $tooltipText }}">
                         <span class="block">{{ $tooth }}</span>
                         @if($conditions->isNotEmpty())
-                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold"
-                                style="color: {{ $codeColor }}">
+                            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold {{ $codeClass }}">
                                 {{ $displayCode }}
                             </span>
                         @endif
@@ -219,8 +243,13 @@
             <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Tình trạng răng hiện tại</h4>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 @foreach($toothConditions->groupBy('condition.name') as $conditionName => $conditions)
+                    @php
+                        $summaryConditionClass = $conditions->first()?->condition?->id
+                            ? 'crm-tooth-condition-' . $conditions->first()->condition->id
+                            : 'crm-tooth-condition-default';
+                    @endphp
                     <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                        <div class="font-medium text-sm" style="color: {{ $conditions->first()->condition?->color ?? '#666' }}">
+                        <div class="font-medium text-sm {{ $summaryConditionClass }}">
                             {{ $conditionName ?: 'Không xác định' }}
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">

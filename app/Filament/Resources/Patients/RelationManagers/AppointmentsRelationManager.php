@@ -4,8 +4,6 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\Appointment;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -57,25 +55,12 @@ class AppointmentsRelationManager extends RelationManager
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'scheduled' => 'Đã đặt',
-                        'confirmed' => 'Đã xác nhận',
-                        'in_progress' => 'Đang khám',
-                        'completed' => 'Hoàn thành',
-                        'cancelled' => 'Đã hủy',
-                        'no_show' => 'Không đến',
-                        default => 'Không xác định',
-                    })
-                    ->colors([
-                        'info' => 'scheduled',
-                        'primary' => 'confirmed',
-                        'warning' => 'in_progress',
-                        'success' => 'completed',
-                        'danger' => 'cancelled',
-                        'gray' => 'no_show',
-                    ]),
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => Appointment::statusLabel($state))
+                    ->color(fn (?string $state): string => Appointment::statusColor($state))
+                    ->icon(fn (?string $state): string => Appointment::statusIcon($state)),
 
                 Tables\Columns\TextColumn::make('branch.name')
                     ->label('Chi nhánh')
@@ -93,14 +78,16 @@ class AppointmentsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Trạng thái')
-                    ->options([
-                        'scheduled' => 'Đã đặt',
-                        'confirmed' => 'Đã xác nhận',
-                        'in_progress' => 'Đang khám',
-                        'completed' => 'Hoàn thành',
-                        'cancelled' => 'Đã hủy',
-                        'no_show' => 'Không đến',
-                    ]),
+                    ->options(Appointment::statusOptions())
+                    ->query(function ($query, array $data) {
+                        $value = $data['value'] ?? null;
+
+                        if (! $value) {
+                            return $query;
+                        }
+
+                        return $query->whereIn('status', Appointment::statusesForQuery([$value]));
+                    }),
             ])
             ->headerActions([
                 Action::make('createAppointment')
@@ -113,19 +100,18 @@ class AppointmentsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
-                    ->label('Sửa')
+                    ->label('')
+                    ->tooltip('Sửa lịch hẹn')
+                    ->icon('heroicon-o-pencil-square')
                     ->url(fn (Appointment $record): string => 
                         route('filament.admin.resources.appointments.edit', ['record' => $record->id])),
                 DeleteAction::make()
-                    ->label('Xóa')
+                    ->label('')
+                    ->tooltip('Xóa lịch hẹn')
+                    ->icon('heroicon-o-trash')
                     ->modalHeading('Xóa lịch hẹn')
                     ->modalDescription('Bạn có chắc chắn muốn xóa lịch hẹn này không?')
                     ->successNotificationTitle('Đã xóa lịch hẹn'),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->emptyStateHeading('Chưa có lịch hẹn')
             ->emptyStateDescription('Tạo lịch hẹn đầu tiên cho bệnh nhân này')

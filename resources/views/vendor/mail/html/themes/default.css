@@ -109,6 +109,10 @@ img {
     text-decoration: none;
 }
 
+.mail-header-link {
+    display: inline-block;
+}
+
 /* Logo */
 
 .logo {

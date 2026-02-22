@@ -1,5 +1,10 @@
 @php
     $conditions = \App\Models\ToothCondition::all();
+    $conditionPalette = $conditions->map(fn($condition) => [
+        'code' => $condition->code,
+        'name' => $condition->name,
+        'toneClass' => 'crm-tooth-tone-' . $condition->id,
+    ])->values();
     
     // Define teeth rows as per screenshot
     // Adult Upper: 18-11 then 21-28
@@ -14,27 +19,43 @@
     $adultLower = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 @endphp
 
+<style>
+    .crm-tooth-tone-default {
+        color: #e5e7eb;
+    }
+
+    .crm-tooth-tone-fallback {
+        color: #3b82f6;
+    }
+
+    @foreach($conditions as $condition)
+        .crm-tooth-tone-{{ $condition->id }} {
+            color: {{ $condition->color ?? '#3b82f6' }};
+        }
+    @endforeach
+</style>
+
 <div 
     x-data="{
         state: $wire.entangle('data.tooth_diagnosis_data'),
         selectedTooth: null,
         modalOpen: false,
         otherDiagnosis: '',
-        conditions: @js($conditions),
+        conditions: @js($conditionPalette),
         
         getToothData(tooth) {
             return this.state?.[tooth] || { conditions: [], status: 'planned', notes: '' };
         },
 
-        getToothColor(tooth) {
+        getToothToneClass(tooth) {
             let data = this.getToothData(tooth);
-            if (!data.conditions || data.conditions.length === 0) return '#e5e7eb'; // Gray-200 (Default inactive)
+            if (!data.conditions || data.conditions.length === 0) return 'crm-tooth-tone-default';
             
             // Priority coloring: if multiple, take the last one
             let code = data.conditions[data.conditions.length - 1]; 
             let cond = this.conditions.find(c => c.code === code);
-            // Default to blue-500 if not found, but should be found
-            return cond ? cond.color : '#3b82f6';
+
+            return cond ? cond.toneClass : 'crm-tooth-tone-fallback';
         },
 
         getConditionsList(tooth) {
@@ -107,15 +128,15 @@
             <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm border border-gray-300 bg-gray-100"></span> Bình thường</div>
              @foreach($conditions->unique('category')->pluck('category') as $cat)
                 @php 
-                    $color = match($cat) {
-                        'Bệnh lý' => '#ef4444', 
-                        'Phục hình' => '#3b82f6', 
-                        'Thẩm mỹ' => '#eab308', 
-                        'Hiện trạng' => '#1e293b', 
-                        default => '#6b7280'
+                    $dotClass = match($cat) {
+                        'Bệnh lý' => 'bg-red-500', 
+                        'Phục hình' => 'bg-blue-500', 
+                        'Thẩm mỹ' => 'bg-yellow-500', 
+                        'Hiện trạng' => 'bg-slate-800', 
+                        default => 'bg-gray-500'
                     };
                 @endphp
-                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm" style="background-color: {{ $color }}"></span> {{ $cat }}</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm {{ $dotClass }}"></span> {{ $cat }}</div>
              @endforeach
         </div>
 
@@ -130,7 +151,7 @@
                      >
                         {{-- SVG Tooth Icon - Color the FILL --}}
                         <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm" 
-                             :style="`color: ${getToothColor({{ $t }})}`" 
+                             :class="getToothToneClass({{ $t }})" 
                              fill="currentColor" 
                         >
                              <!-- Simple Molar Shape -->
@@ -142,8 +163,7 @@
                         <div 
                             x-show="getConditionLabels({{ $t }})" 
                             x-text="getConditionLabels({{ $t }})"
-                            class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md leading-tight text-center"
-                            style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"
+                            class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md leading-tight text-center crm-tooth-label-shadow"
                         ></div>
                      </div>
                 </div>
@@ -162,10 +182,10 @@
                         class="w-8 h-8 md:w-10 md:h-10 border border-transparent rounded hover:bg-gray-50 transition-all duration-200 flex items-center justify-center relative group-hover:scale-110"
                         :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }})"
                      >
-                        <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
+                        <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm" :class="getToothToneClass({{ $t }})" fill="currentColor">
                              <path d="M12 4C9 4 7 6 7 9c0 3 2 5 2 7h6c0-2 2-4 2-7 0-3-2-5-5-5z"/>
                         </svg>
-                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md crm-tooth-label-shadow"></div>
                      </div>
                      <span class="text-[10px] text-gray-400 mt-1 group-hover:text-primary-600">{{ $t }}</span>
                 </div>
@@ -184,10 +204,10 @@
                         class="w-8 h-8 md:w-10 md:h-10 border border-transparent rounded hover:bg-gray-50 transition-all duration-200 flex items-center justify-center relative group-hover:scale-110"
                         :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }})"
                      >
-                         <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
+                         <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :class="getToothToneClass({{ $t }})" fill="currentColor">
                              <path d="M12 4C9 4 7 6 7 9c0 3 2 5 2 7h6c0-2 2-4 2-7 0-3-2-5-5-5z"/>
                         </svg>
-                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white drop-shadow-md crm-tooth-label-shadow"></div>
                      </div>
                 </div>
                  @if($t === 81) <div class="w-6 md:w-10 border-r border-dashed border-gray-200 mx-2"></div> @endif
@@ -203,10 +223,10 @@
                         class="w-10 h-10 md:w-12 md:h-12 border border-transparent rounded hover:bg-gray-50 transition-all duration-200 flex items-center justify-center relative group-hover:scale-110"
                         :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }})"
                      >
-                        <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :style="`color: ${getToothColor({{ $t }})}`" fill="currentColor">
+                        <svg viewBox="0 0 24 24" class="w-full h-full transition-colors duration-300 drop-shadow-sm transform rotate-180" :class="getToothToneClass({{ $t }})" fill="currentColor">
                              <path d="M12 2C8 2 5 5 5 9c0 4 3 7 3 10h8c0-3 3-6 3-10 0-4-3-7-7-7z"/>
                         </svg>
-                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
+                        <div x-show="getConditionLabels({{ $t }})" x-text="getConditionLabels({{ $t }})" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-md crm-tooth-label-shadow"></div>
                      </div>
                       <span class="text-xs text-gray-500 mt-1 font-medium group-hover:text-primary-600">{{ $t }}</span>
                 </div>
@@ -234,7 +254,7 @@
     <!-- Modal for Condition Selection -->
     <div 
         x-show="modalOpen" 
-        style="display: none;"
+        x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
         x-transition
     >

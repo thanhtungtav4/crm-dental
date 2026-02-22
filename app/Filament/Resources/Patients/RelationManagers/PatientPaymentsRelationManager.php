@@ -5,8 +5,6 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 use App\Models\Payment;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -86,21 +84,19 @@ class PatientPaymentsRelationManager extends RelationManager
             ])
             ->actions([
                 ViewAction::make()
-                    ->label('Xem'),
+                    ->label('')
+                    ->tooltip('Xem'),
                 EditAction::make()
-                    ->label('Sửa')
+                    ->label('')
+                    ->tooltip('Sửa')
                     ->url(fn (Payment $record): string => route('filament.admin.resources.payments.edit', ['record' => $record->id])),
                 Action::make('print')
-                    ->label('In')
+                    ->label('')
+                    ->tooltip('In')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn (Payment $record): string => route('payments.print', $record))
                     ->openUrlInNewTab(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('paid_at', 'desc')
             ->emptyStateHeading('Chưa có phiếu thu/hoàn')

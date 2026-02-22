@@ -4,7 +4,7 @@
         x-data="filamentActionModals({
                     livewireId: @js($this->getId()),
                 })"
-        style="height: 0"
+        class="h-0"
     >
         @foreach ($this->getMountedActions() as $action)
             @if ((! $loop->last) || $this->mountedActionShouldOpenModal())

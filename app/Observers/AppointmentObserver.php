@@ -31,7 +31,7 @@ class AppointmentObserver
     public function updated(Appointment $appointment): void
     {
         // Tự động chuyển Customer thành Patient khi appointment hoàn thành
-        if ($appointment->wasChanged('status') && $appointment->status === 'done') {
+        if ($appointment->wasChanged('status') && $appointment->status === Appointment::STATUS_COMPLETED) {
             $this->handleConversion($appointment);
         }
 

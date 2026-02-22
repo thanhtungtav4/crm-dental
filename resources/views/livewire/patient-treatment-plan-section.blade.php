@@ -25,24 +25,24 @@
         </div>
     </div>
 
-    <div class="crm-treatment-card rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" style="border-radius: 8px; overflow: hidden;">
-        <div class="crm-treatment-table-wrap" style="overflow-x: auto;">
-            <table class="crm-treatment-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                <thead style="background: #4b4b4b; color: #ffffff;">
+    <div class="crm-treatment-card rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+        <div class="crm-treatment-table-wrap">
+            <table class="crm-treatment-table">
+                <thead>
                     <tr>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Răng số</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Tình trạng răng</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Tên thủ thuật</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">KH đồng ý</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">S.L</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Đơn giá</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Thành tiền</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Giảm giá (%)</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Tiền giảm giá</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right; white-space: nowrap;">Tổng chi phí</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: left; white-space: nowrap;">Ghi chú</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">Tình trạng</th>
-                        <th style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap;">Thao tác</th>
+                        <th>Răng số</th>
+                        <th>Tình trạng răng</th>
+                        <th>Tên thủ thuật</th>
+                        <th class="is-center">KH đồng ý</th>
+                        <th class="is-center">S.L</th>
+                        <th class="is-right">Đơn giá</th>
+                        <th class="is-right">Thành tiền</th>
+                        <th class="is-right">Giảm giá (%)</th>
+                        <th class="is-right">Tiền giảm giá</th>
+                        <th class="is-right">Tổng chi phí</th>
+                        <th>Ghi chú</th>
+                        <th class="is-center">Tình trạng</th>
+                        <th class="is-center">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,34 +75,34 @@
                             $isApproved = (bool) ($item->patient_approved ?? false);
                         @endphp
                         <tr>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db;">{{ $toothLabel }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db;">{{ $diagnosisLabels ?: '-' }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db;">{{ $item->service?->name ?? $item->name }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center;">
-                                <input type="checkbox" disabled @checked($isApproved) style="width: 14px; height: 14px; accent-color: #8b5cf6;">
+                            <td>{{ $toothLabel }}</td>
+                            <td>{{ $diagnosisLabels ?: '-' }}</td>
+                            <td>{{ $item->service?->name ?? $item->name }}</td>
+                            <td class="is-center">
+                                <input type="checkbox" disabled @checked($isApproved) class="crm-check-sm">
                             </td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center;">{{ $item->quantity ?? 1 }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($unitPrice) }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($lineAmount) }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right;">{{ $discountPercent ? rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') : 0 }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($discountAmount) }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: right;">{{ $formatMoney($totalAmount) }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db;">{{ $item->notes ?: '-' }}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center;">
+                            <td class="is-center">{{ $item->quantity ?? 1 }}</td>
+                            <td class="is-right">{{ $formatMoney($unitPrice) }}</td>
+                            <td class="is-right">{{ $formatMoney($lineAmount) }}</td>
+                            <td class="is-right">{{ $discountPercent ? rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') : 0 }}</td>
+                            <td class="is-right">{{ $formatMoney($discountAmount) }}</td>
+                            <td class="is-right">{{ $formatMoney($totalAmount) }}</td>
+                            <td>{{ $item->notes ?: '-' }}</td>
+                            <td class="is-center">
                                 <span class="crm-treatment-status {{ $statusClass }}">
                                     {{ $statusLabel }}
                                 </span>
                             </td>
-                            <td style="padding: 8px 10px; border: 1px solid #d1d5db; text-align: center;">
+                            <td class="is-center">
                                 <a href="{{ route('filament.admin.resources.plan-items.edit', ['record' => $item->id]) }}"
                                    class="crm-table-icon-btn"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 14px; height: 14px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
                                     </svg>
                                 </a>
                                 <button type="button" disabled class="crm-table-icon-btn is-disabled">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 14px; height: 14px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7h10z" />
                                     </svg>
                                 </button>
@@ -110,7 +110,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="crm-treatment-empty" style="padding: 18px; text-align: center; color: #6b7280; border: 1px solid #d1d5db;">
+                            <td colspan="13" class="crm-treatment-empty crm-treatment-empty-bordered">
                                 Kế hoạch điều trị chưa có item
                             </td>
                         </tr>
@@ -133,38 +133,38 @@
     </div>
 
     @if($showPlanModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" wire:click="closePlanModal">
-            <div class="w-full max-w-6xl rounded-xl bg-white shadow-xl dark:bg-gray-900" style="border-radius: 12px;" wire:click.stop>
-                <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4" style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="crm-modal-backdrop crm-modal-z-50" wire:click="closePlanModal">
+            <div class="crm-modal-card crm-modal-card-lg dark:bg-gray-900" wire:click.stop>
+                <div class="crm-modal-header">
                     <h3 class="text-lg font-semibold text-gray-900">Thêm kế hoạch điều trị</h3>
-                    <button type="button" wire:click="closePlanModal" style="color: #6b7280;">✕</button>
+                    <button type="button" wire:click="closePlanModal" class="crm-modal-close-btn">✕</button>
                 </div>
 
-                <div class="p-6">
-                    <div class="mb-4 flex items-center justify-between" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="crm-modal-body">
+                    <div class="mb-4 flex items-center justify-between">
                         <div class="text-sm font-semibold text-gray-900">Thủ thuật thực hiện *</div>
-                        <button type="button" wire:click="openProcedureModal" class="rounded-md border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-600" style="border-radius: 6px;">
+                        <button type="button" wire:click="openProcedureModal" class="crm-btn crm-btn-outline px-3 py-2">
                             Thêm thủ thuật
                         </button>
                     </div>
 
-                    <div style="overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                            <thead style="background: #f3f4f6; color: #374151;">
+                    <div class="crm-plan-editor-table-wrap">
+                        <table class="crm-plan-editor-table">
+                            <thead>
                                 <tr>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb;">STT</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left;">Răng số</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left;">Tình trạng răng</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left;">Tên thủ thuật</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">KH đồng ý</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">S.L</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">Đơn giá</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">Thành tiền</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">Giảm giá (%)</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">Tiền giảm giá</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">Tổng chi phí</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left;">Ghi chú</th>
-                                    <th style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">Thao tác</th>
+                                    <th class="is-center">STT</th>
+                                    <th>Răng số</th>
+                                    <th>Tình trạng răng</th>
+                                    <th>Tên thủ thuật</th>
+                                    <th class="is-center">KH đồng ý</th>
+                                    <th class="is-center">S.L</th>
+                                    <th class="is-right">Đơn giá</th>
+                                    <th class="is-right">Thành tiền</th>
+                                    <th class="is-right">Giảm giá (%)</th>
+                                    <th class="is-right">Tiền giảm giá</th>
+                                    <th class="is-right">Tổng chi phí</th>
+                                    <th>Ghi chú</th>
+                                    <th class="is-center">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -178,49 +178,49 @@
                                         $totalAmount = $lineAmount - $discountAmount;
                                     @endphp
                                     <tr wire:key="draft-item-{{ $index }}">
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center;">{{ $index + 1 }}</td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">
+                                        <td class="is-center">{{ $index + 1 }}</td>
+                                        <td>
                                             <input type="text" wire:model.lazy="draftItems.{{ $index }}.tooth_text" placeholder="VD: 11,12"
-                                                style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px;">
+                                                class="crm-plan-editor-input">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">
+                                        <td>
                                             <select multiple wire:model="draftItems.{{ $index }}.diagnosis_ids"
-                                                style="width: 100%; min-width: 140px; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; height: 44px;">
+                                                class="crm-plan-editor-select">
                                                 @foreach($diagnosisOptions as $id => $label)
                                                     <option value="{{ $id }}">{{ $label }}</option>
                                                 @endforeach
                                             </select>
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">{{ $item['service_name'] ?? 'Thủ thuật' }}</td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center;">
-                                            <input type="checkbox" wire:model="draftItems.{{ $index }}.patient_approved" style="width: 14px; height: 14px; accent-color: #8b5cf6;">
+                                        <td>{{ $item['service_name'] ?? 'Thủ thuật' }}</td>
+                                        <td class="is-center">
+                                            <input type="checkbox" wire:model="draftItems.{{ $index }}.patient_approved" class="crm-check-sm">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center;">
+                                        <td class="is-center">
                                             <input type="number" min="1" wire:model.lazy="draftItems.{{ $index }}.quantity"
-                                                style="width: 60px; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; text-align: center;">
+                                                class="crm-plan-editor-input is-qty">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;">
+                                        <td class="is-right">
                                             <input type="number" min="0" wire:model.lazy="draftItems.{{ $index }}.price"
-                                                style="width: 90px; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; text-align: right;">
+                                                class="crm-plan-editor-input is-price">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ $formatMoney($lineAmount) }}</td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;">
+                                        <td class="is-right">{{ $formatMoney($lineAmount) }}</td>
+                                        <td class="is-right">
                                             <input type="number" min="0" max="100" wire:model.lazy="draftItems.{{ $index }}.discount_percent"
-                                                style="width: 70px; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; text-align: right;">
+                                                class="crm-plan-editor-input is-discount">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ $formatMoney($discountAmount) }}</td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ $formatMoney($totalAmount) }}</td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">
+                                        <td class="is-right">{{ $formatMoney($discountAmount) }}</td>
+                                        <td class="is-right">{{ $formatMoney($totalAmount) }}</td>
+                                        <td>
                                             <input type="text" wire:model.lazy="draftItems.{{ $index }}.notes"
-                                                style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px;">
+                                                class="crm-plan-editor-input">
                                         </td>
-                                        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center;">
-                                            <button type="button" wire:click="removeDraftItem({{ $index }})" style="color: #ef4444;">Xóa</button>
+                                        <td class="is-center">
+                                            <button type="button" wire:click="removeDraftItem({{ $index }})" class="crm-plan-editor-remove-btn">Xóa</button>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="13" style="padding: 18px; text-align: center; color: #6b7280;">
+                                        <td colspan="13" class="crm-plan-editor-empty">
                                             Chưa có thủ thuật được chọn.
                                         </td>
                                     </tr>
@@ -230,11 +230,11 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4" style="display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
-                    <button type="button" wire:click="closePlanModal" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600" style="border-radius: 6px;">
+                <div class="crm-modal-footer">
+                    <button type="button" wire:click="closePlanModal" class="crm-btn crm-btn-outline px-4 py-2">
                         Hủy bỏ
                     </button>
-                    <button type="button" wire:click="savePlanItems" class="rounded-md bg-primary-500 px-4 py-2 text-sm font-semibold text-white" style="border-radius: 6px; background: #8b5cf6;">
+                    <button type="button" wire:click="savePlanItems" class="crm-btn crm-btn-primary px-4 py-2">
                         Lưu thông tin
                     </button>
                 </div>
@@ -243,63 +243,63 @@
     @endif
 
     @if($showProcedureModal)
-        <div class="fixed inset-0 flex items-center justify-center bg-black/50 p-4" style="z-index: 60;" wire:click="closeProcedureModal">
-            <div class="w-full max-w-6xl rounded-xl bg-white shadow-xl dark:bg-gray-900" style="border-radius: 12px;" wire:click.stop>
-                <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4" style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="crm-modal-backdrop crm-modal-z-60" wire:click="closeProcedureModal">
+            <div class="crm-modal-card crm-modal-card-lg dark:bg-gray-900" wire:click.stop>
+                <div class="crm-modal-header">
                     <div>
                         <h3 class="text-lg font-semibold text-gray-900">Chọn thủ thuật điều trị</h3>
                         <a href="{{ url('/setting/trick') }}" class="text-xs text-primary-600">Đi tới thiết lập thủ thuật</a>
                     </div>
-                    <button type="button" wire:click="closeProcedureModal" style="color: #6b7280;">✕</button>
+                    <button type="button" wire:click="closeProcedureModal" class="crm-modal-close-btn">✕</button>
                 </div>
 
-                <div class="p-6">
+                <div class="crm-modal-body">
                     <div class="mb-4">
                         <input type="text" wire:model.debounce.300ms="procedureSearch" placeholder="Tìm theo tên thủ thuật"
-                            style="width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px;">
+                            class="crm-procedure-search-input">
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[240px,1fr]" style="display: grid; grid-template-columns: 240px 1fr; gap: 16px;">
-                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; max-height: 360px; overflow: auto;">
+                    <div class="crm-procedure-layout">
+                        <div class="crm-procedure-category-panel">
                             <button type="button"
                                 wire:click="selectCategory(null)"
-                                style="display: block; width: 100%; text-align: left; padding: 6px 8px; border-radius: 6px; background: {{ $selectedCategoryId ? 'transparent' : '#eef2ff' }};">
+                                class="crm-procedure-category-btn {{ $selectedCategoryId ? '' : 'is-active' }}">
                                 Tất cả nhóm thủ thuật
                             </button>
                             @foreach($categories as $category)
                                 <button type="button"
                                     wire:click="selectCategory({{ $category->id }})"
-                                    style="display: block; width: 100%; text-align: left; padding: 6px 8px; border-radius: 6px; margin-top: 4px; background: {{ $selectedCategoryId === $category->id ? '#eef2ff' : 'transparent' }};">
+                                    class="crm-procedure-category-btn {{ $selectedCategoryId === $category->id ? 'is-active' : '' }}">
                                     {{ $category->name }}
                                 </button>
                             @endforeach
                         </div>
 
-                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                                <thead style="background: #f3f4f6;">
+                        <div class="crm-procedure-services-wrap">
+                            <table class="crm-procedure-services-table">
+                                <thead>
                                     <tr>
-                                        <th style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #e5e7eb;">Chọn</th>
-                                        <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">Tên thủ thuật</th>
-                                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">Đơn giá</th>
-                                        <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">Quy trình thủ thuật</th>
-                                        <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">Ghi chú</th>
+                                        <th class="is-center">Chọn</th>
+                                        <th>Tên thủ thuật</th>
+                                        <th class="is-right">Đơn giá</th>
+                                        <th>Quy trình thủ thuật</th>
+                                        <th>Ghi chú</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($services as $service)
                                         <tr wire:key="service-{{ $service->id }}">
-                                            <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-                                                <input type="checkbox" value="{{ $service->id }}" wire:model="selectedServiceIds" style="width: 14px; height: 14px; accent-color: #8b5cf6;">
+                                            <td class="is-center">
+                                                <input type="checkbox" value="{{ $service->id }}" wire:model="selectedServiceIds" class="crm-check-sm">
                                             </td>
-                                            <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">{{ $service->name }}</td>
-                                            <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f5f9;">{{ $formatMoney($service->default_price ?? 0) }}</td>
-                                            <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">{{ $service->description ?: '-' }}</td>
-                                            <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">-</td>
+                                            <td>{{ $service->name }}</td>
+                                            <td class="is-right">{{ $formatMoney($service->default_price ?? 0) }}</td>
+                                            <td>{{ $service->description ?: '-' }}</td>
+                                            <td>-</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" style="padding: 18px; text-align: center; color: #6b7280;">
+                                            <td colspan="5" class="crm-plan-editor-empty">
                                                 Không có thủ thuật phù hợp.
                                             </td>
                                         </tr>
@@ -310,11 +310,11 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4" style="display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
-                    <button type="button" wire:click="closeProcedureModal" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600" style="border-radius: 6px;">
+                <div class="crm-modal-footer">
+                    <button type="button" wire:click="closeProcedureModal" class="crm-btn crm-btn-outline px-4 py-2">
                         Hủy bỏ
                     </button>
-                    <button type="button" wire:click="addSelectedServices" class="rounded-md bg-primary-500 px-4 py-2 text-sm font-semibold text-white" style="border-radius: 6px; background: #8b5cf6;">
+                    <button type="button" wire:click="addSelectedServices" class="crm-btn crm-btn-primary px-4 py-2">
                         Chọn thủ thuật
                     </button>
                 </div>

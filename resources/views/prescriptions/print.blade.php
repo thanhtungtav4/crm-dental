@@ -129,6 +129,21 @@
             display: block;
             margin-bottom: 5px;
         }
+
+        .medication-note-cell {
+            font-style: italic;
+            color: #666;
+        }
+
+        .medications-empty {
+            text-align: center;
+            color: #999;
+        }
+
+        .footer-notes-list {
+            padding-left: 15px;
+            font-size: 10px;
+        }
     </style>
 </head>
 
@@ -201,14 +216,14 @@
                     @if($item->notes)
                         <tr>
                             <td></td>
-                            <td colspan="5" style="font-style: italic; color: #666;">
+                            <td colspan="5" class="medication-note-cell">
                                 <em>Ghi chú: {{ $item->notes }}</em>
                             </td>
                         </tr>
                     @endif
                 @empty
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #999;">Không có thuốc trong đơn</td>
+                        <td colspan="6" class="medications-empty">Không có thuốc trong đơn</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -225,7 +240,7 @@
     <div class="footer">
         <div class="left">
             <p><strong>Lưu ý:</strong></p>
-            <ul style="padding-left: 15px; font-size: 10px;">
+            <ul class="footer-notes-list">
                 <li>Đọc kỹ hướng dẫn sử dụng trước khi dùng</li>
                 <li>Uống đúng liều, đúng giờ theo chỉ định</li>
                 <li>Tái khám theo lịch hẹn</li>

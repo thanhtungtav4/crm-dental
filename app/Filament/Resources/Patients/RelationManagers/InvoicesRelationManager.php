@@ -4,8 +4,6 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\Invoice;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -126,17 +124,21 @@ class InvoicesRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->label('')
+                    ->tooltip('Sửa')
                     ->url(fn (Invoice $record): string => 
                         route('filament.admin.resources.invoices.edit', ['record' => $record->id])),
                 Action::make('print')
-                    ->label('In')
+                    ->label('')
+                    ->tooltip('In')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn (Invoice $record): string => route('invoices.print', $record))
                     ->openUrlInNewTab(),
                 
                 Action::make('recordPayment')
-                    ->label('Ghi thanh toán')
+                    ->label('')
+                    ->tooltip('Ghi thanh toán')
                     ->icon('heroicon-o-banknotes')
                     ->color('primary')
                     ->visible(fn (Invoice $record) => $record->status !== 'paid' && $record->status !== 'cancelled')
@@ -144,11 +146,6 @@ class InvoicesRelationManager extends RelationManager
                         route('filament.admin.resources.payments.create', [
                             'invoice_id' => $record->id,
                         ])),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->emptyStateHeading('Chưa có hóa đơn')
             ->emptyStateDescription('Tạo hóa đơn đầu tiên cho bệnh nhân này')

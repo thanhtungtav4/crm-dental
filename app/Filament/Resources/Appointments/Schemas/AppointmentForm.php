@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Appointments\Schemas;
 
+use App\Models\Appointment;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
@@ -173,19 +174,15 @@ class AppointmentForm
 
                 Forms\Components\Select::make('status')
                     ->label('Trạng thái')
-                    ->options([
-                        'scheduled' => 'Đã đặt',
-                        'confirmed' => 'Đã xác nhận',
-                        'completed' => 'Hoàn thành',
-                        'cancelled' => 'Hủy',
-                    ])
-                    ->default('scheduled')
+                    ->options(Appointment::statusOptions())
+                    ->default(Appointment::STATUS_SCHEDULED)
+                    ->required()
                     ->live(),
 
                 Forms\Components\Textarea::make('cancellation_reason')
                     ->label('Lý do hủy lịch')
                     ->rows(2)
-                    ->visible(fn(callable $get) => $get('status') === 'cancelled')
+                    ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
                     ->columnSpanFull(),
 
                 Forms\Components\Textarea::make('reschedule_reason')
@@ -198,7 +195,7 @@ class AppointmentForm
                     ->native(false)
                     ->seconds(false)
                     ->displayFormat('d/m/Y H:i')
-                    ->visible(fn(callable $get) => in_array($get('status'), ['confirmed', 'completed']))
+                    ->visible(fn (callable $get) => in_array($get('status'), Appointment::statusesRequiringConfirmation(), true))
                     ->helperText('Tự động ghi nhận khi chuyển sang trạng thái "Đã xác nhận"'),
 
                 Forms\Components\Select::make('confirmed_by')
@@ -206,8 +203,8 @@ class AppointmentForm
                     ->relationship('confirmedBy', 'name')
                     ->searchable()
                     ->preload()
-                    ->visible(fn(callable $get) => in_array($get('status'), ['confirmed', 'completed']))
-                    ->default(fn(callable $get) => $get('status') === 'confirmed' ? auth()->id() : null),
+                    ->visible(fn (callable $get) => in_array($get('status'), Appointment::statusesRequiringConfirmation(), true))
+                    ->default(fn (callable $get) => in_array($get('status'), Appointment::statusesRequiringConfirmation(), true) ? auth()->id() : null),
 
                 Forms\Components\Textarea::make('chief_complaint')
                     ->label('Lý do khám')

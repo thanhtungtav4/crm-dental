@@ -10,6 +10,8 @@ use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -136,7 +138,7 @@ class DiagnosisAndTreatmentRelationManager extends RelationManager
                             ->schema([
                                 Forms\Components\CheckboxList::make('diagnosis_ids')
                                     ->label('Chọn chẩn đoán cần điều trị (nếu có)')
-                                    ->options(function (Forms\Get $get, RelationManager $livewire) {
+                                    ->options(function (Get $get, RelationManager $livewire) {
                                         $selectedTeeth = $get('tooth_ids') ?? [];
                                         if (empty($selectedTeeth))
                                             return [];
@@ -162,7 +164,7 @@ class DiagnosisAndTreatmentRelationManager extends RelationManager
                                     ->preload()
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    ->afterStateUpdated(function ($state, Set $set) {
                                         $service = \App\Models\Service::find($state);
                                         if ($service) {
                                             $set('price', (int) $service->default_price);
