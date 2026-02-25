@@ -24,7 +24,7 @@ class TreatmentPlanFactory extends Factory
             'title' => $this->faker->randomElement(['Kế hoạch trồng răng implant','Kế hoạch niềng răng','Kế hoạch phục hình thẩm mỹ','Kế hoạch điều trị nha chu']),
             'notes' => $this->faker->randomElement(['Tư vấn lần 1','Đã chụp X-quang','Chỉ định cạo vôi trước','Cần xét nghiệm máu']),
             'total_cost' => $this->faker->numberBetween(2_000_000, 50_000_000),
-            'status' => $this->faker->randomElement(['draft','approved','in_progress','completed']),
+            'status' => TreatmentPlan::STATUS_APPROVED,
         ];
     }
 }

@@ -433,6 +433,13 @@ Công việc đang làm (WIP):
 - **Title**: PM Flow Hardening Wave 1 (ops + finance + lifecycle)
 - **Type**: Epic (Cross-team)
 - **Estimate**: 61 SP (gói `PM-01..PM-10`)
+- **Status**: In Progress (`2026-02-25`)
+- **Tiến độ con**:
+  - Done: `PM-01` Appointment state machine normalization.
+  - Done: `PM-02` Care Ticket state machine normalization.
+  - Done: `PM-03` Visit Episode + chair metrics tracking.
+  - Done: `PM-04` Appointment override audit flow (late/emergency/walk-in).
+  - Done: `PM-05` Treatment approval lifecycle + phase gating + decline follow-up queue.
 - **Dependencies**: Không
 - **Scope**:
   - Chuẩn hóa state machine `Appointment/Care`.

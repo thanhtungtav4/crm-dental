@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TreatmentPlans\RelationManagers;
 
+use App\Models\PlanItem;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -10,11 +11,12 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -114,15 +116,28 @@ class PlanItemsRelationManager extends RelationManager
 
                 Section::make('Trạng thái & Tiến độ')
                     ->schema([
+                        Select::make('approval_status')
+                            ->label('Phê duyệt bệnh nhân')
+                            ->options(PlanItem::approvalStatusOptions())
+                            ->default(PlanItem::APPROVAL_PROPOSED)
+                            ->required()
+                            ->live()
+                            ->columnSpan(1),
+                        Textarea::make('approval_decline_reason')
+                            ->label('Lý do từ chối')
+                            ->rows(2)
+                            ->visible(fn (callable $get): bool => $get('approval_status') === PlanItem::APPROVAL_DECLINED)
+                            ->required(fn (callable $get): bool => $get('approval_status') === PlanItem::APPROVAL_DECLINED)
+                            ->columnSpan(1),
                         Select::make('status')
                             ->label('Trạng thái')
                             ->options([
-                                'pending' => 'Chờ thực hiện',
-                                'in_progress' => 'Đang thực hiện',
-                                'completed' => 'Hoàn thành',
-                                'cancelled' => 'Đã hủy',
+                                PlanItem::STATUS_PENDING => 'Chờ thực hiện',
+                                PlanItem::STATUS_IN_PROGRESS => 'Đang thực hiện',
+                                PlanItem::STATUS_COMPLETED => 'Hoàn thành',
+                                PlanItem::STATUS_CANCELLED => 'Đã hủy',
                             ])
-                            ->default('pending')
+                            ->default(PlanItem::STATUS_PENDING)
                             ->required()
                             ->live()
                             ->columnSpan(1),
@@ -206,15 +221,20 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('Dịch vụ')
                     ->searchable()
                     ->toggleable(),
+                TextColumn::make('approval_status')
+                    ->label('Duyệt KH')
+                    ->badge()
+                    ->formatStateUsing(fn ($record) => $record->getApprovalStatusLabel())
+                    ->color(fn ($record): string => $record->getApprovalStatusBadgeColor()),
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
                     ->formatStateUsing(fn ($record) => $record->getStatusLabel())
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'gray',
-                        'in_progress' => 'warning',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
+                        PlanItem::STATUS_PENDING => 'gray',
+                        PlanItem::STATUS_IN_PROGRESS => 'warning',
+                        PlanItem::STATUS_COMPLETED => 'success',
+                        PlanItem::STATUS_CANCELLED => 'danger',
                         default => 'gray',
                     }),
                 TextColumn::make('progress_percentage')
@@ -261,6 +281,11 @@ class PlanItemsRelationManager extends RelationManager
                         default => 'gray',
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('approval_decline_reason')
+                    ->label('Lý do từ chối')
+                    ->placeholder('-')
+                    ->limit(80)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 ImageColumn::make('before_photo')
                     ->label('Before')
                     ->circular()
@@ -271,13 +296,16 @@ class PlanItemsRelationManager extends RelationManager
                     ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('approval_status')
+                    ->label('Phê duyệt bệnh nhân')
+                    ->options(PlanItem::approvalStatusOptions()),
                 SelectFilter::make('status')
                     ->label('Trạng thái')
                     ->options([
-                        'pending' => 'Chờ thực hiện',
-                        'in_progress' => 'Đang thực hiện',
-                        'completed' => 'Hoàn thành',
-                        'cancelled' => 'Đã hủy',
+                        PlanItem::STATUS_PENDING => 'Chờ thực hiện',
+                        PlanItem::STATUS_IN_PROGRESS => 'Đang thực hiện',
+                        PlanItem::STATUS_COMPLETED => 'Hoàn thành',
+                        PlanItem::STATUS_CANCELLED => 'Đã hủy',
                     ]),
                 SelectFilter::make('priority')
                     ->label('Độ ưu tiên')
@@ -292,12 +320,7 @@ class PlanItemsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Thêm hạng mục')
                     ->mutateFormDataUsing(function (array $data): array {
-                        // Auto-calculate progress
-                        if (isset($data['required_visits']) && $data['required_visits'] > 0) {
-                            $completed = $data['completed_visits'] ?? 0;
-                            $data['progress_percentage'] = (int) (($completed / $data['required_visits']) * 100);
-                        }
-                        return $data;
+                        return $this->sanitizePlanItemPayload($data);
                     })
                     ->after(function ($record) {
                         // Update parent treatment plan
@@ -305,6 +328,71 @@ class PlanItemsRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
+                Action::make('propose_for_patient')
+                    ->label('Gửi đề xuất')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        $record->update([
+                            'approval_status' => PlanItem::APPROVAL_PROPOSED,
+                            'approval_decline_reason' => null,
+                            'status' => PlanItem::STATUS_PENDING,
+                            'completed_visits' => 0,
+                            'progress_percentage' => 0,
+                            'started_at' => null,
+                            'completed_at' => null,
+                            'is_completed' => false,
+                        ]);
+                        $record->treatmentPlan?->updateProgress();
+                    })
+                    ->visible(fn ($record) => in_array($record->approval_status, [
+                        PlanItem::APPROVAL_DRAFT,
+                        PlanItem::APPROVAL_DECLINED,
+                    ], true)),
+                Action::make('approve_by_patient')
+                    ->label('KH đồng ý')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        $record->update([
+                            'approval_status' => PlanItem::APPROVAL_APPROVED,
+                            'approval_decline_reason' => null,
+                        ]);
+                        $record->treatmentPlan?->updateProgress();
+                    })
+                    ->visible(fn ($record) => in_array($record->approval_status, [
+                        PlanItem::APPROVAL_PROPOSED,
+                        PlanItem::APPROVAL_DECLINED,
+                    ], true)),
+                Action::make('decline_by_patient')
+                    ->label('KH từ chối')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->form([
+                        Textarea::make('approval_decline_reason')
+                            ->label('Lý do từ chối')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'approval_status' => PlanItem::APPROVAL_DECLINED,
+                            'approval_decline_reason' => trim((string) ($data['approval_decline_reason'] ?? '')),
+                            'status' => PlanItem::STATUS_PENDING,
+                            'completed_visits' => 0,
+                            'progress_percentage' => 0,
+                            'started_at' => null,
+                            'completed_at' => null,
+                            'is_completed' => false,
+                        ]);
+                        $record->treatmentPlan?->updateProgress();
+                    })
+                    ->visible(fn ($record) => in_array($record->approval_status, [
+                        PlanItem::APPROVAL_DRAFT,
+                        PlanItem::APPROVAL_PROPOSED,
+                    ], true)),
                 Action::make('complete_visit')
                     ->label('Hoàn thành 1 lần')
                     ->icon('heroicon-o-check-circle')
@@ -313,7 +401,10 @@ class PlanItemsRelationManager extends RelationManager
                     ->action(function ($record) {
                         $record->completeVisit();
                     })
-                    ->visible(fn ($record) => $record->completed_visits < $record->required_visits && $record->status !== 'completed'),
+                    ->visible(fn ($record) => $record->canStartTreatment()
+                        && $record->completed_visits < $record->required_visits
+                        && $record->status !== PlanItem::STATUS_COMPLETED
+                        && $record->status !== PlanItem::STATUS_CANCELLED),
                 Action::make('start_treatment')
                     ->label('Bắt đầu')
                     ->icon('heroicon-o-play')
@@ -321,12 +412,13 @@ class PlanItemsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
-                            'status' => 'in_progress',
+                            'status' => PlanItem::STATUS_IN_PROGRESS,
                             'started_at' => now(),
                         ]);
                         $record->updateProgress();
                     })
-                    ->visible(fn ($record) => $record->status === 'pending'),
+                    ->visible(fn ($record) => $record->canStartTreatment()
+                        && $record->status === PlanItem::STATUS_PENDING),
                 Action::make('complete_treatment')
                     ->label('Hoàn thành')
                     ->icon('heroicon-o-check-badge')
@@ -334,23 +426,20 @@ class PlanItemsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
-                            'status' => 'completed',
+                            'status' => PlanItem::STATUS_COMPLETED,
                             'progress_percentage' => 100,
                             'completed_visits' => $record->required_visits,
                             'completed_at' => now(),
                         ]);
                         $record->updateProgress();
                     })
-                    ->visible(fn ($record) => $record->status !== 'completed' && $record->status !== 'cancelled'),
+                    ->visible(fn ($record) => $record->canStartTreatment()
+                        && $record->status !== PlanItem::STATUS_COMPLETED
+                        && $record->status !== PlanItem::STATUS_CANCELLED),
                 EditAction::make()
                     ->label('Sửa')
                     ->mutateFormDataUsing(function (array $data): array {
-                        // Auto-calculate progress
-                        if (isset($data['required_visits']) && $data['required_visits'] > 0) {
-                            $completed = $data['completed_visits'] ?? 0;
-                            $data['progress_percentage'] = (int) (($completed / $data['required_visits']) * 100);
-                        }
-                        return $data;
+                        return $this->sanitizePlanItemPayload($data);
                     })
                     ->after(function ($record) {
                         $record->updateProgress();
@@ -370,9 +459,23 @@ class PlanItemsRelationManager extends RelationManager
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $skipped = 0;
+
                             foreach ($records as $record) {
-                                $record->update(['status' => 'in_progress']);
+                                if (! $record->canStartTreatment()) {
+                                    $skipped++;
+                                    continue;
+                                }
+
+                                $record->update(['status' => PlanItem::STATUS_IN_PROGRESS]);
                                 $record->updateProgress();
+                            }
+
+                            if ($skipped > 0) {
+                                Notification::make()
+                                    ->title("Đã bỏ qua {$skipped} hạng mục chưa được bệnh nhân duyệt")
+                                    ->warning()
+                                    ->send();
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -382,14 +485,28 @@ class PlanItemsRelationManager extends RelationManager
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $skipped = 0;
+
                             foreach ($records as $record) {
+                                if (! $record->canStartTreatment()) {
+                                    $skipped++;
+                                    continue;
+                                }
+
                                 $record->update([
-                                    'status' => 'completed',
+                                    'status' => PlanItem::STATUS_COMPLETED,
                                     'progress_percentage' => 100,
                                     'completed_visits' => $record->required_visits,
                                     'completed_at' => now(),
                                 ]);
                                 $record->updateProgress();
+                            }
+
+                            if ($skipped > 0) {
+                                Notification::make()
+                                    ->title("Đã bỏ qua {$skipped} hạng mục chưa được bệnh nhân duyệt")
+                                    ->warning()
+                                    ->send();
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -400,7 +517,7 @@ class PlanItemsRelationManager extends RelationManager
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             foreach ($records as $record) {
-                                $record->update(['status' => 'cancelled']);
+                                $record->update(['status' => PlanItem::STATUS_CANCELLED]);
                                 $record->updateProgress();
                             }
                         })
@@ -419,5 +536,39 @@ class PlanItemsRelationManager extends RelationManager
             ->emptyStateHeading('Chưa có hạng mục điều trị')
             ->emptyStateDescription('Thêm các hạng mục điều trị cụ thể vào kế hoạch.')
             ->emptyStateIcon('heroicon-o-clipboard-document-list');
+    }
+
+    protected function sanitizePlanItemPayload(array $data): array
+    {
+        $requiredVisits = max(1, (int) ($data['required_visits'] ?? 1));
+        $completedVisits = max(0, min((int) ($data['completed_visits'] ?? 0), $requiredVisits));
+
+        $approvalStatus = PlanItem::normalizeApprovalStatus($data['approval_status'] ?? null)
+            ?? PlanItem::DEFAULT_APPROVAL_STATUS;
+
+        $status = PlanItem::normalizeStatus($data['status'] ?? null) ?? PlanItem::STATUS_PENDING;
+
+        if ($approvalStatus !== PlanItem::APPROVAL_APPROVED) {
+            $status = PlanItem::STATUS_PENDING;
+            $completedVisits = 0;
+            $data['started_at'] = null;
+            $data['completed_at'] = null;
+        }
+
+        if ($status === PlanItem::STATUS_COMPLETED) {
+            $completedVisits = $requiredVisits;
+        }
+
+        $data['required_visits'] = $requiredVisits;
+        $data['completed_visits'] = $completedVisits;
+        $data['status'] = $status;
+        $data['progress_percentage'] = (int) (($completedVisits / $requiredVisits) * 100);
+        $data['approval_status'] = $approvalStatus;
+        $data['approval_decline_reason'] = $approvalStatus === PlanItem::APPROVAL_DECLINED
+            ? trim((string) ($data['approval_decline_reason'] ?? ''))
+            : null;
+        $data['patient_approved'] = $approvalStatus === PlanItem::APPROVAL_APPROVED;
+
+        return $data;
     }
 }

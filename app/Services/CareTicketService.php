@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Models\PlanItem;
 use App\Models\Prescription;
 use App\Models\TreatmentSession;
 use App\Support\ClinicRuntimeSettings;
@@ -100,6 +101,37 @@ class CareTicketService
             'care_at' => $careAt,
             'content' => $content,
         ], TreatmentSession::class, $session->id);
+    }
+
+    public function syncPlanItemApproval(PlanItem $planItem): void
+    {
+        $patientId = $planItem->treatmentPlan?->patient_id;
+        if (! $patientId) {
+            return;
+        }
+
+        if (! $planItem->isDeclined()) {
+            $this->cancelTicket(PlanItem::class, $planItem->id, 'treatment_plan_follow_up');
+            return;
+        }
+
+        $assigneeId = $planItem->treatmentPlan?->doctor_id
+            ?: $planItem->treatmentPlan?->created_by
+            ?: $planItem->treatmentPlan?->updated_by;
+
+        $content = trim((string) ($planItem->approval_decline_reason ?: 'Bệnh nhân chưa đồng ý kế hoạch điều trị. Cần tư vấn chốt lại.'));
+
+        $this->upsertTicket([
+            'patient_id' => $patientId,
+            'customer_id' => $this->resolveCustomerId($patientId),
+            'user_id' => $assigneeId,
+            'type' => Note::TYPE_GENERAL,
+            'care_type' => 'treatment_plan_follow_up',
+            'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
+            'care_status' => Note::CARE_STATUS_NOT_STARTED,
+            'care_at' => now(),
+            'content' => $content,
+        ], PlanItem::class, $planItem->id);
     }
 
     protected function upsertTicket(array $attributes, string $sourceType, int $sourceId): void

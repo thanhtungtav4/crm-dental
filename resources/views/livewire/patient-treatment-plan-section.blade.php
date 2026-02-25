@@ -72,14 +72,21 @@
                                 default => 'is-default',
                             };
 
-                            $isApproved = (bool) ($item->patient_approved ?? false);
+                            $approvalClass = match ($item->getApprovalStatusBadgeColor()) {
+                                'success' => 'is-completed',
+                                'warning' => 'is-progress',
+                                'danger' => 'is-cancelled',
+                                default => 'is-default',
+                            };
                         @endphp
                         <tr>
                             <td>{{ $toothLabel }}</td>
                             <td>{{ $diagnosisLabels ?: '-' }}</td>
                             <td>{{ $item->service?->name ?? $item->name }}</td>
                             <td class="is-center">
-                                <input type="checkbox" disabled @checked($isApproved) class="crm-check-sm">
+                                <span class="crm-treatment-status {{ $approvalClass }}">
+                                    {{ $item->getApprovalStatusLabel() }}
+                                </span>
                             </td>
                             <td class="is-center">{{ $item->quantity ?? 1 }}</td>
                             <td class="is-right">{{ $formatMoney($unitPrice) }}</td>
@@ -157,6 +164,7 @@
                                     <th>Tình trạng răng</th>
                                     <th>Tên thủ thuật</th>
                                     <th class="is-center">KH đồng ý</th>
+                                    <th>Lý do từ chối</th>
                                     <th class="is-center">S.L</th>
                                     <th class="is-right">Đơn giá</th>
                                     <th class="is-right">Thành tiền</th>
@@ -200,7 +208,19 @@
                                         </td>
                                         <td>{{ $item['service_name'] ?? 'Thủ thuật' }}</td>
                                         <td class="is-center">
-                                            <input type="checkbox" wire:model="draftItems.{{ $index }}.patient_approved" class="crm-check-sm">
+                                            <select wire:model="draftItems.{{ $index }}.approval_status" class="crm-plan-editor-select">
+                                                <option value="draft">Nháp</option>
+                                                <option value="proposed">Đề xuất</option>
+                                                <option value="approved">Đồng ý</option>
+                                                <option value="declined">Từ chối</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text"
+                                                wire:model.lazy="draftItems.{{ $index }}.approval_decline_reason"
+                                                @disabled(($item['approval_status'] ?? 'proposed') !== 'declined')
+                                                placeholder="Nhập lý do nếu từ chối"
+                                                class="crm-plan-editor-input">
                                         </td>
                                         <td class="is-center">
                                             <input type="number" min="1" wire:model.lazy="draftItems.{{ $index }}.quantity"
@@ -227,7 +247,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="13" class="crm-plan-editor-empty">
+                                        <td colspan="14" class="crm-plan-editor-empty">
                                             Chưa có thủ thuật được chọn.
                                         </td>
                                     </tr>

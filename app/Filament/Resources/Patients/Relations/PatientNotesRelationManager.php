@@ -348,6 +348,7 @@ class PatientNotesRelationManager extends RelationManager
         return [
             'warranty' => 'Bảo hành',
             'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
+            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
             'appointment_reminder' => 'Nhắc lịch hẹn',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'other' => 'Khác',

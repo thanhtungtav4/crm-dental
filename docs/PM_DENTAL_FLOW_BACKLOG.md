@@ -17,6 +17,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Chuan hoa state machine `Appointment` giua spec va runtime
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-25`)
 - **Scope**:
   - Chot 1 taxonomy trang thai duy nhat.
   - Mapping/convert du lieu trang thai cu.
@@ -29,6 +30,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Chuan hoa state machine `Care Ticket` va SLA handling
 - **Type**: Story (BE + FE)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-25`)
 - **Scope**:
   - Chot enum care status dung 1 bo.
   - Map du lieu lich su va cap nhat dashboard CSKH.
@@ -40,6 +42,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Visit Episode model + chair-level operational flow
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-25`)
 - **Scope**:
   - Tao `visit_episode` (check_in, arrived, in_chair, check_out).
   - Gan doctor, chair, duration ke hoach/thuc te.
@@ -51,6 +54,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Xu ly edge flow lich hen (late arrival, emergency, walk-in)
 - **Type**: Story (Ops + Product + BE/FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-25`)
 - **Scope**:
   - Rule cho tre gio, cap cuu, khach walk-in.
   - Cho phep override co audit va ly do bat buoc.
@@ -62,6 +66,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Treatment approval lifecycle + multi-visit phase gating
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-25`)
 - **Scope**:
   - Nang `patient_agreed` thanh workflow (`draft/proposed/approved/declined`).
   - Gating phase dieu tri truoc/sau.

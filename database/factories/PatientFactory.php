@@ -15,7 +15,7 @@ class PatientFactory extends Factory
     public function definition(): array
     {
         $branch = Branch::inRandomOrder()->first() ?? Branch::factory()->create();
-        $customer = Customer::inRandomOrder()->first() ?? Customer::factory()->create(['branch_id' => $branch->id]);
+        $customer = Customer::factory()->create(['branch_id' => $branch->id]);
         return [
             'patient_code' => 'PAT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6)),
             'customer_id' => $customer->id,

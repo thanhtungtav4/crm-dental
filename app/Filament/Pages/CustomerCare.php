@@ -122,7 +122,7 @@ class CustomerCare extends Page implements HasTable
                 ->whereNotNull('patient_id')
                 ->where(function (Builder $query) {
                     $query->whereNull('care_type')
-                        ->orWhere('care_type', 'general_care');
+                        ->orWhereIn('care_type', ['general_care', 'treatment_plan_follow_up']);
                 }),
         };
     }
@@ -710,6 +710,7 @@ class CustomerCare extends Page implements HasTable
         return [
             'warranty' => 'Bảo hành',
             'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
+            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
             'appointment_reminder' => 'Nhắc lịch hẹn',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'birthday_care' => 'Chăm sóc sinh nhật',

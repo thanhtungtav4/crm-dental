@@ -5,10 +5,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class TreatmentPlan extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const DEFAULT_STATUS = self::STATUS_DRAFT;
+
+    protected const STATUS_LABELS = [
+        self::STATUS_DRAFT => 'Nháp',
+        self::STATUS_APPROVED => 'Đã duyệt',
+        self::STATUS_IN_PROGRESS => 'Đang thực hiện',
+        self::STATUS_COMPLETED => 'Hoàn thành',
+        self::STATUS_CANCELLED => 'Đã hủy',
+    ];
 
     protected $fillable = [
         'patient_id',
@@ -66,6 +83,24 @@ class TreatmentPlan extends Model
         'general_exam_data' => 'array',
         'tooth_diagnosis_data' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $plan): void {
+            if (! $plan->exists || ! $plan->isDirty('status')) {
+                return;
+            }
+
+            $fromStatus = strtolower(trim((string) $plan->getOriginal('status')));
+            $toStatus = strtolower(trim((string) $plan->status));
+
+            if ($fromStatus === self::STATUS_DRAFT && in_array($toStatus, [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Kế hoạch chưa được duyệt nên không thể chuyển sang giai đoạn điều trị.',
+                ]);
+            }
+        });
+    }
 
     public function sessions()
     {
@@ -130,13 +165,17 @@ class TreatmentPlan extends Model
         $this->total_estimated_cost = $this->planItems->sum('estimated_cost');
 
         // Auto-update status based on progress
-        if ($this->progress_percentage === 0 && $this->status === 'draft') {
+        if ($this->progress_percentage === 0 && $this->status === self::STATUS_DRAFT) {
             // Keep as draft
         } elseif ($this->progress_percentage > 0 && $this->progress_percentage < 100) {
-            $this->status = 'in_progress';
+            if (in_array($this->status, [self::STATUS_APPROVED, self::STATUS_IN_PROGRESS], true)) {
+                $this->status = self::STATUS_IN_PROGRESS;
+            }
         } elseif ($this->progress_percentage === 100) {
-            $this->status = 'completed';
-            $this->actual_end_date = now()->toDateString();
+            if (in_array($this->status, [self::STATUS_APPROVED, self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED], true)) {
+                $this->status = self::STATUS_COMPLETED;
+                $this->actual_end_date = now()->toDateString();
+            }
         }
 
         $this->save();
@@ -161,14 +200,7 @@ class TreatmentPlan extends Model
      */
     public function getStatusLabel(): string
     {
-        return match ($this->status) {
-            'draft' => 'Nháp',
-            'approved' => 'Đã duyệt',
-            'in_progress' => 'Đang thực hiện',
-            'completed' => 'Hoàn thành',
-            'cancelled' => 'Đã hủy',
-            default => $this->status,
-        };
+        return static::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
     /**
@@ -194,7 +226,7 @@ class TreatmentPlan extends Model
             return false;
         }
 
-        return $this->expected_end_date->isPast() && $this->status !== 'completed';
+        return $this->expected_end_date->isPast() && $this->status !== self::STATUS_COMPLETED;
     }
 
     /**
@@ -254,18 +286,18 @@ class TreatmentPlan extends Model
      */
     public function scopeInProgress($query)
     {
-        return $query->where('status', 'in_progress');
+        return $query->where('status', self::STATUS_IN_PROGRESS);
     }
 
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->where('status', self::STATUS_COMPLETED);
     }
 
     public function scopeOverdue($query)
     {
         return $query->where('expected_end_date', '<', now())
-            ->where('status', '!=', 'completed');
+            ->where('status', '!=', self::STATUS_COMPLETED);
     }
 
     public function scopeForPatient($query, $patientId)

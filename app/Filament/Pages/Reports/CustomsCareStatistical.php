@@ -79,6 +79,7 @@ class CustomsCareStatistical extends BaseReportPage
             'appointment_reminder' => 'Nhắc lịch hẹn',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
+            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
             'birthday_care' => 'Chăm sóc sinh nhật',
             'general_care' => 'Chăm sóc chung',
         ];

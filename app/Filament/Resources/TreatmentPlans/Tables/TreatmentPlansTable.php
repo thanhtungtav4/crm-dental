@@ -122,7 +122,7 @@ class TreatmentPlansTable
                             'actual_start_date' => now(),
                         ]);
                     })
-                    ->visible(fn($record) => in_array($record->status, ['approved', 'draft'])),
+                    ->visible(fn($record) => $record->status === 'approved'),
                 Action::make('complete')
                     ->label('Hoàn thành')
                     ->icon('heroicon-o-check-circle')
@@ -163,7 +163,7 @@ class TreatmentPlansTable
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             foreach ($records as $record) {
-                                if (in_array($record->status, ['approved', 'draft'])) {
+                                if ($record->status === 'approved') {
                                     $record->update([
                                         'status' => 'in_progress',
                                         'actual_start_date' => $record->actual_start_date ?? now(),

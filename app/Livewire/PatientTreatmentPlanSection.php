@@ -81,7 +81,8 @@ class PatientTreatmentPlanSection extends Component
                 'discount_percent' => 0,
                 'discount_amount' => 0,
                 'notes' => '',
-                'patient_approved' => false,
+                'approval_status' => PlanItem::APPROVAL_PROPOSED,
+                'approval_decline_reason' => '',
             ];
         }
 
@@ -107,6 +108,19 @@ class PatientTreatmentPlanSection extends Component
                 ->warning()
                 ->send();
             return;
+        }
+
+        foreach ($this->draftItems as $index => $item) {
+            $approvalStatus = $this->normalizeApprovalStatus($item['approval_status'] ?? null);
+            $declineReason = trim((string) ($item['approval_decline_reason'] ?? ''));
+
+            if ($approvalStatus === PlanItem::APPROVAL_DECLINED && $declineReason === '') {
+                Notification::make()
+                    ->title('Cần nhập lý do từ chối cho hạng mục #' . ($index + 1))
+                    ->warning()
+                    ->send();
+                return;
+            }
         }
 
         $this->syncDiagnosisFromLatestExam();
@@ -135,7 +149,11 @@ class PatientTreatmentPlanSection extends Component
             $discountPercent = (float) ($item['discount_percent'] ?? 0);
             $discountAmount = (float) ($item['discount_amount'] ?? 0);
             $notes = (string) ($item['notes'] ?? '');
-            $patientApproved = (bool) ($item['patient_approved'] ?? false);
+            $approvalStatus = $this->normalizeApprovalStatus($item['approval_status'] ?? null);
+            $approvalDeclineReason = trim((string) ($item['approval_decline_reason'] ?? ''));
+            if ($approvalStatus !== PlanItem::APPROVAL_DECLINED) {
+                $approvalDeclineReason = '';
+            }
 
             $diagnosisIds = collect($item['diagnosis_ids'] ?? [])
                 ->map(fn($value) => (int) $value)
@@ -171,8 +189,10 @@ class PatientTreatmentPlanSection extends Component
                 'final_amount' => $finalAmount,
                 'estimated_cost' => $finalAmount,
                 'actual_cost' => 0,
-                'patient_approved' => $patientApproved,
-                'status' => $patientApproved ? 'in_progress' : 'pending',
+                'patient_approved' => $approvalStatus === PlanItem::APPROVAL_APPROVED,
+                'approval_status' => $approvalStatus,
+                'approval_decline_reason' => $approvalDeclineReason !== '' ? $approvalDeclineReason : null,
+                'status' => PlanItem::STATUS_PENDING,
                 'notes' => $notes,
             ]);
         }
@@ -390,6 +410,11 @@ class PatientTreatmentPlanSection extends Component
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
+    }
+
+    protected function normalizeApprovalStatus(mixed $status): string
+    {
+        return PlanItem::normalizeApprovalStatus($status) ?? PlanItem::DEFAULT_APPROVAL_STATUS;
     }
 
     protected function getPlanItems(): Collection
