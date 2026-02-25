@@ -1,7 +1,7 @@
 # Implementation Backlog Theo Sprint (Ticket-Ready)
 
 > Dự án: CRM Nha khoa (Laravel + Filament)  
-> Cập nhật: 2026-02-24  
+> Cập nhật: 2026-02-25  
 > Mục tiêu: đóng các gap nghiệp vụ/công nghệ quan trọng và đưa flow về mức production-ready theo tham chiếu DentalFlow.
 
 ---
@@ -428,6 +428,49 @@ Công việc đang làm (WIP):
   1. `visual-regression.manifest.json` có thêm case cho `modal chẩn đoán răng` và các empty state chính.
   2. `composer qa:visual-regression` pass với ngưỡng được định nghĩa cho toàn bộ case cũ + mới.
   3. Có report sign-off kèm screenshot evidence cho các case mới.
+
+### TICKET X-05 (P0)
+- **Title**: PM Flow Hardening Wave 1 (ops + finance + lifecycle)
+- **Type**: Epic (Cross-team)
+- **Estimate**: 61 SP (gói `PM-01..PM-10`)
+- **Dependencies**: Không
+- **Scope**:
+  - Chuẩn hóa state machine `Appointment/Care`.
+  - Hoàn thiện edge flow lịch hẹn (late, emergency, walk-in) + overbooking policy.
+  - Nâng workflow treatment approval/multi-visit và hardening tài chính (refund/reversal/deposit/installment/insurance/consent gate).
+- **Acceptance Criteria (QA)**:
+  1. Không còn mismatch trạng thái giữa UI/API/report cho lịch hẹn và CSKH.
+  2. Các flow tài chính trọng yếu (thu/hoàn/trả góp) đối soát đúng với report.
+  3. Có policy vận hành rõ cho overbooking và edge-case lịch hẹn.
+
+### TICKET X-06 (P1)
+- **Title**: PM Flow Hardening Wave 2 (automation + metrics + governance)
+- **Type**: Epic (Cross-team)
+- **Estimate**: 54 SP (gói `PM-11..PM-20`)
+- **Dependencies**: X-05
+- **Scope**:
+  - Recall/no-show/payment automation.
+  - KPI pack vận hành (booking->visit, no-show, acceptance, chair, recall, LTV).
+  - Data lineage/snapshot, multi-branch sync governance, RBAC action-level, audit log mở rộng.
+- **Acceptance Criteria (QA)**:
+  1. Các automation cốt lõi chạy ổn định và có log/audit.
+  2. Dashboard KPI vận hành đối soát được với data lineage đã chốt.
+  3. Multi-branch governance và RBAC action-level được enforce ở backend.
+
+### TICKET X-07 (P2)
+- **Title**: PM Flow Hardening Wave 3 (growth)
+- **Type**: Epic (Product + Data)
+- **Estimate**: 16 SP (gói `PM-21..PM-22`)
+- **Dependencies**: X-06
+- **Scope**:
+  - Loyalty/referral/reactivation.
+  - Mô hình dự đoán no-show/churn phục vụ tối ưu vận hành và doanh thu.
+- **Acceptance Criteria (QA)**:
+  1. Có flow loyalty/reactivation vận hành được end-to-end.
+  2. Có baseline model risk scoring và dashboard theo dõi hiệu quả can thiệp.
+
+Ghi chú:
+- Chi tiết ticket-level đầy đủ cho gói PM backlog nằm tại `docs/PM_DENTAL_FLOW_BACKLOG.md`.
 
 ---
 
