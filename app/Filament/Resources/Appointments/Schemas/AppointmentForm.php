@@ -183,11 +183,14 @@ class AppointmentForm
                     ->label('Lý do hủy lịch')
                     ->rows(2)
                     ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
+                    ->required(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
                     ->columnSpanFull(),
 
                 Forms\Components\Textarea::make('reschedule_reason')
                     ->label('Lý do đổi lịch')
                     ->rows(2)
+                    ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
+                    ->required(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
                     ->columnSpanFull(),
 
                 Forms\Components\DateTimePicker::make('confirmed_at')

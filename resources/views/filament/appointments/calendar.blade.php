@@ -11,6 +11,7 @@
         Appointment::STATUS_CONFIRMED => ['#10b981', '#059669'],      // green
         Appointment::STATUS_IN_PROGRESS => ['#f59e0b', '#d97706'],    // amber
         Appointment::STATUS_COMPLETED => ['#6b7280', '#4b5563'],      // gray
+        Appointment::STATUS_RESCHEDULED => ['#8b5cf6', '#7c3aed'],    // violet
         Appointment::STATUS_CANCELLED => ['#ef4444', '#b91c1c'],      // red
         Appointment::STATUS_NO_SHOW => ['#9ca3af', '#6b7280'],        // muted gray
     ];

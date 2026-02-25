@@ -176,6 +176,12 @@ class CustomersTable
                         \Filament\Forms\Components\Textarea::make('cancellation_reason')
                             ->label('Lý do hủy')
                             ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
+                            ->required(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
+                            ->rows(2),
+                        \Filament\Forms\Components\Textarea::make('reschedule_reason')
+                            ->label('Lý do hẹn lại')
+                            ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
+                            ->required(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
                             ->rows(2),
                         \Filament\Forms\Components\Textarea::make('note')
                             ->label('Ghi chú')
@@ -195,6 +201,7 @@ class CustomersTable
                             'appointment_kind' => $data['appointment_kind'] ?? 'booking',
                             'status' => $data['status'] ?? Appointment::STATUS_SCHEDULED,
                             'cancellation_reason' => $data['cancellation_reason'] ?? null,
+                            'reschedule_reason' => $data['reschedule_reason'] ?? null,
                             'note' => $data['note'] ?? null,
                         ]);
                         Notification::make()

@@ -18,14 +18,17 @@ class CareTicketService
             return;
         }
 
-        if ($appointment->status !== 'no_show') {
+        if (! in_array($appointment->status, [Appointment::STATUS_NO_SHOW, Appointment::STATUS_RESCHEDULED], true)) {
             $this->cancelTicket(Appointment::class, $appointment->id, 'appointment_reminder');
             return;
         }
 
         $careAt = $appointment->date ?? now();
         $assigneeId = $appointment->assigned_to ?: $appointment->doctor_id;
-        $content = $appointment->note ?: 'Nhắc lịch hẹn sau khi bệnh nhân không đến.';
+        $content = match ($appointment->status) {
+            Appointment::STATUS_RESCHEDULED => $appointment->reschedule_reason ?: $appointment->note ?: 'Nhắc lịch hẹn sau khi đổi lịch.',
+            default => $appointment->note ?: 'Nhắc lịch hẹn sau khi bệnh nhân không đến.',
+        };
 
         $this->upsertTicket([
             'patient_id' => $appointment->patient_id,

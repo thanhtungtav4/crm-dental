@@ -103,7 +103,11 @@ class CustomerCare extends Page implements HasTable
         return match ($this->activeTab) {
             'appointment_reminder' => Appointment::query()
                 ->with(['patient', 'doctor', 'assignedTo'])
-                ->whereNotNull('patient_id'),
+                ->whereNotNull('patient_id')
+                ->whereIn('status', Appointment::statusesForQuery([
+                    Appointment::STATUS_NO_SHOW,
+                    Appointment::STATUS_RESCHEDULED,
+                ])),
             'prescription_reminder' => Prescription::query()
                 ->with(['patient', 'doctor'])
                 ->whereNotNull('patient_id'),
