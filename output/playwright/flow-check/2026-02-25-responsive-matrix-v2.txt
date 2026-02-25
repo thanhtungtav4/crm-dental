@@ -1,0 +1,37 @@
+Responsive QA matrix - Patient workspace (post tokenization)
+Date: 2026-02-25
+URL base: http://crm.test/admin/patients/1
+Session: Playwright CLI (crmqa2)
+
+Breakpoints covered:
+- 1366x900
+- 1024x900
+- 768x1024
+
+Tabs captured per breakpoint:
+- basic-info
+- appointments
+- prescriptions
+- photos
+- payments
+
+Evidence files (v2):
+- output/playwright/qc-2026-02-25-1366-tab-basic-info-v2.png
+- output/playwright/qc-2026-02-25-1366-tab-appointments-v2.png
+- output/playwright/qc-2026-02-25-1366-tab-prescriptions-v2.png
+- output/playwright/qc-2026-02-25-1366-tab-photos-v2.png
+- output/playwright/qc-2026-02-25-1366-tab-payments-v2.png
+- output/playwright/qc-2026-02-25-1024-tab-basic-info-v2.png
+- output/playwright/qc-2026-02-25-1024-tab-appointments-v2.png
+- output/playwright/qc-2026-02-25-1024-tab-prescriptions-v2.png
+- output/playwright/qc-2026-02-25-1024-tab-photos-v2.png
+- output/playwright/qc-2026-02-25-1024-tab-payments-v2.png
+- output/playwright/qc-2026-02-25-768-tab-basic-info-v2.png
+- output/playwright/qc-2026-02-25-768-tab-appointments-v2.png
+- output/playwright/qc-2026-02-25-768-tab-prescriptions-v2.png
+- output/playwright/qc-2026-02-25-768-tab-photos-v2.png
+- output/playwright/qc-2026-02-25-768-tab-payments-v2.png
+
+Quick findings:
+- No visual regression observed after additional tokenization pass.
+- Header/actions/tab/table usability remains intact across the tested matrix.

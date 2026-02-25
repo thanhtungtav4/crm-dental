@@ -1,0 +1,53 @@
+{
+  "defaults": {
+    "max_changed20_pct": 3.0,
+    "max_mae": 3.0
+  },
+  "cases": [
+    {
+      "id": "appointments-desktop",
+      "baseline": "output/playwright/qc-2026-02-24-tab-lich-hen-desktop-v2.png",
+      "candidate": "output/playwright/qc-2026-02-25-tab-lich-hen-desktop-v3.png"
+    },
+    {
+      "id": "prescriptions-desktop",
+      "baseline": "output/playwright/qc-2026-02-24-tab-don-thuoc-desktop-v2.png",
+      "candidate": "output/playwright/qc-2026-02-25-tab-don-thuoc-desktop-v3.png"
+    },
+    {
+      "id": "photos-desktop",
+      "baseline": "output/playwright/qc-2026-02-24-tab-thu-vien-anh-desktop-v2.png",
+      "candidate": "output/playwright/qc-2026-02-25-tab-thu-vien-anh-desktop-v3.png"
+    },
+    {
+      "id": "payments-desktop",
+      "baseline": "output/playwright/qc-2026-02-24-tab-thanh-toan-desktop-v2.png",
+      "candidate": "output/playwright/qc-2026-02-25-tab-thanh-toan-desktop-v3.png"
+    },
+    {
+      "id": "tooth-modal-desktop",
+      "baseline": "output/playwright/qc-2026-02-25-tooth-modal-overlay-v1.png",
+      "candidate": "output/playwright/qc-2026-02-25-tooth-modal-overlay-v2.png"
+    },
+    {
+      "id": "empty-appointments-desktop",
+      "baseline": "output/playwright/qc-2026-02-25-empty-appointments-desktop-v1.png",
+      "candidate": "output/playwright/qc-2026-02-25-empty-appointments-desktop-v2.png"
+    },
+    {
+      "id": "empty-prescriptions-desktop",
+      "baseline": "output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v1.png",
+      "candidate": "output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v2.png"
+    },
+    {
+      "id": "empty-photos-desktop",
+      "baseline": "output/playwright/qc-2026-02-25-empty-photos-desktop-v1.png",
+      "candidate": "output/playwright/qc-2026-02-25-empty-photos-desktop-v2.png"
+    },
+    {
+      "id": "empty-payments-desktop",
+      "baseline": "output/playwright/qc-2026-02-25-empty-payments-desktop-v1.png",
+      "candidate": "output/playwright/qc-2026-02-25-empty-payments-desktop-v2.png"
+    }
+  ]
+}

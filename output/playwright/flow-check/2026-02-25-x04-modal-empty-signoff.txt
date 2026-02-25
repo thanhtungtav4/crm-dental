@@ -1,0 +1,32 @@
+X-04 sign-off: modal + empty states visual regression
+Date: 2026-02-25
+Scope:
+- Modal chẩn đoán răng (state: popup "RĂNG 18")
+- Empty states core tabs: appointments, prescriptions, photos, payments
+
+Evidence files:
+- output/playwright/qc-2026-02-25-tooth-modal-overlay-v1.png
+- output/playwright/qc-2026-02-25-tooth-modal-overlay-v2.png
+- output/playwright/qc-2026-02-25-empty-appointments-desktop-v1.png
+- output/playwright/qc-2026-02-25-empty-appointments-desktop-v2.png
+- output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v1.png
+- output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v2.png
+- output/playwright/qc-2026-02-25-empty-photos-desktop-v1.png
+- output/playwright/qc-2026-02-25-empty-photos-desktop-v2.png
+- output/playwright/qc-2026-02-25-empty-payments-desktop-v1.png
+- output/playwright/qc-2026-02-25-empty-payments-desktop-v2.png
+
+Gate command:
+- composer qa:visual-regression
+
+Result summary:
+- [tooth-modal-desktop] PASS
+- [empty-appointments-desktop] PASS
+- [empty-prescriptions-desktop] PASS
+- [empty-photos-desktop] PASS
+- [empty-payments-desktop] PASS
+- Overall: PASS
+
+Notes:
+- Legacy modal baseline from 2026-02-24 was removed due context mismatch.
+- Modal + empty-state baseline was re-initialized with approved 2026-02-25 snapshots and added into visual-regression manifest.

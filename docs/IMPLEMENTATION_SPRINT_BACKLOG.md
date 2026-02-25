@@ -291,9 +291,33 @@
 ### Trạng thái triển khai hiện tại
 
 - [x] `S4-01` đã triển khai: query/aggregate được chuyển khỏi `view-patient.blade.php` sang page class.
-- [ ] `S4-02` đang tiếp tục chuẩn hóa token/style toàn bộ patient workspace.
-- [ ] `S4-03` chưa chốt final QA parity 1:1 trên toàn bộ trạng thái dữ liệu.
-- [ ] `S4-04` chưa hoàn tất kiểm thử responsive matrix 1366/1024/768.
+- [x] `S4-02` đã chuẩn hóa token/style chính cho patient workspace (core tabs + block phụ trọng yếu).
+- [x] `S4-03` đã chốt final QA parity 1:1 cho 4 tab lõi ở viewport desktop (`1536x864`) theo report định lượng.
+- [x] `S4-04` đã hoàn tất kiểm thử responsive matrix `1366/1024/768` với bộ evidence đầy đủ.
+- [x] `S4-05` đã có baseline visual regression + gate command (`composer qa:visual-regression`) cho 4 tab lõi desktop + modal/empty states chính.
+- [x] `S4-06` đã cleanup artifact legacy và chuẩn hóa policy giữ/xóa evidence cho Playwright artifact.
+
+Ghi nhận tiến độ gần nhất:
+- `2026-02-25`: Đã chuẩn hóa thêm design token cho `crm-rel-tab`, `crm-care-tab`, `crm-payment-tab`, `crm-treatment-table` và đồng bộ màu/border/action về biến CSS dùng chung.
+- `2026-02-25`: Bổ sung tinh chỉnh responsive cho mốc `1366px` và tăng độ ổn định horizontal overflow ở `1024px/768px` cho table + toolbar patient workspace.
+- `2026-02-25`: Đã chạy bộ responsive evidence cho `1366/1024/768` trên 4 tab lõi + `basic-info` (15 ảnh) tại `output/playwright/`; có log tổng hợp tại `output/playwright/flow-check/2026-02-25-responsive-matrix.txt`.
+- `2026-02-25`: Token hóa bổ sung các nhóm màu semantic cho hover/action/status (`crm-rel`, `crm-care`, `crm-payment`, `crm-treatment`) để giảm hardcode và đồng nhất style system.
+- `2026-02-25`: Đã re-run responsive evidence sau đợt tokenization (bộ `-v2`, 15 ảnh) và ghi nhận không thấy regression thị giác rõ rệt; log tại `output/playwright/flow-check/2026-02-25-responsive-matrix-v2.txt`.
+- `2026-02-25`: Đã đối chiếu parity desktop 1:1 với baseline cũ (`1536x864`) cho 4 tab lõi, kết quả PASS theo report định lượng tại `output/playwright/flow-check/2026-02-25-parity-desktop-v3.txt` (kèm diff overlay).
+- `2026-02-25`: Tiếp tục token hóa block phụ trong patient workspace (`crm-feature-*`, `crm-link-list-*`, `crm-payment-summary`) để giảm thêm hardcode mà không đổi hành vi UI.
+- `2026-02-25`: Chốt sign-off kỹ thuật cho `S4-03/S4-04` dựa trên 2 lớp bằng chứng:
+  1. parity desktop: `output/playwright/flow-check/2026-02-25-parity-desktop-v3.txt`
+  2. responsive matrix: `output/playwright/flow-check/2026-02-25-responsive-matrix-v2.txt`
+- `2026-02-25`: Dọn artifact trung gian của vòng test trong ngày (loại bộ ảnh duplicate không hậu tố `-v2` và file smoke), giữ lại evidence chính cho audit/parity.
+- `2026-02-25`: Chốt `S4-02` dựa trên kết quả tokenization đa vòng và kiểm tra không còn inline style trong patient blade/livewire views; biên bản tại `output/playwright/flow-check/2026-02-25-s4-02-signoff.txt`.
+- `2026-02-25`: Triển khai checker visual regression có ngưỡng fail/pass bằng script `scripts/check_visual_regression.php`, manifest baseline tại `output/playwright/flow-check/visual-regression.manifest.json`, report chạy thử tại `output/playwright/flow-check/visual-regression-check.txt`.
+- `2026-02-25`: Bổ sung policy lưu/cleanup artifact tại `docs/PLAYWRIGHT_ARTIFACT_RETENTION.md` để chuẩn hóa việc giữ bằng chứng và dọn file tạm.
+- `2026-02-25`: Dọn toàn bộ artifact legacy không còn phục vụ build/dev/docs (nhóm `patient-*.png`, `qc-current-test.png`, bộ `qc-2026-02-24-tab-*.png` duplicate) và giữ lại baseline/evidence được tham chiếu trong report.
+- `2026-02-25`: Hoàn tất mở rộng manifest regression cho `modal chẩn đoán răng` + 4 empty state core tabs; có sign-off tại `output/playwright/flow-check/2026-02-25-x04-modal-empty-signoff.txt`.
+
+Công việc đang làm (WIP):
+- Sprint 4 đã chốt toàn bộ `S4-01..S4-06`.
+- Các hạng mục review UI/visual regression đang theo dõi đã hoàn tất trong đợt này.
 
 ---
 
@@ -394,6 +418,16 @@
 - **Acceptance Criteria (QA)**:
   1. Track được ai sửa gì, khi nào cho conversion, invoice/payment, care ticket.
   2. Manager có thể truy vết từ UI hoặc log viewer.
+
+### TICKET X-04 (P1)
+- **Title**: Mở rộng visual regression baseline cho modal + empty states patient workspace
+- **Type**: QA Task
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-02-25`)
+- **Acceptance Criteria (QA)**:
+  1. `visual-regression.manifest.json` có thêm case cho `modal chẩn đoán răng` và các empty state chính.
+  2. `composer qa:visual-regression` pass với ngưỡng được định nghĩa cho toàn bộ case cũ + mới.
+  3. Có report sign-off kèm screenshot evidence cho các case mới.
 
 ---
 

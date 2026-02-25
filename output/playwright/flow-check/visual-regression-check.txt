@@ -1,0 +1,105 @@
+Visual regression check
+Date: 2026-02-25 12:46:06
+Manifest: output/playwright/flow-check/visual-regression.manifest.json
+Thresholds (default): changed20 <= 3%, mae <= 3
+
+[appointments-desktop] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-lich-hen-desktop-v2.png
+- candidate: output/playwright/qc-2026-02-25-tab-lich-hen-desktop-v3.png
+- size: 1536x864
+- changed@10: 1.825%
+- changed@20: 1.704% (max 3.000%)
+- changed@40: 1.158%
+- mae: 1.363 (max 3.000)
+- rmse: 13.025
+- overlay: output/playwright/diff/ci/overlay-appointments-desktop.png
+
+[prescriptions-desktop] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-don-thuoc-desktop-v2.png
+- candidate: output/playwright/qc-2026-02-25-tab-don-thuoc-desktop-v3.png
+- size: 1536x864
+- changed@10: 2.227%
+- changed@20: 2.124% (max 3.000%)
+- changed@40: 1.571%
+- mae: 2.094 (max 3.000)
+- rmse: 17.347
+- overlay: output/playwright/diff/ci/overlay-prescriptions-desktop.png
+
+[photos-desktop] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-thu-vien-anh-desktop-v2.png
+- candidate: output/playwright/qc-2026-02-25-tab-thu-vien-anh-desktop-v3.png
+- size: 1536x864
+- changed@10: 2.664%
+- changed@20: 2.608% (max 3.000%)
+- changed@40: 1.973%
+- mae: 2.871 (max 3.000)
+- rmse: 21.203
+- overlay: output/playwright/diff/ci/overlay-photos-desktop.png
+
+[payments-desktop] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-thanh-toan-desktop-v2.png
+- candidate: output/playwright/qc-2026-02-25-tab-thanh-toan-desktop-v3.png
+- size: 1536x864
+- changed@10: 1.976%
+- changed@20: 1.807% (max 3.000%)
+- changed@40: 1.171%
+- mae: 1.250 (max 3.000)
+- rmse: 12.026
+- overlay: output/playwright/diff/ci/overlay-payments-desktop.png
+
+[tooth-modal-desktop] PASS
+- baseline: output/playwright/qc-2026-02-25-tooth-modal-overlay-v1.png
+- candidate: output/playwright/qc-2026-02-25-tooth-modal-overlay-v2.png
+- size: 1512x861
+- changed@10: 0.000%
+- changed@20: 0.000% (max 3.000%)
+- changed@40: 0.000%
+- mae: 0.000 (max 3.000)
+- rmse: 0.000
+- overlay: output/playwright/diff/ci/overlay-tooth-modal-desktop.png
+
+[empty-appointments-desktop] PASS
+- baseline: output/playwright/qc-2026-02-25-empty-appointments-desktop-v1.png
+- candidate: output/playwright/qc-2026-02-25-empty-appointments-desktop-v2.png
+- size: 1512x861
+- changed@10: 0.000%
+- changed@20: 0.000% (max 3.000%)
+- changed@40: 0.000%
+- mae: 0.000 (max 3.000)
+- rmse: 0.000
+- overlay: output/playwright/diff/ci/overlay-empty-appointments-desktop.png
+
+[empty-prescriptions-desktop] PASS
+- baseline: output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v1.png
+- candidate: output/playwright/qc-2026-02-25-empty-prescriptions-desktop-v2.png
+- size: 1512x861
+- changed@10: 0.000%
+- changed@20: 0.000% (max 3.000%)
+- changed@40: 0.000%
+- mae: 0.000 (max 3.000)
+- rmse: 0.000
+- overlay: output/playwright/diff/ci/overlay-empty-prescriptions-desktop.png
+
+[empty-photos-desktop] PASS
+- baseline: output/playwright/qc-2026-02-25-empty-photos-desktop-v1.png
+- candidate: output/playwright/qc-2026-02-25-empty-photos-desktop-v2.png
+- size: 1512x861
+- changed@10: 0.000%
+- changed@20: 0.000% (max 3.000%)
+- changed@40: 0.000%
+- mae: 0.000 (max 3.000)
+- rmse: 0.000
+- overlay: output/playwright/diff/ci/overlay-empty-photos-desktop.png
+
+[empty-payments-desktop] PASS
+- baseline: output/playwright/qc-2026-02-25-empty-payments-desktop-v1.png
+- candidate: output/playwright/qc-2026-02-25-empty-payments-desktop-v2.png
+- size: 1512x861
+- changed@10: 0.000%
+- changed@20: 0.000% (max 3.000%)
+- changed@40: 0.000%
+- mae: 0.000 (max 3.000)
+- rmse: 0.000
+- overlay: output/playwright/diff/ci/overlay-empty-payments-desktop.png
+
+Overall: PASS

@@ -56,6 +56,9 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "qa:visual-regression": [
+            "@php scripts/check_visual_regression.php --manifest=output/playwright/flow-check/visual-regression.manifest.json --report=output/playwright/flow-check/visual-regression-check.txt --diff-dir=output/playwright/diff/ci"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",

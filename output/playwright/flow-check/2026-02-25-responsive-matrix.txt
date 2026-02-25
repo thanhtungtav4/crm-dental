@@ -1,0 +1,42 @@
+Responsive QA matrix - Patient workspace
+Date: 2026-02-25
+URL base: http://crm.test/admin/patients/1
+Session: Playwright CLI (crmqa)
+
+Breakpoints covered:
+- 1366x900
+- 1024x900
+- 768x1024
+
+Tabs captured per breakpoint:
+- basic-info
+- appointments
+- prescriptions
+- photos
+- payments
+
+Evidence files:
+- output/playwright/qc-2026-02-25-1366-tab-basic-info.png
+- output/playwright/qc-2026-02-25-1366-tab-appointments.png
+- output/playwright/qc-2026-02-25-1366-tab-prescriptions.png
+- output/playwright/qc-2026-02-25-1366-tab-photos.png
+- output/playwright/qc-2026-02-25-1366-tab-payments.png
+- output/playwright/qc-2026-02-25-1024-tab-basic-info.png
+- output/playwright/qc-2026-02-25-1024-tab-appointments.png
+- output/playwright/qc-2026-02-25-1024-tab-prescriptions.png
+- output/playwright/qc-2026-02-25-1024-tab-photos.png
+- output/playwright/qc-2026-02-25-1024-tab-payments.png
+- output/playwright/qc-2026-02-25-768-tab-basic-info.png
+- output/playwright/qc-2026-02-25-768-tab-appointments.png
+- output/playwright/qc-2026-02-25-768-tab-prescriptions.png
+- output/playwright/qc-2026-02-25-768-tab-photos.png
+- output/playwright/qc-2026-02-25-768-tab-payments.png
+
+Quick findings:
+- No critical UI breakage found on the tested matrix.
+- Horizontal overflow behavior is present for dense tables at 1024/768.
+- Header/actions and tab content remain usable across tested widths.
+
+Open for manual sign-off:
+- Final pixel-level parity approval against reference baseline (S4-03).
+- PM/QA sign-off for responsive acceptance threshold (S4-04).

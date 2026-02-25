@@ -1,0 +1,56 @@
+Pixel parity report - desktop baseline vs post-tokenization
+Date: 2026-02-25
+Viewport: 1536x864
+Comparison set: 2026-02-24 desktop-v2 vs 2026-02-25 desktop-v3
+
+Metric notes:
+- changed@th20 = % pixel có ít nhất 1 channel lệch > 20
+- mae = mean absolute error (0..255, càng thấp càng gần baseline)
+- rmse = root mean square error (0..255, càng thấp càng gần baseline)
+
+[appointments] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-lich-hen-desktop-v2.png
+- current : output/playwright/qc-2026-02-25-tab-lich-hen-desktop-v3.png
+- changed@th10: 1.825%
+- changed@th20: 1.704%
+- changed@th40: 1.158%
+- mae: 1.363
+- rmse: 12.675
+- abs diff image    : output/playwright/diff/qc-2026-02-25-appointments-absdiff-v2-v3.png
+- overlay diff image: output/playwright/diff/qc-2026-02-25-appointments-overlaydiff-th20-v2-v3.png
+
+[prescriptions] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-don-thuoc-desktop-v2.png
+- current : output/playwright/qc-2026-02-25-tab-don-thuoc-desktop-v3.png
+- changed@th10: 2.227%
+- changed@th20: 2.124%
+- changed@th40: 1.571%
+- mae: 2.094
+- rmse: 16.989
+- abs diff image    : output/playwright/diff/qc-2026-02-25-prescriptions-absdiff-v2-v3.png
+- overlay diff image: output/playwright/diff/qc-2026-02-25-prescriptions-overlaydiff-th20-v2-v3.png
+
+[photos] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-thu-vien-anh-desktop-v2.png
+- current : output/playwright/qc-2026-02-25-tab-thu-vien-anh-desktop-v3.png
+- changed@th10: 2.664%
+- changed@th20: 2.608%
+- changed@th40: 1.973%
+- mae: 2.871
+- rmse: 20.352
+- abs diff image    : output/playwright/diff/qc-2026-02-25-photos-absdiff-v2-v3.png
+- overlay diff image: output/playwright/diff/qc-2026-02-25-photos-overlaydiff-th20-v2-v3.png
+
+[payments] PASS
+- baseline: output/playwright/qc-2026-02-24-tab-thanh-toan-desktop-v2.png
+- current : output/playwright/qc-2026-02-25-tab-thanh-toan-desktop-v3.png
+- changed@th10: 1.976%
+- changed@th20: 1.807%
+- changed@th40: 1.171%
+- mae: 1.250
+- rmse: 7.668
+- abs diff image    : output/playwright/diff/qc-2026-02-25-payments-absdiff-v2-v3.png
+- overlay diff image: output/playwright/diff/qc-2026-02-25-payments-overlaydiff-th20-v2-v3.png
+
+Overall: PASS
+Kết luận: Bộ desktop 4 tab lõi đạt parity ở mức chấp nhận được sau tokenization; không thấy regression thị giác đáng kể.
