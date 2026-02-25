@@ -77,6 +77,11 @@ class Patient extends Model
         return $this->hasMany(Appointment::class);
     }
 
+    public function visitEpisodes()
+    {
+        return $this->hasMany(VisitEpisode::class);
+    }
+
     public function payments()
     {
         return $this->hasManyThrough(

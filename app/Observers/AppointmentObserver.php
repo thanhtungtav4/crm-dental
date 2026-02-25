@@ -5,16 +5,23 @@ namespace App\Observers;
 use App\Models\Appointment;
 use App\Services\CareTicketService;
 use App\Services\PatientConversionService;
+use App\Services\VisitEpisodeService;
 
 class AppointmentObserver
 {
     protected PatientConversionService $conversionService;
     protected CareTicketService $careTicketService;
+    protected VisitEpisodeService $visitEpisodeService;
 
-    public function __construct(PatientConversionService $conversionService, CareTicketService $careTicketService)
+    public function __construct(
+        PatientConversionService $conversionService,
+        CareTicketService $careTicketService,
+        VisitEpisodeService $visitEpisodeService
+    )
     {
         $this->conversionService = $conversionService;
         $this->careTicketService = $careTicketService;
+        $this->visitEpisodeService = $visitEpisodeService;
     }
 
     /**
@@ -23,6 +30,7 @@ class AppointmentObserver
     public function created(Appointment $appointment): void
     {
         $this->careTicketService->syncAppointment($appointment);
+        $this->visitEpisodeService->syncFromAppointment($appointment, true);
     }
 
     /**
@@ -30,13 +38,16 @@ class AppointmentObserver
      */
     public function updated(Appointment $appointment): void
     {
+        $statusChanged = $appointment->wasChanged('status');
+
         // Tự động chuyển Customer thành Patient khi appointment hoàn thành
-        if ($appointment->wasChanged('status') && $appointment->status === Appointment::STATUS_COMPLETED) {
+        if ($statusChanged && $appointment->status === Appointment::STATUS_COMPLETED) {
             $this->handleConversion($appointment);
         }
 
-        if ($appointment->wasChanged(['status', 'date', 'assigned_to', 'doctor_id', 'patient_id', 'note'])) {
+        if ($appointment->wasChanged(['status', 'date', 'duration_minutes', 'assigned_to', 'doctor_id', 'patient_id', 'branch_id', 'note'])) {
             $this->careTicketService->syncAppointment($appointment);
+            $this->visitEpisodeService->syncFromAppointment($appointment, $statusChanged);
         }
     }
 
@@ -70,6 +81,7 @@ class AppointmentObserver
     public function deleted(Appointment $appointment): void
     {
         $this->careTicketService->cancelBySource(Appointment::class, $appointment->id, 'appointment_reminder');
+        $this->visitEpisodeService->markAppointmentDeleted($appointment);
     }
 
     /**

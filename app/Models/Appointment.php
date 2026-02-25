@@ -187,6 +187,7 @@ class Appointment extends Model
     public function assignedTo() { return $this->belongsTo(User::class, 'assigned_to'); }
     public function branch() { return $this->belongsTo(Branch::class); }
     public function confirmedBy() { return $this->belongsTo(User::class, 'confirmed_by'); }
+    public function visitEpisode() { return $this->hasOne(VisitEpisode::class); }
 
     public static function statusOptions(): array
     {
