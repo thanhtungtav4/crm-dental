@@ -100,6 +100,28 @@ class AppointmentsTable
                     ->formatStateUsing(fn (?string $state): string => Appointment::statusLabel($state))
                     ->icon(fn (?string $state): string => Appointment::statusIcon($state))
                     ->color(fn (?string $state): string => Appointment::statusColor($state)),
+                TextColumn::make('ops_flags')
+                    ->label('Vận hành')
+                    ->badge()
+                    ->getStateUsing(function ($record): string {
+                        $flags = [];
+
+                        if ($record->is_emergency) {
+                            $flags[] = 'Khẩn cấp';
+                        }
+
+                        if ($record->is_walk_in) {
+                            $flags[] = 'Walk-in';
+                        }
+
+                        if ($record->late_arrival_minutes) {
+                            $flags[] = 'Trễ ' . $record->late_arrival_minutes . ' phút';
+                        }
+
+                        return $flags === [] ? 'Bình thường' : implode(' • ', $flags);
+                    })
+                    ->color(fn ($record): string => $record->is_emergency ? 'danger' : (($record->is_walk_in || $record->late_arrival_minutes) ? 'warning' : 'gray'))
+                    ->toggleable(),
                 TextColumn::make('chief_complaint')
                     ->label('Lý do khám')
                     ->limit(50)
@@ -109,9 +131,98 @@ class AppointmentsTable
                     ->label('Lý do hủy')
                     ->limit(40)
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('operation_override_reason')
+                    ->label('Lý do override')
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('operationOverrideBy.name')
+                    ->label('Người override')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('operation_override_at')
+                    ->label('Thời gian override')
+                    ->dateTime('d/m/Y H:i')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('mark_late_arrival')
+                    ->label('Đánh dấu trễ giờ')
+                    ->icon('heroicon-o-clock')
+                    ->color('warning')
+                    ->visible(fn (Appointment $record) => in_array($record->status, Appointment::activeStatuses(), true))
+                    ->form([
+                        \Filament\Forms\Components\TextInput::make('late_minutes')
+                            ->label('Số phút trễ')
+                            ->numeric()
+                            ->minValue(1)
+                            ->required()
+                            ->default(fn (Appointment $record): int => $record->date?->isPast() ? max($record->date->diffInMinutes(now()), 1) : 5),
+                        \Filament\Forms\Components\Textarea::make('reason')
+                            ->label('Lý do')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function (Appointment $record, array $data): void {
+                        $record->applyOperationalOverride(
+                            Appointment::OVERRIDE_LATE_ARRIVAL,
+                            (string) ($data['reason'] ?? ''),
+                            auth()->id(),
+                            [
+                                'late_minutes' => (int) ($data['late_minutes'] ?? 0),
+                            ],
+                        );
+
+                        Notification::make()
+                            ->title('Đã ghi nhận trễ giờ')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('mark_emergency')
+                    ->label('Đánh dấu khẩn cấp')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('danger')
+                    ->visible(fn (Appointment $record) => ! $record->is_emergency)
+                    ->form([
+                        \Filament\Forms\Components\Textarea::make('reason')
+                            ->label('Lý do')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function (Appointment $record, array $data): void {
+                        $record->applyOperationalOverride(
+                            Appointment::OVERRIDE_EMERGENCY,
+                            (string) ($data['reason'] ?? ''),
+                            auth()->id(),
+                        );
+
+                        Notification::make()
+                            ->title('Đã ghi nhận ca khẩn cấp')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('mark_walk_in')
+                    ->label('Đánh dấu walk-in')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('info')
+                    ->visible(fn (Appointment $record) => ! $record->is_walk_in)
+                    ->form([
+                        \Filament\Forms\Components\Textarea::make('reason')
+                            ->label('Lý do')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function (Appointment $record, array $data): void {
+                        $record->applyOperationalOverride(
+                            Appointment::OVERRIDE_WALK_IN,
+                            (string) ($data['reason'] ?? ''),
+                            auth()->id(),
+                        );
+
+                        Notification::make()
+                            ->title('Đã ghi nhận khách walk-in')
+                            ->success()
+                            ->send();
+                    }),
                 
                 // Action "Chuyển thành bệnh nhân" - chỉ hiện khi có customer_id nhưng chưa có patient_id
                 Action::make('convert_to_patient')

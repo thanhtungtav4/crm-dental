@@ -61,6 +61,27 @@ class AppointmentsRelationManager extends RelationManager
                     ->formatStateUsing(fn (?string $state): string => Appointment::statusLabel($state))
                     ->color(fn (?string $state): string => Appointment::statusColor($state))
                     ->icon(fn (?string $state): string => Appointment::statusIcon($state)),
+                Tables\Columns\TextColumn::make('ops_flags')
+                    ->label('Vận hành')
+                    ->badge()
+                    ->getStateUsing(function (Appointment $record): string {
+                        $flags = [];
+
+                        if ($record->is_emergency) {
+                            $flags[] = 'Khẩn cấp';
+                        }
+
+                        if ($record->is_walk_in) {
+                            $flags[] = 'Walk-in';
+                        }
+
+                        if ($record->late_arrival_minutes) {
+                            $flags[] = 'Trễ ' . $record->late_arrival_minutes . ' phút';
+                        }
+
+                        return $flags === [] ? 'Bình thường' : implode(' • ', $flags);
+                    })
+                    ->color(fn (Appointment $record): string => $record->is_emergency ? 'danger' : (($record->is_walk_in || $record->late_arrival_minutes) ? 'warning' : 'gray')),
 
                 Tables\Columns\TextColumn::make('branch.name')
                     ->label('Chi nhánh')
@@ -73,6 +94,14 @@ class AppointmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('cancellation_reason')
                     ->label('Lý do hủy')
                     ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('operation_override_reason')
+                    ->label('Lý do override')
+                    ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('operation_override_at')
+                    ->label('Thời gian override')
+                    ->dateTime('d/m/Y H:i')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

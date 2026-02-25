@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class Appointment extends Model
 {
@@ -19,6 +20,10 @@ class Appointment extends Model
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_NO_SHOW = 'no_show';
     public const STATUS_RESCHEDULED = 'rescheduled';
+
+    public const OVERRIDE_LATE_ARRIVAL = 'late_arrival';
+    public const OVERRIDE_EMERGENCY = 'emergency';
+    public const OVERRIDE_WALK_IN = 'walk_in';
 
     public const DEFAULT_STATUS = self::STATUS_SCHEDULED;
 
@@ -140,6 +145,12 @@ class Appointment extends Model
         'reminder_hours',
         'confirmed_at',
         'confirmed_by',
+        'is_walk_in',
+        'is_emergency',
+        'late_arrival_minutes',
+        'operation_override_reason',
+        'operation_override_at',
+        'operation_override_by',
     ];
 
     protected $casts = [
@@ -147,6 +158,10 @@ class Appointment extends Model
         'confirmed_at' => 'datetime',
         'duration_minutes' => 'integer',
         'reminder_hours' => 'integer',
+        'is_walk_in' => 'boolean',
+        'is_emergency' => 'boolean',
+        'late_arrival_minutes' => 'integer',
+        'operation_override_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -187,11 +202,22 @@ class Appointment extends Model
     public function assignedTo() { return $this->belongsTo(User::class, 'assigned_to'); }
     public function branch() { return $this->belongsTo(Branch::class); }
     public function confirmedBy() { return $this->belongsTo(User::class, 'confirmed_by'); }
+    public function operationOverrideBy() { return $this->belongsTo(User::class, 'operation_override_by'); }
     public function visitEpisode() { return $this->hasOne(VisitEpisode::class); }
+    public function overrideLogs() { return $this->hasMany(AppointmentOverrideLog::class); }
 
     public static function statusOptions(): array
     {
         return self::STATUS_LABELS;
+    }
+
+    public static function overrideTypeOptions(): array
+    {
+        return [
+            self::OVERRIDE_LATE_ARRIVAL => 'Trễ giờ',
+            self::OVERRIDE_EMERGENCY => 'Khẩn cấp',
+            self::OVERRIDE_WALK_IN => 'Walk-in',
+        ];
     }
 
     public static function statusValues(): array
@@ -348,6 +374,63 @@ class Appointment extends Model
                 'reschedule_reason' => 'Vui lòng nhập lý do hẹn lại lịch hẹn.',
             ]);
         }
+    }
+
+    public function applyOperationalOverride(string $overrideType, string $reason, ?int $actorId = null, array $context = []): void
+    {
+        $overrideType = strtolower(trim($overrideType));
+        $reason = trim($reason);
+
+        if (! array_key_exists($overrideType, static::overrideTypeOptions())) {
+            throw ValidationException::withMessages([
+                'override_type' => 'Loại override không hợp lệ.',
+            ]);
+        }
+
+        if ($reason === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'Vui lòng nhập lý do override.',
+            ]);
+        }
+
+        DB::transaction(function () use ($overrideType, $reason, $actorId, $context): void {
+            if ($overrideType === self::OVERRIDE_LATE_ARRIVAL) {
+                $lateMinutes = (int) ($context['late_minutes'] ?? 0);
+
+                if ($lateMinutes <= 0) {
+                    throw ValidationException::withMessages([
+                        'late_minutes' => 'Số phút trễ phải lớn hơn 0.',
+                    ]);
+                }
+
+                $this->late_arrival_minutes = $lateMinutes;
+            }
+
+            if ($overrideType === self::OVERRIDE_EMERGENCY) {
+                $this->is_emergency = true;
+                $this->appointment_type = 'emergency';
+            }
+
+            if ($overrideType === self::OVERRIDE_WALK_IN) {
+                $this->is_walk_in = true;
+
+                if ($this->appointment_kind === null) {
+                    $this->appointment_kind = 'booking';
+                }
+            }
+
+            $this->operation_override_reason = $reason;
+            $this->operation_override_at = now();
+            $this->operation_override_by = $actorId;
+            $this->save();
+
+            $this->overrideLogs()->create([
+                'override_type' => $overrideType,
+                'reason' => $reason,
+                'actor_id' => $actorId,
+                'context' => $context,
+            ]);
+        });
     }
 
     public function getTimeRangeLabelAttribute(): string
