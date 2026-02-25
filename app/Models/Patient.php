@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PatientCodeGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -175,17 +176,7 @@ class Patient extends Model
                 return;
             }
 
-            // Generate a unique code: PAT-YYYYMMDD-XXXXXX
-            $date = now()->format('Ymd');
-            $attempts = 0;
-            do {
-                $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
-                $code = "PAT-{$date}-{$suffix}";
-                $exists = self::withTrashed()->where('patient_code', $code)->exists();
-                $attempts++;
-            } while ($exists && $attempts < 5);
-
-            $patient->patient_code = $code;
+            $patient->patient_code = PatientCodeGenerator::generate();
         });
 
         static::updating(function (self $patient) {

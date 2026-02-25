@@ -7,7 +7,6 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use App\Models\Appointment;
-use App\Models\Patient;
 use Filament\Notifications\Notification;
 
 class AppointmentsTable
@@ -134,49 +133,32 @@ class AppointmentsTable
                                 ->send();
                             return;
                         }
-                        
-                        // Kiểm tra xem customer đã có patient chưa
-                        $existingPatient = Patient::where('customer_id', $customer->id)->first();
-                        
-                        if ($existingPatient) {
-                            // Nếu đã có patient rồi, chỉ cần link
-                            $record->patient_id = $existingPatient->id;
-                            $record->save();
-                            
+                        try {
+                            /** @var \App\Services\PatientConversionService $service */
+                            $service = app(\App\Services\PatientConversionService::class);
+                            $patient = $service->convert($customer, $record);
+                            $isCanonicalOwner = (int) ($patient?->customer_id ?? 0) === (int) $customer->id;
+
+                            $toast = Notification::make();
+
+                            if ($isCanonicalOwner) {
+                                $toast
+                                    ->title('🎉 Đã chuyển thành bệnh nhân thành công!')
+                                    ->body("Khách hàng \"{$customer->full_name}\" đã được liên kết hồ sơ: {$patient?->patient_code}")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $toast
+                                    ->title('ℹ️ Đã liên kết hồ sơ bệnh nhân hiện có')
+                                    ->body("Khách hàng \"{$customer->full_name}\" trùng dữ liệu, dùng hồ sơ: {$patient?->patient_code}")
+                                    ->warning()
+                                    ->send();
+                            }
+                        } catch (\Throwable $exception) {
                             Notification::make()
-                                ->title('✅ Đã liên kết với bệnh nhân hiện có!')
-                                ->body("Lịch hẹn đã được liên kết với bệnh nhân \"{$existingPatient->full_name}\".")
-                                ->success()
-                                ->send();
-                        } else {
-                            // Tạo Patient mới
-                            $patient = Patient::create([
-                                'customer_id' => $customer->id,
-                                'patient_code' => 'BN' . str_pad(Patient::max('id') + 1, 6, '0', STR_PAD_LEFT),
-                                'first_branch_id' => $record->branch_id,
-                                'full_name' => $customer->full_name,
-                                'phone' => $customer->phone,
-                                'email' => $customer->email,
-                                'address' => $customer->address ?? null,
-                                'customer_group_id' => $customer->customer_group_id,
-                                'promotion_group_id' => $customer->promotion_group_id,
-                                'owner_staff_id' => $customer->assigned_to,
-                                'created_by' => auth()->id(),
-                                'updated_by' => auth()->id(),
-                            ]);
-                            
-                            // Link appointment với patient
-                            $record->patient_id = $patient->id;
-                            $record->save();
-                            
-                            // Cập nhật Customer status
-                            $customer->status = 'converted';
-                            $customer->save();
-                            
-                            Notification::make()
-                                ->title('🎉 Đã chuyển thành bệnh nhân thành công!')
-                                ->body("Khách hàng \"{$customer->full_name}\" đã trở thành bệnh nhân với mã: {$patient->patient_code}")
-                                ->success()
+                                ->title('❌ Chuyển đổi thất bại')
+                                ->body('Không thể chuyển đổi khách hàng thành bệnh nhân. Vui lòng thử lại.')
+                                ->danger()
                                 ->send();
                         }
                     }),

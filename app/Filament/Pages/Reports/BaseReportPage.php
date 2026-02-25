@@ -12,6 +12,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 abstract class BaseReportPage extends Page implements HasTable
@@ -83,6 +84,7 @@ abstract class BaseReportPage extends Page implements HasTable
         return $table
             ->query(fn () => $this->getTableQuery())
             ->columns($this->getTableColumns())
+            ->defaultKeySort(false)
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->emptyStateHeading('Chưa có dữ liệu')
             ->emptyStateDescription('Dữ liệu báo cáo sẽ hiển thị tại đây.');
@@ -126,6 +128,28 @@ abstract class BaseReportPage extends Page implements HasTable
         }
 
         return $query;
+    }
+
+    /**
+     * Grouped report queries often do not expose a model primary key.
+     * Generate a deterministic key from selected attributes to keep Filament tables stable.
+     */
+    public function getTableRecordKey(Model|array $record): string
+    {
+        if (is_array($record)) {
+            return parent::getTableRecordKey($record);
+        }
+
+        $key = $record->getKey();
+
+        if (filled($key)) {
+            return (string) $key;
+        }
+
+        $attributes = $record->getAttributes();
+        ksort($attributes);
+
+        return sha1(static::class . '|' . serialize($attributes));
     }
 
     abstract protected function getTableQuery(): Builder;

@@ -157,22 +157,52 @@ a {
   color: var(--crm-primary);
 }
 
+.crm-top-tabs-shell {
+  border-radius: 12px;
+  border: 1px solid #d5d9e3;
+  background: #fff;
+  padding: 12px 16px 10px;
+  box-shadow: none;
+}
+
+.crm-section-block {
+  margin-bottom: 32px;
+}
+
+.crm-patient-overview-card {
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  overflow: hidden;
+}
+
+.crm-patient-overview-body {
+  padding: 24px;
+}
+
+.crm-top-tabs-nav {
+  margin-top: 8px;
+}
+
 .crm-top-tabs {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: 8px 12px;
   align-items: center;
+  justify-content: flex-start;
   border-bottom: 1px solid var(--crm-border);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #cfd5e2 transparent;
+  scroll-padding-inline: 10px;
 }
 
 .crm-top-tabs::-webkit-scrollbar {
-  height: 4px;
+  height: 0;
 }
 
 .crm-top-tabs::-webkit-scrollbar-track {
@@ -195,6 +225,10 @@ a {
   color: var(--crm-muted);
   padding: 4px 2px 8px;
   white-space: nowrap;
+}
+
+.crm-top-tab > span:first-child {
+  line-height: 1.2;
 }
 
 .crm-top-tab.is-active {
@@ -229,6 +263,59 @@ a {
 .crm-top-tab.is-active .crm-top-tab-count {
   background: var(--crm-primary-50);
   color: var(--crm-primary);
+}
+
+.crm-pane-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crm-pane-stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.crm-history-card {
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  padding: 20px;
+}
+
+.crm-history-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crm-history-card-title {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.crm-history-card-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.crm-empty-inline {
+  padding: 48px 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+@media (max-width: 1536px) {
+  .crm-history-card-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* Patient profile overview */
@@ -798,9 +885,25 @@ a {
 }
 
 /* Patient record header actions */
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px 16px;
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header > div:first-child {
+  min-width: min(460px, 100%);
+}
+
+.fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header .fi-header-heading {
+  line-height: 1.1;
+}
+
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -886,6 +989,57 @@ a {
   background: #fff;
 }
 
+.crm-rel-tab .fi-ta-content,
+.crm-care-tab .fi-ta-content,
+.crm-payment-tab .fi-ta-content {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #c5cad6 transparent;
+}
+
+.crm-rel-tab .fi-ta-content::-webkit-scrollbar,
+.crm-care-tab .fi-ta-content::-webkit-scrollbar,
+.crm-payment-tab .fi-ta-content::-webkit-scrollbar {
+  height: 7px;
+}
+
+.crm-rel-tab .fi-ta-content::-webkit-scrollbar-track,
+.crm-care-tab .fi-ta-content::-webkit-scrollbar-track,
+.crm-payment-tab .fi-ta-content::-webkit-scrollbar-track {
+  background: #f1f3f8;
+}
+
+.crm-rel-tab .fi-ta-content::-webkit-scrollbar-thumb,
+.crm-care-tab .fi-ta-content::-webkit-scrollbar-thumb,
+.crm-payment-tab .fi-ta-content::-webkit-scrollbar-thumb {
+  background: #c5cad6;
+  border-radius: 999px;
+}
+
+.crm-rel-tab .fi-ta-table,
+.crm-care-tab .fi-ta-table,
+.crm-payment-tab .fi-ta-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.crm-rel-tab.crm-rel-tab-appointments .fi-ta-table {
+  min-width: 1180px;
+}
+
+.crm-rel-tab.crm-rel-tab-prescriptions .fi-ta-table {
+  min-width: 1020px;
+}
+
+.crm-rel-tab.crm-rel-tab-photos .fi-ta-table {
+  min-width: 860px;
+}
+
+.crm-payment-tab .fi-ta-table {
+  min-width: 1220px;
+}
+
 .crm-rel-tab .fi-ta-header {
   display: flex;
   flex-direction: row !important;
@@ -967,6 +1121,14 @@ a {
 
 .crm-rel-tab .fi-ta-table thead th:last-child {
   border-right: 0;
+  padding-right: 14px;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-selection-cell {
+  width: 34px;
+  min-width: 34px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .crm-rel-tab .fi-ta-table thead th button,
@@ -980,6 +1142,10 @@ a {
   padding: 10px 10px;
   border-bottom: 1px solid #eceff5;
   vertical-align: middle;
+}
+
+.crm-rel-tab .fi-ta-table tbody td:last-child {
+  padding-right: 14px;
 }
 
 .crm-rel-tab .fi-ta-table tbody tr:last-child td {
@@ -1058,6 +1224,24 @@ a {
   border-color: #b7bed0;
   background: #f8f9fc;
   color: #4b5568;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-info.fi-btn,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-info.fi-icon-btn,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-primary.fi-btn,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-primary.fi-icon-btn {
+  color: #5667df;
+  border-color: #d3d9f6;
+  background: #f6f7ff;
+}
+
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-info.fi-btn:hover,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-info.fi-icon-btn:hover,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-primary.fi-btn:hover,
+.crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-primary.fi-icon-btn:hover {
+  color: #4b5bd0;
+  border-color: #c3cbf0;
+  background: #eef1ff;
 }
 
 .crm-rel-tab .fi-ta-table .fi-ta-actions .fi-color-danger.fi-btn,
@@ -1205,7 +1389,22 @@ a {
   font-weight: 600;
   font-size: 12px;
   padding: 6px 12px;
+  line-height: 1;
   border: 1px solid transparent;
+}
+
+.crm-btn-md {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.crm-btn-sm {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 12px;
 }
 
 .crm-btn-primary {
@@ -1221,6 +1420,11 @@ a {
   background: #fff;
   color: #4b5563;
   border-color: var(--crm-border);
+}
+
+.crm-btn-outline:hover {
+  border-color: #b7bed0;
+  background: #f8f9fc;
 }
 
 .crm-exam-section-header {
@@ -1651,6 +1855,9 @@ a {
   --crm-care-head-bg: #4a4a4d;
   --crm-care-head-border: #5a5b5f;
   --crm-care-row-border: #e7e9ef;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .crm-care-tab .fi-ta {
@@ -1752,6 +1959,7 @@ a {
 .crm-care-tab .fi-ta-table thead th:last-child {
   border-right: 0;
   text-align: center;
+  padding-right: 14px;
 }
 
 .crm-care-tab .fi-ta-table thead th button,
@@ -1769,6 +1977,10 @@ a {
   color: #374151;
   vertical-align: middle;
   line-height: 1.4;
+}
+
+.crm-care-tab .fi-ta-table tbody td:last-child {
+  padding-right: 14px;
 }
 
 .crm-care-tab .fi-ta-table tbody tr:hover td {
@@ -1862,13 +2074,34 @@ a {
 
 /* Exam & treatment table alignment */
 .crm-treatment-card {
+  border: 1px solid #d5d9e3;
   border-color: #d5d9e3;
   border-radius: 8px;
+  background: #fff;
   box-shadow: none;
   overflow: hidden;
 }
 
+.crm-treatment-progress-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crm-treatment-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .crm-treatment-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 14px;
   background: #fff;
 }
 
@@ -1881,6 +2114,12 @@ a {
 .crm-treatment-subhead-count {
   font-size: 12px;
   color: #6b7280;
+}
+
+.crm-treatment-subhead-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .crm-treatment-table-wrap {
@@ -2028,11 +2267,156 @@ a {
   cursor: not-allowed;
 }
 
+/* Generic tab feature card/table */
+.crm-feature-card {
+  border: 1px solid #d9dce5;
+  border-radius: 12px;
+  background: #fff;
+  padding: 18px 20px;
+  box-shadow: none;
+}
+
+.crm-feature-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crm-feature-card-title {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.crm-feature-subtitle {
+  margin: 0 0 12px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.crm-feature-card-description {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.crm-feature-table-card {
+  border: 1px solid #d9dce5;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.crm-feature-table-wrap {
+  overflow-x: auto;
+}
+
+.crm-feature-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crm-feature-table thead th {
+  background: #f8fafc;
+  border-bottom: 1px solid #e7ebf3;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: nowrap;
+  padding: 10px 14px;
+}
+
+.crm-feature-table tbody td {
+  border-bottom: 1px solid #eceff5;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 10px 14px;
+}
+
+.crm-feature-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.crm-feature-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.crm-feature-table td.is-emphasis {
+  color: #111827;
+  font-weight: 600;
+}
+
+.crm-feature-table-empty {
+  padding: 36px 18px !important;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.crm-forms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.crm-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crm-link-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #dbe0ea;
+  border-radius: 8px;
+  padding: 9px 12px;
+  text-decoration: none;
+  background: #fff;
+}
+
+.crm-link-list-item:hover {
+  background: #f8fafc;
+}
+
+.crm-link-list-item-text {
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.crm-link-list-item-action {
+  color: #6054d8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.crm-link-list-empty {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
 /* Payment tab alignment */
 .crm-payment-tab {
   --crm-payment-border: #d9dce5;
   --crm-payment-head-bg: #4a4a4d;
   --crm-payment-head-border: #5b5c60;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .crm-payment-summary {
@@ -2063,6 +2447,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .crm-payment-summary-actions .crm-btn {
@@ -2097,14 +2483,15 @@ a {
   align-items: center;
   gap: 6px;
   color: #46506a;
-  font-size: clamp(28px, 2.2vw, 44px);
+  font-size: clamp(22px, 1.8vw, 38px);
   font-weight: 700;
   line-height: 1;
   margin-right: 2px;
+  white-space: nowrap;
 }
 
 .crm-payment-balance strong {
-  font-size: clamp(28px, 2.2vw, 44px);
+  font-size: clamp(22px, 1.8vw, 38px);
   line-height: 1;
 }
 
@@ -2125,6 +2512,8 @@ a {
 .crm-payment-metric {
   padding: 14px 16px;
   border-right: 1px solid #e6e8ef;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .crm-payment-metric:last-child {
@@ -2143,9 +2532,12 @@ a {
   display: block;
   margin-top: 8px;
   color: #1f2937;
-  font-size: clamp(30px, 2.4vw, 46px);
+  font-size: clamp(22px, 1.9vw, 36px);
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
 }
 
 .crm-payment-metric strong.is-positive {
@@ -2267,6 +2659,7 @@ a {
 
 .crm-payment-tab .fi-ta-table thead th:last-child {
   border-right: 0;
+  padding-right: 14px;
 }
 
 .crm-payment-tab .fi-ta-table thead th button,
@@ -2280,6 +2673,10 @@ a {
   padding: 10px 10px;
   border-bottom: 1px solid #eceff5;
   vertical-align: middle;
+}
+
+.crm-payment-tab .fi-ta-table tbody td:last-child {
+  padding-right: 14px;
 }
 
 .crm-payment-tab .fi-ta-table tbody tr:last-child td {
@@ -2422,6 +2819,23 @@ a {
 }
 
 @media (max-width: 1024px) {
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header {
+    grid-template-columns: 1fr;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac {
+    width: 100%;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac-btn-action.fi-btn {
+    flex: 0 0 auto;
+  }
+
   .crm-care-tab .fi-ta-header-heading {
     font-size: 24px;
   }
@@ -2474,5 +2888,91 @@ a {
 
   .crm-payment-tab .fi-ta-empty-state .fi-ta-actions .fi-btn {
     font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fi-main {
+    padding: 18px 14px;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-ac::-webkit-scrollbar-thumb {
+    background: #cfd5e2;
+    border-radius: 999px;
+  }
+
+  .crm-top-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cfd5e2 transparent;
+  }
+
+  .crm-top-tabs::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .crm-top-tabs::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .crm-top-tabs::-webkit-scrollbar-thumb {
+    background: #cfd5e2;
+    border-radius: 999px;
+  }
+
+  .crm-payment-summary-head {
+    align-items: flex-start;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .crm-payment-summary-title {
+    font-size: 20px;
+  }
+
+  .crm-payment-balance,
+  .crm-payment-balance strong {
+    font-size: 18px;
+  }
+
+  .crm-payment-summary-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .crm-payment-summary-actions .crm-btn {
+    min-height: 30px;
+    border-radius: 7px;
+    font-size: 12px;
+    padding: 0 12px;
+  }
+
+  .crm-payment-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crm-payment-metric {
+    padding: 10px 12px;
+  }
+
+  .crm-payment-metric strong {
+    margin-top: 6px;
+    font-size: 18px;
   }
 }

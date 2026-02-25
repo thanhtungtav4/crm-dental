@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('discount_amount', 12,2)->default(0);
             $table->decimal('tax_amount', 12,2)->default(0);
             $table->decimal('total_amount', 12,2)->default(0);
-            $table->enum('status',['draft','issued','partial','paid','cancelled'])->default('draft');
+            $table->enum('status', ['draft', 'issued', 'partial', 'paid', 'overdue', 'cancelled'])->default('draft');
             $table->timestamp('issued_at')->nullable();
             $table->date('due_date')->nullable();
             $table->timestamp('paid_at')->nullable();

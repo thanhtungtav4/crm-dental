@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Schema as DatabaseSchema;
 
 class ReceiptsExpenseResource extends Resource
 {
@@ -68,5 +69,20 @@ class ReceiptsExpenseResource extends Resource
             'create' => CreateReceiptsExpense::route('/create'),
             'edit' => EditReceiptsExpense::route('/{record}/edit'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::hasBackingTable() && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        return static::hasBackingTable() && parent::canAccess();
+    }
+
+    public static function hasBackingTable(): bool
+    {
+        return DatabaseSchema::hasTable('receipts_expense');
     }
 }

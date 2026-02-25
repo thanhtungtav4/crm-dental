@@ -5,9 +5,12 @@ namespace App\Filament\Pages\Reports;
 use App\Models\ReceiptExpense;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 
 class RevenueExpenditure extends BaseReportPage
 {
+    protected ?bool $hasReceiptsExpenseTable = null;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
     protected static ?string $navigationLabel = 'Dòng tiền (thu/chi)';
@@ -25,8 +28,15 @@ class RevenueExpenditure extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
+        if (! $this->hasReceiptsExpenseTable()) {
+            return ReceiptExpense::query()->whereRaw('1 = 0');
+        }
+
         return ReceiptExpense::query()
-            ->selectRaw('payment_method, sum(case when voucher_type = \"expense\" then amount else 0 end) as total_expense, sum(case when voucher_type = \"expense\" then 0 else amount end) as total_receipt')
+            ->selectRaw(
+                'payment_method, sum(case when voucher_type = ? then amount else 0 end) as total_expense, sum(case when voucher_type = ? then 0 else amount end) as total_receipt',
+                ['expense', 'expense']
+            )
             ->groupBy('payment_method');
     }
 
@@ -62,6 +72,14 @@ class RevenueExpenditure extends BaseReportPage
 
     public function getStats(): array
     {
+        if (! $this->hasReceiptsExpenseTable()) {
+            return [
+                ['label' => 'Tổng thu', 'value' => '0 đ'],
+                ['label' => 'Tổng chi', 'value' => '0 đ'],
+                ['label' => 'Biến động', 'value' => '0 đ'],
+            ];
+        }
+
         $baseQuery = ReceiptExpense::query();
         $this->applyDateRange($baseQuery, 'voucher_date');
 
@@ -83,5 +101,14 @@ class RevenueExpenditure extends BaseReportPage
             'card' => 'Thẻ',
             default => 'Khác',
         };
+    }
+
+    protected function hasReceiptsExpenseTable(): bool
+    {
+        if ($this->hasReceiptsExpenseTable !== null) {
+            return $this->hasReceiptsExpenseTable;
+        }
+
+        return $this->hasReceiptsExpenseTable = Schema::hasTable('receipts_expense');
     }
 }

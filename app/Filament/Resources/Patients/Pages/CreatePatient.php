@@ -22,10 +22,17 @@ class CreatePatient extends CreateRecord
             }
         }
         if (!empty($data['phone'])) {
-            $exists = Patient::withTrashed()->where('phone', $data['phone'])->exists();
+            $exists = Patient::withTrashed()
+                ->where('phone', $data['phone'])
+                ->when(
+                    ! empty($data['first_branch_id']),
+                    fn ($query) => $query->where('first_branch_id', $data['first_branch_id']),
+                    fn ($query) => $query->whereNull('first_branch_id')
+                )
+                ->exists();
             if ($exists) {
                 throw ValidationException::withMessages([
-                    'phone' => 'Số điện thoại bệnh nhân đã tồn tại.',
+                    'phone' => 'Số điện thoại bệnh nhân đã tồn tại trong chi nhánh đã chọn.',
                 ]);
             }
         }

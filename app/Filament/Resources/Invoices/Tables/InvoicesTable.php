@@ -198,6 +198,12 @@ class InvoicesTable
                             ->default('cash')
                             ->native(false),
 
+                        TextInput::make('transaction_ref')
+                            ->label('Mã giao dịch')
+                            ->maxLength(255)
+                            ->visible(fn (callable $get) => in_array($get('method'), ['card', 'transfer', 'vnpay'], true))
+                            ->helperText('Dùng để chống ghi nhận thanh toán trùng lặp'),
+
                         Select::make('direction')
                             ->label('Loại phiếu')
                             ->required()
@@ -228,14 +234,32 @@ class InvoicesTable
                             'Thanh toán hóa đơn ' . $record->invoice_no,
                             $data['paid_at'],
                             $data['direction'] ?? 'receipt',
-                            $data['refund_reason'] ?? null
+                            $data['refund_reason'] ?? null,
+                            $data['transaction_ref'] ?? null
                         );
-                        
-                        Notification::make()
-                            ->success()
-                            ->title(($data['direction'] ?? 'receipt') === 'refund' ? 'Đã ghi nhận hoàn tiền' : 'Thanh toán thành công')
-                            ->body('Đã ghi nhận ' . number_format($data['amount'], 0, ',', '.') . 'đ')
-                            ->send();
+
+                        $isDuplicateRetry = filled($data['transaction_ref'] ?? null) && ! $payment->wasRecentlyCreated;
+                        $title = ($data['direction'] ?? 'receipt') === 'refund'
+                            ? 'Đã ghi nhận hoàn tiền'
+                            : 'Thanh toán thành công';
+                        $body = 'Đã ghi nhận ' . number_format($data['amount'], 0, ',', '.') . 'đ';
+
+                        if ($isDuplicateRetry) {
+                            $title = 'Mã giao dịch đã tồn tại';
+                            $body = 'Đã dùng bản ghi thanh toán hiện có, không tạo trùng.';
+                        }
+
+                        $notification = Notification::make()
+                            ->title($title)
+                            ->body($body);
+
+                        if ($isDuplicateRetry) {
+                            $notification->warning();
+                        } else {
+                            $notification->success();
+                        }
+
+                        $notification->send();
                     })
                     ->visible(fn ($record) => $record->status !== 'cancelled' && ($record->calculateBalance() > 0 || $record->hasPayments()))
                     ->modalWidth('md'),

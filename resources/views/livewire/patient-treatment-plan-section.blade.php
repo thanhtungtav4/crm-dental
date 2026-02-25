@@ -176,11 +176,18 @@
                                         $discountPercent = (float) ($item['discount_percent'] ?? 0);
                                         $discountAmount = $discountPercent > 0 ? ($discountPercent / 100) * $lineAmount : 0;
                                         $totalAmount = $lineAmount - $discountAmount;
+                                        $toothDisplay = collect($item['diagnosis_ids'] ?? [])
+                                            ->map(fn($id) => $diagnosisDetails[(int) $id]['tooth_number'] ?? null)
+                                            ->filter()
+                                            ->unique()
+                                            ->sortBy(fn($toothNumber) => (int) $toothNumber, SORT_NUMERIC)
+                                            ->values()
+                                            ->join(', ');
                                     @endphp
                                     <tr wire:key="draft-item-{{ $index }}">
                                         <td class="is-center">{{ $index + 1 }}</td>
                                         <td>
-                                            <input type="text" wire:model.lazy="draftItems.{{ $index }}.tooth_text" placeholder="VD: 11,12"
+                                            <input type="text" readonly value="{{ $toothDisplay !== '' ? $toothDisplay : 'Tự động theo tình trạng răng' }}"
                                                 class="crm-plan-editor-input">
                                         </td>
                                         <td>
@@ -228,6 +235,9 @@
                             </tbody>
                         </table>
                     </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Răng số được đồng bộ tự động theo các chẩn đoán đã chọn.
+                    </p>
                 </div>
 
                 <div class="crm-modal-footer">

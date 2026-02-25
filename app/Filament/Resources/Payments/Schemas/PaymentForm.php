@@ -11,6 +11,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 class PaymentForm
 {
@@ -89,6 +90,15 @@ class PaymentForm
                             ->label('Mã giao dịch')
                             ->helperText('Mã tham chiếu từ ngân hàng/máy POS')
                             ->visible(fn (Get $get) => in_array($get('method'), ['card', 'transfer', 'vnpay']))
+                            ->dehydrateStateUsing(fn (?string $state) => filled($state) ? trim($state) : null)
+                            ->unique(
+                                table: 'payments',
+                                column: 'transaction_ref',
+                                ignoreRecord: true,
+                                modifyRuleUsing: fn (Unique $rule, Get $get) => $rule
+                                    ->where('invoice_id', (int) $get('invoice_id'))
+                                    ->whereNotNull('transaction_ref'),
+                            )
                             ->maxLength(255),
                         
                         Select::make('payment_source')

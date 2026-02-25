@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\RelationManagers;
 
+use App\Models\Payment;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -14,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -215,6 +217,33 @@ class PaymentsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Tạo thanh toán')
                     ->icon(Heroicon::OutlinedPlus)
+                    ->using(function (array $data): Payment {
+                        $transactionRef = filled($data['transaction_ref'] ?? null)
+                            ? trim((string) $data['transaction_ref'])
+                            : null;
+
+                        if ($transactionRef) {
+                            $existingPayment = Payment::query()
+                                ->where('invoice_id', (int) $data['invoice_id'])
+                                ->where('transaction_ref', $transactionRef)
+                                ->first();
+
+                            if ($existingPayment) {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Mã giao dịch đã tồn tại')
+                                    ->body('Đã dùng bản ghi thanh toán hiện có để tránh ghi trùng.')
+                                    ->send();
+
+                                return $existingPayment;
+                            }
+                        }
+
+                        $data['transaction_ref'] = $transactionRef;
+                        $data['received_by'] = $data['received_by'] ?? auth()->id();
+
+                        return Payment::query()->create($data);
+                    })
                     ->after(function () {
                         $this->getOwnerRecord()->updatePaidAmount();
                     }),

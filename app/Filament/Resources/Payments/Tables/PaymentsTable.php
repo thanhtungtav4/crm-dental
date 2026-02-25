@@ -94,6 +94,7 @@ class PaymentsTable
                         'issued' => 'Đã xuất',
                         'partial' => 'TT 1 phần',
                         'paid' => 'Đã TT',
+                        'overdue' => 'Quá hạn',
                         'cancelled' => 'Đã hủy',
                         default => 'N/A',
                     })

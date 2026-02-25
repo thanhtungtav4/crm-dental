@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('care:generate-birthday-tickets')
     ->dailyAt('00:05');
+
+Schedule::command('invoices:sync-overdue-status')
+    ->hourly();

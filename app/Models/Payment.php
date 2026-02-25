@@ -38,6 +38,14 @@ class Payment extends Model
             } else {
                 $payment->amount = abs((float) $payment->amount);
             }
+
+            if ($payment->transaction_ref !== null) {
+                $payment->transaction_ref = trim((string) $payment->transaction_ref);
+
+                if ($payment->transaction_ref === '') {
+                    $payment->transaction_ref = null;
+                }
+            }
         });
     }
 
@@ -196,6 +204,11 @@ class Payment extends Model
     public function scopeByDateRange($query, string $startDate, string $endDate)
     {
         return $query->whereBetween('paid_at', [$startDate, $endDate]);
+    }
+
+    public function scopeByTransactionRef($query, string $transactionRef)
+    {
+        return $query->where('transaction_ref', trim($transactionRef));
     }
 
     public function scopeToday($query)

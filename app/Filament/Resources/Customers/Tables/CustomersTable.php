@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Customers\Tables;
 
 
 use App\Models\Appointment;
-use App\Models\Patient;
 use App\Models\Customer;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
@@ -113,16 +112,28 @@ class CustomersTable
                         try {
                             /** @var \App\Services\PatientConversionService $service */
                             $service = app(\App\Services\PatientConversionService::class);
-                            $service->convert($record);
+                            $patient = $service->convert($record);
+
+                            $isCanonicalOwner = (int) ($patient?->customer_id ?? 0) === (int) $record->id;
 
                             // Notification is handled inside Service, but we can add extra if needed
                             // For table action, simple success is fine. Service sends to Database, 
                             // maybe we want a toast here.
             
-                            Notification::make()
-                                ->title('Đã chuyển thành bệnh nhân')
-                                ->success()
-                                ->send();
+                            $toast = Notification::make();
+
+                            if ($isCanonicalOwner) {
+                                $toast
+                                    ->title('Đã chuyển thành bệnh nhân')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $toast
+                                    ->title('Đã liên kết hồ sơ bệnh nhân hiện có')
+                                    ->body("Khách hàng trùng dữ liệu với hồ sơ {$patient?->patient_code}.")
+                                    ->warning()
+                                    ->send();
+                            }
 
                         } catch (\Exception $e) {
                             // Error notification handled in Service
@@ -171,24 +182,13 @@ class CustomersTable
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
-                        // Ensure there's a patient for this customer
-                        $patient = $record->patient;
-                        if (!$patient) {
-                            $patient = \App\Models\Patient::create([
-                                'customer_id' => $record->id,
-                                'full_name' => $record->full_name,
-                                'email' => $record->email,
-                                'phone' => $record->phone,
-                                'first_branch_id' => $record->branch_id,
-                                'customer_group_id' => $record->customer_group_id,
-                                'promotion_group_id' => $record->promotion_group_id,
-                                'owner_staff_id' => $record->assigned_to,
-                            ]);
-                            $record->update(['status' => 'converted']);
-                        }
+                        /** @var \App\Services\PatientConversionService $service */
+                        $service = app(\App\Services\PatientConversionService::class);
+                        $patient = $service->convert($record);
 
                         Appointment::create([
                             'patient_id' => $patient->id,
+                            'customer_id' => $record->id,
                             'doctor_id' => $data['doctor_id'] ?? null,
                             'branch_id' => $data['branch_id'] ?? $record->branch_id,
                             'date' => $data['date'],

@@ -8,6 +8,7 @@ use App\Models\Patient;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PatientConversionService
 {
@@ -20,31 +21,33 @@ class PatientConversionService
      */
     public function convert(Customer $customer, ?Appointment $appointment = null): ?Patient
     {
+        $targetBranchId = $appointment?->branch_id
+            ?? $customer->branch_id
+            ?? auth()->user()?->branch_id;
+
         // 1. Basic validation
         if ($customer->patient) {
             // Already has a patient record linked
-            return $customer->patient;
+            return $this->handleExistingPatient($customer, $customer->patient, $appointment, $targetBranchId);
         }
 
-        // 2. Check if a patient exists with this phone number (to avoid duplicates)
+        // 2. Check if a patient already exists by customer identity first
         $existingPatient = Patient::where('customer_id', $customer->id)->first();
 
-        if ($existingPatient) {
-            // Logic integrity check: Customer has no relation loaded, but DB says yes.
-            // We should link them if not linked? - In this schema, Patient belongs to Customer via customer_id.
-            // So if existingPatient found, we just return it.
-            return $this->handleExistingPatient($customer, $existingPatient, $appointment);
+        // 3. Dedupe by phone + clinic before creating new patient
+        if (! $existingPatient && ! empty($customer->phone)) {
+            $existingPatient = $this->findByPhoneAndClinic($customer->phone, $targetBranchId);
         }
 
-        // Double check by phone if we want to be strict, but for now stick to ID mapping
-        // implementation_plan calls for creating new if not exists.
+        if ($existingPatient) {
+            return $this->handleExistingPatient($customer, $existingPatient, $appointment, $targetBranchId);
+        }
 
         return DB::transaction(function () use ($customer, $appointment) {
             try {
-                // 3. Create Patient
+                // 4. Create Patient
                 $patient = Patient::create([
                     'customer_id' => $customer->id,
-                    'patient_code' => $this->generatePatientCode(),
                     'first_branch_id' => $appointment?->branch_id ?? $customer->branch_id ?? auth()->user()?->branch_id,
                     'full_name' => $customer->full_name,
                     'phone' => $customer->phone,
@@ -59,17 +62,18 @@ class PatientConversionService
                     'updated_by' => auth()->id() ?? $customer->updated_by,
                 ]);
 
-                // 4. Update Customer status
+                // 5. Update Customer status
                 $customer->status = 'converted';
                 $customer->save();
 
-                // 5. Link Appointment if exists
+                // 6. Link Appointment if exists
                 if ($appointment) {
                     $appointment->patient_id = $patient->id;
+                    $appointment->customer_id = $appointment->customer_id ?: $customer->id;
                     $appointment->saveQuietly();
                 }
 
-                // 6. Notify
+                // 7. Notify
                 $this->sendSuccessNotification($customer, $patient);
 
                 return $patient;
@@ -91,29 +95,94 @@ class PatientConversionService
     /**
      * Handle case where Patient already exists.
      */
-    protected function handleExistingPatient(Customer $customer, Patient $patient, ?Appointment $appointment): Patient
+    protected function handleExistingPatient(
+        Customer $customer,
+        Patient $patient,
+        ?Appointment $appointment,
+        ?int $targetBranchId = null,
+    ): Patient
     {
+        $dirtyPatient = false;
+        $linkedToCurrentCustomer = false;
+
+        if (! $patient->customer_id) {
+            $patient->customer_id = $customer->id;
+            $dirtyPatient = true;
+            $linkedToCurrentCustomer = true;
+        } else {
+            $linkedToCurrentCustomer = (int) $patient->customer_id === (int) $customer->id;
+        }
+
+        if (! $patient->first_branch_id && $targetBranchId) {
+            $patient->first_branch_id = $targetBranchId;
+            $dirtyPatient = true;
+        }
+
+        if ($dirtyPatient) {
+            $patient->save();
+        }
+
         // Link appointment if needed
         if ($appointment && !$appointment->patient_id) {
             $appointment->patient_id = $patient->id;
+            $appointment->customer_id = $appointment->customer_id ?: $customer->id;
             $appointment->saveQuietly();
         }
 
-        // Ensure customer status is correct
-        if ($customer->status !== 'converted') {
+        // Only mark converted when this customer is the canonical owner of patient profile.
+        if ($linkedToCurrentCustomer && $customer->status !== 'converted') {
             $customer->status = 'converted';
             $customer->save();
+        }
+
+        if (! $linkedToCurrentCustomer) {
+            $this->sendExistingPatientNotification($customer, $patient);
         }
 
         return $patient;
     }
 
-    protected function generatePatientCode(): string
+    protected function findByPhoneAndClinic(string $phone, ?int $branchId): ?Patient
     {
-        // Logic from Observer: BN000001
-        // Using locking or just atomic increment would be better, but sticking to existing logic pattern for now
-        $maxId = Patient::max('id') ?? 0;
-        return 'BN' . str_pad($maxId + 1, 6, '0', STR_PAD_LEFT);
+        $exactMatch = Patient::query()
+            ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
+            ->where('phone', $phone)
+            ->first();
+
+        if ($exactMatch) {
+            return $exactMatch;
+        }
+
+        $normalizedPhone = $this->normalizePhone($phone);
+        if ($normalizedPhone === null) {
+            return null;
+        }
+
+        $candidates = Patient::query()
+            ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
+            ->whereNotNull('phone')
+            ->get();
+
+        return $candidates->first(function (Patient $patient) use ($normalizedPhone): bool {
+            return $this->normalizePhone($patient->phone) === $normalizedPhone;
+        });
+    }
+
+    protected function normalizePhone(?string $phone): ?string
+    {
+        if (! $phone) {
+            return null;
+        }
+
+        $normalized = preg_replace('/\D+/', '', $phone);
+
+        if (! $normalized) {
+            return null;
+        }
+
+        return Str::startsWith($normalized, '84')
+            ? '0' . substr($normalized, 2)
+            : $normalized;
     }
 
     protected function sendSuccessNotification(Customer $customer, Patient $patient): void
@@ -125,6 +194,19 @@ class PatientConversionService
                 ->title('✅ Đã chuyển thành bệnh nhân!')
                 ->body("Khách hàng \"{$customer->full_name}\" đã được chuyển thành bệnh nhân (Mã: {$patient->patient_code}).")
                 ->success()
+                ->sendToDatabase($recipient);
+        }
+    }
+
+    protected function sendExistingPatientNotification(Customer $customer, Patient $patient): void
+    {
+        $recipient = auth()->user();
+
+        if ($recipient) {
+            Notification::make()
+                ->title('Đã phát hiện hồ sơ bệnh nhân trùng')
+                ->body("Khách hàng \"{$customer->full_name}\" trùng với hồ sơ {$patient->patient_code}. Hệ thống đã dùng hồ sơ hiện có.")
+                ->warning()
                 ->sendToDatabase($recipient);
         }
     }

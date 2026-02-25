@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Patients\Schemas;
 
 use Filament\Forms;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rule;
 
 class PatientForm
 {
@@ -102,7 +103,23 @@ class PatientForm
                 ->label('Điện thoại')
                 ->tel()
                 ->maxLength(20)
-                ->unique(table: 'patients', column: 'phone', ignoreRecord: true)
+                ->rule(function (callable $get, $record) {
+                    $branchId = $get('first_branch_id');
+
+                    return Rule::unique('patients', 'phone')
+                        ->ignore($record?->id)
+                        ->where(function ($query) use ($branchId): void {
+                            if ($branchId) {
+                                $query->where('first_branch_id', $branchId);
+                                return;
+                            }
+
+                            $query->whereNull('first_branch_id');
+                        });
+                })
+                ->validationMessages([
+                    'unique' => 'Số điện thoại đã tồn tại trong chi nhánh đã chọn.',
+                ])
                 ->nullable(),
 
             Forms\Components\TextInput::make('phone_secondary')

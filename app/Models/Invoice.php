@@ -3,15 +3,34 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Invoice extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_ISSUED = 'issued';
+
+    public const STATUS_PARTIAL = 'partial';
+
+    public const STATUS_PAID = 'paid';
+
+    public const STATUS_OVERDUE = 'overdue';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const TERMINAL_STATUSES = [
+        self::STATUS_PAID,
+        self::STATUS_CANCELLED,
+    ];
 
     protected $fillable = [
         'treatment_session_id',
@@ -92,7 +111,10 @@ class Invoice extends Model
     {
         $this->paid_amount = $this->getTotalPaid();
         $this->updatePaymentStatus();
-        $this->save();
+
+        if ($this->isDirty(['paid_amount', 'status', 'paid_at'])) {
+            $this->save();
+        }
     }
 
     /**
@@ -100,24 +122,45 @@ class Invoice extends Model
      */
     public function updatePaymentStatus(): void
     {
-        $totalPaid = $this->paid_amount ?? $this->getTotalPaid();
+        $totalPaid = round((float) ($this->paid_amount ?? $this->getTotalPaid()), 2);
+        $totalAmount = round((float) $this->total_amount, 2);
 
-        if ($totalPaid >= $this->total_amount) {
-            $this->status = 'paid';
-            $this->paid_at = $this->paid_at ?? now();
-        } elseif ($totalPaid > 0) {
-            $this->status = 'partial';
-        } elseif ($this->isOverdue()) {
-            // Don't change if already in terminal status
-            if (!in_array($this->status, ['paid', 'cancelled'])) {
-                // Keep current status but mark as overdue in UI
-            }
-        } else {
-            if (!in_array($this->status, ['draft', 'cancelled'])) {
-                $this->status = 'issued';
-            }
-            $this->paid_at = null;
+        if ($this->status === self::STATUS_CANCELLED) {
+            return;
         }
+
+        if ($totalAmount <= 0 || $totalPaid >= $totalAmount) {
+            $this->status = self::STATUS_PAID;
+            $this->paid_at = $this->paid_at ?? now();
+
+            return;
+        }
+
+        $isPastDue = false;
+        if ($this->due_date) {
+            $dueDate = $this->due_date instanceof Carbon
+                ? $this->due_date->copy()->startOfDay()
+                : Carbon::parse($this->due_date)->startOfDay();
+
+            $isPastDue = today()->gt($dueDate);
+        }
+
+        if ($totalPaid > 0) {
+            $this->status = $isPastDue
+                ? self::STATUS_OVERDUE
+                : self::STATUS_PARTIAL;
+            $this->paid_at = null;
+
+            return;
+        }
+
+        if ($this->status !== self::STATUS_DRAFT) {
+            $this->status = $isPastDue
+                ? self::STATUS_OVERDUE
+                : self::STATUS_ISSUED;
+        }
+
+        $this->paid_at = null;
     }
 
     /**
@@ -129,25 +172,71 @@ class Invoice extends Model
         ?string $notes = null,
         mixed $paidAt = null,
         string $direction = 'receipt',
-        ?string $refundReason = null
+        ?string $refundReason = null,
+        ?string $transactionRef = null,
+        string $paymentSource = 'patient',
+        ?string $insuranceClaimNumber = null,
+        ?int $receivedBy = null
     ): Payment
     {
         $amount = $direction === 'refund' ? -abs($amount) : abs($amount);
+        $transactionRef = filled($transactionRef) ? trim($transactionRef) : null;
 
-        $payment = $this->payments()->create([
-            'amount' => $amount,
-            'direction' => $direction,
-            'method' => $method,
-            'paid_at' => $paidAt ?: now(),
-            'received_by' => auth()->id(),
-            'note' => $notes,
-            'refund_reason' => $refundReason,
-            'payment_source' => 'patient',
-        ]);
+        return DB::transaction(function () use (
+            $amount,
+            $direction,
+            $method,
+            $paidAt,
+            $receivedBy,
+            $notes,
+            $refundReason,
+            $transactionRef,
+            $paymentSource,
+            $insuranceClaimNumber
+        ): Payment {
+            if ($transactionRef) {
+                $existingPayment = $this->payments()
+                    ->where('transaction_ref', $transactionRef)
+                    ->first();
 
-        $this->updatePaidAmount();
+                if ($existingPayment) {
+                    $this->updatePaidAmount();
 
-        return $payment;
+                    return $existingPayment;
+                }
+            }
+
+            $payload = [
+                'amount' => $amount,
+                'direction' => $direction,
+                'method' => $method,
+                'paid_at' => $paidAt ?: now(),
+                'received_by' => $receivedBy ?: auth()->id(),
+                'note' => $notes,
+                'refund_reason' => $refundReason,
+                'payment_source' => $paymentSource,
+                'insurance_claim_number' => $insuranceClaimNumber,
+                'transaction_ref' => $transactionRef,
+            ];
+
+            try {
+                $payment = $this->payments()->create($payload);
+            } catch (QueryException $exception) {
+                $isDuplicateTransaction = str_contains((string) $exception->getCode(), '23000');
+
+                if (! $isDuplicateTransaction || ! $transactionRef) {
+                    throw $exception;
+                }
+
+                $payment = $this->payments()
+                    ->where('transaction_ref', $transactionRef)
+                    ->firstOrFail();
+            }
+
+            $this->updatePaidAmount();
+
+            return $payment;
+        });
     }
 
     /**
@@ -155,9 +244,22 @@ class Invoice extends Model
      */
     public function isOverdue(): bool
     {
-        return $this->due_date 
-            && now()->isAfter($this->due_date) 
-            && !$this->isPaid();
+        if ($this->status === self::STATUS_OVERDUE) {
+            return true;
+        }
+
+        if (
+            in_array($this->status, [self::STATUS_DRAFT, self::STATUS_CANCELLED], true)
+            || ! $this->due_date
+        ) {
+            return false;
+        }
+
+        $dueDate = $this->due_date instanceof Carbon
+            ? $this->due_date->copy()->startOfDay()
+            : Carbon::parse($this->due_date)->startOfDay();
+
+        return today()->gt($dueDate) && ! $this->isPaid();
     }
 
     /**
@@ -165,7 +267,7 @@ class Invoice extends Model
      */
     public function isPaid(): bool
     {
-        return $this->status === 'paid' || $this->calculateBalance() <= 0;
+        return $this->status === self::STATUS_PAID || $this->calculateBalance() <= 0;
     }
 
     /**
@@ -194,7 +296,15 @@ class Invoice extends Model
             return 0;
         }
 
-        return (int) now()->diffInDays($this->due_date, false);
+        $dueDate = $this->due_date instanceof Carbon
+            ? $this->due_date->copy()->startOfDay()
+            : Carbon::parse($this->due_date)->startOfDay();
+
+        if (today()->gt($dueDate)) {
+            return (int) $dueDate->diffInDays(today());
+        }
+
+        return -1 * (int) today()->diffInDays($dueDate);
     }
 
     /**
@@ -214,16 +324,13 @@ class Invoice extends Model
      */
     public function getStatusBadgeColor(): string
     {
-        if ($this->isOverdue()) {
-            return 'danger';
-        }
-
         return match($this->status) {
-            'draft' => 'gray',
-            'issued' => 'warning',
-            'partial' => 'info',
-            'paid' => 'success',
-            'cancelled' => 'gray',
+            self::STATUS_DRAFT => 'gray',
+            self::STATUS_ISSUED => 'warning',
+            self::STATUS_PARTIAL => 'info',
+            self::STATUS_PAID => 'success',
+            self::STATUS_OVERDUE => 'danger',
+            self::STATUS_CANCELLED => 'gray',
             default => 'gray',
         };
     }
@@ -233,19 +340,15 @@ class Invoice extends Model
      */
     public function getPaymentStatusLabel(): string
     {
-        if ($this->isOverdue()) {
-            return 'Quá hạn';
-        }
-
-        if ($this->isPaid()) {
-            return 'Đã thanh toán';
-        }
-
-        if ($this->isPartiallyPaid()) {
-            return 'TT một phần';
-        }
-
-        return 'Chưa thanh toán';
+        return match ($this->status) {
+            self::STATUS_DRAFT => 'Nháp',
+            self::STATUS_ISSUED => 'Chưa thanh toán',
+            self::STATUS_PARTIAL => 'TT một phần',
+            self::STATUS_PAID => 'Đã thanh toán',
+            self::STATUS_OVERDUE => 'Quá hạn',
+            self::STATUS_CANCELLED => 'Đã hủy',
+            default => 'Không xác định',
+        };
     }
 
     /**
@@ -283,9 +386,7 @@ class Invoice extends Model
 
     public function scopeOverdue($query)
     {
-        return $query->where('due_date', '<', now())
-                     ->whereNotIn('status', ['paid', 'cancelled'])
-                     ->whereColumn('paid_amount', '<', 'total_amount');
+        return $query->where('status', self::STATUS_OVERDUE);
     }
 
     public function scopeUnpaid($query)

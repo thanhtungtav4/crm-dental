@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\PatientConversionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use RuntimeException;
 
 class Customer extends Model
 {
@@ -75,19 +77,13 @@ class Customer extends Model
 
     public function convertToPatient(): Patient
     {
-        if ($this->patient) {
-            return $this->patient;
+        /** @var PatientConversionService $service */
+        $service = app(PatientConversionService::class);
+        $patient = $service->convert($this);
+
+        if (! $patient) {
+            throw new RuntimeException('Không thể chuyển đổi khách hàng thành bệnh nhân.');
         }
-
-        $patient = Patient::create([
-            'customer_id' => $this->id,
-            'full_name' => $this->full_name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'first_branch_id' => $this->branch_id,
-        ]);
-
-        $this->update(['status' => 'converted']);
 
         return $patient;
     }
