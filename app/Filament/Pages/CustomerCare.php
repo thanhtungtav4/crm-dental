@@ -238,7 +238,7 @@ class CustomerCare extends Page implements HasTable
             ['label' => 'Họ tên', 'value' => fn ($record) => $record->patient?->full_name],
             ['label' => 'Điện thoại', 'value' => fn ($record) => $record->patient?->phone],
             ['label' => 'Loại chăm sóc', 'value' => fn () => $this->formatCareType('medication_reminder')],
-            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus('planned')],
+            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus(Note::CARE_STATUS_NOT_STARTED)],
             ['label' => 'Kênh chăm sóc', 'value' => fn () => $this->formatCareChannel($this->defaultCareChannel())],
             ['label' => 'Thời gian chăm sóc', 'value' => fn ($record) => $record->treatment_date],
             ['label' => 'Nhân viên chăm sóc', 'value' => fn ($record) => $record->doctor?->name],
@@ -255,7 +255,7 @@ class CustomerCare extends Page implements HasTable
             ['label' => 'Họ tên', 'value' => fn ($record) => $record->treatmentPlan?->patient?->full_name],
             ['label' => 'Điện thoại', 'value' => fn ($record) => $record->treatmentPlan?->patient?->phone],
             ['label' => 'Loại chăm sóc', 'value' => fn () => $this->formatCareType('post_treatment_follow_up')],
-            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus('planned')],
+            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus(Note::CARE_STATUS_NOT_STARTED)],
             ['label' => 'Kênh chăm sóc', 'value' => fn () => $this->formatCareChannel($this->defaultCareChannel())],
             ['label' => 'Thời gian chăm sóc', 'value' => fn ($record) => $record->performed_at],
             ['label' => 'Nhân viên chăm sóc', 'value' => fn ($record) => $record->doctor?->name],
@@ -274,7 +274,7 @@ class CustomerCare extends Page implements HasTable
             ['label' => 'Họ tên', 'value' => fn ($record) => $record->full_name],
             ['label' => 'Điện thoại', 'value' => fn ($record) => $record->phone],
             ['label' => 'Loại chăm sóc', 'value' => fn () => $this->formatCareType('birthday_care')],
-            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus('planned')],
+            ['label' => 'Trạng thái chăm sóc', 'value' => fn () => $this->formatCareStatus(Note::CARE_STATUS_NOT_STARTED)],
             ['label' => 'Kênh chăm sóc', 'value' => fn () => $this->formatCareChannel($this->defaultCareChannel())],
             ['label' => 'Thời gian chăm sóc', 'value' => fn ($record) => $record->birthday],
             ['label' => 'Nhân viên chăm sóc', 'value' => fn ($record) => $record->ownerStaff?->name],
@@ -398,7 +398,7 @@ class CustomerCare extends Page implements HasTable
             TextColumn::make('care_status')
                 ->label('Trạng thái chăm sóc')
                 ->badge()
-                ->getStateUsing(fn () => 'planned')
+                ->getStateUsing(fn () => Note::CARE_STATUS_NOT_STARTED)
                 ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
                 ->color(fn ($state) => $this->getCareStatusColor($state)),
             TextColumn::make('care_channel')
@@ -448,7 +448,7 @@ class CustomerCare extends Page implements HasTable
             TextColumn::make('care_status')
                 ->label('Trạng thái chăm sóc')
                 ->badge()
-                ->getStateUsing(fn () => 'planned')
+                ->getStateUsing(fn () => Note::CARE_STATUS_NOT_STARTED)
                 ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
                 ->color(fn ($state) => $this->getCareStatusColor($state)),
             TextColumn::make('care_channel')
@@ -504,7 +504,7 @@ class CustomerCare extends Page implements HasTable
             TextColumn::make('care_status')
                 ->label('Trạng thái chăm sóc')
                 ->badge()
-                ->getStateUsing(fn () => 'planned')
+                ->getStateUsing(fn () => Note::CARE_STATUS_NOT_STARTED)
                 ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
                 ->color(fn ($state) => $this->getCareStatusColor($state)),
             TextColumn::make('care_channel')
@@ -541,7 +541,16 @@ class CustomerCare extends Page implements HasTable
                 ->options($this->getCareTypeOptions()),
             SelectFilter::make('care_status')
                 ->label('Trạng thái chăm sóc')
-                ->options($this->getCareStatusOptions()),
+                ->options($this->getCareStatusOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    $value = $data['value'] ?? null;
+
+                    if (! $value) {
+                        return $query;
+                    }
+
+                    return $query->whereIn('care_status', Note::statusesForQuery([$value]));
+                }),
             SelectFilter::make('care_channel')
                 ->label('Kênh chăm sóc')
                 ->options($this->getCareChannelOptions()),
@@ -678,18 +687,12 @@ class CustomerCare extends Page implements HasTable
 
     protected function formatCareStatus(?string $state): string
     {
-        return Arr::get($this->getCareStatusOptions(), $state, 'Chưa xác định');
+        return Note::careStatusLabel($state);
     }
 
     protected function getCareStatusColor(?string $state): string
     {
-        return match ($state) {
-            'completed' => 'success',
-            'planned' => 'warning',
-            'no_response' => 'info',
-            'cancelled' => 'danger',
-            default => 'gray',
-        };
+        return Note::careStatusColor($state);
     }
 
     protected function formatAppointmentStatus(?string $state): string
@@ -727,12 +730,7 @@ class CustomerCare extends Page implements HasTable
 
     protected function getCareStatusOptions(): array
     {
-        return [
-            'planned' => 'Chưa chăm sóc',
-            'completed' => 'Hoàn thành',
-            'no_response' => 'Cần chăm sóc lại',
-            'cancelled' => 'Đã hủy',
-        ];
+        return Note::careStatusOptions();
     }
 
     protected function getAppointmentStatusOptions(): array

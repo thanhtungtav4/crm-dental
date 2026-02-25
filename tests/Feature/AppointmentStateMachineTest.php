@@ -80,14 +80,14 @@ it('creates appointment reminder ticket for rescheduled and cancels when status 
         ->first();
 
     expect($ticket)->not->toBeNull()
-        ->and($ticket->care_status)->toBe('planned')
+        ->and($ticket->care_status)->toBe(\App\Models\Note::CARE_STATUS_NOT_STARTED)
         ->and($ticket->content)->toContain('Dời lịch vì công tác');
 
     $appointment->update([
         'status' => Appointment::STATUS_CONFIRMED,
     ]);
 
-    expect($ticket->fresh()->care_status)->toBe('cancelled');
+    expect($ticket->fresh()->care_status)->toBe(\App\Models\Note::CARE_STATUS_FAILED);
 });
 
 function makeAppointmentRecord(array $overrides = []): Appointment

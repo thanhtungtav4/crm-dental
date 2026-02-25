@@ -34,10 +34,10 @@ class CareTicketService
             'patient_id' => $appointment->patient_id,
             'customer_id' => $appointment->customer_id ?? $this->resolveCustomerId($appointment->patient_id),
             'user_id' => $assigneeId,
-            'type' => 'general',
+            'type' => Note::TYPE_GENERAL,
             'care_type' => 'appointment_reminder',
             'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
-            'care_status' => 'planned',
+            'care_status' => Note::CARE_STATUS_NOT_STARTED,
             'care_at' => $careAt,
             'content' => $content,
         ], Appointment::class, $appointment->id);
@@ -62,10 +62,10 @@ class CareTicketService
             'patient_id' => $prescription->patient_id,
             'customer_id' => $this->resolveCustomerId($prescription->patient_id),
             'user_id' => $assigneeId,
-            'type' => 'general',
+            'type' => Note::TYPE_GENERAL,
             'care_type' => 'medication_reminder',
             'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
-            'care_status' => 'planned',
+            'care_status' => Note::CARE_STATUS_NOT_STARTED,
             'care_at' => $careAt,
             'content' => $content,
         ], Prescription::class, $prescription->id);
@@ -93,10 +93,10 @@ class CareTicketService
             'patient_id' => $patientId,
             'customer_id' => $this->resolveCustomerId($patientId),
             'user_id' => $assigneeId,
-            'type' => 'general',
+            'type' => Note::TYPE_GENERAL,
             'care_type' => 'post_treatment_follow_up',
             'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
-            'care_status' => 'planned',
+            'care_status' => Note::CARE_STATUS_NOT_STARTED,
             'care_at' => $careAt,
             'content' => $content,
         ], TreatmentSession::class, $session->id);
@@ -116,8 +116,8 @@ class CareTicketService
         $existingStatus = $note->care_status;
         $note->fill($attributes);
 
-        if ($note->exists && $existingStatus === 'completed') {
-            $note->care_status = 'completed';
+        if ($note->exists && $existingStatus === Note::CARE_STATUS_DONE) {
+            $note->care_status = Note::CARE_STATUS_DONE;
         }
 
         $note->save();
@@ -134,7 +134,7 @@ class CareTicketService
         }
 
         $query->update([
-            'care_status' => 'cancelled',
+            'care_status' => Note::CARE_STATUS_FAILED,
         ]);
     }
 

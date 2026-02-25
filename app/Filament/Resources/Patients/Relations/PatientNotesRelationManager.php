@@ -71,14 +71,9 @@ class PatientNotesRelationManager extends RelationManager
 
                 Tables\Columns\BadgeColumn::make('care_status')
                     ->label('Trạng thái chăm sóc')
-                    ->getStateUsing(fn (Note $record): string => $record->care_status ?: 'completed')
-                    ->formatStateUsing(fn (?string $state): string => Arr::get($this->getCareStatusOptions(), $state, 'Chưa xác định'))
-                    ->colors([
-                        'success' => 'completed',
-                        'warning' => 'planned',
-                        'info' => 'no_response',
-                        'danger' => 'cancelled',
-                    ]),
+                    ->getStateUsing(fn (Note $record): string => $record->care_status ?: Note::DEFAULT_CARE_STATUS)
+                    ->formatStateUsing(fn (?string $state): string => Note::careStatusLabel($state))
+                    ->color(fn (?string $state): string => Note::careStatusColor($state)),
 
                 Tables\Columns\TextColumn::make('content')
                     ->label('Nội dung')
@@ -108,7 +103,16 @@ class PatientNotesRelationManager extends RelationManager
                     ->options($this->getCareTypeOptions()),
                 SelectFilter::make('care_status')
                     ->label('Trạng thái chăm sóc')
-                    ->options($this->getCareStatusOptions()),
+                    ->options($this->getCareStatusOptions())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = $data['value'] ?? null;
+
+                        if (! $value) {
+                            return $query;
+                        }
+
+                        return $query->whereIn('care_status', Note::statusesForQuery([$value]));
+                    }),
                 SelectFilter::make('care_channel')
                     ->label('Kênh chăm sóc')
                     ->options($this->getCareChannelOptions()),
@@ -191,7 +195,7 @@ class PatientNotesRelationManager extends RelationManager
             Select::make('care_status')
                 ->label('Trạng thái')
                 ->options($this->getImmediateCareStatusOptions())
-                ->default('completed')
+                ->default(Note::CARE_STATUS_DONE)
                 ->required(),
             Select::make('care_type')
                 ->label('Loại chăm sóc')
@@ -281,15 +285,15 @@ class PatientNotesRelationManager extends RelationManager
     {
         $resolvedMode = $mode === 'scheduled' ? 'scheduled' : 'immediate';
         $careStatus = $resolvedMode === 'scheduled'
-            ? 'planned'
-            : ($data['care_status'] ?? 'completed');
+            ? Note::CARE_STATUS_NOT_STARTED
+            : ($data['care_status'] ?? Note::CARE_STATUS_DONE);
 
         return [
             'customer_id' => $this->getOwnerRecord()->customer_id,
             'user_id' => $resolvedMode === 'scheduled'
                 ? ($data['user_id'] ?? auth()->id())
                 : auth()->id(),
-            'type' => 'general',
+            'type' => Note::TYPE_GENERAL,
             'care_type' => $this->normalizeCareType($data['care_type'] ?? null),
             'care_channel' => $this->normalizeCareChannel($data['care_channel'] ?? null),
             'care_status' => $careStatus,
@@ -307,10 +311,10 @@ class PatientNotesRelationManager extends RelationManager
         return [
             'customer_id' => $this->getOwnerRecord()->customer_id,
             'user_id' => $data['user_id'] ?? $record->user_id ?? auth()->id(),
-            'type' => 'general',
+            'type' => Note::TYPE_GENERAL,
             'care_type' => $this->normalizeCareType($data['care_type'] ?? $record->care_type ?? null),
             'care_channel' => $this->normalizeCareChannel($data['care_channel'] ?? $record->care_channel ?? null),
-            'care_status' => $data['care_status'] ?? $record->care_status ?? 'planned',
+            'care_status' => $data['care_status'] ?? $record->care_status ?? Note::CARE_STATUS_NOT_STARTED,
             'care_at' => $data['care_at'] ?? $record->care_at ?? now(),
             'care_mode' => $data['care_mode'] ?? $record->care_mode ?? 'immediate',
             'is_recurring' => (bool) ($data['is_recurring'] ?? $record->is_recurring ?? false),
@@ -326,8 +330,8 @@ class PatientNotesRelationManager extends RelationManager
             'care_at' => $record->care_at ?? $record->created_at,
             'care_type' => $this->normalizeCareType($record->care_type ?: $this->mapLegacyType($record->type)),
             'care_channel' => $this->normalizeCareChannel($record->care_channel ?: ClinicRuntimeSettings::defaultCareChannel()),
-            'care_status' => $record->care_status ?: 'completed',
-            'care_mode' => $record->care_mode ?: ($record->care_status === 'planned' ? 'scheduled' : 'immediate'),
+            'care_status' => $record->care_status ?: Note::DEFAULT_CARE_STATUS,
+            'care_mode' => $record->care_mode ?: ($record->care_status === Note::CARE_STATUS_NOT_STARTED ? 'scheduled' : 'immediate'),
             'is_recurring' => (bool) $record->is_recurring,
             'user_id' => $record->user_id ?: auth()->id(),
             'content' => $record->content,
@@ -336,7 +340,7 @@ class PatientNotesRelationManager extends RelationManager
 
     protected function isCareLocked(Note $record): bool
     {
-        return ($record->care_status ?? 'completed') === 'completed';
+        return ($record->care_status ?? Note::DEFAULT_CARE_STATUS) === Note::CARE_STATUS_DONE;
     }
 
     protected function getCareTypeOptions(): array
@@ -373,22 +377,27 @@ class PatientNotesRelationManager extends RelationManager
 
     protected function getCareStatusOptions(): array
     {
-        return [
-            'planned' => 'Chưa chăm sóc',
-            'completed' => 'Hoàn thành',
-            'no_response' => 'Cần chăm sóc lại',
-            'cancelled' => 'Đã hủy',
-        ];
+        return Note::careStatusOptions();
     }
 
     protected function getImmediateCareStatusOptions(): array
     {
-        return Arr::only($this->getCareStatusOptions(), ['completed', 'no_response']);
+        return Arr::only($this->getCareStatusOptions(), [
+            Note::CARE_STATUS_DONE,
+            Note::CARE_STATUS_NEED_FOLLOWUP,
+            Note::CARE_STATUS_FAILED,
+        ]);
     }
 
     protected function getUpdatableCareStatusOptions(): array
     {
-        return Arr::only($this->getCareStatusOptions(), ['planned', 'completed', 'no_response']);
+        return Arr::only($this->getCareStatusOptions(), [
+            Note::CARE_STATUS_NOT_STARTED,
+            Note::CARE_STATUS_IN_PROGRESS,
+            Note::CARE_STATUS_DONE,
+            Note::CARE_STATUS_NEED_FOLLOWUP,
+            Note::CARE_STATUS_FAILED,
+        ]);
     }
 
     protected function getCareStaffOptions(): array
