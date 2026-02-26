@@ -1,6 +1,6 @@
 # PM Backlog - Dental CRM Flow Hardening
 
-Cap nhat: 2026-02-25
+Cap nhat: 2026-02-26
 Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `docs/IMPLEMENTATION_SPRINT_BACKLOG.md`
 
 ## 1) Muc tieu backlog
@@ -136,55 +136,119 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Recall/re-care rules engine theo thu thuat
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-12 (P1)
 - **Title**: No-show recovery automation playbook
 - **Type**: Story (BE + CSKH)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-13 (P1)
 - **Title**: Follow-up pipeline cho plan chua chot
 - **Type**: Story (BE + FE)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-14 (P1)
 - **Title**: Payment reminder automation theo aging
 - **Type**: Story (BE)
 - **Estimate**: 3 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-15 (P1)
 - **Title**: KPI pack van hanh nha khoa (booking->visit, no-show, acceptance, chair, recall, LTV)
 - **Type**: Story (BE + Data + FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-16 (P1)
 - **Title**: Report data lineage + snapshot SLA hardening
 - **Type**: Story (BE + Data)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 
 ### TICKET PM-17 (P1)
 - **Title**: Multi-branch master data sync + conflict resolution
 - **Type**: Story (BE)
 - **Estimate**: 8 SP
+- **Status**: In Progress (partial: sync `materials`, audit log, command)
 
 ### TICKET PM-18 (P1)
 - **Title**: MPI + dedupe policy lien chi nhanh
 - **Type**: Story (BE + Ops)
 - **Estimate**: 5 SP
+- **Status**: In Progress (partial: identity hash dedupe + observer + command)
 
 ### TICKET PM-19 (P1)
 - **Title**: RBAC action-level freeze va enforce backend
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
+- **Status**: In Progress (partial: action gate cho override/reversal/approval/automation/sync)
 
 ### TICKET PM-20 (P1)
 - **Title**: Audit log mo rong cho clinical/finance/care critical events
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
+- **Status**: In Progress (partial: finance + appointment + care + automation/report/master sync)
 
 ---
 
-## 4) Backlog P2 (Medium)
+## 4) Backlog bo sung (Scale hardening sau PM-20)
+
+### TICKET PM-23 (P1)
+- **Title**: Mo rong master data sync da chi nhanh (service catalog, price book, consent template, recall rule)
+- **Type**: Story (BE + FE + Ops)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Acceptance Criteria (QA)**:
+  1. Dong bo duoc toi thieu 4 loai master data ngoai `materials`.
+  2. Co conflict policy ro rang (`skip/overwrite/manual`) va log actor + timestamp.
+  3. Chay lai command idempotent, khong tao duplicate.
+
+### TICKET PM-24 (P1)
+- **Title**: MPI merge workflow + golden record + review queue lien chi nhanh
+- **Type**: Story (BE + FE + Ops)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Acceptance Criteria (QA)**:
+  1. Co queue duplicate de review/merge thu cong.
+  2. Merge giu day du mapping lich su patient_id cu -> patient_id chinh.
+  3. Toan bo merge action co audit log va rollback policy.
+
+### TICKET PM-25 (P1)
+- **Title**: KPI benchmarking + anomaly alert (chi nhanh/bac si/khung gio)
+- **Type**: Story (Data + BE + FE)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Acceptance Criteria (QA)**:
+  1. KPI view co benchmark theo branch va doctor (ngay/tuan/thang).
+  2. Co alert khi vuot nguong no-show, chair utilization, treatment acceptance.
+  3. Alert co owner va trang thai xu ly (`new/ack/resolved`).
+
+### TICKET PM-26 (P1)
+- **Title**: Snapshot lineage versioning + checksum + drift detection
+- **Type**: Story (Data + BE)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Acceptance Criteria (QA)**:
+  1. Moi snapshot co `schema_version` + checksum payload.
+  2. Detect duoc drift khi cong thuc/khoi nguon thay doi.
+  3. Co bao cao so sanh snapshot truoc/sau de audit.
+
+### TICKET PM-27 (P1)
+- **Title**: RBAC defense-in-depth: anti-bypass review + policy test matrix
+- **Type**: Story (BE + QA)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Acceptance Criteria (QA)**:
+  1. Co checklist endpoint/action nhay cam khong duoc bypass gate/policy.
+  2. Co test matrix role-action cho cac action-level permission quan trong.
+  3. CI fail neu action nhay cam moi khong co authorization test.
+
+---
+
+## 5) Backlog P2 (Medium)
 
 ### TICKET PM-21 (P2)
 - **Title**: Loyalty + referral + reactivation flow
@@ -198,8 +262,9 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 
 ---
 
-## 5) De xuat thu tu trien khai
+## 6) De xuat thu tu trien khai
 
 1. `Wave 1 (on dinh van hanh)`: PM-01..PM-10
 2. `Wave 2 (tu dong hoa + do luong)`: PM-11..PM-20
-3. `Wave 3 (tang truong)`: PM-21..PM-22
+3. `Wave 3 (scale hardening)`: PM-23..PM-27
+4. `Wave 4 (tang truong)`: PM-21..PM-22
