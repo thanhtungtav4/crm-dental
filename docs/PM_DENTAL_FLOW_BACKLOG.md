@@ -78,6 +78,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Financial hardening (refund/reversal/deposit/prepay-overpay)
 - **Type**: Story (BE + FE + Finance)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-26`)
 - **Scope**:
   - Chuan hoa ledger thu/hoan.
   - Ho tro so du dat coc, prepay/overpay theo policy.
@@ -89,6 +90,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Installment/payment plan lifecycle + dunning
 - **Type**: Story (BE + FE)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 - **Scope**:
   - Lich ky thanh toan, trang thai qua han, nhac no tu dong.
 - **Acceptance Criteria (QA)**:
@@ -99,6 +101,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Insurance claim workflow
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
+- **Status**: Done (`2026-02-26`)
 - **Scope**:
   - Pre-auth, submit claim, paid/denied, resubmit.
   - Gan claim vao invoice/receipt lien quan.
@@ -110,6 +113,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Consent forms as clinical gate
 - **Type**: Story (BE + FE + Legal)
 - **Estimate**: 5 SP
+- **Status**: Done (`2026-02-26`)
 - **Scope**:
   - Hoan thien module consent + e-sign/audit.
   - Gate bat buoc truoc thu thuat rui ro cao.
@@ -121,6 +125,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Overbooking policy freeze + clinic-level config
 - **Type**: Task (Product + Ops + BE)
 - **Estimate**: 3 SP
+- **Status**: Done (`2026-02-26`)
 - **Scope**:
   - Chot policy overbooking theo chi nhanh.
   - Audit bat buoc khi override.
@@ -160,7 +165,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: KPI pack van hanh nha khoa (booking->visit, no-show, acceptance, chair, recall, LTV)
 - **Type**: Story (BE + Data + FE)
 - **Estimate**: 8 SP
-- **Status**: Done (`2026-02-26`)
+- **Status**: In Progress (partial: co engine KPI + snapshot command + test, chua co KPI pack dashboard hoan chinh trong admin)
 
 ### TICKET PM-16 (P1)
 - **Title**: Report data lineage + snapshot SLA hardening
@@ -254,11 +259,13 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Loyalty + referral + reactivation flow
 - **Type**: Story (Product + BE/FE)
 - **Estimate**: 8 SP
+- **Status**: Todo
 
 ### TICKET PM-22 (P2)
 - **Title**: Predictive model cho no-show/churn risk
 - **Type**: Discovery + Story (Data)
 - **Estimate**: 8 SP
+- **Status**: Todo
 
 ---
 
