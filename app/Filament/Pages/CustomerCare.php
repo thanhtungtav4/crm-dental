@@ -11,8 +11,9 @@ use App\Models\TreatmentSession;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\Exports\ExportsCsv;
 use Filament\Actions\Action as HeaderAction;
-use Filament\Pages\Page;
 use Filament\Actions\Action as TableAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -20,15 +21,14 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerCare extends Page implements HasTable
 {
-    use InteractsWithTable;
     use ExportsCsv;
+    use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
@@ -160,7 +160,7 @@ class CustomerCare extends Page implements HasTable
 
     protected function getExportFileName(): string
     {
-        return 'cskh_' . $this->activeTab . '_' . now()->format('Ymd_His') . '.csv';
+        return 'cskh_'.$this->activeTab.'_'.now()->format('Ymd_His').'.csv';
     }
 
     protected function getExportColumns(): array
@@ -709,9 +709,12 @@ class CustomerCare extends Page implements HasTable
     {
         return [
             'warranty' => 'Bảo hành',
+            'recall_recare' => 'Recall / Re-care',
             'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
             'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
             'appointment_reminder' => 'Nhắc lịch hẹn',
+            'no_show_recovery' => 'Recovery no-show',
+            'payment_reminder' => 'Nhắc thanh toán',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'birthday_care' => 'Chăm sóc sinh nhật',
             'general_care' => 'Chăm sóc chung',

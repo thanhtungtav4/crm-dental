@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
 use App\Models\InstallmentPlan;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Console\Command;
 
 class SyncInstallmentPlanStatus extends Command
@@ -13,6 +16,11 @@ class SyncInstallmentPlanStatus extends Command
 
     public function handle(): int
     {
+        ActionGate::authorize(
+            ActionPermission::AUTOMATION_RUN,
+            'Bạn không có quyền chạy automation đồng bộ trạng thái trả góp.',
+        );
+
         $dryRun = (bool) $this->option('dry-run');
         $updated = 0;
 
@@ -40,6 +48,19 @@ class SyncInstallmentPlanStatus extends Command
 
                 }
             });
+
+        if (! $dryRun) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: auth()->id(),
+                metadata: [
+                    'command' => 'installments:sync-status',
+                    'updated' => $updated,
+                ],
+            );
+        }
 
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] Installment plans synced. updated={$updated}");

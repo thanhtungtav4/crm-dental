@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -532,6 +534,11 @@ class Appointment extends Model
 
     public function applyOperationalOverride(string $overrideType, string $reason, ?int $actorId = null, array $context = []): void
     {
+        ActionGate::authorize(
+            ActionPermission::APPOINTMENT_OVERRIDE,
+            'Bạn không có quyền override vận hành lịch hẹn.',
+        );
+
         $overrideType = strtolower(trim($overrideType));
         $reason = trim($reason);
 

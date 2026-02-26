@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\ActionPermission;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -68,15 +69,15 @@ class RolesAndPermissionsSeeder extends Seeder
         // Ensure permissions exist (compatible with Shield)
         foreach ($resources as $res) {
             foreach ($adminOnlyPrefixes as $prefix) {
-                Permission::firstOrCreate(['name' => $prefix . ':' . $res]);
+                Permission::firstOrCreate(['name' => $prefix.':'.$res]);
             }
         }
 
         foreach ($pages as $page) {
-            Permission::firstOrCreate(['name' => 'View:' . $page]);
+            Permission::firstOrCreate(['name' => 'View:'.$page]);
         }
 
-        foreach ($extraPermissions as $permission) {
+        foreach (array_merge($extraPermissions, ActionPermission::all()) as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
@@ -92,13 +93,19 @@ class RolesAndPermissionsSeeder extends Seeder
         $managerPerms = [];
         foreach ($resources as $res) {
             foreach ($basicPrefixes as $prefix) {
-                $managerPerms[] = $prefix . ':' . $res; // e.g. ViewAny:Customer
+                $managerPerms[] = $prefix.':'.$res; // e.g. ViewAny:Customer
             }
         }
         foreach ($pages as $page) {
-            $managerPerms[] = 'View:' . $page;
+            $managerPerms[] = 'View:'.$page;
         }
         $managerPerms[] = 'View:IntegrationSettingsAuditLog';
+        $managerPerms = array_merge($managerPerms, [
+            ActionPermission::PAYMENT_REVERSAL,
+            ActionPermission::APPOINTMENT_OVERRIDE,
+            ActionPermission::PLAN_APPROVAL,
+            ActionPermission::AUTOMATION_RUN,
+        ]);
         $manager->syncPermissions($managerPerms);
 
         // Doctor: View/Update Patients & Plans. Manage Sessions.
@@ -106,35 +113,40 @@ class RolesAndPermissionsSeeder extends Seeder
         // Patients & Plans
         foreach (['Patient', 'TreatmentPlan'] as $res) {
             foreach (['ViewAny', 'View', 'Update'] as $prefix) {
-                $doctorPerms[] = $prefix . ':' . $res;
+                $doctorPerms[] = $prefix.':'.$res;
             }
         }
         // Sessions (Full control except maybe delete?)
         foreach (['TreatmentSession'] as $res) {
             foreach (['ViewAny', 'View', 'Create', 'Update'] as $prefix) {
-                $doctorPerms[] = $prefix . ':' . $res;
+                $doctorPerms[] = $prefix.':'.$res;
             }
         }
         // Appointments
         foreach (['Appointment'] as $res) {
             foreach (['ViewAny', 'View', 'Create', 'Update'] as $prefix) {
-                $doctorPerms[] = $prefix . ':' . $res;
+                $doctorPerms[] = $prefix.':'.$res;
             }
         }
+        $doctorPerms = array_merge($doctorPerms, [
+            ActionPermission::APPOINTMENT_OVERRIDE,
+            ActionPermission::PLAN_APPROVAL,
+        ]);
         $doctor->syncPermissions($doctorPerms);
 
         // CSKH: Customers & Notes
         $cskhPerms = [];
         foreach (['Customer'] as $res) {
             foreach (['ViewAny', 'View'] as $prefix) {
-                $cskhPerms[] = $prefix . ':' . $res;
+                $cskhPerms[] = $prefix.':'.$res;
             }
         }
         foreach (['Note'] as $res) {
             foreach (['ViewAny', 'View', 'Create'] as $prefix) {
-                $cskhPerms[] = $prefix . ':' . $res;
+                $cskhPerms[] = $prefix.':'.$res;
             }
         }
+        $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
         $cskh->syncPermissions($cskhPerms);
     }
 }

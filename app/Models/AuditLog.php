@@ -31,6 +31,16 @@ class AuditLog extends Model
 
     public const ENTITY_CARE_TICKET = 'care_ticket';
 
+    public const ENTITY_PLAN_ITEM = 'plan_item';
+
+    public const ENTITY_MASTER_DATA_SYNC = 'master_data_sync';
+
+    public const ENTITY_MASTER_PATIENT_INDEX = 'master_patient_index';
+
+    public const ENTITY_REPORT_SNAPSHOT = 'report_snapshot';
+
+    public const ENTITY_AUTOMATION = 'automation';
+
     public const ACTION_CREATE = 'create';
 
     public const ACTION_UPDATE = 'update';
@@ -50,6 +60,18 @@ class AuditLog extends Model
     public const ACTION_FOLLOW_UP = 'follow_up';
 
     public const ACTION_FAIL = 'fail';
+
+    public const ACTION_SYNC = 'sync';
+
+    public const ACTION_SNAPSHOT = 'snapshot';
+
+    public const ACTION_SLA_CHECK = 'sla_check';
+
+    public const ACTION_DEDUPE = 'dedupe';
+
+    public const ACTION_RUN = 'run';
+
+    public const ACTION_APPROVE = 'approve';
 
     public function actor(): BelongsTo
     {

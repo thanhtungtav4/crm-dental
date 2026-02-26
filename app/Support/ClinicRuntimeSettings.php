@@ -127,6 +127,83 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function recallDefaultOffsetDays(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'care.recall_default_offset_days',
+                (int) config('care.recall_default_offset_days', 180),
+            ),
+        );
+    }
+
+    public static function noShowRecoveryDelayHours(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'care.no_show_recovery_delay_hours',
+                (int) config('care.no_show_recovery_delay_hours', 2),
+            ),
+        );
+    }
+
+    public static function planFollowUpDelayDays(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'care.plan_follow_up_delay_days',
+                (int) config('care.plan_follow_up_delay_days', 2),
+            ),
+        );
+    }
+
+    public static function invoiceAgingReminderDelayDays(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'care.invoice_aging_reminder_delay_days',
+                (int) config('care.invoice_aging_reminder_delay_days', 1),
+            ),
+        );
+    }
+
+    public static function invoiceAgingReminderMinIntervalHours(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'care.invoice_aging_reminder_min_interval_hours',
+                (int) config('care.invoice_aging_reminder_min_interval_hours', 24),
+            ),
+        );
+    }
+
+    public static function reportSnapshotSlaHours(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'report.snapshot_sla_hours',
+                (int) config('care.report_snapshot_sla_hours', 6),
+            ),
+        );
+    }
+
+    public static function reportSnapshotStaleAfterHours(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'report.snapshot_stale_after_hours',
+                (int) config('care.report_snapshot_stale_after_hours', 24),
+            ),
+        );
+    }
+
     public static function careChannelOptions(): array
     {
         $channels = [

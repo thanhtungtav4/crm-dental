@@ -24,8 +24,10 @@ class AuditLogsTable
                     ->colors([
                         'primary' => AuditLog::ENTITY_PAYMENT,
                         'warning' => AuditLog::ENTITY_INVOICE,
-                        'info' => AuditLog::ENTITY_APPOINTMENT,
+                        'info' => [AuditLog::ENTITY_APPOINTMENT, AuditLog::ENTITY_MASTER_PATIENT_INDEX, AuditLog::ENTITY_PLAN_ITEM],
                         'success' => AuditLog::ENTITY_CARE_TICKET,
+                        'gray' => [AuditLog::ENTITY_AUTOMATION, AuditLog::ENTITY_REPORT_SNAPSHOT],
+                        'danger' => AuditLog::ENTITY_MASTER_DATA_SYNC,
                     ])
                     ->sortable(),
                 TextColumn::make('entity_id')
@@ -34,11 +36,11 @@ class AuditLogsTable
                 BadgeColumn::make('action')
                     ->label('Hành động')
                     ->colors([
-                        'info' => [AuditLog::ACTION_CREATE, AuditLog::ACTION_FOLLOW_UP],
-                        'warning' => [AuditLog::ACTION_UPDATE, AuditLog::ACTION_RESCHEDULE],
+                        'info' => [AuditLog::ACTION_CREATE, AuditLog::ACTION_FOLLOW_UP, AuditLog::ACTION_SNAPSHOT],
+                        'warning' => [AuditLog::ACTION_UPDATE, AuditLog::ACTION_RESCHEDULE, AuditLog::ACTION_RUN],
                         'danger' => [AuditLog::ACTION_REFUND, AuditLog::ACTION_FAIL],
-                        'primary' => AuditLog::ACTION_REVERSAL,
-                        'gray' => [AuditLog::ACTION_CANCEL, AuditLog::ACTION_NO_SHOW],
+                        'primary' => [AuditLog::ACTION_REVERSAL, AuditLog::ACTION_APPROVE],
+                        'gray' => [AuditLog::ACTION_CANCEL, AuditLog::ACTION_NO_SHOW, AuditLog::ACTION_SYNC, AuditLog::ACTION_DEDUPE, AuditLog::ACTION_SLA_CHECK],
                         'success' => AuditLog::ACTION_COMPLETE,
                     ]),
                 TextColumn::make('actor.name')
@@ -58,6 +60,11 @@ class AuditLogsTable
                         AuditLog::ENTITY_INVOICE => 'Invoice',
                         AuditLog::ENTITY_APPOINTMENT => 'Appointment',
                         AuditLog::ENTITY_CARE_TICKET => 'Care Ticket',
+                        AuditLog::ENTITY_PLAN_ITEM => 'Plan Item',
+                        AuditLog::ENTITY_MASTER_DATA_SYNC => 'Master Data Sync',
+                        AuditLog::ENTITY_MASTER_PATIENT_INDEX => 'MPI',
+                        AuditLog::ENTITY_REPORT_SNAPSHOT => 'Report Snapshot',
+                        AuditLog::ENTITY_AUTOMATION => 'Automation',
                     ]),
                 SelectFilter::make('action')
                     ->label('Hành động')
@@ -72,6 +79,12 @@ class AuditLogsTable
                         AuditLog::ACTION_COMPLETE => 'Complete',
                         AuditLog::ACTION_FOLLOW_UP => 'Follow up',
                         AuditLog::ACTION_FAIL => 'Fail',
+                        AuditLog::ACTION_SYNC => 'Sync',
+                        AuditLog::ACTION_SNAPSHOT => 'Snapshot',
+                        AuditLog::ACTION_SLA_CHECK => 'SLA Check',
+                        AuditLog::ACTION_DEDUPE => 'Dedupe',
+                        AuditLog::ACTION_RUN => 'Run',
+                        AuditLog::ACTION_APPROVE => 'Approve',
                     ]),
             ])
             ->recordActions([

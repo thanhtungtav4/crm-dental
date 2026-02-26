@@ -127,6 +127,7 @@ class IntegrationSettings extends Page
                 'fields' => [
                     ['state' => 'care_medication_reminder_offset_days', 'key' => 'care.medication_reminder_offset_days', 'label' => 'Số ngày nhắc uống thuốc (sau ngày điều trị)', 'type' => 'integer', 'default' => 0, 'sort_order' => 510],
                     ['state' => 'care_post_treatment_follow_up_offset_days', 'key' => 'care.post_treatment_follow_up_offset_days', 'label' => 'Số ngày hỏi thăm sau điều trị', 'type' => 'integer', 'default' => 3, 'sort_order' => 520],
+                    ['state' => 'care_recall_default_offset_days', 'key' => 'care.recall_default_offset_days', 'label' => 'Số ngày recall mặc định sau thủ thuật hoàn tất', 'type' => 'integer', 'default' => 180, 'sort_order' => 525],
                     [
                         'state' => 'care_default_channel',
                         'key' => 'care.default_channel',
@@ -144,6 +145,19 @@ class IntegrationSettings extends Page
                         ],
                         'sort_order' => 530,
                     ],
+                    ['state' => 'care_no_show_recovery_delay_hours', 'key' => 'care.no_show_recovery_delay_hours', 'label' => 'Số giờ chờ trước khi tạo ticket no-show recovery', 'type' => 'integer', 'default' => 2, 'sort_order' => 540],
+                    ['state' => 'care_plan_follow_up_delay_days', 'key' => 'care.plan_follow_up_delay_days', 'label' => 'Số ngày theo dõi kế hoạch chưa chốt', 'type' => 'integer', 'default' => 2, 'sort_order' => 550],
+                    ['state' => 'care_invoice_aging_reminder_delay_days', 'key' => 'care.invoice_aging_reminder_delay_days', 'label' => 'Số ngày quá hạn trước khi nhắc thanh toán', 'type' => 'integer', 'default' => 1, 'sort_order' => 560],
+                    ['state' => 'care_invoice_aging_reminder_min_interval_hours', 'key' => 'care.invoice_aging_reminder_min_interval_hours', 'label' => 'Khoảng cách tối thiểu giữa 2 lần nhắc thanh toán (giờ)', 'type' => 'integer', 'default' => 24, 'sort_order' => 570],
+                ],
+            ],
+            [
+                'group' => 'report',
+                'title' => 'Runtime báo cáo',
+                'description' => 'SLA cho snapshot KPI vận hành và kiểm tra data lineage.',
+                'fields' => [
+                    ['state' => 'report_snapshot_sla_hours', 'key' => 'report.snapshot_sla_hours', 'label' => 'SLA tạo snapshot (giờ)', 'type' => 'integer', 'default' => 6, 'sort_order' => 580],
+                    ['state' => 'report_snapshot_stale_after_hours', 'key' => 'report.snapshot_stale_after_hours', 'label' => 'Ngưỡng stale snapshot (giờ)', 'type' => 'integer', 'default' => 24, 'sort_order' => 590],
                 ],
             ],
             [

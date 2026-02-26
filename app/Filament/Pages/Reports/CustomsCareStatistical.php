@@ -77,6 +77,9 @@ class CustomsCareStatistical extends BaseReportPage
     {
         return [
             'appointment_reminder' => 'Nhắc lịch hẹn',
+            'no_show_recovery' => 'Recovery no-show',
+            'recall_recare' => 'Recall / Re-care',
+            'payment_reminder' => 'Nhắc thanh toán',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
             'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',

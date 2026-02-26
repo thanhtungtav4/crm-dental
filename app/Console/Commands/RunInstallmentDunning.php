@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
 use App\Models\InstallmentPlan;
 use App\Models\Note;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -15,6 +18,11 @@ class RunInstallmentDunning extends Command
 
     public function handle(): int
     {
+        ActionGate::authorize(
+            ActionPermission::AUTOMATION_RUN,
+            'Bạn không có quyền chạy automation dunning trả góp.',
+        );
+
         $dryRun = (bool) $this->option('dry-run');
         $asOf = $this->option('date')
             ? Carbon::parse((string) $this->option('date'))->startOfDay()
@@ -67,6 +75,20 @@ class RunInstallmentDunning extends Command
                     $queued++;
                 }
             });
+
+        if (! $dryRun) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: auth()->id(),
+                metadata: [
+                    'command' => 'installments:run-dunning',
+                    'queued' => $queued,
+                    'as_of' => $asOf->toDateString(),
+                ],
+            );
+        }
 
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] Dunning processed. queued={$queued}");

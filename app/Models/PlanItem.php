@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -164,6 +166,11 @@ class PlanItem extends Model
             $item->approval_status = $normalizedApproval ?? static::DEFAULT_APPROVAL_STATUS;
 
             if ($item->exists && $item->isDirty('approval_status')) {
+                ActionGate::authorize(
+                    ActionPermission::PLAN_APPROVAL,
+                    'Bạn không có quyền thay đổi trạng thái duyệt kế hoạch điều trị.',
+                );
+
                 $fromStatus = static::normalizeApprovalStatus((string) $item->getOriginal('approval_status'));
                 if ($fromStatus === null && array_key_exists('patient_approved', $item->getOriginal())) {
                     $fromStatus = static::approvalStatusFromLegacyFlag($item->getOriginal('patient_approved'));
@@ -180,6 +187,23 @@ class PlanItem extends Model
                         ),
                     ]);
                 }
+
+                AuditLog::record(
+                    entityType: AuditLog::ENTITY_PLAN_ITEM,
+                    entityId: (int) ($item->id ?? 0),
+                    action: $item->approval_status === self::APPROVAL_APPROVED
+                        ? AuditLog::ACTION_APPROVE
+                        : AuditLog::ACTION_UPDATE,
+                    actorId: auth()->id(),
+                    metadata: [
+                        'plan_item_id' => $item->id,
+                        'treatment_plan_id' => $item->treatment_plan_id,
+                        'patient_id' => $item->treatmentPlan?->patient_id,
+                        'approval_status_from' => $fromStatus,
+                        'approval_status_to' => $item->approval_status,
+                        'approval_decline_reason' => $item->approval_decline_reason,
+                    ],
+                );
             }
 
             static::assertDeclineReasonRequirement($item);

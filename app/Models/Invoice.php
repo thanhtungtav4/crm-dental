@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -371,6 +373,13 @@ class Invoice extends Model
     ): Payment {
         $amount = $direction === 'refund' ? -abs($amount) : abs($amount);
         $transactionRef = filled($transactionRef) ? trim($transactionRef) : null;
+
+        if ($direction === 'refund' || $reversalOfId !== null) {
+            ActionGate::authorize(
+                ActionPermission::PAYMENT_REVERSAL,
+                'Bạn không có quyền thực hiện hoàn tiền hoặc đảo phiếu thu.',
+            );
+        }
 
         if ($direction === 'receipt') {
             if ($this->status === self::STATUS_DRAFT && ! ClinicRuntimeSettings::allowDraftPrepay()) {

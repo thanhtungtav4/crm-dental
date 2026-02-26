@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
 use App\Models\Invoice;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Console\Command;
 
 class SyncInvoiceOverdueStatus extends Command
@@ -13,6 +16,11 @@ class SyncInvoiceOverdueStatus extends Command
 
     public function handle(): int
     {
+        ActionGate::authorize(
+            ActionPermission::AUTOMATION_RUN,
+            'Bạn không có quyền chạy automation đồng bộ công nợ hóa đơn.',
+        );
+
         $updated = 0;
         $unchanged = 0;
         $dryRun = (bool) $this->option('dry-run');
@@ -44,10 +52,23 @@ class SyncInvoiceOverdueStatus extends Command
                 }
             });
 
+        if (! $dryRun) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: auth()->id(),
+                metadata: [
+                    'command' => 'invoices:sync-overdue-status',
+                    'updated' => $updated,
+                    'unchanged' => $unchanged,
+                ],
+            );
+        }
+
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] Invoices synced. updated={$updated}, unchanged={$unchanged}");
 
         return self::SUCCESS;
     }
 }
-

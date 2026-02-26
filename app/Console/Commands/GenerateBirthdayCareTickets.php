@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -16,6 +19,11 @@ class GenerateBirthdayCareTickets extends Command
 
     public function handle(): int
     {
+        ActionGate::authorize(
+            ActionPermission::AUTOMATION_RUN,
+            'Bạn không có quyền chạy automation chăm sóc sinh nhật.',
+        );
+
         $inputDate = $this->option('date');
         $date = $inputDate ? Carbon::parse($inputDate) : now();
         $date = $date->timezone(config('app.timezone'));
@@ -43,6 +51,7 @@ class GenerateBirthdayCareTickets extends Command
 
             if ($exists) {
                 $skipped++;
+
                 continue;
             }
 
@@ -61,10 +70,25 @@ class GenerateBirthdayCareTickets extends Command
                 'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
                 'care_status' => Note::CARE_STATUS_NOT_STARTED,
                 'care_at' => $scheduledAt,
-                'content' => 'Chúc mừng sinh nhật ' . $patient->full_name,
+                'content' => 'Chúc mừng sinh nhật '.$patient->full_name,
                 'source_type' => Patient::class,
                 'source_id' => $patient->id,
             ]);
+        }
+
+        if (! $this->option('dry-run')) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: auth()->id(),
+                metadata: [
+                    'command' => 'care:generate-birthday-tickets',
+                    'created' => $created,
+                    'skipped' => $skipped,
+                    'date' => $date->toDateString(),
+                ],
+            );
         }
 
         $this->info("Birthday care tickets - created: {$created}, skipped: {$skipped}.");
