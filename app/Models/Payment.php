@@ -6,6 +6,8 @@ use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 class Payment extends Model
 {
@@ -13,8 +15,10 @@ class Payment extends Model
 
     protected $fillable = [
         'invoice_id',
+        'reversal_of_id',
         'amount',
         'direction',
+        'is_deposit',
         'method',
         'transaction_ref',
         'payment_source',
@@ -23,11 +27,15 @@ class Payment extends Model
         'received_by',
         'note',
         'refund_reason',
+        'reversed_at',
+        'reversed_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'is_deposit' => 'boolean',
         'paid_at' => 'datetime',
+        'reversed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -47,6 +55,18 @@ class Payment extends Model
                 }
             }
         });
+
+        static::updating(function (): void {
+            throw ValidationException::withMessages([
+                'payment' => 'Phiếu thu/hoàn đã ghi sổ. Vui lòng tạo phiếu hoàn thay vì chỉnh sửa trực tiếp.',
+            ]);
+        });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'payment' => 'Phiếu thu/hoàn đã ghi sổ. Vui lòng tạo phiếu hoàn thay vì xóa trực tiếp.',
+            ]);
+        });
     }
 
     // ==================== RELATIONSHIPS ====================
@@ -59,6 +79,21 @@ class Payment extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function reversedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reversed_by');
+    }
+
+    public function reversalOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
+    }
+
+    public function reversalEntries(): HasMany
+    {
+        return $this->hasMany(self::class, 'reversal_of_id');
     }
 
     // ==================== HELPER METHODS ====================
@@ -86,7 +121,7 @@ class Payment extends Model
      */
     public function getSourceLabel(): string
     {
-        return match($this->payment_source) {
+        return match ($this->payment_source) {
             'patient' => 'Bệnh nhân',
             'insurance' => 'Bảo hiểm',
             'other' => 'Khác',
@@ -99,7 +134,7 @@ class Payment extends Model
      */
     public function formatAmount(): string
     {
-        return number_format($this->amount, 0, ',', '.') . 'đ';
+        return number_format($this->amount, 0, ',', '.').'đ';
     }
 
     public function getDirectionLabel(): string
@@ -120,6 +155,45 @@ class Payment extends Model
         return $this->direction === 'refund' || (float) $this->amount < 0;
     }
 
+    public function isDeposit(): bool
+    {
+        return (bool) $this->is_deposit;
+    }
+
+    public function isReversed(): bool
+    {
+        return $this->reversed_at !== null || $this->reversed_by !== null;
+    }
+
+    public function isReversal(): bool
+    {
+        return $this->reversal_of_id !== null;
+    }
+
+    public function canReverse(): bool
+    {
+        return ! $this->isRefund() && ! $this->isReversal() && ! $this->isReversed();
+    }
+
+    public function markReversed(?int $userId = null): void
+    {
+        if ($this->isReversed()) {
+            return;
+        }
+
+        $now = now();
+
+        self::query()
+            ->whereKey($this->id)
+            ->update([
+                'reversed_at' => $now,
+                'reversed_by' => $userId,
+                'updated_at' => $now,
+            ]);
+
+        $this->refresh();
+    }
+
     /**
      * Check if this is an insurance claim
      */
@@ -133,7 +207,7 @@ class Payment extends Model
      */
     public function hasTransactionRef(): bool
     {
-        return !empty($this->transaction_ref);
+        return ! empty($this->transaction_ref);
     }
 
     /**
@@ -149,7 +223,7 @@ class Payment extends Model
      */
     public function getSourceBadgeColor(): string
     {
-        return match($this->payment_source) {
+        return match ($this->payment_source) {
             'patient' => 'success',
             'insurance' => 'info',
             'other' => 'gray',
@@ -224,6 +298,6 @@ class Payment extends Model
     public function scopeThisMonth($query)
     {
         return $query->whereMonth('paid_at', now()->month)
-                     ->whereYear('paid_at', now()->year);
+            ->whereYear('paid_at', now()->year);
     }
 }

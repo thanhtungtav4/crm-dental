@@ -146,6 +146,37 @@ class IntegrationSettings extends Page
                     ],
                 ],
             ],
+            [
+                'group' => 'finance',
+                'title' => 'Runtime tài chính',
+                'description' => 'Cấu hình policy thu tiền cọc, thu trước và overpay.',
+                'fields' => [
+                    [
+                        'state' => 'finance_allow_overpay',
+                        'key' => 'finance.allow_overpay',
+                        'label' => 'Cho phép thu vượt công nợ (overpay)',
+                        'type' => 'boolean',
+                        'default' => true,
+                        'sort_order' => 610,
+                    ],
+                    [
+                        'state' => 'finance_allow_prepay_draft',
+                        'key' => 'finance.allow_prepay_draft',
+                        'label' => 'Cho phép thu trước ở hóa đơn nháp',
+                        'type' => 'boolean',
+                        'default' => false,
+                        'sort_order' => 620,
+                    ],
+                    [
+                        'state' => 'finance_allow_deposit',
+                        'key' => 'finance.allow_deposit',
+                        'label' => 'Cho phép đánh dấu phiếu cọc',
+                        'type' => 'boolean',
+                        'default' => true,
+                        'sort_order' => 630,
+                    ],
+                ],
+            ],
         ];
     }
 

@@ -12,16 +12,23 @@ class PlanItem extends Model
     use HasFactory, SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const APPROVAL_DRAFT = 'draft';
+
     public const APPROVAL_PROPOSED = 'proposed';
+
     public const APPROVAL_APPROVED = 'approved';
+
     public const APPROVAL_DECLINED = 'declined';
 
     public const DEFAULT_STATUS = self::STATUS_PENDING;
+
     public const DEFAULT_APPROVAL_STATUS = self::APPROVAL_PROPOSED;
 
     protected const STATUS_OPTIONS = [
@@ -197,6 +204,11 @@ class PlanItem extends Model
         return $this->belongsTo(Service::class);
     }
 
+    public function consents()
+    {
+        return $this->hasMany(Consent::class);
+    }
+
     // Helper Methods
 
     /**
@@ -227,7 +239,7 @@ class PlanItem extends Model
             // Keep as pending
         } elseif ($this->progress_percentage > 0 && $this->progress_percentage < 100) {
             $this->status = self::STATUS_IN_PROGRESS;
-            if (!$this->started_at) {
+            if (! $this->started_at) {
                 $this->started_at = now()->toDateString();
             }
         } elseif ($this->progress_percentage === 100) {
@@ -315,11 +327,12 @@ class PlanItem extends Model
      */
     public function getToothNotationDisplay(): ?string
     {
-        if (!$this->tooth_number) {
+        if (! $this->tooth_number) {
             return null;
         }
 
         $notation = $this->tooth_notation === 'universal' ? 'Universal' : 'FDI';
+
         return "🦷 {$this->tooth_number} ({$notation})";
     }
 
@@ -328,13 +341,14 @@ class PlanItem extends Model
      */
     public function getToothNumbers(): array
     {
-        if (!$this->tooth_number) {
+        if (! $this->tooth_number) {
             return [];
         }
 
         // Check if it's a range (e.g., "11-14")
         if (str_contains($this->tooth_number, '-')) {
             [$start, $end] = explode('-', $this->tooth_number);
+
             return range((int) $start, (int) $end);
         }
 
@@ -352,7 +366,7 @@ class PlanItem extends Model
      */
     public function hasBeforePhoto(): bool
     {
-        return !empty($this->before_photo);
+        return ! empty($this->before_photo);
     }
 
     /**
@@ -360,7 +374,7 @@ class PlanItem extends Model
      */
     public function hasAfterPhoto(): bool
     {
-        return !empty($this->after_photo);
+        return ! empty($this->after_photo);
     }
 
     /**
@@ -523,6 +537,30 @@ class PlanItem extends Model
                 throw ValidationException::withMessages([
                     'status' => 'Kế hoạch điều trị chưa được duyệt nên không thể chuyển sang giai đoạn tiếp theo.',
                 ]);
+            }
+
+            $serviceRequiresConsent = (bool) optional($item->service)->requires_consent;
+
+            if ($serviceRequiresConsent) {
+                $patientId = $item->treatmentPlan?->patient_id;
+
+                $hasValidConsent = Consent::query()
+                    ->where('patient_id', $patientId)
+                    ->where(function ($query) use ($item): void {
+                        $query->where('plan_item_id', $item->id);
+
+                        if ($item->service_id) {
+                            $query->orWhere('service_id', $item->service_id);
+                        }
+                    })
+                    ->validAt(now())
+                    ->exists();
+
+                if (! $hasValidConsent) {
+                    throw ValidationException::withMessages([
+                        'approval_status' => 'Thiếu consent hợp lệ cho thủ thuật rủi ro cao. Không thể chuyển giai đoạn điều trị.',
+                    ]);
+                }
             }
         }
     }

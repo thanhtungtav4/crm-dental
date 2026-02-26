@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use App\Models\Appointment;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use App\Models\Appointment;
-use Filament\Notifications\Notification;
 
 class AppointmentsTable
 {
@@ -24,38 +24,40 @@ class AppointmentsTable
                             $customer = $record->customer;
                             $name = $customer->full_name;
                             $phone = $customer->phone ? " — {$customer->phone}" : '';
-                            return $name . $phone;
+
+                            return $name.$phone;
                         }
-                        
+
                         // Nếu có patient (bệnh nhân hoặc data cũ)
                         if ($record->patient_id && $record->patient) {
                             $patient = $record->patient;
                             $name = $patient->full_name;
                             $phone = $patient->phone ? " — {$patient->phone}" : '';
                             $code = $patient->patient_code ? " [{$patient->patient_code}]" : '';
-                            return $name . $code . $phone;
+
+                            return $name.$code.$phone;
                         }
-                        
+
                         return '-';
                     })
                     ->searchable(query: function ($query, $search) {
                         return $query->where(function ($q) use ($search) {
                             $q->whereHas('customer', function ($query) use ($search) {
                                 $query->where('full_name', 'like', "%{$search}%")
-                                      ->orWhere('phone', 'like', "%{$search}%");
+                                    ->orWhere('phone', 'like', "%{$search}%");
                             })
-                            ->orWhereHas('patient', function ($query) use ($search) {
-                                $query->where('full_name', 'like', "%{$search}%")
-                                      ->orWhere('phone', 'like', "%{$search}%")
-                                      ->orWhere('patient_code', 'like', "%{$search}%");
-                            });
+                                ->orWhereHas('patient', function ($query) use ($search) {
+                                    $query->where('full_name', 'like', "%{$search}%")
+                                        ->orWhere('phone', 'like', "%{$search}%")
+                                        ->orWhere('patient_code', 'like', "%{$search}%");
+                                });
                         });
                     })
                     ->badge()
-                    ->color(fn ($record) => $record->customer_id && !$record->patient_id ? 'warning' : 'success')
-                    ->icon(fn ($record) => $record->customer_id && !$record->patient_id ? 'heroicon-o-user' : 'heroicon-o-check-circle')
-                    ->description(fn ($record) => $record->customer_id && !$record->patient_id ? 'Lead' : 'Bệnh nhân'),
-                    
+                    ->color(fn ($record) => $record->customer_id && ! $record->patient_id ? 'warning' : 'success')
+                    ->icon(fn ($record) => $record->customer_id && ! $record->patient_id ? 'heroicon-o-user' : 'heroicon-o-check-circle')
+                    ->description(fn ($record) => $record->customer_id && ! $record->patient_id ? 'Lead' : 'Bệnh nhân'),
+
                 TextColumn::make('doctor.name')->label('Bác sĩ')->toggleable(),
                 TextColumn::make('branch.name')->label('Chi nhánh')->toggleable(),
                 TextColumn::make('date')
@@ -115,13 +117,28 @@ class AppointmentsTable
                         }
 
                         if ($record->late_arrival_minutes) {
-                            $flags[] = 'Trễ ' . $record->late_arrival_minutes . ' phút';
+                            $flags[] = 'Trễ '.$record->late_arrival_minutes.' phút';
+                        }
+
+                        if ($record->is_overbooked) {
+                            $flags[] = 'Overbook';
                         }
 
                         return $flags === [] ? 'Bình thường' : implode(' • ', $flags);
                     })
-                    ->color(fn ($record): string => $record->is_emergency ? 'danger' : (($record->is_walk_in || $record->late_arrival_minutes) ? 'warning' : 'gray'))
+                    ->color(fn ($record): string => $record->is_emergency ? 'danger' : (($record->is_walk_in || $record->late_arrival_minutes || $record->is_overbooked) ? 'warning' : 'gray'))
                     ->toggleable(),
+                TextColumn::make('overbooking_reason')
+                    ->label('Lý do overbook')
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('overbookingOverrideBy.name')
+                    ->label('Người override overbook')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('overbooking_override_at')
+                    ->label('Thời gian override overbook')
+                    ->dateTime('d/m/Y H:i')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('chief_complaint')
                     ->label('Lý do khám')
                     ->limit(50)
@@ -223,25 +240,26 @@ class AppointmentsTable
                             ->success()
                             ->send();
                     }),
-                
+
                 // Action "Chuyển thành bệnh nhân" - chỉ hiện khi có customer_id nhưng chưa có patient_id
                 Action::make('convert_to_patient')
                     ->label('Chuyển thành bệnh nhân')
                     ->icon('heroicon-o-user-plus')
                     ->color('success')
-                    ->visible(fn ($record) => $record->customer_id && !$record->patient_id)
+                    ->visible(fn ($record) => $record->customer_id && ! $record->patient_id)
                     ->requiresConfirmation()
                     ->modalHeading('Chuyển khách hàng thành bệnh nhân?')
                     ->modalDescription(fn ($record) => "Bạn có chắc muốn chuyển \"{$record->customer?->full_name}\" từ Lead thành Bệnh nhân không?")
                     ->modalSubmitActionLabel('Xác nhận chuyển đổi')
                     ->action(function ($record) {
                         $customer = $record->customer;
-                        
-                        if (!$customer) {
+
+                        if (! $customer) {
                             Notification::make()
                                 ->title('❌ Lỗi: Không tìm thấy khách hàng!')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
                         try {

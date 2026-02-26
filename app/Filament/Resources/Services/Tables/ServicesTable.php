@@ -55,6 +55,10 @@ class ServicesTable
                     ->label('Theo răng')
                     ->boolean()
                     ->toggleable(),
+                IconColumn::make('requires_consent')
+                    ->label('Bắt buộc consent')
+                    ->boolean()
+                    ->toggleable(),
                 IconColumn::make('active')
                     ->label('Kích hoạt')
                     ->boolean(),
@@ -95,6 +99,11 @@ class ServicesTable
                     ->placeholder('Tất cả')
                     ->trueLabel('Theo răng cụ thể')
                     ->falseLabel('Toàn bộ'),
+                TernaryFilter::make('requires_consent')
+                    ->label('Consent')
+                    ->placeholder('Tất cả')
+                    ->trueLabel('Bắt buộc consent')
+                    ->falseLabel('Không yêu cầu'),
             ])
             ->defaultSort('sort_order', 'asc')
             ->recordActions([

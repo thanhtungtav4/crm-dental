@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\Services\Schemas;
 
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class ServiceForm
@@ -82,6 +82,11 @@ class ServiceForm
                         Toggle::make('tooth_specific')
                             ->label('Dịch vụ theo răng cụ thể')
                             ->helperText('Bật nếu dịch vụ này áp dụng cho từng răng riêng lẻ (vd: trám răng, nhổ răng)')
+                            ->default(false)
+                            ->columnSpan(1),
+                        Toggle::make('requires_consent')
+                            ->label('Bắt buộc consent trước điều trị')
+                            ->helperText('Dùng cho thủ thuật rủi ro cao (implant, phẫu thuật...).')
                             ->default(false)
                             ->columnSpan(1),
                         Toggle::make('active')

@@ -2,27 +2,35 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
 
     public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUS_CONFIRMED = 'confirmed';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_NO_SHOW = 'no_show';
+
     public const STATUS_RESCHEDULED = 'rescheduled';
 
     public const OVERRIDE_LATE_ARRIVAL = 'late_arrival';
+
     public const OVERRIDE_EMERGENCY = 'emergency';
+
     public const OVERRIDE_WALK_IN = 'walk_in';
 
     public const DEFAULT_STATUS = self::STATUS_SCHEDULED;
@@ -147,10 +155,14 @@ class Appointment extends Model
         'confirmed_by',
         'is_walk_in',
         'is_emergency',
+        'is_overbooked',
         'late_arrival_minutes',
         'operation_override_reason',
         'operation_override_at',
         'operation_override_by',
+        'overbooking_reason',
+        'overbooking_override_at',
+        'overbooking_override_by',
     ];
 
     protected $casts = [
@@ -160,13 +172,25 @@ class Appointment extends Model
         'reminder_hours' => 'integer',
         'is_walk_in' => 'boolean',
         'is_emergency' => 'boolean',
+        'is_overbooked' => 'boolean',
         'late_arrival_minutes' => 'integer',
         'operation_override_at' => 'datetime',
+        'overbooking_override_at' => 'datetime',
     ];
 
     protected static function booted(): void
     {
         static::saving(function (self $appointment): void {
+            if (blank($appointment->patient_id) && filled($appointment->customer_id)) {
+                $linkedPatientId = Patient::query()
+                    ->where('customer_id', (int) $appointment->customer_id)
+                    ->value('id');
+
+                if ($linkedPatientId !== null) {
+                    $appointment->patient_id = $linkedPatientId;
+                }
+            }
+
             $normalizedStatus = static::normalizeStatus($appointment->status) ?? static::DEFAULT_STATUS;
             $appointment->status = $normalizedStatus;
 
@@ -185,6 +209,7 @@ class Appointment extends Model
             }
 
             static::assertStatusReasonRequirement($appointment, $normalizedStatus);
+            static::assertOverbookingPolicy($appointment);
         });
     }
 
@@ -196,15 +221,55 @@ class Appointment extends Model
         );
     }
 
-    public function customer() { return $this->belongsTo(Customer::class); }
-    public function patient() { return $this->belongsTo(Patient::class); }
-    public function doctor() { return $this->belongsTo(User::class, 'doctor_id'); }
-    public function assignedTo() { return $this->belongsTo(User::class, 'assigned_to'); }
-    public function branch() { return $this->belongsTo(Branch::class); }
-    public function confirmedBy() { return $this->belongsTo(User::class, 'confirmed_by'); }
-    public function operationOverrideBy() { return $this->belongsTo(User::class, 'operation_override_by'); }
-    public function visitEpisode() { return $this->hasOne(VisitEpisode::class); }
-    public function overrideLogs() { return $this->hasMany(AppointmentOverrideLog::class); }
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id');
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function confirmedBy()
+    {
+        return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    public function operationOverrideBy()
+    {
+        return $this->belongsTo(User::class, 'operation_override_by');
+    }
+
+    public function overbookingOverrideBy()
+    {
+        return $this->belongsTo(User::class, 'overbooking_override_by');
+    }
+
+    public function visitEpisode()
+    {
+        return $this->hasOne(VisitEpisode::class);
+    }
+
+    public function overrideLogs()
+    {
+        return $this->hasMany(AppointmentOverrideLog::class);
+    }
 
     public static function statusOptions(): array
     {
@@ -376,6 +441,95 @@ class Appointment extends Model
         }
     }
 
+    protected static function statusesOccupyingCapacity(): array
+    {
+        return [
+            self::STATUS_SCHEDULED,
+            self::STATUS_CONFIRMED,
+            self::STATUS_IN_PROGRESS,
+        ];
+    }
+
+    protected static function assertOverbookingPolicy(self $appointment): void
+    {
+        if (
+            ! $appointment->doctor_id
+            || ! $appointment->branch_id
+            || ! $appointment->date
+            || ! in_array($appointment->status, static::statusesOccupyingCapacity(), true)
+        ) {
+            $appointment->is_overbooked = false;
+            $appointment->overbooking_reason = null;
+            $appointment->overbooking_override_at = null;
+            $appointment->overbooking_override_by = null;
+
+            return;
+        }
+
+        $duration = max(1, (int) ($appointment->duration_minutes ?? 30));
+        $start = $appointment->date->copy();
+        $end = $start->copy()->addMinutes($duration);
+
+        $candidateAppointments = static::query()
+            ->where('doctor_id', $appointment->doctor_id)
+            ->where('branch_id', $appointment->branch_id)
+            ->whereIn('status', static::statusesForQuery(static::statusesOccupyingCapacity()))
+            ->when($appointment->exists, fn ($query) => $query->where('id', '!=', $appointment->id))
+            ->where('date', '<', $end->format('Y-m-d H:i:s'))
+            ->where('date', '>=', $start->copy()->subDay()->format('Y-m-d H:i:s'))
+            ->get(['id', 'date', 'duration_minutes']);
+
+        $overlapCount = $candidateAppointments
+            ->filter(function (self $existingAppointment) use ($start): bool {
+                if (! $existingAppointment->date) {
+                    return false;
+                }
+
+                $existingStart = $existingAppointment->date->copy();
+                $existingEnd = $existingStart
+                    ->copy()
+                    ->addMinutes(max(1, (int) ($existingAppointment->duration_minutes ?? 30)));
+
+                return $existingEnd->gt($start);
+            })
+            ->count();
+
+        $projectedParallel = $overlapCount + 1;
+        $policy = BranchOverbookingPolicy::resolveForBranch((int) $appointment->branch_id);
+
+        $allowedParallel = $policy->is_enabled
+            ? max(1, (int) $policy->max_parallel_per_doctor)
+            : 1;
+
+        if ($projectedParallel <= $allowedParallel) {
+            $appointment->is_overbooked = $projectedParallel > 1;
+
+            if (! $appointment->is_overbooked) {
+                $appointment->overbooking_reason = null;
+                $appointment->overbooking_override_at = null;
+                $appointment->overbooking_override_by = null;
+            }
+
+            return;
+        }
+
+        if (! $policy->is_enabled) {
+            throw ValidationException::withMessages([
+                'date' => 'Chi nhánh hiện chưa bật overbooking cho khung giờ này.',
+            ]);
+        }
+
+        if ($policy->require_override_reason && blank($appointment->overbooking_reason)) {
+            throw ValidationException::withMessages([
+                'overbooking_reason' => 'Overbooking yêu cầu nhập lý do override.',
+            ]);
+        }
+
+        $appointment->is_overbooked = true;
+        $appointment->overbooking_override_at = $appointment->overbooking_override_at ?? now();
+        $appointment->overbooking_override_by = $appointment->overbooking_override_by ?? auth()->id();
+    }
+
     public function applyOperationalOverride(string $overrideType, string $reason, ?int $actorId = null, array $context = []): void
     {
         $overrideType = strtolower(trim($overrideType));
@@ -435,14 +589,14 @@ class Appointment extends Model
 
     public function getTimeRangeLabelAttribute(): string
     {
-        if (!$this->date) {
+        if (! $this->date) {
             return '-';
         }
 
         $start = $this->date->copy();
         $end = $this->date->copy()->addMinutes($this->duration_minutes ?: 0);
 
-        return $start->format('H:i') . '-' . $end->format('H:i');
+        return $start->format('H:i').'-'.$end->format('H:i');
     }
 
     public function getAppointmentKindLabelAttribute(): string

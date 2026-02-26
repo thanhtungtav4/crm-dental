@@ -5,10 +5,11 @@ namespace App\Filament\Resources\Payments\Schemas;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rules\Unique;
@@ -20,7 +21,7 @@ class PaymentForm
         return $schema
             ->columns(2)
             ->components([
-                
+
                 // ==================== SECTION 1: THÔNG TIN THANH TOÁN ====================
                 Section::make('💰 Thông tin thanh toán')
                     ->schema([
@@ -33,12 +34,12 @@ class PaymentForm
                             ->required()
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(function ($record) {
-                                return $record->invoice_no . ' - ' . 
-                                       $record->patient?->full_name . 
-                                       ' (' . number_format($record->total_amount, 0, ',', '.') . 'đ)';
+                                return $record->invoice_no.' - '.
+                                       $record->patient?->full_name.
+                                       ' ('.number_format($record->total_amount, 0, ',', '.').'đ)';
                             })
                             ->columnSpanFull(),
-                        
+
                         TextInput::make('amount')
                             ->label('Số tiền thanh toán')
                             ->required()
@@ -63,7 +64,12 @@ class PaymentForm
                             ->required()
                             ->reactive()
                             ->native(false),
-                        
+
+                        Toggle::make('is_deposit')
+                            ->label('Đánh dấu tiền cọc')
+                            ->default(false)
+                            ->visible(fn (Get $get) => $get('direction') === 'receipt' && ClinicRuntimeSettings::allowDeposit()),
+
                         Select::make('method')
                             ->label('Phương thức thanh toán')
                             ->options(ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true))
@@ -71,7 +77,7 @@ class PaymentForm
                             ->required()
                             ->reactive()
                             ->native(false),
-                        
+
                         DateTimePicker::make('paid_at')
                             ->label('Thời gian thanh toán')
                             ->default(now())
@@ -100,7 +106,7 @@ class PaymentForm
                                     ->whereNotNull('transaction_ref'),
                             )
                             ->maxLength(255),
-                        
+
                         Select::make('payment_source')
                             ->label('Nguồn thanh toán')
                             ->options([
@@ -112,7 +118,7 @@ class PaymentForm
                             ->required()
                             ->reactive()
                             ->native(false),
-                        
+
                         TextInput::make('insurance_claim_number')
                             ->label('Số hồ sơ bảo hiểm')
                             ->visible(fn (Get $get) => $get('payment_source') === 'insurance')
@@ -139,7 +145,7 @@ class PaymentForm
                             ->preload()
                             ->default(auth()->id())
                             ->required(),
-                        
+
                         Textarea::make('note')
                             ->label('Ghi chú')
                             ->rows(3)
@@ -158,20 +164,20 @@ class PaymentForm
                             ->label('Thông tin hóa đơn')
                             ->content(function (Get $get) {
                                 $invoiceId = $get('invoice_id');
-                                if (!$invoiceId) {
+                                if (! $invoiceId) {
                                     return 'Chọn hóa đơn để xem thông tin';
                                 }
-                                
+
                                 $invoice = \App\Models\Invoice::find($invoiceId);
-                                if (!$invoice) {
+                                if (! $invoice) {
                                     return 'Không tìm thấy hóa đơn';
                                 }
-                                
+
                                 $totalAmount = number_format($invoice->total_amount, 0, ',', '.');
                                 $totalPaid = number_format($invoice->getTotalPaid(), 0, ',', '.');
                                 $balance = number_format($invoice->calculateBalance(), 0, ',', '.');
                                 $progress = round($invoice->getPaymentProgress(), 2);
-                                
+
                                 return new \Illuminate\Support\HtmlString("
                                     <div class='space-y-2'>
                                         <div class='flex justify-between'>

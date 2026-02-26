@@ -18,6 +18,10 @@ class PaymentInfolist
                 TextEntry::make('direction_label')
                     ->label('Loại phiếu')
                     ->badge(),
+                TextEntry::make('is_deposit')
+                    ->label('Phiếu cọc')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state ? 'Có' : 'Không'),
                 TextEntry::make('method')
                     ->label('Phương thức')
                     ->badge(),
@@ -42,6 +46,16 @@ class PaymentInfolist
                     ->placeholder('-'),
                 TextEntry::make('refund_reason')
                     ->label('Lý do hoàn')
+                    ->placeholder('-'),
+                TextEntry::make('reversal_of_id')
+                    ->label('Phiếu gốc')
+                    ->placeholder('-'),
+                TextEntry::make('reversed_at')
+                    ->label('Đảo phiếu lúc')
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('reversedBy.name')
+                    ->label('Đảo phiếu bởi')
                     ->placeholder('-'),
                 TextEntry::make('created_at')
                     ->dateTime()

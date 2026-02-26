@@ -110,6 +110,10 @@
                             x-data="{
                                 openSection: 'general',
                                 state: $wire.entangle('tooth_diagnosis_data'),
+                                dentitionMode: @entangle('dentition_mode'),
+                                defaultDentitionMode: @js($defaultDentitionMode),
+                                adultTeeth: @js(array_map('strval', array_merge($adultUpper, $adultLower))),
+                                childTeeth: @js(array_map('strval', array_merge($childUpper, $childLower))),
                                 selectedTeeth: [],
                                 modalOpen: false,
                                 modalNotes: '',
@@ -207,7 +211,45 @@
                                     if (!Array.isArray(this.state[tooth].conditions)) this.state[tooth].conditions = [];
                                 },
 
+                                getEffectiveDentitionMode() {
+                                    if (this.dentitionMode === 'adult' || this.dentitionMode === 'child') {
+                                        return this.dentitionMode;
+                                    }
+
+                                    return this.defaultDentitionMode === 'child' ? 'child' : 'adult';
+                                },
+
+                                showAdultTeeth() {
+                                    return this.getEffectiveDentitionMode() === 'adult';
+                                },
+
+                                showChildTeeth() {
+                                    return this.getEffectiveDentitionMode() === 'child';
+                                },
+
+                                isToothVisible(tooth) {
+                                    const toothKey = String(tooth);
+                                    if (this.showAdultTeeth()) {
+                                        return this.adultTeeth.includes(toothKey);
+                                    }
+
+                                    return this.childTeeth.includes(toothKey);
+                                },
+
+                                setDentitionMode(mode) {
+                                    if (!['auto', 'adult', 'child'].includes(mode)) return;
+                                    this.dentitionMode = mode;
+                                    this.selectedTeeth = this.selectedTeeth.filter((tooth) => this.isToothVisible(tooth));
+                                    if (!this.selectedTeeth.length) {
+                                        this.closeModal();
+                                    }
+                                },
+
                                 toggleTooth(tooth, event) {
+                                    if (!this.isToothVisible(tooth)) {
+                                        return;
+                                    }
+
                                     const multiSelect = event && (event.ctrlKey || event.metaKey);
                                     if (!multiSelect) {
                                         this.selectedTeeth = [tooth];
@@ -591,6 +633,32 @@
                                     <div class="crm-tooth-chart">
                                         <div class="mb-3 flex flex-wrap items-center justify-end gap-2 text-xs text-gray-600 dark:text-gray-300">
                                             <div class="flex items-center gap-2">
+                                                <div class="flex items-center gap-1 rounded border border-gray-300 bg-white p-1">
+                                                    <button
+                                                        type="button"
+                                                        @click="setDentitionMode('auto')"
+                                                        class="rounded px-2 py-1 text-xs"
+                                                        :class="dentitionMode === 'auto' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                                                    >
+                                                        Tự động
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        @click="setDentitionMode('adult')"
+                                                        class="rounded px-2 py-1 text-xs"
+                                                        :class="dentitionMode === 'adult' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                                                    >
+                                                        Người lớn
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        @click="setDentitionMode('child')"
+                                                        class="rounded px-2 py-1 text-xs"
+                                                        :class="dentitionMode === 'child' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                                                    >
+                                                        Trẻ em
+                                                    </button>
+                                                </div>
                                                 <span class="rounded border border-gray-300 bg-white px-2 py-1 font-semibold">Đã chọn: <span x-text="selectedTeeth.length"></span></span>
                                                 <button type="button" @click="clearSelection()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-outline disabled:opacity-50">Bỏ chọn</button>
                                                 <button type="button" @click="openModal()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-primary disabled:opacity-50">Chẩn đoán răng đã chọn</button>
@@ -599,7 +667,7 @@
 
                                         <div class="overflow-x-auto pb-2">
                                             <div class="text-center">
-                                                <div class="crm-tooth-grid">
+                                                <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
                                                     @foreach($adultUpper as $t)
                                                         <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <div class="crm-tooth-number mb-1">{{ $t }}</div>
@@ -616,7 +684,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                <div class="crm-tooth-grid">
+                                                <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
                                                     @foreach($childUpper as $t)
                                                         <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <button type="button"
@@ -631,7 +699,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                <div class="crm-tooth-grid">
+                                                <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
                                                     @foreach($childLower as $t)
                                                         <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <div class="crm-tooth-number mb-1">{{ $t }}</div>
@@ -646,7 +714,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                <div class="crm-tooth-grid">
+                                                <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
                                                     @foreach($adultLower as $t)
                                                         <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
                                                             <button type="button"

@@ -166,4 +166,19 @@ class ClinicRuntimeSettings
             ? $default
             : 'call';
     }
+
+    public static function allowOverpay(): bool
+    {
+        return static::boolean('finance.allow_overpay', true);
+    }
+
+    public static function allowDraftPrepay(): bool
+    {
+        return static::boolean('finance.allow_prepay_draft', false);
+    }
+
+    public static function allowDeposit(): bool
+    {
+        return static::boolean('finance.allow_deposit', true);
+    }
 }

@@ -2,14 +2,13 @@
 
 namespace App\Filament\Resources\TreatmentPlans\Schemas;
 
+use App\Models\Patient;
+use App\Support\DentitionModeResolver;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
@@ -31,8 +30,26 @@ class TreatmentPlanForm
                                         ->required()
                                         ->searchable()
                                         ->preload()
+                                        ->live()
                                         ->createOptionForm(\App\Filament\Resources\Patients\Schemas\PatientForm::getFormSchema())
                                         ->default(request()->query('patient_id'))
+                                        ->afterStateHydrated(function ($state, Set $set, Get $get): void {
+                                            $hasExistingDiagnosis = is_array($get('tooth_diagnosis_data'))
+                                                && ! empty($get('tooth_diagnosis_data'));
+
+                                            self::syncToothChartFromPatient(
+                                                patientId: is_numeric($state) ? (int) $state : null,
+                                                set: $set,
+                                                preserveExistingDiagnosis: $hasExistingDiagnosis
+                                            );
+                                        })
+                                        ->afterStateUpdated(function ($state, Set $set): void {
+                                            self::syncToothChartFromPatient(
+                                                patientId: is_numeric($state) ? (int) $state : null,
+                                                set: $set,
+                                                preserveExistingDiagnosis: false
+                                            );
+                                        })
                                         ->columnSpan(1),
                                     Forms\Components\Select::make('doctor_id')
                                         ->relationship('doctor', 'name')
@@ -54,7 +71,7 @@ class TreatmentPlanForm
                                 Forms\Components\Select::make('branch_id')
                                     ->relationship('branch', 'name')
                                     ->label('Chi nhánh')
-                                    ->default(fn() => auth()->user()?->branch_id)
+                                    ->default(fn () => auth()->user()?->branch_id)
                                     ->searchable()
                                     ->preload(),
                                 Forms\Components\Select::make('priority')
@@ -125,7 +142,14 @@ class TreatmentPlanForm
                             // Visual Aid
                             Section::make('Sơ đồ răng')
                                 ->schema([
-                                    Forms\Components\ViewField::make('tooth_chart_visual')
+                                    Forms\Components\Hidden::make('tooth_chart_dentition_mode')
+                                        ->default(DentitionModeResolver::MODE_AUTO)
+                                        ->dehydrated(false),
+                                    Forms\Components\Hidden::make('tooth_chart_default_dentition_mode')
+                                        ->default(DentitionModeResolver::MODE_ADULT)
+                                        ->dehydrated(false),
+                                    Forms\Components\ViewField::make('tooth_diagnosis_data')
+                                        ->default([])
                                         ->view('filament.forms.components.tooth-chart')
                                         ->columnSpanFull(),
                                 ])
@@ -161,11 +185,11 @@ class TreatmentPlanForm
                                                     ->label('Răng số')
                                                     ->columnSpan(2)
                                                     ->afterStateHydrated(function ($component, $state) {
-                                                        if (is_string($state) && !empty($state)) {
+                                                        if (is_string($state) && ! empty($state)) {
                                                             $component->state(array_map('trim', explode(',', $state)));
                                                         }
                                                     })
-                                                    ->dehydrateStateUsing(fn($state) => is_array($state) ? implode(',', $state) : $state),
+                                                    ->dehydrateStateUsing(fn ($state) => is_array($state) ? implode(',', $state) : $state),
 
                                                 Forms\Components\TextInput::make('quantity')
                                                     ->label('SL')
@@ -238,7 +262,49 @@ class TreatmentPlanForm
                     ->columnSpanFull()
                     // Improve UX by allowing skipping steps if needed, or strict validation
                     ->skippable(false)
-                    ->persistStepInQueryString('plan-step')
+                    ->persistStepInQueryString('plan-step'),
             ]);
+    }
+
+    protected static function syncToothChartFromPatient(?int $patientId, Set $set, bool $preserveExistingDiagnosis): void
+    {
+        if ($patientId === null || $patientId <= 0) {
+            if (! $preserveExistingDiagnosis) {
+                $set('tooth_diagnosis_data', []);
+            }
+
+            $set('tooth_chart_default_dentition_mode', DentitionModeResolver::MODE_ADULT);
+            $set('tooth_chart_dentition_mode', DentitionModeResolver::MODE_AUTO);
+
+            return;
+        }
+
+        $patient = Patient::query()
+            ->find($patientId, ['id', 'birthday']);
+
+        if (! $patient) {
+            if (! $preserveExistingDiagnosis) {
+                $set('tooth_diagnosis_data', []);
+            }
+
+            $set('tooth_chart_default_dentition_mode', DentitionModeResolver::MODE_ADULT);
+            $set('tooth_chart_dentition_mode', DentitionModeResolver::MODE_AUTO);
+
+            return;
+        }
+
+        if (! $preserveExistingDiagnosis) {
+            $latestClinicalNote = $patient->clinicalNotes()
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->first(['tooth_diagnosis_data']);
+
+            $set('tooth_diagnosis_data', is_array($latestClinicalNote?->tooth_diagnosis_data)
+                ? $latestClinicalNote->tooth_diagnosis_data
+                : []);
+        }
+
+        $set('tooth_chart_default_dentition_mode', DentitionModeResolver::resolveFromBirthday($patient->birthday));
+        $set('tooth_chart_dentition_mode', DentitionModeResolver::MODE_AUTO);
     }
 }

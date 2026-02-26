@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Customer;
 use App\Models\Appointment;
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\User;
 use App\Services\PatientConversionService;
@@ -109,4 +109,23 @@ it('links appointment to existing deduped patient during conversion', function (
     expect($resolvedPatient)->not->toBeNull()
         ->and($resolvedPatient->id)->toBe($existingPatient->id)
         ->and($appointment->fresh()->patient_id)->toBe($existingPatient->id);
+});
+
+it('auto creates a lead customer with valid source when creating patient directly', function () {
+    $patient = Patient::create([
+        'full_name' => 'Patient Created Directly',
+        'phone' => '0900777999',
+        'email' => 'direct.patient@example.com',
+        'status' => 'active',
+    ]);
+
+    $patient->refresh();
+    $customer = $patient->customer;
+
+    expect($customer)->not->toBeNull()
+        ->and($patient->customer_id)->toBe($customer->id)
+        ->and($customer->full_name)->toBe('Patient Created Directly')
+        ->and($customer->phone)->toBe('0900777999')
+        ->and($customer->source)->toBe('walkin')
+        ->and($customer->status)->toBe('lead');
 });

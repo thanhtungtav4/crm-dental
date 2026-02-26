@@ -122,6 +122,21 @@ class Patient extends Model
         return $this->hasOne(PatientMedicalRecord::class);
     }
 
+    public function consents()
+    {
+        return $this->hasMany(Consent::class);
+    }
+
+    public function insuranceClaims()
+    {
+        return $this->hasMany(InsuranceClaim::class);
+    }
+
+    public function installmentPlans()
+    {
+        return $this->hasMany(InstallmentPlan::class);
+    }
+
     public function customerGroup()
     {
         return $this->belongsTo(CustomerGroup::class);
@@ -162,12 +177,12 @@ class Patient extends Model
         static::creating(function (self $patient) {
             // If no customer selected, create a lead automatically from patient info
             if (empty($patient->customer_id)) {
-                $customer = new Customer();
+                $customer = new Customer;
                 $customer->branch_id = $patient->first_branch_id;
                 $customer->full_name = $patient->full_name;
                 $customer->phone = $patient->phone;
                 $customer->email = $patient->email ?? null;
-                $customer->source = 'patient';
+                $customer->source = 'walkin';
                 $customer->customer_group_id = $patient->customer_group_id ?? null;
                 $customer->promotion_group_id = $patient->promotion_group_id ?? null;
                 $customer->status = 'lead';
@@ -177,7 +192,7 @@ class Patient extends Model
 
                 $patient->customer_id = $customer->id;
             }
-            if (!empty($patient->patient_code)) {
+            if (! empty($patient->patient_code)) {
                 return;
             }
 

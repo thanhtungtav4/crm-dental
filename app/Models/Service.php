@@ -18,17 +18,19 @@ class Service extends Model
         'unit',
         'duration_minutes',
         'tooth_specific',
+        'requires_consent',
         'default_materials',
         'doctor_commission_rate',
         'branch_id',
         'default_price',
         'sort_order',
-        'active'
+        'active',
     ];
 
     protected $casts = [
         'active' => 'boolean',
         'tooth_specific' => 'boolean',
+        'requires_consent' => 'boolean',
         'default_materials' => 'array',
         'duration_minutes' => 'integer',
         'doctor_commission_rate' => 'decimal:2',
@@ -81,9 +83,14 @@ class Service extends Model
      */
     public function scopeForBranch($query, $branchId)
     {
-        return $query->where(function($q) use ($branchId) {
+        return $query->where(function ($q) use ($branchId) {
             $q->whereNull('branch_id')
-              ->orWhere('branch_id', $branchId);
+                ->orWhere('branch_id', $branchId);
         });
+    }
+
+    public function scopeRequiringConsent($query)
+    {
+        return $query->where('requires_consent', true);
     }
 }

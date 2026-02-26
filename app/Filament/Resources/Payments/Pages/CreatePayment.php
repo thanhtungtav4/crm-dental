@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Payments\Pages;
 
 use App\Filament\Resources\Payments\PaymentResource;
+use App\Models\Invoice;
 use App\Models\Payment;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class CreatePayment extends CreateRecord
 {
@@ -24,12 +26,10 @@ class CreatePayment extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
+        $invoice = Invoice::query()->findOrFail((int) ($data['invoice_id'] ?? 0));
         $transactionRef = filled($data['transaction_ref'] ?? null)
             ? trim((string) $data['transaction_ref'])
             : null;
-
-        $data['transaction_ref'] = $transactionRef;
-        $data['received_by'] = $data['received_by'] ?? auth()->id();
 
         if ($transactionRef) {
             $existingPayment = Payment::query()
@@ -49,7 +49,22 @@ class CreatePayment extends CreateRecord
         }
 
         try {
-            return parent::handleRecordCreation($data);
+            return $invoice->recordPayment(
+                amount: (float) ($data['amount'] ?? 0),
+                method: (string) ($data['method'] ?? 'cash'),
+                notes: $data['note'] ?? null,
+                paidAt: $data['paid_at'] ?? now(),
+                direction: (string) ($data['direction'] ?? 'receipt'),
+                refundReason: $data['refund_reason'] ?? null,
+                transactionRef: $transactionRef,
+                paymentSource: (string) ($data['payment_source'] ?? 'patient'),
+                insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
+                receivedBy: $data['received_by'] ?? auth()->id(),
+                reversalOfId: null,
+                isDeposit: (bool) ($data['is_deposit'] ?? false),
+            );
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (QueryException $exception) {
             $isDuplicateTransaction = str_contains((string) $exception->getCode(), '23000');
 

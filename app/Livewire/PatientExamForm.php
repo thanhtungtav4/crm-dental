@@ -3,10 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\ClinicalNote;
-use App\Models\Patient;
 use App\Models\Disease;
+use App\Models\Patient;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -25,13 +26,18 @@ class PatientExamForm extends Component
     public ?int $activeSessionId = null;
 
     public ?string $newSessionDate = null;
+
     public ?int $editingSessionId = null;
+
     public ?string $editingSessionDate = null;
 
     // Form fields
     public ?int $examining_doctor_id = null;
+
     public ?int $treating_doctor_id = null;
+
     public ?string $general_exam_notes = '';
+
     public ?string $treatment_plan_note = '';
 
     // Indications (checkboxes)
@@ -39,6 +45,7 @@ class PatientExamForm extends Component
 
     // Image uploads per indication type
     public array $indicationImages = [];
+
     public array $tempUploads = [];
 
     // Indication types configuration
@@ -57,12 +64,18 @@ class PatientExamForm extends Component
 
     // For doctor search
     public string $examiningDoctorSearch = '';
+
     public string $treatingDoctorSearch = '';
+
     public bool $showExaminingDoctorDropdown = false;
+
     public bool $showTreatingDoctorDropdown = false;
 
     public ?string $other_diagnosis = '';
+
     public array $tooth_diagnosis_data = [];
+
+    public string $dentition_mode = DentitionModeResolver::MODE_AUTO;
 
     public function mount(Patient $patient): void
     {
@@ -73,6 +86,7 @@ class PatientExamForm extends Component
 
         if ($latestSession) {
             $this->setActiveSession($latestSession->id);
+
             return;
         }
 
@@ -125,7 +139,7 @@ class PatientExamForm extends Component
     {
         $session = $this->patient->clinicalNotes()->find($sessionId);
 
-        if (!$session) {
+        if (! $session) {
             return;
         }
 
@@ -141,7 +155,7 @@ class PatientExamForm extends Component
     {
         $session = $this->patient->clinicalNotes()->find($sessionId);
 
-        if (!$session) {
+        if (! $session) {
             return;
         }
 
@@ -150,6 +164,7 @@ class PatientExamForm extends Component
                 ->title('Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.')
                 ->danger()
                 ->send();
+
             return;
         }
 
@@ -166,7 +181,7 @@ class PatientExamForm extends Component
 
     public function saveEditingSession(): void
     {
-        if (!$this->editingSessionId) {
+        if (! $this->editingSessionId) {
             return;
         }
 
@@ -176,8 +191,9 @@ class PatientExamForm extends Component
 
         $session = $this->patient->clinicalNotes()->find($this->editingSessionId);
 
-        if (!$session) {
+        if (! $session) {
             $this->cancelEditingSession();
+
             return;
         }
 
@@ -187,6 +203,7 @@ class PatientExamForm extends Component
                 ->danger()
                 ->send();
             $this->cancelEditingSession();
+
             return;
         }
 
@@ -201,6 +218,7 @@ class PatientExamForm extends Component
                 ->title('Ngày khám đã tồn tại. Vui lòng chọn ngày khác.')
                 ->warning()
                 ->send();
+
             return;
         }
 
@@ -221,7 +239,7 @@ class PatientExamForm extends Component
     {
         $session = $this->patient->clinicalNotes()->find($sessionId);
 
-        if (!$session) {
+        if (! $session) {
             return;
         }
 
@@ -325,18 +343,18 @@ class PatientExamForm extends Component
         $parts = explode('.', $key);
         $type = $this->normalizeIndicationKey($parts[0]);
 
-        if (!isset($this->tempUploads[$type]) || !is_array($this->tempUploads[$type])) {
+        if (! isset($this->tempUploads[$type]) || ! is_array($this->tempUploads[$type])) {
             return;
         }
 
         foreach ($this->tempUploads[$type] as $file) {
-            if (!$file || !method_exists($file, 'store')) {
+            if (! $file || ! method_exists($file, 'store')) {
                 continue;
             }
 
             $path = $file->store("patients/{$this->patient->id}/indications/{$type}", 'public');
 
-            if (!isset($this->indicationImages[$type])) {
+            if (! isset($this->indicationImages[$type])) {
                 $this->indicationImages[$type] = [];
             }
 
@@ -351,7 +369,7 @@ class PatientExamForm extends Component
     {
         $normalizedType = $this->normalizeIndicationKey($type);
 
-        if (!isset($this->indicationImages[$normalizedType][$index])) {
+        if (! isset($this->indicationImages[$normalizedType][$index])) {
             return;
         }
 
@@ -373,7 +391,7 @@ class PatientExamForm extends Component
 
     public function saveData(): void
     {
-        if (!$this->clinicalNote) {
+        if (! $this->clinicalNote) {
             return;
         }
 
@@ -399,7 +417,7 @@ class PatientExamForm extends Component
 
     public function getExaminingDoctorNameProperty(): string
     {
-        if (!$this->examining_doctor_id) {
+        if (! $this->examining_doctor_id) {
             return '';
         }
 
@@ -408,7 +426,7 @@ class PatientExamForm extends Component
 
     public function getTreatingDoctorNameProperty(): string
     {
-        if (!$this->treating_doctor_id) {
+        if (! $this->treating_doctor_id) {
             return '';
         }
 
@@ -426,7 +444,7 @@ class PatientExamForm extends Component
             ->get()
             ->values();
 
-        if (!$conditions->contains(fn(ToothCondition $condition) => strtoupper((string) $condition->code) === 'KHAC')) {
+        if (! $conditions->contains(fn (ToothCondition $condition) => strtoupper((string) $condition->code) === 'KHAC')) {
             $conditions->push(new ToothCondition([
                 'code' => 'KHAC',
                 'name' => '(*) Khác',
@@ -436,7 +454,7 @@ class PatientExamForm extends Component
         }
 
         $conditions = $conditions->values();
-        $conditionsArray = $conditions->map(fn(ToothCondition $condition) => [
+        $conditionsArray = $conditions->map(fn (ToothCondition $condition) => [
             'code' => $condition->code,
             'name' => $condition->name,
             'category' => $condition->category,
@@ -446,7 +464,7 @@ class PatientExamForm extends Component
 
         $conditionOrder = $conditions
             ->pluck('code')
-            ->map(fn($code) => (string) $code)
+            ->map(fn ($code) => (string) $code)
             ->values()
             ->all();
 
@@ -463,16 +481,17 @@ class PatientExamForm extends Component
             'conditionsJson' => $conditionsArray,
             'conditionOrder' => $conditionOrder,
             'toothTreatmentStates' => $toothTreatmentStates,
+            'defaultDentitionMode' => DentitionModeResolver::resolveFromBirthday($this->patient->birthday),
             'otherDiagnosisOptions' => Disease::query()
                 ->active()
                 ->with(['diseaseGroup:id,name,sort_order'])
                 ->get()
                 ->sortBy([
-                    fn(Disease $disease) => $disease->diseaseGroup?->sort_order ?? 0,
-                    fn(Disease $disease) => $disease->code,
+                    fn (Disease $disease) => $disease->diseaseGroup?->sort_order ?? 0,
+                    fn (Disease $disease) => $disease->code,
                 ])
                 ->values()
-                ->map(fn(Disease $disease) => [
+                ->map(fn (Disease $disease) => [
                     'code' => $disease->code,
                     'label' => $disease->full_name,
                     'group' => $disease->diseaseGroup?->name ?? 'Khác',
@@ -512,6 +531,7 @@ class PatientExamForm extends Component
         $this->tempUploads = [];
         $this->other_diagnosis = '';
         $this->tooth_diagnosis_data = [];
+        $this->dentition_mode = DentitionModeResolver::MODE_AUTO;
         $this->examiningDoctorSearch = '';
         $this->treatingDoctorSearch = '';
     }
@@ -526,6 +546,7 @@ class PatientExamForm extends Component
         $this->indicationImages = $this->normalizeIndicationImages($session->indication_images ?? [], $this->indications);
         $this->tooth_diagnosis_data = $session->tooth_diagnosis_data ?? [];
         $this->other_diagnosis = $session->other_diagnosis ?? '';
+        $this->dentition_mode = DentitionModeResolver::MODE_AUTO;
 
         $this->tempUploads = [];
 
@@ -537,7 +558,7 @@ class PatientExamForm extends Component
     {
         $sessionDate = $session->date?->toDateString();
 
-        if (!$sessionDate) {
+        if (! $sessionDate) {
             return false;
         }
 
@@ -555,7 +576,7 @@ class PatientExamForm extends Component
                     $session->end_at,
                 ])
                     ->filter()
-                    ->map(fn($dateTime) => Carbon::parse($dateTime)->toDateString());
+                    ->map(fn ($dateTime) => Carbon::parse($dateTime)->toDateString());
             })
             ->unique()
             ->values()
@@ -574,7 +595,7 @@ class PatientExamForm extends Component
         $toothStates = [];
 
         $planItems = \App\Models\PlanItem::query()
-            ->whereHas('treatmentPlan', fn($query) => $query->where('patient_id', $this->patient->id))
+            ->whereHas('treatmentPlan', fn ($query) => $query->where('patient_id', $this->patient->id))
             ->get(['tooth_number', 'status']);
 
         foreach ($planItems as $planItem) {
@@ -604,7 +625,7 @@ class PatientExamForm extends Component
         foreach ($sessionStates as $sessionState) {
             $planItem = $planItemsById->get($sessionState->plan_item_id);
 
-            if (!$planItem) {
+            if (! $planItem) {
                 continue;
             }
 
@@ -644,8 +665,8 @@ class PatientExamForm extends Component
     protected function normalizeIndications(array $indications): array
     {
         return collect($indications)
-            ->filter(fn($item) => filled($item))
-            ->map(fn($item) => $this->normalizeIndicationKey((string) $item))
+            ->filter(fn ($item) => filled($item))
+            ->map(fn ($item) => $this->normalizeIndicationKey((string) $item))
             ->unique()
             ->values()
             ->all();
@@ -661,18 +682,18 @@ class PatientExamForm extends Component
         foreach ($indicationImages as $rawType => $paths) {
             $type = $this->normalizeIndicationKey((string) $rawType);
 
-            if (!in_array($type, $selected, true)) {
+            if (! in_array($type, $selected, true)) {
                 continue;
             }
 
             $normalized[$type] = collect(is_array($paths) ? $paths : [$paths])
-                ->filter(fn($path) => filled($path))
+                ->filter(fn ($path) => filled($path))
                 ->values()
                 ->all();
         }
 
         foreach ($selected as $type) {
-            if (!array_key_exists($type, $normalized)) {
+            if (! array_key_exists($type, $normalized)) {
                 $normalized[$type] = [];
             }
         }

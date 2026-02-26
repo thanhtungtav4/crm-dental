@@ -72,7 +72,7 @@ class ViewPatient extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Hồ sơ: ' . $this->record->full_name;
+        return 'Hồ sơ: '.$this->record->full_name;
     }
 
     public function getTabsProperty(): array
@@ -112,7 +112,7 @@ class ViewPatient extends ViewRecord
         ]);
 
         $materialCount = TreatmentMaterial::query()
-            ->whereHas('session.treatmentPlan', fn($query) => $query->where('patient_id', $this->record->id))
+            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $this->record->id))
             ->count();
 
         $this->cachedTabCounters = [
@@ -196,7 +196,7 @@ class ViewPatient extends ViewRecord
 
         $this->cachedMaterialUsages = TreatmentMaterial::query()
             ->with(['session', 'material', 'user'])
-            ->whereHas('session.treatmentPlan', fn($query) => $query->where('patient_id', $this->record->id))
+            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $this->record->id))
             ->latest('created_at')
             ->limit(100)
             ->get();
@@ -212,7 +212,7 @@ class ViewPatient extends ViewRecord
 
         $totalTreatmentAmount = (float) $this->record->invoices()->sum('total_amount');
         $totalDiscountAmount = (float) $this->record->invoices()->sum('discount_amount');
-        $mustPayAmount = max(0, $totalTreatmentAmount - $totalDiscountAmount);
+        $mustPayAmount = max(0, $totalTreatmentAmount);
         $receiptAmount = (float) $this->record->payments()->where('direction', 'receipt')->sum('amount');
         $refundAmount = abs((float) $this->record->payments()->where('direction', 'refund')->sum('amount'));
         $netCollectedAmount = $receiptAmount - $refundAmount;
@@ -278,7 +278,7 @@ class ViewPatient extends ViewRecord
 
     public function setActiveTab(string $tab): void
     {
-        if (!in_array($tab, $this->workspaceTabs, true)) {
+        if (! in_array($tab, $this->workspaceTabs, true)) {
             return;
         }
 
@@ -292,7 +292,7 @@ class ViewPatient extends ViewRecord
                 ->label('Tạo kế hoạch điều trị')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->color('success')
-                ->url(fn() => route('filament.admin.resources.treatment-plans.create', [
+                ->url(fn () => route('filament.admin.resources.treatment-plans.create', [
                     'patient_id' => $this->record->id,
                 ]))
                 ->openUrlInNewTab(),
@@ -301,7 +301,7 @@ class ViewPatient extends ViewRecord
                 ->label('Tạo hóa đơn')
                 ->icon('heroicon-o-document-text')
                 ->color('warning')
-                ->url(fn() => route('filament.admin.resources.invoices.create', [
+                ->url(fn () => route('filament.admin.resources.invoices.create', [
                     'patient_id' => $this->record->id,
                 ]))
                 ->openUrlInNewTab(),
@@ -310,7 +310,7 @@ class ViewPatient extends ViewRecord
                 ->label('Đặt lịch hẹn')
                 ->icon('heroicon-o-calendar')
                 ->color('info')
-                ->url(fn() => route('filament.admin.resources.appointments.create', [
+                ->url(fn () => route('filament.admin.resources.appointments.create', [
                     'patient_id' => $this->record->id,
                 ]))
                 ->openUrlInNewTab(),
@@ -329,5 +329,4 @@ class ViewPatient extends ViewRecord
     {
         return number_format((float) $value, 0, ',', '.');
     }
-
 }

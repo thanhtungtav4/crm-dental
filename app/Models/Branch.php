@@ -49,10 +49,15 @@ class Branch extends Model
         return $this->hasMany(User::class);
     }
 
+    public function overbookingPolicy()
+    {
+        return $this->hasOne(BranchOverbookingPolicy::class);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $branch) {
-            if (!empty($branch->code)) {
+            if (! empty($branch->code)) {
                 return;
             }
 
@@ -70,4 +75,3 @@ class Branch extends Model
         });
     }
 }
-

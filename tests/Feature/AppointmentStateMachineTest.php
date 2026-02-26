@@ -90,6 +90,62 @@ it('creates appointment reminder ticket for rescheduled and cancels when status 
     expect($ticket->fresh()->care_status)->toBe(\App\Models\Note::CARE_STATUS_FAILED);
 });
 
+it('auto links appointment to existing patient when customer is already converted', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'status' => 'converted',
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'email' => $customer->email,
+    ]);
+
+    $appointment = Appointment::create([
+        'customer_id' => $customer->id,
+        'patient_id' => null,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay(),
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    expect($appointment->patient_id)->toBe($patient->id);
+});
+
+it('keeps appointment as lead booking when customer has no patient profile yet', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $leadCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'status' => 'lead',
+    ]);
+
+    $appointment = Appointment::create([
+        'customer_id' => $leadCustomer->id,
+        'patient_id' => null,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay(),
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    expect($appointment->patient_id)->toBeNull();
+});
+
 function makeAppointmentRecord(array $overrides = []): Appointment
 {
     $branch = Branch::factory()->create();

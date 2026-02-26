@@ -21,6 +21,7 @@
                         'payment' => 'is-payment',
                         'branch_log' => 'is-branch-log',
                         'note' => 'is-note',
+                        'audit' => 'is-default',
                         default => 'is-default',
                     };
 
@@ -31,6 +32,7 @@
                         'payment' => 'Thanh toán',
                         'branch_log' => 'Chuyển chi nhánh',
                         'note' => 'Ghi chú',
+                        'audit' => 'Nhật ký hệ thống',
                         default => $activity['type'],
                     };
                 @endphp

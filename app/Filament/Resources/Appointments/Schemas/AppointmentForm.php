@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\Appointments\Schemas;
 
 use App\Models\Appointment;
+use App\Models\Patient;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class AppointmentForm
 {
@@ -18,6 +19,17 @@ class AppointmentForm
                     ->label('Khách hàng / Lead')
                     ->searchable()
                     ->preload()
+                    ->default(function (): ?int {
+                        $patientId = request()->integer('patient_id');
+
+                        if (! $patientId) {
+                            return null;
+                        }
+
+                        return Patient::query()
+                            ->whereKey($patientId)
+                            ->value('customer_id');
+                    })
                     ->getSearchResultsUsing(function (string $search): array {
                         return \App\Models\Customer::query()
                             ->where(function ($q) use ($search) {
@@ -31,31 +43,67 @@ class AppointmentForm
                             ->mapWithKeys(function ($c) {
                                 $phone = $c->phone ? " — {$c->phone}" : '';
                                 $status = $c->status ? " [{$c->status}]" : '';
-                                return [$c->id => $c->full_name . $phone . $status];
+
+                                return [$c->id => $c->full_name.$phone.$status];
                             })
                             ->toArray();
                     })
                     ->getOptionLabelUsing(function ($value): ?string {
-                        if (!$value)
+                        if (! $value) {
                             return null;
+                        }
 
                         $c = \App\Models\Customer::find($value);
-                        if (!$c)
+                        if (! $c) {
                             return null;
+                        }
 
                         $phone = $c->phone ? " — {$c->phone}" : '';
                         $status = $c->status ? " [{$c->status}]" : '';
-                        return $c->full_name . $phone . $status;
+
+                        return $c->full_name.$phone.$status;
                     })
                     ->afterStateHydrated(function ($state, $set, $record) {
                         // Khi load form edit, nếu có patient mà không có customer_id
                         // thì tự động fill customer_id từ patient
-                        if ($record && $record->patient_id && !$state) {
+                        if ($record && $record->patient_id && ! $state) {
                             $customerId = $record->patient?->customer_id;
                             if ($customerId) {
                                 $set('customer_id', $customerId);
                             }
                         }
+
+                        if (! $record && ! $state) {
+                            $patientId = request()->integer('patient_id');
+                            if (! $patientId) {
+                                return;
+                            }
+
+                            $patient = Patient::query()
+                                ->find($patientId, ['id', 'customer_id']);
+
+                            if (! $patient) {
+                                return;
+                            }
+
+                            $set('patient_id', $patient->id);
+                            if ($patient->customer_id) {
+                                $set('customer_id', $patient->customer_id);
+                            }
+                        }
+                    })
+                    ->afterStateUpdated(function ($state, callable $set): void {
+                        if (blank($state)) {
+                            $set('patient_id', null);
+
+                            return;
+                        }
+
+                        $patientId = Patient::query()
+                            ->where('customer_id', $state)
+                            ->value('id');
+
+                        $set('patient_id', $patientId);
                     })
                     ->createOptionForm([
                         Section::make('Thông tin khách hàng')
@@ -88,6 +136,9 @@ class AppointmentForm
                     ->createOptionModalHeading('Tạo khách hàng / Lead mới')
                     ->required(),
 
+                Forms\Components\Hidden::make('patient_id')
+                    ->default(fn (): ?int => request()->integer('patient_id') ?: null),
+
                 Forms\Components\Select::make('doctor_id')
                     ->label('Bác sĩ')
                     ->searchable()
@@ -104,17 +155,20 @@ class AppointmentForm
                             ->mapWithKeys(function ($u) {
                                 $spec = $u->specialty ? " — {$u->specialty}" : '';
                                 $phone = $u->phone ? " — {$u->phone}" : '';
-                                return [$u->id => $u->name . $spec . $phone];
+
+                                return [$u->id => $u->name.$spec.$phone];
                             })
                             ->toArray();
                     })
                     ->getOptionLabelUsing(function ($value): ?string {
                         $u = $value ? \App\Models\User::find($value) : null;
-                        if (!$u)
+                        if (! $u) {
                             return null;
+                        }
                         $spec = $u->specialty ? " — {$u->specialty}" : '';
                         $phone = $u->phone ? " — {$u->phone}" : '';
-                        return $u->name . $spec . $phone;
+
+                        return $u->name.$spec.$phone;
                     }),
 
                 Forms\Components\Select::make('branch_id')
@@ -122,7 +176,7 @@ class AppointmentForm
                     ->label('Chi nhánh')
                     ->searchable()
                     ->preload()
-                    ->default(fn() => auth()->user()?->branch_id),
+                    ->default(fn () => auth()->user()?->branch_id),
 
                 Forms\Components\DateTimePicker::make('date')
                     ->label('Thời gian')
@@ -192,6 +246,15 @@ class AppointmentForm
                     ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
                     ->required(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
                     ->columnSpanFull(),
+
+                Forms\Components\Textarea::make('overbooking_reason')
+                    ->label('Lý do overbooking')
+                    ->rows(2)
+                    ->columnSpanFull()
+                    ->helperText('Nhập khi muốn giữ lịch hẹn vượt quá công suất theo policy chi nhánh.'),
+
+                Forms\Components\Hidden::make('overbooking_override_by')
+                    ->default(fn () => auth()->id()),
 
                 Forms\Components\DateTimePicker::make('confirmed_at')
                     ->label('Thời gian xác nhận')

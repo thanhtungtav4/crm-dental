@@ -35,6 +35,14 @@ class BranchesTable
                 IconColumn::make('active')
                     ->label('Kích hoạt')
                     ->boolean(),
+                IconColumn::make('overbookingPolicy.is_enabled')
+                    ->label('Overbooking')
+                    ->boolean()
+                    ->toggleable(),
+                TextColumn::make('overbookingPolicy.max_parallel_per_doctor')
+                    ->label('Slot song song tối đa')
+                    ->default('1')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Tạo lúc')
                     ->dateTime()

@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
-use Illuminate\Database\QueryException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class Invoice extends Model
 {
@@ -29,6 +32,21 @@ class Invoice extends Model
 
     public const TERMINAL_STATUSES = [
         self::STATUS_PAID,
+        self::STATUS_CANCELLED,
+    ];
+
+    public const STATUS_LABELS = [
+        self::STATUS_DRAFT => 'Nháp',
+        self::STATUS_ISSUED => 'Đã xuất',
+        self::STATUS_PARTIAL => 'Thanh toán một phần',
+        self::STATUS_PAID => 'Đã thanh toán',
+        self::STATUS_OVERDUE => 'Quá hạn',
+        self::STATUS_CANCELLED => 'Đã hủy',
+    ];
+
+    public const EDITABLE_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_ISSUED,
         self::STATUS_CANCELLED,
     ];
 
@@ -64,6 +82,167 @@ class Invoice extends Model
         'paid_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $invoice): void {
+            if (blank($invoice->invoice_no)) {
+                $invoice->invoice_no = static::generateInvoiceNo();
+            }
+
+            $invoice->status = static::normalizeStatus((string) $invoice->status);
+
+            static::syncRelationalContext($invoice);
+
+            $shouldRecalculateTotal = $invoice->isDirty([
+                'subtotal',
+                'discount_amount',
+                'tax_amount',
+            ]);
+
+            $subtotal = static::normalizeMonetaryValue($invoice->subtotal);
+            $discountAmount = static::normalizeMonetaryValue($invoice->discount_amount);
+            $taxAmount = static::normalizeMonetaryValue($invoice->tax_amount);
+
+            $invoice->subtotal = $subtotal;
+            $invoice->discount_amount = $discountAmount;
+            $invoice->tax_amount = $taxAmount;
+
+            if ($shouldRecalculateTotal || blank($invoice->total_amount)) {
+                $invoice->total_amount = static::calculateTotalAmount($subtotal, $discountAmount, $taxAmount);
+            } else {
+                $invoice->total_amount = static::normalizeMonetaryValue($invoice->total_amount);
+            }
+
+            $invoice->paid_amount = static::normalizeMonetaryValue($invoice->paid_amount);
+
+            if ($invoice->status === self::STATUS_DRAFT) {
+                $invoice->issued_at = null;
+
+                return;
+            }
+
+            if (blank($invoice->issued_at)) {
+                $invoice->issued_at = now();
+            }
+        });
+
+        static::updated(function (self $invoice): void {
+            $actorId = auth()->id();
+
+            if (! $actorId) {
+                return;
+            }
+
+            if ($invoice->wasChanged('status') && $invoice->status === self::STATUS_CANCELLED) {
+                AuditLog::record(
+                    entityType: AuditLog::ENTITY_INVOICE,
+                    entityId: $invoice->id,
+                    action: AuditLog::ACTION_CANCEL,
+                    actorId: $actorId,
+                    metadata: [
+                        'patient_id' => $invoice->patient_id,
+                        'invoice_no' => $invoice->invoice_no,
+                        'previous_status' => $invoice->getOriginal('status'),
+                    ]
+                );
+
+                return;
+            }
+
+            $changes = $invoice->getChanges();
+            $ignored = ['paid_amount', 'status', 'paid_at', 'updated_at'];
+            $auditable = array_diff_key($changes, array_flip($ignored));
+
+            if ($auditable === []) {
+                return;
+            }
+
+            $fields = [];
+            foreach ($auditable as $field => $newValue) {
+                $fields[$field] = [
+                    'from' => $invoice->getOriginal($field),
+                    'to' => $newValue,
+                ];
+            }
+
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_INVOICE,
+                entityId: $invoice->id,
+                action: AuditLog::ACTION_UPDATE,
+                actorId: $actorId,
+                metadata: [
+                    'patient_id' => $invoice->patient_id,
+                    'invoice_no' => $invoice->invoice_no,
+                    'changes' => $fields,
+                ]
+            );
+        });
+    }
+
+    public static function statusOptions(): array
+    {
+        return self::STATUS_LABELS;
+    }
+
+    public static function formStatusOptions(): array
+    {
+        return array_intersect_key(self::STATUS_LABELS, array_flip(self::EDITABLE_STATUSES));
+    }
+
+    public static function generateInvoiceNo(): string
+    {
+        $prefix = 'INV-'.now()->format('Ymd').'-';
+
+        $latestInvoiceNo = static::withTrashed()
+            ->where('invoice_no', 'like', "{$prefix}%")
+            ->orderByDesc('id')
+            ->value('invoice_no');
+
+        $nextSequence = 1;
+        if (is_string($latestInvoiceNo) && preg_match('/(\d{4})$/', $latestInvoiceNo, $matches) === 1) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        return $prefix.str_pad((string) $nextSequence, 4, '0', STR_PAD_LEFT);
+    }
+
+    public static function calculateTotalAmount(
+        float $subtotal,
+        float $discountAmount = 0,
+        float $taxAmount = 0
+    ): float {
+        return round(max(0, $subtotal - $discountAmount + $taxAmount), 2);
+    }
+
+    private static function normalizeStatus(string $status): string
+    {
+        $normalized = strtolower(trim($status));
+
+        return array_key_exists($normalized, self::STATUS_LABELS)
+            ? $normalized
+            : self::STATUS_DRAFT;
+    }
+
+    private static function syncRelationalContext(self $invoice): void
+    {
+        if ($invoice->treatment_session_id && blank($invoice->treatment_plan_id)) {
+            $invoice->treatment_plan_id = TreatmentSession::query()
+                ->whereKey((int) $invoice->treatment_session_id)
+                ->value('treatment_plan_id');
+        }
+
+        if ($invoice->treatment_plan_id && blank($invoice->patient_id)) {
+            $invoice->patient_id = TreatmentPlan::query()
+                ->whereKey((int) $invoice->treatment_plan_id)
+                ->value('patient_id');
+        }
+    }
+
+    private static function normalizeMonetaryValue(mixed $value): float
+    {
+        return max(0, round((float) $value, 2));
+    }
+
     // ==================== RELATIONSHIPS ====================
 
     public function session(): BelongsTo
@@ -84,6 +263,16 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function installmentPlan(): HasOne
+    {
+        return $this->hasOne(InstallmentPlan::class);
+    }
+
+    public function insuranceClaims(): HasMany
+    {
+        return $this->hasMany(InsuranceClaim::class);
     }
 
     // ==================== PAYMENT TRACKING METHODS ====================
@@ -176,11 +365,35 @@ class Invoice extends Model
         ?string $transactionRef = null,
         string $paymentSource = 'patient',
         ?string $insuranceClaimNumber = null,
-        ?int $receivedBy = null
-    ): Payment
-    {
+        ?int $receivedBy = null,
+        ?int $reversalOfId = null,
+        bool $isDeposit = false
+    ): Payment {
         $amount = $direction === 'refund' ? -abs($amount) : abs($amount);
         $transactionRef = filled($transactionRef) ? trim($transactionRef) : null;
+
+        if ($direction === 'receipt') {
+            if ($this->status === self::STATUS_DRAFT && ! ClinicRuntimeSettings::allowDraftPrepay()) {
+                throw ValidationException::withMessages([
+                    'invoice_id' => 'Chính sách hiện tại không cho phép thu trước trên hóa đơn nháp.',
+                ]);
+            }
+
+            if ($isDeposit && ! ClinicRuntimeSettings::allowDeposit()) {
+                throw ValidationException::withMessages([
+                    'is_deposit' => 'Chính sách hiện tại không cho phép ghi nhận tiền cọc.',
+                ]);
+            }
+
+            if (! ClinicRuntimeSettings::allowOverpay()) {
+                $balance = $this->calculateBalance();
+                if ($amount > $balance) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Số tiền thu vượt công nợ hiện tại theo chính sách chống overpay.',
+                    ]);
+                }
+            }
+        }
 
         return DB::transaction(function () use (
             $amount,
@@ -192,7 +405,9 @@ class Invoice extends Model
             $refundReason,
             $transactionRef,
             $paymentSource,
-            $insuranceClaimNumber
+            $insuranceClaimNumber,
+            $reversalOfId,
+            $isDeposit
         ): Payment {
             if ($transactionRef) {
                 $existingPayment = $this->payments()
@@ -217,6 +432,8 @@ class Invoice extends Model
                 'payment_source' => $paymentSource,
                 'insurance_claim_number' => $insuranceClaimNumber,
                 'transaction_ref' => $transactionRef,
+                'reversal_of_id' => $reversalOfId,
+                'is_deposit' => $isDeposit,
             ];
 
             try {
@@ -276,6 +493,7 @@ class Invoice extends Model
     public function isPartiallyPaid(): bool
     {
         $totalPaid = $this->getTotalPaid();
+
         return $totalPaid > 0 && $totalPaid < $this->total_amount;
     }
 
@@ -292,7 +510,7 @@ class Invoice extends Model
      */
     public function getDaysOverdue(): int
     {
-        if (!$this->due_date) {
+        if (! $this->due_date) {
             return 0;
         }
 
@@ -324,7 +542,7 @@ class Invoice extends Model
      */
     public function getStatusBadgeColor(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_DRAFT => 'gray',
             self::STATUS_ISSUED => 'warning',
             self::STATUS_PARTIAL => 'info',
@@ -341,13 +559,9 @@ class Invoice extends Model
     public function getPaymentStatusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_DRAFT => 'Nháp',
             self::STATUS_ISSUED => 'Chưa thanh toán',
             self::STATUS_PARTIAL => 'TT một phần',
-            self::STATUS_PAID => 'Đã thanh toán',
-            self::STATUS_OVERDUE => 'Quá hạn',
-            self::STATUS_CANCELLED => 'Đã hủy',
-            default => 'Không xác định',
+            default => self::STATUS_LABELS[$this->status] ?? 'Không xác định',
         };
     }
 
@@ -371,7 +585,7 @@ class Invoice extends Model
      */
     public function formatBalance(): string
     {
-        return number_format($this->calculateBalance(), 0, ',', '.') . 'đ';
+        return number_format($this->calculateBalance(), 0, ',', '.').'đ';
     }
 
     /**
@@ -379,7 +593,7 @@ class Invoice extends Model
      */
     public function formatTotalPaid(): string
     {
-        return number_format($this->getTotalPaid(), 0, ',', '.') . 'đ';
+        return number_format($this->getTotalPaid(), 0, ',', '.').'đ';
     }
 
     // ==================== SCOPES ====================
@@ -392,21 +606,21 @@ class Invoice extends Model
     public function scopeUnpaid($query)
     {
         return $query->where('paid_amount', 0)
-                     ->whereNotIn('status', ['paid', 'cancelled']);
+            ->whereNotIn('status', ['paid', 'cancelled']);
     }
 
     public function scopePartiallyPaid($query)
     {
         return $query->where('paid_amount', '>', 0)
-                     ->whereColumn('paid_amount', '<', 'total_amount')
-                     ->whereNotIn('status', ['paid', 'cancelled']);
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->whereNotIn('status', ['paid', 'cancelled']);
     }
 
     public function scopeFullyPaid($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->where('status', 'paid')
-              ->orWhereColumn('paid_amount', '>=', 'total_amount');
+                ->orWhereColumn('paid_amount', '>=', 'total_amount');
         });
     }
 
@@ -419,5 +633,4 @@ class Invoice extends Model
     {
         return $query->where('treatment_plan_id', $planId);
     }
-
 }
