@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 class IntegrationSettings extends Page
@@ -21,6 +22,8 @@ class IntegrationSettings extends Page
     use HasPageShield;
 
     public const AUDIT_LOG_PERMISSION = 'View:IntegrationSettingsAuditLog';
+
+    private const EXAM_INDICATIONS_STATE = 'catalog_exam_indications_json';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-link';
 
@@ -35,6 +38,11 @@ class IntegrationSettings extends Page
     protected string $view = 'filament.pages.integration-settings';
 
     public array $settings = [];
+
+    /**
+     * @var array<string, array<int, array{key: string, label: string, enabled: bool}>>
+     */
+    public array $catalogEditors = [];
 
     public function mount(): void
     {
@@ -347,7 +355,7 @@ class IntegrationSettings extends Page
             [
                 'group' => 'catalog',
                 'title' => 'Danh mục động',
-                'description' => 'Cấu hình danh mục tùy chọn dùng chung cho CRM (định dạng JSON object: {\"key\":\"label\"}).',
+                'description' => 'Cấu hình danh mục tùy chọn dùng chung theo dạng Mã → Nhãn (UI thân thiện, không cần sửa JSON).',
                 'fields' => [
                     [
                         'state' => 'catalog_exam_indications_json',
@@ -412,6 +420,12 @@ class IntegrationSettings extends Page
 
     public function save(): void
     {
+        $catalogPayloads = $this->validateAndNormalizeCatalogEditors();
+
+        foreach ($catalogPayloads as $state => $catalog) {
+            $this->settings[$state] = json_encode($catalog, JSON_UNESCAPED_UNICODE) ?: '{}';
+        }
+
         $rules = [];
 
         foreach ($this->getProviders() as $provider) {
@@ -552,9 +566,108 @@ class IntegrationSettings extends Page
             ->send();
     }
 
+    public function addCatalogRow(string $state): void
+    {
+        $field = $this->findFieldByState($state);
+
+        if (($field['type'] ?? null) !== 'json') {
+            return;
+        }
+
+        if (! isset($this->catalogEditors[$state]) || ! is_array($this->catalogEditors[$state])) {
+            $this->catalogEditors[$state] = [];
+        }
+
+        $this->catalogEditors[$state][] = ['key' => '', 'label' => '', 'enabled' => true];
+    }
+
+    public function removeCatalogRow(string $state, int $index): void
+    {
+        $field = $this->findFieldByState($state);
+
+        if (($field['type'] ?? null) !== 'json') {
+            return;
+        }
+
+        if (! isset($this->catalogEditors[$state][$index])) {
+            return;
+        }
+
+        unset($this->catalogEditors[$state][$index]);
+        $this->catalogEditors[$state] = array_values($this->catalogEditors[$state]);
+
+        if ($this->catalogEditors[$state] === []) {
+            $this->catalogEditors[$state][] = ['key' => '', 'label' => '', 'enabled' => true];
+        }
+    }
+
+    public function restoreCatalogDefaults(string $state): void
+    {
+        $field = $this->findFieldByState($state);
+
+        if (($field['type'] ?? null) !== 'json') {
+            return;
+        }
+
+        $this->catalogEditors[$state] = $this->catalogRowsFromValue($field['default'] ?? [], $state);
+    }
+
+    public function normalizeCatalogRowKey(string $state, int $index): void
+    {
+        $field = $this->findFieldByState($state);
+
+        if (($field['type'] ?? null) !== 'json') {
+            return;
+        }
+
+        if (! isset($this->catalogEditors[$state][$index])) {
+            return;
+        }
+
+        $this->catalogEditors[$state][$index]['key'] = $this->normalizeCatalogKeyForState(
+            $state,
+            (string) ($this->catalogEditors[$state][$index]['key'] ?? ''),
+        );
+    }
+
+    public function syncCatalogRowFromLabel(string $state, int $index): void
+    {
+        $field = $this->findFieldByState($state);
+
+        if (($field['type'] ?? null) !== 'json') {
+            return;
+        }
+
+        if (! isset($this->catalogEditors[$state][$index])) {
+            return;
+        }
+
+        $rowKey = $this->normalizeCatalogKeyForState(
+            $state,
+            (string) ($this->catalogEditors[$state][$index]['key'] ?? ''),
+        );
+
+        if ($rowKey !== '') {
+            return;
+        }
+
+        $label = trim((string) ($this->catalogEditors[$state][$index]['label'] ?? ''));
+
+        if ($label === '') {
+            return;
+        }
+
+        $this->catalogEditors[$state][$index]['key'] = $this->generateUniqueCatalogKeyFromLabel(
+            $state,
+            $label,
+            $index,
+        );
+    }
+
     protected function loadSettingsState(): void
     {
         $state = [];
+        $catalogEditors = [];
 
         foreach ($this->getProviders() as $provider) {
             foreach ($provider['fields'] as $field) {
@@ -563,11 +676,23 @@ class IntegrationSettings extends Page
                     default: $field['default'] ?? null,
                 );
 
+                if (($field['type'] ?? null) === 'json') {
+                    $rows = $this->catalogRowsFromValue($value, (string) $field['state']);
+                    $catalogEditors[$field['state']] = $rows;
+                    $state[$field['state']] = json_encode(
+                        $this->catalogRowsToMap($rows, (string) $field['state']),
+                        JSON_UNESCAPED_UNICODE,
+                    ) ?: '{}';
+
+                    continue;
+                }
+
                 $state[$field['state']] = $this->formatFieldStateValue($field, $value);
             }
         }
 
         $this->settings = $state;
+        $this->catalogEditors = $catalogEditors;
     }
 
     public function getRecentLogs(): Collection
@@ -644,23 +769,7 @@ class IntegrationSettings extends Page
 
     protected function formatFieldStateValue(array $field, mixed $value): mixed
     {
-        if (($field['type'] ?? null) !== 'json') {
-            return $value;
-        }
-
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $value = $decoded;
-            }
-        }
-
-        if (! is_array($value)) {
-            $value = $field['default'] ?? [];
-        }
-
-        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: '{}';
+        return $value;
     }
 
     protected function decodeJsonFieldValue(mixed $value): array
@@ -680,5 +789,227 @@ class IntegrationSettings extends Page
         }
 
         return $decoded;
+    }
+
+    protected function findFieldByState(string $state): ?array
+    {
+        foreach ($this->getProviders() as $provider) {
+            foreach ($provider['fields'] as $field) {
+                if (($field['state'] ?? null) === $state) {
+                    return $field;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    protected function validateAndNormalizeCatalogEditors(): array
+    {
+        $payloads = [];
+        $errors = [];
+
+        foreach ($this->getProviders() as $provider) {
+            foreach ($provider['fields'] as $field) {
+                if (($field['type'] ?? null) !== 'json') {
+                    continue;
+                }
+
+                $state = (string) ($field['state'] ?? '');
+                $rows = $this->catalogEditors[$state] ?? [];
+
+                if (! is_array($rows)) {
+                    $rows = [];
+                }
+
+                $catalog = [];
+
+                foreach ($rows as $index => $row) {
+                    $enabled = filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
+                    $key = $this->normalizeCatalogKeyForState(
+                        $state,
+                        (string) ($row['key'] ?? ''),
+                    );
+                    $label = trim((string) ($row['label'] ?? ''));
+                    $line = $index + 1;
+
+                    if ($key === '' && $label !== '') {
+                        $key = $this->generateUniqueCatalogKeyFromLabel($state, $label, $index);
+                    }
+
+                    $this->catalogEditors[$state][$index]['enabled'] = $enabled;
+
+                    if ($key === '' && $label === '') {
+                        continue;
+                    }
+
+                    if (! $enabled) {
+                        $this->catalogEditors[$state][$index]['key'] = $key;
+                        $this->catalogEditors[$state][$index]['label'] = $label;
+
+                        continue;
+                    }
+
+                    if ($key === '') {
+                        $errors["catalogEditors.{$state}.{$index}.key"] = "Dòng {$line}: không thể tự sinh mã từ nhãn hiển thị.";
+
+                        continue;
+                    }
+
+                    if ($label === '') {
+                        $errors["catalogEditors.{$state}.{$index}.label"] = "Dòng {$line}: vui lòng nhập nhãn.";
+
+                        continue;
+                    }
+
+                    if (array_key_exists($key, $catalog)) {
+                        $errors["catalogEditors.{$state}.{$index}.key"] = "Dòng {$line}: mã \"{$key}\" đang bị trùng.";
+
+                        continue;
+                    }
+
+                    $catalog[$key] = $label;
+                    $this->catalogEditors[$state][$index]['key'] = $key;
+                    $this->catalogEditors[$state][$index]['label'] = $label;
+                }
+
+                if (($this->catalogEditors[$state] ?? []) === []) {
+                    $this->catalogEditors[$state][] = ['key' => '', 'label' => '', 'enabled' => true];
+                }
+
+                $payloads[$state] = $catalog;
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $payloads;
+    }
+
+    protected function normalizeCatalogKeyForState(string $state, string $value): string
+    {
+        $normalized = $this->normalizeCatalogKey($value);
+
+        if ($state === self::EXAM_INDICATIONS_STATE) {
+            $normalized = ClinicRuntimeSettings::normalizeExamIndicationKey($normalized);
+        }
+
+        return $normalized;
+    }
+
+    protected function normalizeCatalogKey(string $value): string
+    {
+        $normalized = Str::of(trim($value))
+            ->ascii()
+            ->lower()
+            ->value();
+        $normalized = preg_replace('/\s+/', '_', $normalized) ?? '';
+        $normalized = preg_replace('/[^a-z0-9_-]/', '', $normalized) ?? '';
+
+        return trim($normalized);
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string, enabled: bool}>
+     */
+    protected function catalogRowsFromValue(mixed $value, string $state = ''): array
+    {
+        $decoded = $this->decodeJsonFieldValue($value);
+        $rows = [];
+
+        foreach ($decoded as $key => $label) {
+            $normalizedKey = $this->normalizeCatalogKeyForState($state, (string) $key);
+            $normalizedLabel = trim((string) $label);
+
+            if ($normalizedKey === '' || $normalizedLabel === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'key' => $normalizedKey,
+                'label' => $normalizedLabel,
+                'enabled' => true,
+            ];
+        }
+
+        if ($rows === []) {
+            $rows[] = ['key' => '', 'label' => '', 'enabled' => true];
+        }
+
+        if ($state !== '') {
+            $catalog = $this->catalogRowsToMap($rows, $state);
+            $rows = collect($catalog)
+                ->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label, 'enabled' => true])
+                ->values()
+                ->all();
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<int, array{key: string, label: string, enabled?: bool}>  $rows
+     * @return array<string, string>
+     */
+    protected function catalogRowsToMap(array $rows, string $state = ''): array
+    {
+        $catalog = [];
+
+        foreach ($rows as $row) {
+            $enabled = filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+            if (! $enabled) {
+                continue;
+            }
+
+            $key = $this->normalizeCatalogKeyForState($state, (string) ($row['key'] ?? ''));
+            $label = trim((string) ($row['label'] ?? ''));
+
+            if ($key === '' || $label === '') {
+                continue;
+            }
+
+            $catalog[$key] = $label;
+        }
+
+        return $catalog;
+    }
+
+    protected function generateUniqueCatalogKeyFromLabel(string $state, string $label, int $exceptIndex = -1): string
+    {
+        $baseKey = $this->normalizeCatalogKeyForState($state, $label);
+
+        if ($baseKey === '') {
+            return '';
+        }
+
+        $existingKeys = collect($this->catalogEditors[$state] ?? [])
+            ->map(function (array $row, int $rowIndex) use ($state, $exceptIndex): string {
+                if ($rowIndex === $exceptIndex) {
+                    return '';
+                }
+
+                return $this->normalizeCatalogKeyForState($state, (string) ($row['key'] ?? ''));
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        if (! in_array($baseKey, $existingKeys, true)) {
+            return $baseKey;
+        }
+
+        $suffix = 2;
+
+        while (in_array($baseKey.'_'.$suffix, $existingKeys, true)) {
+            $suffix++;
+        }
+
+        return $baseKey.'_'.$suffix;
     }
 }

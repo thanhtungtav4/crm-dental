@@ -63,6 +63,41 @@ it('uses custom catalog options from clinic settings json values', function (): 
         ->toBe('Bảo hiểm tư nhân');
 });
 
+it('respects custom exam indication catalog without forcing ext and int keys', function (): void {
+    ClinicSetting::setValue('catalog.exam_indications', [
+        'cephalometric' => 'Cephalometric',
+        'panorama' => 'Panorama',
+    ], [
+        'group' => 'catalog',
+        'value_type' => 'json',
+    ]);
+
+    expect(ClinicRuntimeSettings::examIndicationOptions())
+        ->toMatchArray([
+            'cephalometric' => 'Cephalometric',
+            'panorama' => 'Panorama',
+        ]);
+});
+
+it('normalizes legacy exam indication aliases to canonical keys', function (): void {
+    ClinicSetting::setValue('catalog.exam_indications', [
+        'image_ext' => 'Ảnh ngoài',
+        'image_int' => 'Ảnh trong',
+        '3d_5x5' => '3D 5x5',
+    ], [
+        'group' => 'catalog',
+        'value_type' => 'json',
+    ]);
+
+    $options = ClinicRuntimeSettings::examIndicationOptions();
+
+    expect(array_key_exists('image_ext', $options))->toBeFalse()
+        ->and(array_key_exists('image_int', $options))->toBeFalse()
+        ->and($options['ext'] ?? null)->toBe('Ảnh ngoài')
+        ->and($options['int'] ?? null)->toBe('Ảnh trong')
+        ->and($options['3d5x5'] ?? null)->toBe('3D 5x5');
+});
+
 it('formats payment labels using dynamic catalog settings', function (): void {
     ClinicSetting::setValue('catalog.payment_directions', [
         'receipt' => 'Thu tiền',

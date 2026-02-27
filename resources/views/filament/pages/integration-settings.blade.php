@@ -1,4 +1,144 @@
 <x-filament-panels::page>
+    <style>
+        .crm-catalog-switch-grid {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @media (min-width: 768px) {
+            .crm-catalog-switch-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .crm-catalog-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            padding: 0.625rem 0.75rem;
+            color: #111827;
+            transition: border-color .15s ease, background-color .15s ease;
+            text-align: left;
+        }
+
+        .crm-catalog-switch.is-on {
+            border-color: color-mix(in srgb, var(--crm-primary, #4f46e5) 45%, #d1d5db);
+            background: color-mix(in srgb, var(--crm-primary, #4f46e5) 10%, #fff);
+        }
+
+        .crm-catalog-switch__text {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .crm-catalog-switch__title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: #111827;
+        }
+
+        .crm-catalog-switch__hint {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.25;
+        }
+
+        .crm-catalog-toggle__switch {
+            position: relative;
+            display: inline-flex;
+            height: 1.5rem;
+            width: 2.75rem;
+            align-items: center;
+            border-radius: 9999px;
+            background: #d1d5db;
+            padding: 0.125rem;
+            transition: background-color .15s ease;
+        }
+
+        .crm-catalog-switch.is-on .crm-catalog-toggle__switch {
+            background: var(--crm-primary, #4f46e5);
+        }
+
+        .crm-catalog-toggle__thumb {
+            height: 1.25rem;
+            width: 1.25rem;
+            border-radius: 9999px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+            transform: translateX(0);
+            transition: transform .15s ease;
+        }
+
+        .crm-catalog-switch.is-on .crm-catalog-toggle__thumb {
+            transform: translateX(1.25rem);
+        }
+
+        .crm-catalog-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            padding: 0.5rem;
+        }
+
+        .crm-catalog-row--disabled {
+            opacity: 0.6;
+        }
+
+        .crm-catalog-row__field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .crm-catalog-row__field--toggle {
+            justify-content: center;
+        }
+
+        .crm-catalog-row__caption {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+
+        .crm-catalog-row__actions {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        @media (min-width: 1024px) {
+            .crm-catalog-row {
+                grid-template-columns: minmax(0, 1.1fr) minmax(0, 3fr) minmax(0, 2.2fr) auto;
+                align-items: center;
+            }
+
+            .crm-catalog-row.crm-catalog-row--without-toggle {
+                grid-template-columns: minmax(0, 3fr) minmax(0, 2.2fr) auto;
+            }
+
+            .crm-catalog-row__actions {
+                justify-content: flex-end;
+            }
+
+            .crm-catalog-row__caption {
+                display: none;
+            }
+        }
+    </style>
+
     <form wire:submit="save" class="space-y-6">
         @foreach($this->getProviders() as $provider)
             <x-filament::section :heading="$provider['title']" :description="$provider['description']">
@@ -17,6 +157,7 @@
                                     default => 'text',
                                 };
                         @endphp
+                        @continue((bool) ($field['hidden'] ?? false))
 
                         @if($isBoolean)
                             <label class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
@@ -44,19 +185,127 @@
                                 @enderror
                             </div>
                         @elseif(($field['type'] ?? null) === 'json')
+                            @php
+                                $rows = data_get($this->catalogEditors, $field['state'], []);
+                                $isExamIndicationCatalog = ($field['state'] ?? null) === 'catalog_exam_indications_json';
+                                $rowEntries = collect($rows)
+                                    ->map(fn ($row, $index) => ['index' => $index, 'row' => $row]);
+                                $editableEntries = $rowEntries->values();
+                                $editableRowsCount = $editableEntries->count();
+                                $showRowEnabledToggle = ! $isExamIndicationCatalog;
+                            @endphp
+
                             <div class="md:col-span-2">
                                 <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                                     {{ $field['label'] }}
                                 </label>
-                                <x-filament::input.wrapper>
-                                    <textarea
-                                        wire:model.blur="{{ $statePath }}"
-                                        rows="8"
-                                        class="fi-input fi-textarea min-h-[170px] font-mono text-xs"
-                                        placeholder='{"key":"label"}'
-                                    ></textarea>
-                                </x-filament::input.wrapper>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">JSON object dạng <code>{"code":"Nhãn"}</code>.</p>
+
+                                <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-2 dark:border-gray-800">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="font-semibold text-gray-700 dark:text-gray-200">Tổng mục:</span>
+                                            {{ $editableRowsCount }}
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <x-filament::button type="button" color="gray" size="sm" wire:click="addCatalogRow('{{ $field['state'] }}')">
+                                                Thêm dòng
+                                            </x-filament::button>
+                                            <x-filament::button type="button" color="gray" size="sm" wire:click="restoreCatalogDefaults('{{ $field['state'] }}')">
+                                                Khôi phục mặc định
+                                            </x-filament::button>
+                                        </div>
+                                    </div>
+
+                                    @if($showRowEnabledToggle)
+                                        <div class="hidden grid-cols-12 border-b border-gray-100 px-3 py-2 text-xs font-semibold text-gray-500 dark:border-gray-800 dark:text-gray-400 md:grid">
+                                            <div class="md:col-span-2">Bật</div>
+                                            <div class="md:col-span-5">Nhãn hiển thị</div>
+                                            <div class="md:col-span-4">Mã tự sinh</div>
+                                            <div class="md:col-span-1 text-right">Xóa</div>
+                                        </div>
+                                    @else
+                                        <div class="hidden grid-cols-12 border-b border-gray-100 px-3 py-2 text-xs font-semibold text-gray-500 dark:border-gray-800 dark:text-gray-400 md:grid">
+                                            <div class="md:col-span-6">Nhãn hiển thị</div>
+                                            <div class="md:col-span-5">Mã tự sinh</div>
+                                            <div class="md:col-span-1 text-right">Xóa</div>
+                                        </div>
+                                    @endif
+
+                                    <div class="max-h-[26rem] space-y-2 overflow-y-auto p-3">
+                                        @foreach($editableEntries as $entry)
+                                            @php
+                                                $index = (int) ($entry['index'] ?? 0);
+                                                $row = (array) ($entry['row'] ?? []);
+                                                $rowEnabled = filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
+                                            @endphp
+                                            <div @class([
+                                                'crm-catalog-row dark:border-gray-800 dark:bg-gray-900',
+                                                'crm-catalog-row--disabled' => $showRowEnabledToggle && ! $rowEnabled,
+                                                'crm-catalog-row--without-toggle' => ! $showRowEnabledToggle,
+                                            ])>
+                                                @if($showRowEnabledToggle)
+                                                    <div class="crm-catalog-row__field crm-catalog-row__field--toggle">
+                                                        <span class="crm-catalog-row__caption">Bật</span>
+                                                        <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                            <input
+                                                                type="checkbox"
+                                                                wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.enabled"
+                                                                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                            />
+                                                            <span>{{ $rowEnabled ? 'Hiển thị' : 'Ẩn' }}</span>
+                                                        </label>
+                                                    </div>
+                                                @endif
+                                                <div class="crm-catalog-row__field">
+                                                    <span class="crm-catalog-row__caption">Nhãn hiển thị</span>
+                                                    <x-filament::input.wrapper>
+                                                        <input
+                                                            type="text"
+                                                            wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.label"
+                                                            wire:blur="syncCatalogRowFromLabel('{{ $field['state'] }}', {{ $index }})"
+                                                            class="fi-input"
+                                                            placeholder="Nhãn hiển thị"
+                                                        />
+                                                    </x-filament::input.wrapper>
+                                                    @error("catalogEditors.{$field['state']}.{$index}.label")
+                                                        <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+                                                <div class="crm-catalog-row__field">
+                                                    <span class="crm-catalog-row__caption">Mã tự sinh</span>
+                                                    <x-filament::input.wrapper>
+                                                        <input
+                                                            type="text"
+                                                            wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.key"
+                                                            class="fi-input bg-gray-50 dark:bg-gray-800"
+                                                            readonly
+                                                        />
+                                                    </x-filament::input.wrapper>
+                                                    @error("catalogEditors.{$field['state']}.{$index}.key")
+                                                        <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+                                                <div class="crm-catalog-row__actions">
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-danger-300 hover:text-danger-600 dark:border-gray-700 dark:text-gray-300"
+                                                        wire:click="removeCatalogRow('{{ $field['state'] }}', {{ $index }})"
+                                                        @disabled($editableRowsCount <= 1)
+                                                        title="Xóa dòng"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                @if($showRowEnabledToggle)
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Nhập nhãn hiển thị, hệ thống tự sinh mã. Dùng toggle từng dòng để bật/tắt hiển thị option. Không cần sửa JSON thủ công.</p>
+                                @else
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Nhập nhãn hiển thị, hệ thống tự sinh mã. Không cần sửa JSON thủ công.</p>
+                                @endif
                                 @error($statePath)
                                     <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                                 @enderror
@@ -206,4 +455,5 @@
             </div>
         </x-filament::section>
     @endif
+
 </x-filament-panels::page>

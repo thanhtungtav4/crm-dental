@@ -25,10 +25,44 @@ class ClinicRuntimeSettings
 
     public static function examIndicationOptions(): array
     {
-        return static::catalogOptions(
+        $options = static::catalogOptions(
             'catalog.exam_indications',
             static::defaultExamIndicationOptions(),
         );
+
+        $normalizedOptions = [];
+
+        foreach ($options as $rawKey => $rawLabel) {
+            $normalizedKey = static::normalizeExamIndicationKey((string) $rawKey);
+            $normalizedLabel = trim((string) $rawLabel);
+
+            if ($normalizedKey === '' || $normalizedLabel === '') {
+                continue;
+            }
+
+            if (! array_key_exists($normalizedKey, $normalizedOptions)) {
+                $normalizedOptions[$normalizedKey] = $normalizedLabel;
+            }
+        }
+
+        if ($normalizedOptions === []) {
+            $normalizedOptions = static::defaultExamIndicationOptions();
+        }
+
+        return $normalizedOptions;
+    }
+
+    public static function normalizeExamIndicationKey(string $key): string
+    {
+        $normalized = strtolower(trim($key));
+
+        return match ($normalized) {
+            'anh_ext', 'image_ext', 'image-ext' => 'ext',
+            'anh_int', 'image_int', 'image-int' => 'int',
+            '3d_5x5', '3d-5x5' => '3d5x5',
+            'can_chop', 'canchop' => 'canchiep',
+            default => $normalized,
+        };
     }
 
     public static function defaultCustomerSourceOptions(): array
