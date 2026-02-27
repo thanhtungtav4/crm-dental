@@ -46,3 +46,17 @@ it('supports explicit multi-select mode in patient exam tooth chart', function (
     expect($blade)->toContain('Chọn nhiều');
     expect($blade)->toContain('hỗ trợ mobile');
 });
+
+it('renders indication upload areas dynamically per selected indication type', function (): void {
+    $bladePath = resource_path('views/livewire/patient-exam-form.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain('$selectedIndicationUploadTypes = collect($indications)')
+        ->and($blade)->toContain('@foreach($selectedIndicationUploadTypes as $type)')
+        ->and($blade)->toContain('wire:model="tempUploads.{{ $type }}"')
+        ->and($blade)->toContain("wire:click=\"removeImage('{{ \$type }}', {{ \$index }})\"")
+        ->and($blade)->toContain('@paste.prevent="handleIndicationPaste(@js($type), $event)"')
+        ->and($blade)->toContain('@drop.prevent="handleIndicationDrop(@js($type), $event)"')
+        ->and($blade)->not->toContain('wire:model="tempUploads.ext"')
+        ->and($blade)->not->toContain('wire:model="tempUploads.int"');
+});

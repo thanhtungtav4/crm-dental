@@ -92,35 +92,7 @@ class ClinicalNotesRelationManager extends RelationManager
                             ->live()
                             ->columnSpanFull(),
 
-                        // Dynamic image upload for Ảnh (ext) - appears when checkbox is checked
-                        FileUpload::make('indication_images.ext')
-                            ->label('Ảnh ngoài miệng (ext)')
-                            ->multiple()
-                            ->image()
-                            ->imageEditor()
-                            ->directory('clinical-notes/ext')
-                            ->acceptedFileTypes(['image/*'])
-                            ->maxSize(10240)
-                            ->panelLayout('grid')
-                            ->reorderable()
-                            ->appendFiles()
-                            ->visible(fn (Get $get): bool => in_array('ext', $get('indications') ?? []))
-                            ->columnSpanFull(),
-
-                        // Dynamic image upload for Ảnh (int) - appears when checkbox is checked
-                        FileUpload::make('indication_images.int')
-                            ->label('Ảnh trong miệng (int)')
-                            ->multiple()
-                            ->image()
-                            ->imageEditor()
-                            ->directory('clinical-notes/int')
-                            ->acceptedFileTypes(['image/*'])
-                            ->maxSize(10240)
-                            ->panelLayout('grid')
-                            ->reorderable()
-                            ->appendFiles()
-                            ->visible(fn (Get $get): bool => in_array('int', $get('indications') ?? []))
-                            ->columnSpanFull(),
+                        ...$this->buildIndicationImageUploadFields(),
 
                         // Dynamic disease select - appears when "Khác" checkbox is checked
                         Select::make('other_diseases')
@@ -211,5 +183,39 @@ class ClinicalNotesRelationManager extends RelationManager
             ->emptyStateHeading('Chưa có phiếu khám')
             ->emptyStateDescription('Thêm phiếu khám mới bằng nút bên trên.')
             ->emptyStateIcon('heroicon-o-document-text');
+    }
+
+    /**
+     * @return array<int, FileUpload>
+     */
+    protected function buildIndicationImageUploadFields(): array
+    {
+        $fields = [];
+
+        foreach (ClinicRuntimeSettings::examIndicationOptions() as $key => $label) {
+            $normalizedKey = ClinicRuntimeSettings::normalizeExamIndicationKey((string) $key);
+
+            if ($normalizedKey === '') {
+                continue;
+            }
+
+            $safeDirectory = preg_replace('/[^a-z0-9_-]/', '_', $normalizedKey) ?: 'other';
+
+            $fields[] = FileUpload::make("indication_images.{$normalizedKey}")
+                ->label("Ảnh đính kèm - {$label}")
+                ->multiple()
+                ->image()
+                ->imageEditor()
+                ->directory("clinical-notes/{$safeDirectory}")
+                ->acceptedFileTypes(['image/*'])
+                ->maxSize(10240)
+                ->panelLayout('grid')
+                ->reorderable()
+                ->appendFiles()
+                ->visible(fn (Get $get): bool => in_array($normalizedKey, (array) ($get('indications') ?? []), true))
+                ->columnSpanFull();
+        }
+
+        return $fields;
     }
 }

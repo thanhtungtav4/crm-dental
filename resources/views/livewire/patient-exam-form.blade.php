@@ -571,61 +571,42 @@
                                         @endforeach
                                     </div>
 
-                                    @if(in_array('ext', $indications, true))
-                                        <div class="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600">
-                                            <div class="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">Ảnh (ext)</div>
-                                            @if (!empty($indicationImages['ext']))
-                                                <div class="mb-2 flex flex-wrap gap-2">
-                                                    @foreach ($indicationImages['ext'] as $index => $image)
-                                                        <div class="relative h-10 w-10 overflow-hidden rounded border border-gray-200">
-                                                            <img src="{{ Storage::url($image) }}" class="h-full w-full object-cover">
-                                                            <button type="button" wire:click="removeImage('ext', {{ $index }})" class="absolute inset-0 hidden items-center justify-center bg-black/50 text-white hover:flex">×</button>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                            <label class="inline-flex cursor-pointer items-center gap-2 rounded border border-dashed border-primary-300 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50">
-                                                Thêm ảnh hoặc kéo thả
-                                                <input type="file" wire:model="tempUploads.ext" multiple class="hidden" x-ref="indicationInput_ext" />
-                                            </label>
-                                            <div
-                                                class="mt-2 rounded-md border border-dashed border-gray-300 bg-white px-3 py-2 text-xs text-gray-500 dark:border-gray-600 dark:bg-gray-900"
-                                                @paste.prevent="handleIndicationPaste('ext', $event)"
-                                                @drop.prevent="handleIndicationDrop('ext', $event)"
-                                                @dragover.prevent
-                                            >
-                                                Dán ảnh vào đây
-                                            </div>
-                                        </div>
-                                    @endif
+                                    @php
+                                        $selectedIndicationUploadTypes = collect($indications)
+                                            ->map(fn ($type) => strtolower(trim((string) $type)))
+                                            ->filter()
+                                            ->unique()
+                                            ->values()
+                                            ->all();
+                                    @endphp
 
-                                    @if(in_array('int', $indications, true))
-                                        <div class="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600">
-                                            <div class="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">Ảnh (int)</div>
-                                            @if (!empty($indicationImages['int']))
+                                    @foreach($selectedIndicationUploadTypes as $type)
+                                        <div class="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600" wire:key="indication-upload-{{ $session->id }}-{{ $type }}">
+                                            <div class="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{{ $indicationTypes[$type] ?? strtoupper($type) }}</div>
+                                            @if (!empty($indicationImages[$type]))
                                                 <div class="mb-2 flex flex-wrap gap-2">
-                                                    @foreach ($indicationImages['int'] as $index => $image)
+                                                    @foreach ($indicationImages[$type] as $index => $image)
                                                         <div class="relative h-10 w-10 overflow-hidden rounded border border-gray-200">
                                                             <img src="{{ Storage::url($image) }}" class="h-full w-full object-cover">
-                                                            <button type="button" wire:click="removeImage('int', {{ $index }})" class="absolute inset-0 hidden items-center justify-center bg-black/50 text-white hover:flex">×</button>
+                                                            <button type="button" wire:click="removeImage('{{ $type }}', {{ $index }})" class="absolute inset-0 hidden items-center justify-center bg-black/50 text-white hover:flex">×</button>
                                                         </div>
                                                     @endforeach
                                                 </div>
                                             @endif
                                             <label class="inline-flex cursor-pointer items-center gap-2 rounded border border-dashed border-primary-300 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50">
                                                 Thêm ảnh hoặc kéo thả
-                                                <input type="file" wire:model="tempUploads.int" multiple class="hidden" x-ref="indicationInput_int" />
+                                                <input type="file" wire:model="tempUploads.{{ $type }}" multiple class="hidden" x-ref="indicationInput_{{ $type }}" />
                                             </label>
                                             <div
                                                 class="mt-2 rounded-md border border-dashed border-gray-300 bg-white px-3 py-2 text-xs text-gray-500 dark:border-gray-600 dark:bg-gray-900"
-                                                @paste.prevent="handleIndicationPaste('int', $event)"
-                                                @drop.prevent="handleIndicationDrop('int', $event)"
+                                                @paste.prevent="handleIndicationPaste(@js($type), $event)"
+                                                @drop.prevent="handleIndicationDrop(@js($type), $event)"
                                                 @dragover.prevent
                                             >
                                                 Dán ảnh vào đây
                                             </div>
                                         </div>
-                                    @endif
+                                    @endforeach
                                 </div>
                             </div>
 
