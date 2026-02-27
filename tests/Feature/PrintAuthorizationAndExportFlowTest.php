@@ -61,11 +61,15 @@ function makePrintFixture(): array
 
     $prescription = Prescription::factory()->create([
         'patient_id' => $patient->id,
+        'branch_id' => $branchA->id,
         'doctor_id' => $doctor->id,
         'created_by' => $doctor->id,
     ]);
 
     return [
+        'branch_a' => $branchA,
+        'branch_b' => $branchB,
+        'patient' => $patient,
         'manager_a' => $managerA,
         'manager_b' => $managerB,
         'invoice' => $invoice->fresh(),
@@ -171,4 +175,24 @@ it('writes print audit logs for payment receipt and prescription print actions',
         ->and((string) data_get($paymentAudit?->metadata, 'channel'))->toBe('payment_receipt_print')
         ->and($prescriptionAudit)->not->toBeNull()
         ->and((string) data_get($prescriptionAudit?->metadata, 'channel'))->toBe('prescription_print');
+});
+
+it('keeps prescription print branch isolation stable after patient transfer', function () {
+    $fixture = makePrintFixture();
+    $patient = $fixture['patient'];
+    $prescription = $fixture['prescription'];
+
+    $patient->update([
+        'first_branch_id' => $fixture['branch_b']->id,
+    ]);
+
+    expect($prescription->fresh()?->resolveBranchId())->toBe($fixture['branch_a']->id);
+
+    $this->actingAs($fixture['manager_b']);
+    $this->get(route('prescriptions.print', ['prescription' => $prescription, 'pdf' => 0]))
+        ->assertForbidden();
+
+    $this->actingAs($fixture['manager_a']);
+    $this->get(route('prescriptions.print', ['prescription' => $prescription, 'pdf' => 0]))
+        ->assertSuccessful();
 });

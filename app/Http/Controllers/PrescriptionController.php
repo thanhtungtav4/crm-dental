@@ -24,7 +24,7 @@ class PrescriptionController extends Controller
                 'output' => $isPdf ? 'pdf' : 'html',
                 'patient_id' => $prescription->patient_id,
                 'doctor_id' => $prescription->doctor_id,
-                'branch_id' => $prescription->patient?->first_branch_id,
+                'branch_id' => $prescription->resolveBranchId(),
             ],
         );
 

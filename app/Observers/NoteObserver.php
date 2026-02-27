@@ -39,6 +39,7 @@ class NoteObserver
             metadata: [
                 'patient_id' => $note->patient_id,
                 'customer_id' => $note->customer_id,
+                'branch_id' => $note->resolveBranchId(),
                 'care_type' => $note->care_type,
                 'care_channel' => $note->care_channel,
                 'care_status_from' => Note::normalizeCareStatus((string) $note->getOriginal('care_status'))

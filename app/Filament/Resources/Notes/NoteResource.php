@@ -60,8 +60,14 @@ class NoteResource extends Resource
         }
 
         return $query->where(function (Builder $innerQuery) use ($branchIds): void {
-            $innerQuery->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds))
-                ->orWhereHas('customer', fn (Builder $customerQuery) => $customerQuery->whereIn('branch_id', $branchIds));
+            $innerQuery->whereIn('branch_id', $branchIds)
+                ->orWhere(function (Builder $fallbackQuery) use ($branchIds): void {
+                    $fallbackQuery->whereNull('branch_id')
+                        ->where(function (Builder $legacyQuery) use ($branchIds): void {
+                            $legacyQuery->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds))
+                                ->orWhereHas('customer', fn (Builder $customerQuery) => $customerQuery->whereIn('branch_id', $branchIds));
+                        });
+                });
         });
     }
 

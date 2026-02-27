@@ -22,6 +22,7 @@ class Consent extends Model
 
     protected $fillable = [
         'patient_id',
+        'branch_id',
         'service_id',
         'plan_item_id',
         'consent_type',
@@ -37,6 +38,7 @@ class Consent extends Model
     protected function casts(): array
     {
         return [
+            'branch_id' => 'integer',
             'signed_at' => 'datetime',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
@@ -46,6 +48,10 @@ class Consent extends Model
     protected static function booted(): void
     {
         static::saving(function (self $consent): void {
+            if (blank($consent->branch_id)) {
+                $consent->branch_id = static::inferBranchId($consent);
+            }
+
             $consent->status = strtolower(trim((string) $consent->status));
 
             if ($consent->status === self::STATUS_SIGNED) {
@@ -67,6 +73,11 @@ class Consent extends Model
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function service(): BelongsTo
@@ -110,5 +121,38 @@ class Consent extends Model
         }
 
         return Carbon::parse($this->expires_at)->gte($moment);
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id
+            ?? $this->planItem?->treatmentPlan?->branch_id
+            ?? $this->patient?->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
+    }
+
+    protected static function inferBranchId(self $consent): ?int
+    {
+        if ($consent->plan_item_id) {
+            $planBranchId = PlanItem::query()
+                ->join('treatment_plans', 'treatment_plans.id', '=', 'plan_items.treatment_plan_id')
+                ->where('plan_items.id', (int) $consent->plan_item_id)
+                ->value('treatment_plans.branch_id');
+
+            if ($planBranchId !== null) {
+                return (int) $planBranchId;
+            }
+        }
+
+        if (! $consent->patient_id) {
+            return null;
+        }
+
+        $patientBranchId = Patient::query()
+            ->whereKey((int) $consent->patient_id)
+            ->value('first_branch_id');
+
+        return $patientBranchId !== null ? (int) $patientBranchId : null;
     }
 }

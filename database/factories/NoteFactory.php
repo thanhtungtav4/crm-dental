@@ -15,10 +15,12 @@ class NoteFactory extends Factory
     {
         $patient = Patient::inRandomOrder()->first() ?? Patient::factory()->create();
         $user = User::inRandomOrder()->first() ?? User::factory()->create();
+
         return [
             'patient_id' => $patient->id,
+            'branch_id' => $patient->first_branch_id,
             'user_id' => $user->id,
-            'type' => $this->faker->randomElement(['general','behavior','complaint','preference']),
+            'type' => $this->faker->randomElement(['general', 'behavior', 'complaint', 'preference']),
             'content' => $this->faker->randomElement([
                 'Bệnh nhân sợ đau, cần gây tê đủ.',
                 'Ưu tiên lịch chiều thứ 7.',

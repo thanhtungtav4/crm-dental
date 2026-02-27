@@ -24,6 +24,7 @@ class PrescriptionFactory extends Factory
     {
         return [
             'patient_id' => Patient::factory(),
+            'branch_id' => null,
             'treatment_session_id' => null,
             'prescription_code' => Prescription::generatePrescriptionCode(),
             'prescription_name' => fake()->optional()->sentence(3),
@@ -39,7 +40,7 @@ class PrescriptionFactory extends Factory
      */
     public function forPatient(Patient $patient): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'patient_id' => $patient->id,
         ]);
     }
@@ -49,7 +50,7 @@ class PrescriptionFactory extends Factory
      */
     public function byDoctor(User $doctor): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'doctor_id' => $doctor->id,
         ]);
     }
@@ -59,7 +60,7 @@ class PrescriptionFactory extends Factory
      */
     public function withTreatmentSession(TreatmentSession $session): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'treatment_session_id' => $session->id,
         ]);
     }
@@ -69,7 +70,7 @@ class PrescriptionFactory extends Factory
      */
     public function today(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'treatment_date' => now(),
         ]);
     }

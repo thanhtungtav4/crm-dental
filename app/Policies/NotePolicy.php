@@ -69,8 +69,6 @@ class NotePolicy
 
     protected function canAccessNote(User $authUser, Note $note): bool
     {
-        $branchId = $note->patient?->first_branch_id ?? $note->customer?->branch_id;
-
-        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
+        return $authUser->canAccessBranch($note->resolveBranchId());
     }
 }

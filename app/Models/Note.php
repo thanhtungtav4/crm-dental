@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Validation\ValidationException;
 
 class Note extends Model
@@ -15,9 +15,13 @@ class Note extends Model
     public const TYPE_GENERAL = 'general';
 
     public const CARE_STATUS_NOT_STARTED = 'not_started';
+
     public const CARE_STATUS_IN_PROGRESS = 'in_progress';
+
     public const CARE_STATUS_DONE = 'done';
+
     public const CARE_STATUS_NEED_FOLLOWUP = 'need_followup';
+
     public const CARE_STATUS_FAILED = 'failed';
 
     public const DEFAULT_CARE_STATUS = self::CARE_STATUS_DONE;
@@ -85,6 +89,7 @@ class Note extends Model
 
     protected $fillable = [
         'patient_id',
+        'branch_id',
         'customer_id',
         'user_id',
         'type',
@@ -100,6 +105,7 @@ class Note extends Model
     ];
 
     protected $casts = [
+        'branch_id' => 'integer',
         'care_at' => 'datetime',
         'is_recurring' => 'boolean',
     ];
@@ -107,6 +113,10 @@ class Note extends Model
     protected static function booted(): void
     {
         static::saving(function (self $note): void {
+            if (blank($note->branch_id)) {
+                $note->branch_id = static::inferBranchId($note);
+            }
+
             $normalizedStatus = static::normalizeCareStatus($note->care_status) ?? static::DEFAULT_CARE_STATUS;
             $note->care_status = $normalizedStatus;
 
@@ -139,6 +149,11 @@ class Note extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function user()
@@ -254,5 +269,37 @@ class Note extends Model
         }
 
         return array_values(array_unique($aliases));
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id
+            ?? $this->patient?->first_branch_id
+            ?? $this->customer?->branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
+    }
+
+    protected static function inferBranchId(self $note): ?int
+    {
+        if ($note->patient_id) {
+            $patientBranchId = Patient::query()
+                ->whereKey((int) $note->patient_id)
+                ->value('first_branch_id');
+
+            if ($patientBranchId !== null) {
+                return (int) $patientBranchId;
+            }
+        }
+
+        if (! $note->customer_id) {
+            return null;
+        }
+
+        $customerBranchId = Customer::query()
+            ->whereKey((int) $note->customer_id)
+            ->value('branch_id');
+
+        return $customerBranchId !== null ? (int) $customerBranchId : null;
     }
 }

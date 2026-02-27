@@ -44,6 +44,7 @@ class ConsentObserver
     {
         return [
             'patient_id' => $consent->patient_id,
+            'branch_id' => $consent->resolveBranchId(),
             'service_id' => $consent->service_id,
             'plan_item_id' => $consent->plan_item_id,
             'consent_type' => $consent->consent_type,

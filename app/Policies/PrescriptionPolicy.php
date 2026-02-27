@@ -69,8 +69,6 @@ class PrescriptionPolicy
 
     protected function canAccessPrescription(User $authUser, Prescription $prescription): bool
     {
-        $branchId = $prescription->patient?->first_branch_id;
-
-        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
+        return $authUser->canAccessBranch($prescription->resolveBranchId());
     }
 }

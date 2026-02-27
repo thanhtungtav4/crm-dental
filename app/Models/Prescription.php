@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Prescription extends Model
 {
@@ -14,6 +14,7 @@ class Prescription extends Model
 
     protected $fillable = [
         'patient_id',
+        'branch_id',
         'treatment_session_id',
         'prescription_code',
         'prescription_name',
@@ -24,6 +25,7 @@ class Prescription extends Model
     ];
 
     protected $casts = [
+        'branch_id' => 'integer',
         'treatment_date' => 'date',
     ];
 
@@ -31,6 +33,11 @@ class Prescription extends Model
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function doctor(): BelongsTo
@@ -71,13 +78,17 @@ class Prescription extends Model
             $newNumber = '0001';
         }
 
-        return $prefix . $date . $newNumber;
+        return $prefix.$date.$newNumber;
     }
 
     // Boot method to auto-generate code
     protected static function booted(): void
     {
         static::creating(function (Prescription $prescription) {
+            if (blank($prescription->branch_id)) {
+                $prescription->branch_id = static::inferBranchId($prescription);
+            }
+
             if (empty($prescription->prescription_code)) {
                 $prescription->prescription_code = static::generatePrescriptionCode();
             }
@@ -86,6 +97,15 @@ class Prescription extends Model
                 $prescription->created_by = auth()->id();
             }
         });
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id
+            ?? $this->patient?->first_branch_id
+            ?? $this->treatmentSession?->treatmentPlan?->branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
     }
 
     // Get total medications count
@@ -108,5 +128,29 @@ class Prescription extends Model
     public function scopeOnDate($query, $date)
     {
         return $query->whereDate('treatment_date', $date);
+    }
+
+    protected static function inferBranchId(self $prescription): ?int
+    {
+        if ($prescription->patient_id) {
+            $patientBranchId = Patient::query()
+                ->whereKey((int) $prescription->patient_id)
+                ->value('first_branch_id');
+
+            if ($patientBranchId !== null) {
+                return (int) $patientBranchId;
+            }
+        }
+
+        if (! $prescription->treatment_session_id) {
+            return null;
+        }
+
+        $sessionBranchId = TreatmentSession::query()
+            ->join('treatment_plans', 'treatment_plans.id', '=', 'treatment_sessions.treatment_plan_id')
+            ->where('treatment_sessions.id', (int) $prescription->treatment_session_id)
+            ->value('treatment_plans.branch_id');
+
+        return $sessionBranchId !== null ? (int) $sessionBranchId : null;
     }
 }
