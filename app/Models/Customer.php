@@ -16,16 +16,20 @@ class Customer extends Model
         'branch_id',
         'full_name',
         'phone',
+        'phone_normalized',
         'email',
         'birthday',
         'gender',
         'address',
         'source',
+        'source_detail',
         'customer_group_id',
         'promotion_group_id',
         'status',
         'assigned_to',
         'next_follow_up_at',
+        'last_contacted_at',
+        'last_web_contact_at',
         'notes',
         'created_by',
         'updated_by',
@@ -33,6 +37,9 @@ class Customer extends Model
 
     protected $casts = [
         'birthday' => 'date',
+        'last_contacted_at' => 'datetime',
+        'next_follow_up_at' => 'datetime',
+        'last_web_contact_at' => 'datetime',
     ];
 
     public function branch()

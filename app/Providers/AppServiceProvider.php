@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\ClinicSetting;
 use App\Models\Consent;
 use App\Models\InsuranceClaim;
 use App\Models\Note;
@@ -25,6 +26,9 @@ use App\Observers\PrescriptionObserver;
 use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,6 +46,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('web-leads', function (Request $request): Limit {
+            $configuredRate = (int) ClinicSetting::getValue(
+                'web_lead.rate_limit_per_minute',
+                config('services.web_lead.rate_limit_per_minute', 60),
+            );
+
+            $perMinute = min(max($configuredRate, 1), 1000);
+            $tokenFingerprint = (string) ($request->bearerToken() ?: $request->header('X-Web-Lead-Token') ?: 'anonymous');
+
+            return Limit::perMinute($perMinute)
+                ->by(sha1($tokenFingerprint.'|'.$request->ip()));
+        });
+
         // Register Appointment Observer
         Appointment::observe(AppointmentObserver::class);
         Note::observe(NoteObserver::class);

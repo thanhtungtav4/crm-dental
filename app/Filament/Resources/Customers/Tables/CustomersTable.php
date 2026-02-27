@@ -2,17 +2,16 @@
 
 namespace App\Filament\Resources\Customers\Tables;
 
-
 use App\Models\Appointment;
-use App\Models\Customer;
-use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -31,6 +30,10 @@ class CustomersTable
                 TextColumn::make('email')
                     ->label('Email')
                     ->toggleable(),
+                TextColumn::make('source_detail')
+                    ->label('Nguồn chi tiết')
+                    ->badge()
+                    ->toggleable(),
                 TextColumn::make('customerGroup.name')
                     ->label('Nhóm KH')
                     ->badge()
@@ -45,8 +48,8 @@ class CustomersTable
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->icon(fn(?string $state) => \App\Support\StatusBadge::icon($state))
-                    ->color(fn(?string $state) => \App\Support\StatusBadge::color($state)),
+                    ->icon(fn (?string $state) => \App\Support\StatusBadge::icon($state))
+                    ->color(fn (?string $state) => \App\Support\StatusBadge::color($state)),
                 TextColumn::make('created_at')
                     ->label('Ngày tạo')
                     ->dateTime()
@@ -54,6 +57,21 @@ class CustomersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('source')
+                    ->label('Nguồn')
+                    ->options([
+                        'walkin' => 'Khách vãng lai',
+                        'facebook' => 'Facebook',
+                        'zalo' => 'Zalo',
+                        'referral' => 'Giới thiệu',
+                        'appointment' => 'Lịch hẹn',
+                        'other' => 'Khác',
+                    ]),
+                SelectFilter::make('source_detail')
+                    ->label('Nguồn chi tiết')
+                    ->options([
+                        'website' => 'Website',
+                    ]),
                 TrashedFilter::make(),
             ])
             ->recordActions([
@@ -63,8 +81,10 @@ class CustomersTable
                     ->icon('heroicon-o-eye')
                     ->visible(function ($record) {
                         $patientId = optional($record->patient)->id;
-                        if (!$patientId)
+                        if (! $patientId) {
                             return false;
+                        }
+
                         return Appointment::query()
                             ->where('patient_id', $patientId)
                             ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
@@ -77,8 +97,10 @@ class CustomersTable
                             ->label('Chọn lịch hẹn')
                             ->options(function ($record) {
                                 $patientId = optional($record->patient)->id;
-                                if (!$patientId)
+                                if (! $patientId) {
                                     return [];
+                                }
+
                                 return Appointment::query()
                                     ->where('patient_id', $patientId)
                                     ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
@@ -92,6 +114,7 @@ class CustomersTable
                                             optional($a->doctor)->name ?? 'Chưa chọn bác sĩ',
                                             Appointment::statusLabel($a->status)
                                         );
+
                                         return [$a->id => $label];
                                     });
                             })
@@ -107,7 +130,7 @@ class CustomersTable
                     ->label('Xác nhận thành bệnh nhân')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn($record) => blank($record->patient))
+                    ->visible(fn ($record) => blank($record->patient))
                     ->action(function ($record) {
                         try {
                             /** @var \App\Services\PatientConversionService $service */
@@ -117,9 +140,9 @@ class CustomersTable
                             $isCanonicalOwner = (int) ($patient?->customer_id ?? 0) === (int) $record->id;
 
                             // Notification is handled inside Service, but we can add extra if needed
-                            // For table action, simple success is fine. Service sends to Database, 
+                            // For table action, simple success is fine. Service sends to Database,
                             // maybe we want a toast here.
-            
+
                             $toast = Notification::make();
 
                             if ($isCanonicalOwner) {
@@ -146,20 +169,20 @@ class CustomersTable
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
                             ->label('Bác sĩ')
-                            ->options(fn() => \App\Models\User::role('Doctor')->pluck('name', 'id'))
+                            ->options(fn () => \App\Models\User::role('Doctor')->pluck('name', 'id'))
                             ->searchable()
                             ->preload()
                             ->required(),
                         \Filament\Forms\Components\Select::make('branch_id')
                             ->label('Chi nhánh')
-                            ->options(fn() => \App\Models\Branch::query()->pluck('name', 'id'))
+                            ->options(fn () => \App\Models\Branch::query()->pluck('name', 'id'))
                             ->searchable()
                             ->preload()
-                            ->default(fn($record) => $record?->branch_id)
+                            ->default(fn ($record) => $record?->branch_id)
                             ->required(),
                         \Filament\Forms\Components\DateTimePicker::make('date')
                             ->label('Thời gian')
-                            ->default(fn() => now()->addDay())
+                            ->default(fn () => now()->addDay())
                             ->required(),
                         \Filament\Forms\Components\Select::make('appointment_kind')
                             ->label('Loại lịch hẹn')

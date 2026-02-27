@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'web_lead' => [
+        'enabled' => env('WEB_LEAD_API_ENABLED', false),
+        'token' => env('WEB_LEAD_API_TOKEN'),
+        'rate_limit_per_minute' => env('WEB_LEAD_API_RATE_LIMIT_PER_MINUTE', 60),
+    ],
+
 ];
