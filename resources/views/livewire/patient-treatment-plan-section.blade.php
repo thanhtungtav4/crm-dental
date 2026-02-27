@@ -39,6 +39,7 @@
                         <th class="is-right">Thành tiền</th>
                         <th class="is-right">Giảm giá (%)</th>
                         <th class="is-right">Tiền giảm giá</th>
+                        <th class="is-right">VAT</th>
                         <th class="is-right">Tổng chi phí</th>
                         <th>Ghi chú</th>
                         <th class="is-center">Tình trạng</th>
@@ -59,10 +60,13 @@
                             $lineAmount = ((int) ($item->quantity ?? 0)) * $unitPrice;
                             $discountPercent = (float) ($item->discount_percent ?? 0);
                             $discountAmount = (float) ($item->discount_amount ?? 0);
+                            $vatAmount = (float) ($item->vat_amount ?? 0);
                             if ($discountAmount <= 0 && $discountPercent > 0) {
                                 $discountAmount = ($discountPercent / 100) * $lineAmount;
                             }
-                            $totalAmount = $lineAmount - $discountAmount;
+                            $totalAmount = $item->final_amount !== null
+                                ? (float) $item->final_amount
+                                : max(0, $lineAmount - $discountAmount + $vatAmount);
 
                             $statusLabel = $item->getStatusLabel();
                             $statusClass = match ($item->status) {
@@ -93,6 +97,7 @@
                             <td class="is-right">{{ $formatMoney($lineAmount) }}</td>
                             <td class="is-right">{{ $discountPercent ? rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') : 0 }}</td>
                             <td class="is-right">{{ $formatMoney($discountAmount) }}</td>
+                            <td class="is-right">{{ $formatMoney($vatAmount) }}</td>
                             <td class="is-right">{{ $formatMoney($totalAmount) }}</td>
                             <td>{{ $item->notes ?: '-' }}</td>
                             <td class="is-center">
@@ -120,7 +125,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="crm-treatment-empty crm-treatment-empty-bordered">
+                            <td colspan="14" class="crm-treatment-empty crm-treatment-empty-bordered">
                                 Kế hoạch điều trị chưa có item
                             </td>
                         </tr>

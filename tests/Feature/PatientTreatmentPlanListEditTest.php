@@ -27,6 +27,9 @@ it('redirects plan item edit page back to return url after save', function (): v
     $page = File::get($pagePath);
 
     expect($page)->toContain('protected function getRedirectUrl(): string')
+        ->and($page)->toContain('DeleteAction::make()')
+        ->and($page)->toContain('RestoreAction::make()')
+        ->and($page)->toContain('->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl(\'index\'))')
         ->and($page)->toContain("request()->query('return_url')")
         ->and($page)->toContain('str_starts_with($returnUrl, \'/\')');
 });

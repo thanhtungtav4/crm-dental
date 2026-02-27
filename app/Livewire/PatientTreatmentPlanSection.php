@@ -3,9 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\ClinicalNote;
-use App\Models\PlanItem;
 use App\Models\Patient;
 use App\Models\PatientToothCondition;
+use App\Models\PlanItem;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\ToothCondition;
@@ -21,11 +21,15 @@ class PatientTreatmentPlanSection extends Component
     public int $patientId;
 
     public bool $showPlanModal = false;
+
     public bool $showProcedureModal = false;
 
     public array $draftItems = [];
+
     public array $selectedServiceIds = [];
+
     public string $procedureSearch = '';
+
     public ?int $selectedCategoryId = null;
 
     public function mount(int $patientId): void
@@ -92,7 +96,7 @@ class PatientTreatmentPlanSection extends Component
 
     public function removeDraftItem(int $index): void
     {
-        if (!isset($this->draftItems[$index])) {
+        if (! isset($this->draftItems[$index])) {
             return;
         }
 
@@ -107,6 +111,7 @@ class PatientTreatmentPlanSection extends Component
                 ->title('Vui lòng thêm ít nhất một thủ thuật')
                 ->warning()
                 ->send();
+
             return;
         }
 
@@ -116,9 +121,10 @@ class PatientTreatmentPlanSection extends Component
 
             if ($approvalStatus === PlanItem::APPROVAL_DECLINED && $declineReason === '') {
                 Notification::make()
-                    ->title('Cần nhập lý do từ chối cho hạng mục #' . ($index + 1))
+                    ->title('Cần nhập lý do từ chối cho hạng mục #'.($index + 1))
                     ->warning()
                     ->send();
+
                 return;
             }
         }
@@ -130,7 +136,7 @@ class PatientTreatmentPlanSection extends Component
             ->pluck('diagnosis_ids')
             ->filter()
             ->flatten()
-            ->map(fn($value) => (int) $value)
+            ->map(fn ($value) => (int) $value)
             ->filter()
             ->unique()
             ->values();
@@ -156,16 +162,16 @@ class PatientTreatmentPlanSection extends Component
             }
 
             $diagnosisIds = collect($item['diagnosis_ids'] ?? [])
-                ->map(fn($value) => (int) $value)
+                ->map(fn ($value) => (int) $value)
                 ->filter()
                 ->values()
                 ->all();
 
             $toothIds = collect($diagnosisIds)
-                ->map(fn(int $diagnosisId) => (string) ($diagnosisLookup->get($diagnosisId)?->tooth_number ?? ''))
+                ->map(fn (int $diagnosisId) => (string) ($diagnosisLookup->get($diagnosisId)?->tooth_number ?? ''))
                 ->filter()
                 ->unique()
-                ->sortBy(fn(string $toothNumber) => (int) $toothNumber, SORT_NUMERIC)
+                ->sortBy(fn (string $toothNumber) => (int) $toothNumber, SORT_NUMERIC)
                 ->values()
                 ->all();
 
@@ -216,7 +222,7 @@ class PatientTreatmentPlanSection extends Component
 
         $diagnosisData = $latestClinicalNote?->tooth_diagnosis_data;
 
-        if (!is_array($diagnosisData)) {
+        if (! is_array($diagnosisData)) {
             return;
         }
 
@@ -238,14 +244,14 @@ class PatientTreatmentPlanSection extends Component
                 $teethInChart[$tooth] = true;
                 $notes = trim((string) data_get($payload, 'notes', ''));
                 $conditions = collect(data_get($payload, 'conditions', []))
-                    ->map(fn($code) => $this->normalizeConditionCode((string) $code))
+                    ->map(fn ($code) => $this->normalizeConditionCode((string) $code))
                     ->filter()
                     ->unique()
                     ->values();
 
                 foreach ($conditions as $conditionCode) {
                     $conditionId = $conditionIdByCode[$conditionCode] ?? null;
-                    if (!$conditionId) {
+                    if (! $conditionId) {
                         continue;
                     }
 
@@ -265,7 +271,7 @@ class PatientTreatmentPlanSection extends Component
                 ->where('patient_id', $this->patientId)
                 ->whereIn('tooth_number', array_keys($teethInChart))
                 ->get()
-                ->keyBy(fn(PatientToothCondition $condition) => $this->makeDiagnosisKey(
+                ->keyBy(fn (PatientToothCondition $condition) => $this->makeDiagnosisKey(
                     (string) $condition->tooth_number,
                     (int) $condition->tooth_condition_id
                 ));
@@ -300,7 +306,7 @@ class PatientTreatmentPlanSection extends Component
                         $updates['diagnosed_by'] = Auth::id();
                     }
 
-                    if (!empty($updates)) {
+                    if (! empty($updates)) {
                         $existing->update($updates);
                     }
 
@@ -330,7 +336,7 @@ class PatientTreatmentPlanSection extends Component
                     (int) $condition->tooth_condition_id
                 );
 
-                if (!isset($activeDiagnosisKeys[$key])) {
+                if (! isset($activeDiagnosisKeys[$key])) {
                     $condition->delete();
                 }
             }
@@ -385,7 +391,7 @@ class PatientTreatmentPlanSection extends Component
 
     protected function makeDiagnosisKey(string $toothNumber, int $toothConditionId): string
     {
-        return $toothNumber . '|' . $toothConditionId;
+        return $toothNumber.'|'.$toothConditionId;
     }
 
     protected function resolvePlan(): TreatmentPlan
@@ -405,7 +411,7 @@ class PatientTreatmentPlanSection extends Component
             'patient_id' => $this->patientId,
             'doctor_id' => Auth::id(),
             'branch_id' => $patient?->first_branch_id,
-            'title' => 'Kế hoạch điều trị ngày ' . now()->format('d/m/Y'),
+            'title' => 'Kế hoạch điều trị ngày '.now()->format('d/m/Y'),
             'status' => 'draft',
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
@@ -421,7 +427,7 @@ class PatientTreatmentPlanSection extends Component
     {
         return PlanItem::query()
             ->with(['service:id,name', 'treatmentPlan:id,patient_id'])
-            ->whereHas('treatmentPlan', fn($query) => $query->where('patient_id', $this->patientId))
+            ->whereHas('treatmentPlan', fn ($query) => $query->where('patient_id', $this->patientId))
             ->latest('id')
             ->get();
     }
@@ -467,9 +473,10 @@ class PatientTreatmentPlanSection extends Component
         return $diagnosisRecords
             ->mapWithKeys(function (PatientToothCondition $condition) {
                 $label = trim(sprintf('%s %s',
-                    $condition->tooth_number ? 'Răng ' . $condition->tooth_number . ' -' : '',
+                    $condition->tooth_number ? 'Răng '.$condition->tooth_number.' -' : '',
                     $condition->condition?->name ?? $condition->tooth_condition_id
                 ));
+
                 return [$condition->id => $label];
             })
             ->all();
@@ -487,8 +494,8 @@ class PatientTreatmentPlanSection extends Component
     {
         return Service::query()
             ->active()
-            ->when($this->selectedCategoryId, fn($query) => $query->where('category_id', $this->selectedCategoryId))
-            ->when($this->procedureSearch, fn($query) => $query->where('name', 'like', '%' . $this->procedureSearch . '%'))
+            ->when($this->selectedCategoryId, fn ($query) => $query->where('category_id', $this->selectedCategoryId))
+            ->when($this->procedureSearch, fn ($query) => $query->where('name', 'like', '%'.$this->procedureSearch.'%'))
             ->ordered()
             ->limit(200)
             ->get(['id', 'name', 'default_price', 'description']);
@@ -501,7 +508,7 @@ class PatientTreatmentPlanSection extends Component
         $diagnosisRecords = $this->getDiagnosisRecords();
         $diagnosisOptions = $this->getDiagnosisOptions($diagnosisRecords);
         $diagnosisDetails = $diagnosisRecords
-            ->mapWithKeys(fn(PatientToothCondition $condition) => [
+            ->mapWithKeys(fn (PatientToothCondition $condition) => [
                 $condition->id => [
                     'tooth_number' => (string) $condition->tooth_number,
                     'condition_name' => (string) ($condition->condition?->name ?? ''),
@@ -511,7 +518,7 @@ class PatientTreatmentPlanSection extends Component
         $categories = $this->getCategories();
         $services = $this->getServices();
 
-        $calcLineAmount = fn($item) => ((float) ($item->price ?? 0)) * ((int) ($item->quantity ?? 0));
+        $calcLineAmount = fn ($item) => ((float) ($item->price ?? 0)) * ((int) ($item->quantity ?? 0));
         $calcDiscountAmount = function ($item) use ($calcLineAmount) {
             $amount = $calcLineAmount($item);
             $discountAmount = (float) ($item->discount_amount ?? 0);
@@ -523,12 +530,21 @@ class PatientTreatmentPlanSection extends Component
 
             return $discountAmount;
         };
+        $calcFinalAmount = function ($item) use ($calcLineAmount, $calcDiscountAmount) {
+            if ($item->final_amount !== null) {
+                return (float) $item->final_amount;
+            }
 
-        $estimatedTotal = $planItems->sum(fn($item) => $calcLineAmount($item));
-        $discountTotal = $planItems->sum(fn($item) => $calcDiscountAmount($item));
-        $totalCost = $estimatedTotal - $discountTotal;
-        $completedCost = $planItems->filter(fn($item) => $item->is_completed || $item->status === 'completed')
-            ->sum(fn($item) => $calcLineAmount($item) - $calcDiscountAmount($item));
+            $vatAmount = (float) ($item->vat_amount ?? 0);
+
+            return max(0, $calcLineAmount($item) - $calcDiscountAmount($item) + $vatAmount);
+        };
+
+        $estimatedTotal = $planItems->sum(fn ($item) => $calcLineAmount($item));
+        $discountTotal = $planItems->sum(fn ($item) => $calcDiscountAmount($item));
+        $totalCost = $planItems->sum(fn ($item) => $calcFinalAmount($item));
+        $completedCost = $planItems->filter(fn ($item) => $item->is_completed || $item->status === 'completed')
+            ->sum(fn ($item) => $calcFinalAmount($item));
         $pendingCost = max(0, $totalCost - $completedCost);
 
         return view('livewire.patient-treatment-plan-section', [

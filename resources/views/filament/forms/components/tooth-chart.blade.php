@@ -59,6 +59,7 @@
         draftConditions: [],
         conditions: @js($conditionsJson),
         conditionOrder: @js($conditionOrder),
+        multiSelectMode: false,
 
         getToothData(tooth) {
             return this.state?.[tooth] || { conditions: [], status: 'current', notes: '' };
@@ -107,7 +108,7 @@
         toggleTooth(tooth, event) {
             if (!this.isToothVisible(tooth)) return;
 
-            const multiSelect = event && (event.ctrlKey || event.metaKey);
+            const multiSelect = this.multiSelectMode || (event && (event.ctrlKey || event.metaKey));
             if (!multiSelect) {
                 this.selectedTeeth = [tooth];
                 this.openModal();
@@ -127,6 +128,10 @@
 
         clearSelection() {
             this.selectedTeeth = [];
+        },
+
+        toggleMultiSelectMode() {
+            this.multiSelectMode = !this.multiSelectMode;
         },
 
         getToothTreatmentState(tooth) {
@@ -273,38 +278,51 @@
     }"
     class="crm-tooth-chart"
 >
-    <div class="mb-3 flex flex-wrap items-center justify-end gap-2 text-xs text-gray-600">
-        <div class="flex items-center gap-2">
-            <div class="flex items-center gap-1 rounded border border-gray-300 bg-white p-1">
-                <button
-                    type="button"
-                    @click="setDentitionMode('auto')"
-                    class="rounded px-2 py-1 text-xs"
-                    :class="dentitionMode === 'auto' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
-                >
-                    Tự động
-                </button>
-                <button
-                    type="button"
-                    @click="setDentitionMode('adult')"
-                    class="rounded px-2 py-1 text-xs"
-                    :class="dentitionMode === 'adult' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
-                >
-                    Người lớn
-                </button>
-                <button
-                    type="button"
-                    @click="setDentitionMode('child')"
-                    class="rounded px-2 py-1 text-xs"
-                    :class="dentitionMode === 'child' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
-                >
-                    Trẻ em
-                </button>
-            </div>
+    <div class="crm-tooth-toolbar mb-3" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
+        <div class="crm-dentition-toggle" role="tablist" aria-label="Chế độ sơ đồ răng" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff;">
+            <button
+                type="button"
+                @click="setDentitionMode('auto')"
+                class="crm-dentition-option"
+                :class="dentitionMode === 'auto' ? 'is-active' : ''"
+                :style="dentitionMode === 'auto'
+                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #7c6cf6); color: #fff; box-shadow: 0 1px 2px rgba(124, 108, 246, .3);'
+                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: #4b5563; box-shadow: none;'"
+                :aria-pressed="dentitionMode === 'auto' ? 'true' : 'false'"
+            >
+                Tự động
+            </button>
+            <button
+                type="button"
+                @click="setDentitionMode('adult')"
+                class="crm-dentition-option"
+                :class="dentitionMode === 'adult' ? 'is-active' : ''"
+                :style="dentitionMode === 'adult'
+                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #7c6cf6); color: #fff; box-shadow: 0 1px 2px rgba(124, 108, 246, .3);'
+                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: #4b5563; box-shadow: none;'"
+                :aria-pressed="dentitionMode === 'adult' ? 'true' : 'false'"
+            >
+                Người lớn
+            </button>
+            <button
+                type="button"
+                @click="setDentitionMode('child')"
+                class="crm-dentition-option"
+                :class="dentitionMode === 'child' ? 'is-active' : ''"
+                :style="dentitionMode === 'child'
+                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #7c6cf6); color: #fff; box-shadow: 0 1px 2px rgba(124, 108, 246, .3);'
+                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: #4b5563; box-shadow: none;'"
+                :aria-pressed="dentitionMode === 'child' ? 'true' : 'false'"
+            >
+                Trẻ em
+            </button>
+        </div>
 
-            <span class="rounded border border-gray-300 bg-white px-2 py-1 font-semibold">Đã chọn: <span x-text="selectedTeeth.length"></span></span>
-            <button type="button" @click="clearSelection()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-outline disabled:opacity-50">Bỏ chọn</button>
-            <button type="button" @click="openModal()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-primary disabled:opacity-50">Chẩn đoán răng đã chọn</button>
+        <div class="crm-tooth-toolbar-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+            <span class="crm-selection-chip" style="display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 7px; background: #fff; font-size: 12px; font-weight: 700; color: #4b5563;">Đã chọn: <span x-text="selectedTeeth.length"></span></span>
+            <button type="button" @click="toggleMultiSelectMode()" class="crm-btn crm-btn-sm" :class="multiSelectMode ? 'crm-btn-primary' : 'crm-btn-outline'" :aria-pressed="multiSelectMode ? 'true' : 'false'">Chọn nhiều</button>
+            <button type="button" @click="clearSelection()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-outline crm-btn-sm disabled:opacity-50">Bỏ chọn</button>
+            <button type="button" @click="openModal()" :disabled="selectedTeeth.length === 0" class="crm-btn crm-btn-primary crm-btn-sm disabled:opacity-50">Chẩn đoán răng đã chọn</button>
         </div>
     </div>
 
@@ -381,7 +399,7 @@
     </div>
 
     <p class="mt-3 text-center text-xs text-gray-500 italic">
-        * Bạn có thể chọn 1 tình trạng cho nhiều răng khác nhau bằng cách giữ phím "Ctrl" + chọn "Răng số..." mà bạn muốn tạo thủ thuật điều trị.
+        * Dùng nút "Chọn nhiều" (hỗ trợ mobile) hoặc giữ phím "Ctrl/Command" để chọn nhiều răng trước khi chẩn đoán.
     </p>
 
     <div class="note-teeth mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-600">
