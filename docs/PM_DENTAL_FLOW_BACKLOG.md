@@ -389,15 +389,15 @@ Ghi chu:
 - **Title**: KPI formula hardening cho multi-branch operations
 - **Type**: Story (Data + Product)
 - **Estimate**: 5 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Rasoat lai cong thuc booking->visit, chair utilization, recall, no-show.
   - Chot definition event-level (booked, arrived, in-chair, completed).
   - Align dashboard + export + snapshot lineage voi metric definition moi.
 - **Status Note**:
-  - Da co lineage versioning/checksum + alerting + regression test cho 1 so KPI chinh.
-  - Con mismatch event-level definition (`booking->visit` van dang tinh theo status appointment, chua khoi tao day du theo `arrived/in-chair`).
-  - Con thieu KPI dictionary artifact va bo doi soat dashboard-vs-audit query.
+  - Da chuyen `visit_count` sang event-level theo `visit_episodes` (`arrived/in_chair/completed`) thay vi dua tren status appointment.
+  - Da bo sung KPI dictionary versioned (`operational_kpi_formula.v2`) vao lineage payload + formula signature.
+  - Da bo sung regression test cho event definition KPI va snapshot lineage.
 - **Acceptance Criteria (QA)**:
   1. KPI dictionary duoc version hoa va ap dung thong nhat.
   2. So lieu dashboard khop query kiem toan.

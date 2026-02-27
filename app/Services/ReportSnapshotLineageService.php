@@ -13,7 +13,7 @@ class ReportSnapshotLineageService
     protected const PROFILES = [
         'operational_kpi_pack' => [
             'schema_version' => 'operational_kpi_pack.v1',
-            'formula_version' => 'operational_kpi_formula.v1',
+            'formula_version' => 'operational_kpi_formula.v2',
             'source_version' => 'operational_kpi_sources.v1',
         ],
     ];
@@ -34,12 +34,13 @@ class ReportSnapshotLineageService
         $profile = $this->resolveProfile($snapshotKey);
         $normalizedPayload = $this->normalize($payload);
         $normalizedLineage = $this->normalize($lineage);
+        $formulaVersion = (string) data_get($normalizedLineage, 'kpi_dictionary.version', $profile['formula_version']);
 
         $doctorBenchmarkFirst = collect((array) data_get($normalizedPayload, 'doctor_benchmark', []))
             ->first();
 
         $formulaSignature = $this->checksum([
-            'formula_version' => $profile['formula_version'],
+            'formula_version' => $formulaVersion,
             'metric_keys' => $this->sortedArrayKeys($normalizedPayload),
             'doctor_benchmark_keys' => $this->sortedArrayKeys((array) ($doctorBenchmarkFirst ?? [])),
         ]);
@@ -59,7 +60,7 @@ class ReportSnapshotLineageService
 
         $normalizedLineage = array_merge($normalizedLineage, [
             'schema_version' => $profile['schema_version'],
-            'formula_version' => $profile['formula_version'],
+            'formula_version' => $formulaVersion,
             'source_version' => $profile['source_version'],
             'formula_signature' => $formulaSignature,
             'source_signature' => $sourceSignature,

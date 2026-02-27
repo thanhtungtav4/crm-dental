@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\PlanItem;
 use App\Models\User;
 use App\Models\VisitEpisode;
+use App\Support\OperationalKpiDictionary;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -30,13 +31,20 @@ class OperationalKpiService
             ->whereBetween('date', [$from, $to])
             ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId));
 
+        $episodesQuery = VisitEpisode::query()
+            ->whereBetween('scheduled_at', [$from, $to])
+            ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId));
+
         $totalBookings = (int) (clone $appointmentsQuery)->count();
-        $attendedVisits = (int) (clone $appointmentsQuery)
-            ->whereIn('status', Appointment::statusesForQuery([
-                Appointment::STATUS_CONFIRMED,
-                Appointment::STATUS_IN_PROGRESS,
-                Appointment::STATUS_COMPLETED,
-            ]))
+        $attendedVisits = (int) (clone $episodesQuery)
+            ->where(function (Builder $query): void {
+                $query->whereNotNull('arrived_at')
+                    ->orWhereNotNull('in_chair_at')
+                    ->orWhereIn('status', [
+                        VisitEpisode::STATUS_IN_PROGRESS,
+                        VisitEpisode::STATUS_COMPLETED,
+                    ]);
+            })
             ->count();
         $noShowCount = (int) (clone $appointmentsQuery)
             ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
@@ -88,10 +96,6 @@ class OperationalKpiService
             ->unique()
             ->count();
 
-        $episodesQuery = VisitEpisode::query()
-            ->whereBetween('scheduled_at', [$from, $to])
-            ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId));
-
         $plannedChairMinutes = (float) ((clone $episodesQuery)->sum('planned_duration_minutes') ?: 0);
         $actualChairMinutes = (float) ((clone $episodesQuery)->sum('chair_minutes') ?: 0);
 
@@ -136,6 +140,7 @@ class OperationalKpiService
             ->count();
 
         $doctorBenchmark = $this->buildDoctorBenchmark($from, $to, $branchId);
+        $kpiDictionary = OperationalKpiDictionary::toArray();
 
         $metrics = [
             'booking_count' => $totalBookings,
@@ -160,6 +165,7 @@ class OperationalKpiService
                     'from' => $from->toDateTimeString(),
                     'to' => $to->toDateTimeString(),
                 ],
+                'kpi_dictionary' => $kpiDictionary,
                 'sources' => [
                     ['table' => 'appointments', 'rows' => $totalBookings],
                     ['table' => 'plan_items', 'rows' => (int) (clone $planItemsQuery)->count()],
@@ -190,29 +196,43 @@ class OperationalKpiService
             ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId))
             ->get(['doctor_id', 'status']);
 
-        if ($appointments->isEmpty()) {
+        $arrivedByDoctor = VisitEpisode::query()
+            ->whereBetween('scheduled_at', [$from, $to])
+            ->whereNotNull('doctor_id')
+            ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->where(function (Builder $query): void {
+                $query->whereNotNull('arrived_at')
+                    ->orWhereNotNull('in_chair_at')
+                    ->orWhereIn('status', [
+                        VisitEpisode::STATUS_IN_PROGRESS,
+                        VisitEpisode::STATUS_COMPLETED,
+                    ]);
+            })
+            ->selectRaw('doctor_id, COUNT(*) as arrived_count')
+            ->groupBy('doctor_id')
+            ->pluck('arrived_count', 'doctor_id');
+
+        if ($appointments->isEmpty() && $arrivedByDoctor->isEmpty()) {
             return [];
         }
 
+        $doctorIds = $appointments->pluck('doctor_id')
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->merge($arrivedByDoctor->keys()->map(fn ($id): int => (int) $id))
+            ->unique()
+            ->values()
+            ->all();
+
         $doctorNames = User::query()
-            ->whereIn('id', $appointments->pluck('doctor_id')->filter()->unique()->values()->all())
+            ->whereIn('id', $doctorIds)
             ->pluck('name', 'id');
 
-        return $appointments
-            ->groupBy('doctor_id')
-            ->map(function ($rows, $doctorId) use ($doctorNames): array {
+        return collect($doctorIds)
+            ->map(function (int $doctorId) use ($appointments, $doctorNames, $arrivedByDoctor): array {
+                $rows = $appointments->where('doctor_id', $doctorId);
                 $bookingCount = (int) $rows->count();
-                $attendedCount = (int) $rows
-                    ->filter(fn (Appointment $appointment) => in_array(
-                        $appointment->status,
-                        Appointment::statusesForQuery([
-                            Appointment::STATUS_CONFIRMED,
-                            Appointment::STATUS_IN_PROGRESS,
-                            Appointment::STATUS_COMPLETED,
-                        ]),
-                        true,
-                    ))
-                    ->count();
+                $attendedCount = (int) ($arrivedByDoctor->get($doctorId) ?? 0);
                 $noShowCount = (int) $rows
                     ->filter(fn (Appointment $appointment) => in_array(
                         $appointment->status,
@@ -222,8 +242,8 @@ class OperationalKpiService
                     ->count();
 
                 return [
-                    'doctor_id' => (int) $doctorId,
-                    'doctor_name' => (string) ($doctorNames->get((int) $doctorId) ?? ('Doctor #'.$doctorId)),
+                    'doctor_id' => $doctorId,
+                    'doctor_name' => (string) ($doctorNames->get($doctorId) ?? ('Doctor #'.$doctorId)),
                     'booking_count' => $bookingCount,
                     'attended_count' => $attendedCount,
                     'no_show_count' => $noShowCount,
