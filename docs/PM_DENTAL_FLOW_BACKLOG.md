@@ -464,6 +464,7 @@ Ghi chu:
   - Gan gate vao CI sau migration de chan deploy khi baseline phan quyen action-level lech.
 - **Status Note**:
   - Da them migration backfill `ActionPermission` + matrix role theo `SensitiveActionRegistry`.
+  - Migration backfill da duoc chuan hoa theo huong self-contained (khong goi runtime service container) de an toan rollback/deploy dai han.
   - Da them command assert/sync baseline va test drift + repair.
   - Da cap nhat CI workflow voi `Action permission baseline gate`.
 - **Acceptance Criteria (QA)**:
