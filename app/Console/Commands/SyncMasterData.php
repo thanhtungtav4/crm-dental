@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class SyncMasterData extends Command
 {
-    protected $signature = 'master-data:sync {source_branch_id : Branch nguồn} {target_branch_ids* : Danh sách branch đích} {--entity=materials : Loại master data} {--conflict-policy=overwrite : Chính sách conflict (overwrite|skip|manual)} {--dry-run : Chỉ preview, không ghi DB}';
+    protected $signature = 'master-data:sync {source_branch_id : Branch nguồn} {target_branch_ids* : Danh sách branch đích} {--entity=materials : Entity cần sync (CSV hoặc all)} {--conflict-policy=overwrite : Chính sách conflict (overwrite|skip|manual)} {--dry-run : Chỉ preview, không ghi DB}';
 
     protected $description = 'Đồng bộ master data liên chi nhánh (vật tư/danh mục nền).';
 
@@ -39,25 +39,22 @@ class SyncMasterData extends Command
             return self::INVALID;
         }
 
-        $entity = strtolower(trim((string) $this->option('entity')));
-        if ($entity !== MasterDataSyncService::ENTITY_MATERIALS) {
-            $this->warn('Hiện chỉ hỗ trợ đồng bộ entity "materials".');
+        $entities = $this->syncService->normalizeEntities((string) $this->option('entity'));
 
-            return self::INVALID;
-        }
-
-        $results = $this->syncService->syncMaterials(
+        $results = $this->syncService->sync(
             sourceBranchId: $sourceBranchId,
             targetBranchIds: $targetBranchIds,
+            entities: $entities,
             dryRun: (bool) $this->option('dry-run'),
             conflictPolicy: (string) $this->option('conflict-policy'),
             triggeredBy: auth()->id(),
         );
 
         $this->table(
-            ['Target Branch', 'Synced', 'Skipped', 'Conflict', 'Status'],
+            ['Entity', 'Target Branch', 'Synced', 'Skipped', 'Conflict', 'Status'],
             collect($results)
                 ->map(fn (array $result) => [
+                    $result['entity'],
                     $result['target_branch_id'],
                     $result['synced_count'],
                     $result['skipped_count'],

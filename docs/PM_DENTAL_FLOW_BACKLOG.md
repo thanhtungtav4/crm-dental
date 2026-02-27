@@ -205,7 +205,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Mo rong master data sync da chi nhanh (service catalog, price book, consent template, recall rule)
 - **Type**: Story (BE + FE + Ops)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Acceptance Criteria (QA)**:
   1. Dong bo duoc toi thieu 4 loai master data ngoai `materials`.
   2. Co conflict policy ro rang (`skip/overwrite/manual`) va log actor + timestamp.
@@ -215,7 +215,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: MPI merge workflow + golden record + review queue lien chi nhanh
 - **Type**: Story (BE + FE + Ops)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Acceptance Criteria (QA)**:
   1. Co queue duplicate de review/merge thu cong.
   2. Merge giu day du mapping lich su patient_id cu -> patient_id chinh.

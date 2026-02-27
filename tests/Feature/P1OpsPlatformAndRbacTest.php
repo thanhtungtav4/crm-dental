@@ -3,6 +3,7 @@
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Branch;
+use App\Models\ClinicSetting;
 use App\Models\Consent;
 use App\Models\Customer;
 use App\Models\InsuranceClaim;
@@ -14,7 +15,10 @@ use App\Models\Material;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\PlanItem;
+use App\Models\RecallRule;
 use App\Models\ReportSnapshot;
+use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
@@ -227,6 +231,135 @@ it('applies conflict policy when syncing master data', function () {
         ->and($overwriteLog)->not->toBeNull()
         ->and((int) $overwriteLog->conflict_count)->toBe(0)
         ->and(data_get($overwriteLog->metadata, 'conflict_policy'))->toBe('overwrite');
+});
+
+it('syncs expanded multi-entity master data pack and keeps idempotency', function () {
+    $sourceBranch = Branch::factory()->create();
+    $targetBranch = Branch::factory()->create();
+
+    $category = ServiceCategory::query()->create([
+        'name' => 'Phẫu thuật',
+        'code' => 'CAT-SURGERY',
+        'active' => true,
+    ]);
+
+    $sourceService = Service::query()->create([
+        'category_id' => $category->id,
+        'name' => 'Cấy implant',
+        'code' => 'SRV-IMPLANT',
+        'description' => 'Dịch vụ implant chuẩn',
+        'unit' => 'răng',
+        'duration_minutes' => 90,
+        'tooth_specific' => true,
+        'requires_consent' => true,
+        'doctor_commission_rate' => 12.5,
+        'branch_id' => $sourceBranch->id,
+        'default_price' => 13000000,
+        'vat_rate' => 8,
+        'active' => true,
+    ]);
+
+    $targetService = Service::query()->create([
+        'category_id' => $category->id,
+        'name' => 'Cấy implant',
+        'code' => 'SRV-IMPLANT',
+        'branch_id' => $targetBranch->id,
+        'duration_minutes' => 45,
+        'requires_consent' => false,
+        'default_price' => 9000000,
+        'vat_rate' => 0,
+        'active' => true,
+    ]);
+
+    RecallRule::query()->create([
+        'branch_id' => $sourceBranch->id,
+        'service_id' => $sourceService->id,
+        'name' => 'Recall implant 6 tháng',
+        'offset_days' => 180,
+        'care_channel' => 'call',
+        'priority' => 2,
+        'is_active' => true,
+        'rules' => ['phase' => 'maintenance'],
+    ]);
+
+    ClinicSetting::query()->create([
+        'group' => 'consent',
+        'key' => 'consent.template.'.$sourceBranch->id.'.implant_v1',
+        'label' => 'Consent implant v1',
+        'value' => 'Mẫu consent implant',
+        'value_type' => 'text',
+        'is_secret' => false,
+        'is_active' => true,
+        'sort_order' => 10,
+    ]);
+
+    $entities = 'service_categories,service_catalog,price_book,recall_rules,consent_templates';
+
+    $this->artisan('master-data:sync', [
+        'source_branch_id' => $sourceBranch->id,
+        'target_branch_ids' => [$targetBranch->id],
+        '--entity' => $entities,
+        '--conflict-policy' => 'overwrite',
+    ])->assertSuccessful();
+
+    $syncedService = Service::query()
+        ->where('code', 'SRV-IMPLANT')
+        ->where('branch_id', $targetBranch->id)
+        ->first();
+
+    $syncedRecallRule = RecallRule::query()
+        ->where('branch_id', $targetBranch->id)
+        ->where('name', 'Recall implant 6 tháng')
+        ->first();
+
+    $syncedTemplate = ClinicSetting::query()
+        ->where('key', 'consent.template.'.$targetBranch->id.'.implant_v1')
+        ->first();
+
+    expect($syncedService)->not->toBeNull()
+        ->and((int) $syncedService->duration_minutes)->toBe(90)
+        ->and((bool) $syncedService->requires_consent)->toBeTrue()
+        ->and((float) $syncedService->default_price)->toEqualWithDelta(13000000.00, 0.01)
+        ->and((int) $syncedService->vat_rate)->toBe(8)
+        ->and($syncedRecallRule)->not->toBeNull()
+        ->and((int) $syncedRecallRule->offset_days)->toBe(180)
+        ->and($syncedTemplate)->not->toBeNull()
+        ->and((string) $syncedTemplate->value)->toBe('Mẫu consent implant');
+
+    $this->artisan('master-data:sync', [
+        'source_branch_id' => $sourceBranch->id,
+        'target_branch_ids' => [$targetBranch->id],
+        '--entity' => $entities,
+        '--conflict-policy' => 'overwrite',
+    ])->assertSuccessful();
+
+    $loggedEntities = MasterDataSyncLog::query()
+        ->where('source_branch_id', $sourceBranch->id)
+        ->where('target_branch_id', $targetBranch->id)
+        ->pluck('entity')
+        ->unique()
+        ->values()
+        ->all();
+
+    expect($loggedEntities)->toContain(
+        'service_categories',
+        'service_catalog',
+        'price_book',
+        'recall_rules',
+        'consent_templates',
+    );
+
+    expect(Service::query()
+        ->where('code', 'SRV-IMPLANT')
+        ->where('branch_id', $targetBranch->id)
+        ->count())->toBe(1);
+
+    expect(RecallRule::query()
+        ->where('branch_id', $targetBranch->id)
+        ->where('name', 'Recall implant 6 tháng')
+        ->count())->toBe(1);
+
+    expect($targetService->fresh()?->id)->toBe($syncedService?->id);
 });
 
 it('syncs mpi identities and detects cross branch duplicates', function () {

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientIdentity;
+use App\Models\MasterPatientMerge;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Collection;
@@ -13,6 +14,31 @@ class MasterPatientIndexService
 {
     public function syncForPatient(Patient $patient, bool $persist = true): int
     {
+        $activeMerge = $this->activeMergeForPatient($patient->id);
+
+        if ($activeMerge) {
+            if ($persist) {
+                MasterPatientIdentity::query()
+                    ->where('patient_id', $patient->id)
+                    ->delete();
+
+                MasterPatientDuplicate::query()
+                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                    ->where(function ($query) use ($patient): void {
+                        $query->where('patient_id', $patient->id)
+                            ->orWhereJsonContains('matched_patient_ids', $patient->id);
+                    })
+                    ->update([
+                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
+                        'review_note' => 'Auto-ignore do patient đã được merge vào hồ sơ chính #'.$activeMerge->canonical_patient_id,
+                        'reviewed_by' => auth()->id(),
+                        'reviewed_at' => now(),
+                    ]);
+            }
+
+            return 0;
+        }
+
         $identities = $this->extractIdentities($patient);
 
         if (! $persist) {
@@ -195,6 +221,15 @@ class MasterPatientIndexService
     protected function hashIdentity(string $type, string $value): string
     {
         return hash('sha256', $type.'|'.$value);
+    }
+
+    protected function activeMergeForPatient(int $patientId): ?MasterPatientMerge
+    {
+        return MasterPatientMerge::query()
+            ->where('merged_patient_id', $patientId)
+            ->where('status', MasterPatientMerge::STATUS_APPLIED)
+            ->latest('id')
+            ->first();
     }
 
     /**

@@ -19,10 +19,13 @@ class Service extends Model
         'duration_minutes',
         'tooth_specific',
         'requires_consent',
+        'workflow_type',
+        'protocol_id',
         'default_materials',
         'doctor_commission_rate',
         'branch_id',
         'default_price',
+        'vat_rate',
         'sort_order',
         'active',
     ];
@@ -35,6 +38,7 @@ class Service extends Model
         'duration_minutes' => 'integer',
         'doctor_commission_rate' => 'decimal:2',
         'default_price' => 'decimal:2',
+        'vat_rate' => 'integer',
         'sort_order' => 'integer',
     ];
 
