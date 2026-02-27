@@ -44,7 +44,7 @@ class PaymentsTable
                     ->sortable()
                     ->color(fn ($record) => $record->direction === 'refund' ? 'danger' : $record->getMethodBadgeColor())
                     ->weight('bold')
-                    ->description(fn ($record) => $record->direction === 'refund' ? 'Phiếu hoàn' : 'Phiếu thu'),
+                    ->description(fn ($record) => $record->getDirectionLabel()),
 
                 BadgeColumn::make('direction')
                     ->label('Loại phiếu')
@@ -143,19 +143,12 @@ class PaymentsTable
                 // Filter by payment source
                 SelectFilter::make('payment_source')
                     ->label('Nguồn thanh toán')
-                    ->options([
-                        'patient' => '👤 Bệnh nhân',
-                        'insurance' => '🏥 Bảo hiểm',
-                        'other' => '📄 Khác',
-                    ])
+                    ->options(fn (): array => ClinicRuntimeSettings::paymentSourceOptions(withEmoji: true))
                     ->multiple(),
 
                 SelectFilter::make('direction')
                     ->label('Loại phiếu')
-                    ->options([
-                        'receipt' => 'Phiếu thu',
-                        'refund' => 'Phiếu hoàn',
-                    ])
+                    ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions())
                     ->multiple(),
 
                 // Filter by receiver

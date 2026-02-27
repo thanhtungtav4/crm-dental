@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Customers\Tables;
 
 use App\Models\Appointment;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -48,6 +49,7 @@ class CustomersTable
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
+                    ->formatStateUsing(fn (?string $state): string => ClinicRuntimeSettings::customerStatusLabel($state))
                     ->icon(fn (?string $state) => \App\Support\StatusBadge::icon($state))
                     ->color(fn (?string $state) => \App\Support\StatusBadge::color($state)),
                 TextColumn::make('created_at')
@@ -59,14 +61,7 @@ class CustomersTable
             ->filters([
                 SelectFilter::make('source')
                     ->label('Nguồn')
-                    ->options([
-                        'walkin' => 'Khách vãng lai',
-                        'facebook' => 'Facebook',
-                        'zalo' => 'Zalo',
-                        'referral' => 'Giới thiệu',
-                        'appointment' => 'Lịch hẹn',
-                        'other' => 'Khác',
-                    ]),
+                    ->options(fn (): array => ClinicRuntimeSettings::customerSourceOptions()),
                 SelectFilter::make('source_detail')
                     ->label('Nguồn chi tiết')
                     ->options([
@@ -74,6 +69,7 @@ class CustomersTable
                     ]),
                 TrashedFilter::make(),
             ])
+            ->defaultSort('created_at', direction: 'desc')
             ->recordActions([
                 EditAction::make(),
                 Action::make('viewAppointments')

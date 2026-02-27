@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentPlans\Schemas;
 
 use App\Models\Patient;
+use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
@@ -117,12 +118,7 @@ class TreatmentPlanForm
                                         ->schema([
                                             Forms\Components\Select::make('type')
                                                 ->label('Loại chỉ định')
-                                                ->options([
-                                                    'xray_pano' => 'Chụp X-Quang Panorama',
-                                                    'xray_ct' => 'Chụp phim CT Conebeam',
-                                                    'blood_test' => 'Xét nghiệm máu',
-                                                    'other' => 'Khác',
-                                                ])
+                                                ->options(fn (): array => ClinicRuntimeSettings::examIndicationOptions())
                                                 ->required()
                                                 ->columnSpan(1),
                                             Forms\Components\TextInput::make('note')

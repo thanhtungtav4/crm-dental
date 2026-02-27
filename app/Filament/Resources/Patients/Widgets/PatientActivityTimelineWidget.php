@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
@@ -238,21 +239,7 @@ class PatientActivityTimelineWidget extends Widget
                     return;
                 }
 
-                $careTypeLabels = [
-                    'warranty' => 'Bảo hành',
-                    'recall_recare' => 'Recall / Re-care',
-                    'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
-                    'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
-                    'appointment_reminder' => 'Nhắc lịch hẹn',
-                    'no_show_recovery' => 'Recovery no-show',
-                    'reactivation_follow_up' => 'Reactivation bệnh nhân',
-                    'risk_high_follow_up' => 'Can thiệp risk cao',
-                    'payment_reminder' => 'Nhắc thanh toán',
-                    'medication_reminder' => 'Nhắc lịch uống thuốc',
-                    'birthday_care' => 'Chăm sóc sinh nhật',
-                    'general_care' => 'Chăm sóc chung',
-                    'other' => 'Khác',
-                ];
+                $careTypeLabels = ClinicRuntimeSettings::careTypeDisplayOptions();
 
                 $careType = $log->metadata['care_type'] ?? null;
                 $careTypeLabel = $careTypeLabels[$careType] ?? 'Chăm sóc';

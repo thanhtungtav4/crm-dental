@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\Customer;
 use App\Models\WebLeadIngestion;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -113,7 +114,7 @@ class WebLeadIngestionService
                     'full_name' => $customer->full_name ?: (string) ($payload['full_name'] ?? ''),
                     'phone' => (string) ($payload['phone'] ?? ''),
                     'phone_normalized' => $normalizedPhone,
-                    'source' => $customer->source ?: 'other',
+                    'source' => $customer->source ?: ClinicRuntimeSettings::defaultWebLeadCustomerSource(),
                     'source_detail' => 'website',
                     'last_contacted_at' => now(),
                     'last_web_contact_at' => now(),
@@ -126,9 +127,9 @@ class WebLeadIngestionService
                     'full_name' => (string) ($payload['full_name'] ?? ''),
                     'phone' => (string) ($payload['phone'] ?? ''),
                     'phone_normalized' => $normalizedPhone,
-                    'source' => 'other',
+                    'source' => ClinicRuntimeSettings::defaultWebLeadCustomerSource(),
                     'source_detail' => 'website',
-                    'status' => 'lead',
+                    'status' => ClinicRuntimeSettings::defaultCustomerStatus(),
                     'last_contacted_at' => now(),
                     'last_web_contact_at' => now(),
                     'notes' => $this->appendWebNote(null, (string) ($payload['note'] ?? ''), $branchCode),

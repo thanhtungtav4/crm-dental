@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rules\Password;
@@ -72,11 +73,7 @@ class UserForm
 
                 Forms\Components\Select::make('gender')
                     ->label('Giới tính')
-                    ->options([
-                        'male' => 'Nam',
-                        'female' => 'Nữ',
-                        'other' => 'Khác',
-                    ])
+                    ->options(fn (): array => ClinicRuntimeSettings::genderOptions())
                     ->nullable(),
 
                 Forms\Components\TextInput::make('password')

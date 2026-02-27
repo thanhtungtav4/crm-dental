@@ -14,6 +14,7 @@
 pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->beforeEach(function () {
+        \App\Models\ClinicSetting::flushRuntimeCache();
         \Pest\Laravel\seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
     })
     ->in('Feature');

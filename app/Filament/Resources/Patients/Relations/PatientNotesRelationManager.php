@@ -345,27 +345,12 @@ class PatientNotesRelationManager extends RelationManager
 
     protected function getCareTypeOptions(): array
     {
-        return [
-            'warranty' => 'Bảo hành',
-            'recall_recare' => 'Recall / Re-care',
-            'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
-            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
-            'appointment_reminder' => 'Nhắc lịch hẹn',
-            'no_show_recovery' => 'Recovery no-show',
-            'reactivation_follow_up' => 'Reactivation bệnh nhân',
-            'risk_high_follow_up' => 'Can thiệp risk cao',
-            'payment_reminder' => 'Nhắc thanh toán',
-            'medication_reminder' => 'Nhắc lịch uống thuốc',
-            'other' => 'Khác',
-        ];
+        return ClinicRuntimeSettings::careTypeOptions();
     }
 
     protected function getCareTypeDisplayOptions(): array
     {
-        return $this->getCareTypeOptions() + [
-            'birthday_care' => 'Chăm sóc sinh nhật',
-            'general_care' => 'Chăm sóc chung',
-        ];
+        return ClinicRuntimeSettings::careTypeDisplayOptions();
     }
 
     protected function getCareChannelOptions(): array

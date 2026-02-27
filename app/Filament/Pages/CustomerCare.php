@@ -120,14 +120,14 @@ class CustomerCare extends Page implements HasTable
             default => Note::query()
                 ->with(['patient', 'user'])
                 ->whereNotNull('patient_id')
-                ->where(function (Builder $query) {
-                    $query->whereNull('care_type')
-                        ->orWhereIn('care_type', [
-                            'general_care',
-                            'treatment_plan_follow_up',
-                            'reactivation_follow_up',
-                            'risk_high_follow_up',
-                        ]);
+                ->where(function (Builder $query): void {
+                    $query->whereNull('care_type');
+
+                    $careScheduleTypes = $this->defaultCareScheduleTypes();
+
+                    if ($careScheduleTypes !== []) {
+                        $query->orWhereIn('care_type', $careScheduleTypes);
+                    }
                 }),
         };
     }
@@ -712,21 +712,7 @@ class CustomerCare extends Page implements HasTable
 
     protected function getCareTypeOptions(): array
     {
-        return [
-            'warranty' => 'Bảo hành',
-            'recall_recare' => 'Recall / Re-care',
-            'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
-            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
-            'appointment_reminder' => 'Nhắc lịch hẹn',
-            'no_show_recovery' => 'Recovery no-show',
-            'reactivation_follow_up' => 'Reactivation bệnh nhân',
-            'risk_high_follow_up' => 'Can thiệp risk cao',
-            'payment_reminder' => 'Nhắc thanh toán',
-            'medication_reminder' => 'Nhắc lịch uống thuốc',
-            'birthday_care' => 'Chăm sóc sinh nhật',
-            'general_care' => 'Chăm sóc chung',
-            'other' => 'Khác',
-        ];
+        return ClinicRuntimeSettings::careTypeDisplayOptions();
     }
 
     protected function getCareChannelOptions(): array
@@ -765,5 +751,25 @@ class CustomerCare extends Page implements HasTable
             11 => 'Tháng 11',
             12 => 'Tháng 12',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function defaultCareScheduleTypes(): array
+    {
+        $candidateTypes = [
+            'general_care',
+            'treatment_plan_follow_up',
+            'reactivation_follow_up',
+            'risk_high_follow_up',
+        ];
+
+        $availableTypes = $this->getCareTypeOptions();
+
+        return collect($candidateTypes)
+            ->filter(fn (string $type): bool => array_key_exists($type, $availableTypes))
+            ->values()
+            ->all();
     }
 }

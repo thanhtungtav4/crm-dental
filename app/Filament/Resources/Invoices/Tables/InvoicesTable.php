@@ -30,62 +30,71 @@ class InvoicesTable
                     ->sortable()
                     ->description(fn ($record) => $record->patient?->full_name)
                     ->weight('bold'),
-                
+
                 TextColumn::make('patient.full_name')
                     ->label('Bệnh nhân')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 TextColumn::make('plan.title')
                     ->label('Kế hoạch điều trị')
                     ->toggleable()
                     ->limit(30),
-                
+
                 TextColumn::make('total_amount')
                     ->label('Tổng tiền')
                     ->money('VND')
                     ->sortable()
                     ->weight('bold'),
-                
+
                 TextColumn::make('payment_info')
                     ->label('Thanh toán')
                     ->formatStateUsing(function ($record) {
                         $paid = number_format($record->getTotalPaid(), 0, ',', '.');
                         $total = number_format($record->total_amount, 0, ',', '.');
+
                         return "{$paid}đ / {$total}đ";
                     })
                     ->description(function ($record) {
                         $progress = $record->getPaymentProgress();
-                        return round($progress, 1) . '% hoàn thành';
+
+                        return round($progress, 1).'% hoàn thành';
                     })
                     ->color(function ($record) {
                         $progress = $record->getPaymentProgress();
-                        if ($progress >= 100) return 'success';
-                        if ($progress >= 50) return 'info';
-                        if ($progress > 0) return 'warning';
+                        if ($progress >= 100) {
+                            return 'success';
+                        }
+                        if ($progress >= 50) {
+                            return 'info';
+                        }
+                        if ($progress > 0) {
+                            return 'warning';
+                        }
+
                         return 'gray';
                     })
                     ->weight(fn ($record) => $record->getTotalPaid() > 0 ? 'bold' : 'normal')
                     ->sortable(query: function ($query, string $direction) {
                         return $query->orderBy('paid_amount', $direction);
                     }),
-                
+
                 TextColumn::make('balance')
                     ->label('Còn lại')
-                    ->formatStateUsing(fn ($record) => number_format($record->calculateBalance(), 0, ',', '.') . 'đ')
+                    ->formatStateUsing(fn ($record) => number_format($record->calculateBalance(), 0, ',', '.').'đ')
                     ->color(fn ($record) => $record->calculateBalance() > 0 ? 'danger' : 'success')
                     ->weight(fn ($record) => $record->calculateBalance() > 0 ? 'bold' : 'normal')
                     ->sortable(query: function ($query, string $direction) {
                         return $query->selectRaw('(total_amount - COALESCE(paid_amount, 0)) as balance')
                             ->orderBy('balance', $direction);
                     }),
-                
+
                 BadgeColumn::make('status')
                     ->label('Trạng thái')
                     ->formatStateUsing(fn ($record) => $record->getPaymentStatusLabel())
                     ->color(fn ($record) => $record->getStatusBadgeColor())
                     ->icon(function ($record) {
-                        return match($record->getStatusBadgeColor()) {
+                        return match ($record->getStatusBadgeColor()) {
                             'danger' => Heroicon::OutlinedExclamationCircle,
                             'success' => Heroicon::OutlinedCheckCircle,
                             'warning' => Heroicon::OutlinedClock,
@@ -99,38 +108,47 @@ class InvoicesTable
                     ->formatStateUsing(fn (bool $state): string => $state ? 'Đã xuất' : 'Chưa xuất')
                     ->color(fn (bool $state): string => $state ? 'success' : 'gray')
                     ->toggleable(),
-                
+
                 TextColumn::make('due_date')
                     ->label('Ngày đến hạn')
                     ->date('d/m/Y')
                     ->sortable()
                     ->formatStateUsing(function ($record) {
-                        if (!$record->due_date) return '—';
+                        if (! $record->due_date) {
+                            return '—';
+                        }
                         $dueDate = \Carbon\Carbon::parse($record->due_date);
                         if ($record->isOverdue()) {
                             $days = $record->getDaysOverdue();
-                            return '⚠️ ' . $dueDate->format('d/m/Y') . " (quá hạn {$days} ngày)";
+
+                            return '⚠️ '.$dueDate->format('d/m/Y')." (quá hạn {$days} ngày)";
                         }
                         $daysUntil = now()->diffInDays($dueDate, false);
                         if ($daysUntil <= 7 && $daysUntil >= 0) {
-                            return '⏰ ' . $dueDate->format('d/m/Y') . " (còn {$daysUntil} ngày)";
+                            return '⏰ '.$dueDate->format('d/m/Y')." (còn {$daysUntil} ngày)";
                         }
+
                         return $dueDate->format('d/m/Y');
                     })
                     ->color(function ($record) {
-                        if ($record->isOverdue()) return 'danger';
-                        if ($record->due_date && now()->diffInDays($record->due_date, false) <= 7) return 'warning';
+                        if ($record->isOverdue()) {
+                            return 'danger';
+                        }
+                        if ($record->due_date && now()->diffInDays($record->due_date, false) <= 7) {
+                            return 'warning';
+                        }
+
                         return 'success';
                     })
                     ->toggleable(),
-                
+
                 TextColumn::make('payments_count')
                     ->label('Số lần TT')
                     ->counts('payments')
                     ->badge()
                     ->color('info')
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 TextColumn::make('created_at')
                     ->label('Ngày tạo')
                     ->dateTime('d/m/Y')
@@ -149,7 +167,7 @@ class InvoicesTable
                         'overdue' => '🔴 Quá hạn',
                         'cancelled' => '❌ Đã hủy',
                     ]),
-                
+
                 SelectFilter::make('payment_progress')
                     ->label('Tiến độ thanh toán')
                     ->options([
@@ -172,10 +190,10 @@ class InvoicesTable
             ->recordActions([
                 ViewAction::make()
                     ->label('Xem'),
-                
+
                 EditAction::make()
                     ->label('Sửa'),
-                
+
                 Action::make('record_payment')
                     ->label('Thanh toán')
                     ->icon(Heroicon::OutlinedBanknotes)
@@ -189,8 +207,8 @@ class InvoicesTable
                             ->suffix('đ')
                             ->minValue(0)
                             ->default(fn ($record) => $record->calculateBalance())
-                            ->helperText(fn ($record) => 'Còn lại: ' . number_format($record->calculateBalance(), 0, ',', '.') . 'đ'),
-                        
+                            ->helperText(fn ($record) => 'Còn lại: '.number_format($record->calculateBalance(), 0, ',', '.').'đ'),
+
                         Select::make('method')
                             ->label('Phương thức')
                             ->required()
@@ -207,19 +225,27 @@ class InvoicesTable
                         Select::make('direction')
                             ->label('Loại phiếu')
                             ->required()
-                            ->options([
-                                'receipt' => 'Phiếu thu',
-                                'refund' => 'Phiếu hoàn',
-                            ])
-                            ->default('receipt')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions())
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentDirection())
                             ->native(false)
                             ->reactive(),
+
+                        Select::make('payment_source')
+                            ->label('Nguồn thanh toán')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentSourceOptions(withEmoji: true))
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentSource())
+                            ->native(false)
+                            ->reactive(),
+
+                        TextInput::make('insurance_claim_number')
+                            ->label('Số hồ sơ bảo hiểm')
+                            ->visible(fn (callable $get): bool => $get('payment_source') === 'insurance'),
 
                         TextInput::make('refund_reason')
                             ->label('Lý do hoàn')
                             ->visible(fn (callable $get) => $get('direction') === 'refund')
                             ->required(fn (callable $get) => $get('direction') === 'refund'),
-                        
+
                         DateTimePicker::make('paid_at')
                             ->label('Ngày thanh toán')
                             ->required()
@@ -228,21 +254,27 @@ class InvoicesTable
                             ->native(false),
                     ])
                     ->action(function ($record, array $data) {
+                        $direction = (string) ($data['direction'] ?? ClinicRuntimeSettings::defaultPaymentDirection());
+                        $paymentSource = (string) ($data['payment_source'] ?? ClinicRuntimeSettings::defaultPaymentSource());
+
                         $payment = $record->recordPayment(
-                            $data['amount'],
-                            $data['method'],
-                            'Thanh toán hóa đơn ' . $record->invoice_no,
-                            $data['paid_at'],
-                            $data['direction'] ?? 'receipt',
-                            $data['refund_reason'] ?? null,
-                            $data['transaction_ref'] ?? null
+                            amount: (float) $data['amount'],
+                            method: (string) $data['method'],
+                            notes: 'Thanh toán hóa đơn '.$record->invoice_no,
+                            paidAt: $data['paid_at'],
+                            direction: $direction,
+                            refundReason: $data['refund_reason'] ?? null,
+                            transactionRef: $data['transaction_ref'] ?? null,
+                            paymentSource: $paymentSource,
+                            insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
+                            receivedBy: auth()->id(),
                         );
 
                         $isDuplicateRetry = filled($data['transaction_ref'] ?? null) && ! $payment->wasRecentlyCreated;
-                        $title = ($data['direction'] ?? 'receipt') === 'refund'
+                        $title = $direction === 'refund'
                             ? 'Đã ghi nhận hoàn tiền'
                             : 'Thanh toán thành công';
-                        $body = 'Đã ghi nhận ' . number_format($data['amount'], 0, ',', '.') . 'đ';
+                        $body = 'Đã ghi nhận '.number_format($data['amount'], 0, ',', '.').'đ';
 
                         if ($isDuplicateRetry) {
                             $title = 'Mã giao dịch đã tồn tại';
@@ -263,7 +295,7 @@ class InvoicesTable
                     })
                     ->visible(fn ($record) => $record->status !== 'cancelled' && ($record->calculateBalance() > 0 || $record->hasPayments()))
                     ->modalWidth('md'),
-                
+
                 Action::make('view_payments')
                     ->label('Xem thanh toán')
                     ->icon(Heroicon::OutlinedCurrencyDollar)

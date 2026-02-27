@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Services\DoctorBranchAssignmentService;
 use App\Services\PatientBranchTransferService;
 use App\Support\ActionPermission;
+use App\Support\ClinicRuntimeSettings;
 use App\Support\GenderBadge;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -29,6 +30,7 @@ class PatientsTable
                 TextColumn::make('gender')
                     ->label('Giới tính')
                     ->badge()
+                    ->formatStateUsing(fn (?string $state): string => ClinicRuntimeSettings::genderLabel($state))
                     ->icon(fn (?string $state) => GenderBadge::icon($state))
                     ->color(fn (?string $state) => GenderBadge::color($state))
                     ->sortable()
@@ -63,6 +65,7 @@ class PatientsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([])
+            ->defaultSort('created_at', direction: 'desc')
             ->recordActions([
                 \Filament\Actions\ViewAction::make(),
                 EditAction::make(),

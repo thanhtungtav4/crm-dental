@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Customers\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -39,18 +40,13 @@ class CustomerForm
                                     ->label('Chi nhánh')
                                     ->searchable()
                                     ->preload()
-                                    ->default(fn() => auth()->user()?->branch_id)
+                                    ->default(fn () => auth()->user()?->branch_id)
                                     ->required(),
 
                                 Forms\Components\Select::make('source')
                                     ->label('Nguồn')
-                                    ->options([
-                                        'walkin' => 'Khách vãng lai',
-                                        'facebook' => 'Facebook',
-                                        'zalo' => 'Zalo',
-                                        'referral' => 'Giới thiệu',
-                                        'other' => 'Khác',
-                                    ]),
+                                    ->options(fn (): array => ClinicRuntimeSettings::customerSourceOptions())
+                                    ->default(fn (): string => ClinicRuntimeSettings::defaultCustomerSource()),
 
                                 Forms\Components\Select::make('customer_group_id')
                                     ->relationship('customerGroup', 'name', fn ($query) => $query->where('is_active', true))
@@ -66,14 +62,8 @@ class CustomerForm
 
                                 Forms\Components\Select::make('status')
                                     ->label('Trạng thái')
-                                    ->options([
-                                        'lead' => 'Lead',
-                                        'contacted' => 'Đã liên hệ',
-                                        'confirmed' => 'Đã xác nhận',
-                                        'converted' => 'Đã chuyển đổi',
-                                        'lost' => 'Mất lead',
-                                    ])
-                                    ->default('lead')
+                                    ->options(fn (): array => ClinicRuntimeSettings::customerStatusOptions())
+                                    ->default(fn (): string => ClinicRuntimeSettings::defaultCustomerStatus())
                                     ->required(),
 
                                 Forms\Components\Select::make('assigned_to')

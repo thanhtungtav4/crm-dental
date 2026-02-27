@@ -148,12 +148,7 @@ class Payment extends Model
      */
     public function getSourceLabel(): string
     {
-        return match ($this->payment_source) {
-            'patient' => 'Bệnh nhân',
-            'insurance' => 'Bảo hiểm',
-            'other' => 'Khác',
-            default => 'Không xác định',
-        };
+        return ClinicRuntimeSettings::paymentSourceLabel($this->payment_source);
     }
 
     /**
@@ -166,10 +161,7 @@ class Payment extends Model
 
     public function getDirectionLabel(): string
     {
-        return match ($this->direction) {
-            'refund' => 'Hoàn',
-            default => 'Thu',
-        };
+        return ClinicRuntimeSettings::paymentDirectionLabel($this->direction);
     }
 
     public function getSignedAmountAttribute(): float
@@ -257,12 +249,7 @@ class Payment extends Model
      */
     public function getSourceBadgeColor(): string
     {
-        return match ($this->payment_source) {
-            'patient' => 'success',
-            'insurance' => 'info',
-            'other' => 'gray',
-            default => 'gray',
-        };
+        return ClinicRuntimeSettings::paymentSourceColor($this->payment_source);
     }
 
     // ==================== SCOPES ====================

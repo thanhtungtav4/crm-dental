@@ -3,9 +3,309 @@
 namespace App\Support;
 
 use App\Models\ClinicSetting;
+use Illuminate\Support\Arr;
 
 class ClinicRuntimeSettings
 {
+    public static function defaultExamIndicationOptions(): array
+    {
+        return [
+            'cephalometric' => 'Cephalometric',
+            '3d' => '3D',
+            'canchiep' => 'Cận chóp',
+            'xet_nghiem_huyet_hoc' => 'Xét nghiệm huyết học',
+            'panorama' => 'Panorama',
+            'ext' => 'Ảnh (ext)',
+            'int' => 'Ảnh (int)',
+            'xet_nghiem_sinh_hoa' => 'Xét nghiệm sinh hóa',
+            '3d5x5' => '3D 5x5',
+            'khac' => 'Khác',
+        ];
+    }
+
+    public static function examIndicationOptions(): array
+    {
+        return static::catalogOptions(
+            'catalog.exam_indications',
+            static::defaultExamIndicationOptions(),
+        );
+    }
+
+    public static function defaultCustomerSourceOptions(): array
+    {
+        return [
+            'walkin' => 'Khách vãng lai',
+            'facebook' => 'Facebook',
+            'zalo' => 'Zalo',
+            'referral' => 'Giới thiệu',
+            'appointment' => 'Lịch hẹn',
+            'other' => 'Khác',
+        ];
+    }
+
+    public static function customerSourceOptions(): array
+    {
+        return static::catalogOptions(
+            'catalog.customer_sources',
+            static::defaultCustomerSourceOptions(),
+        );
+    }
+
+    public static function customerSourceLabel(?string $source): string
+    {
+        $normalizedSource = trim((string) $source);
+
+        return static::customerSourceOptions()[$normalizedSource] ?? 'Khác';
+    }
+
+    public static function defaultCustomerStatusOptions(): array
+    {
+        return [
+            'lead' => 'Lead',
+            'contacted' => 'Đã liên hệ',
+            'confirmed' => 'Đã xác nhận',
+            'converted' => 'Đã chuyển đổi',
+            'lost' => 'Mất lead',
+        ];
+    }
+
+    public static function customerStatusOptions(): array
+    {
+        return static::catalogOptions(
+            'catalog.customer_statuses',
+            static::defaultCustomerStatusOptions(),
+        );
+    }
+
+    public static function customerStatusLabel(?string $status): string
+    {
+        $normalizedStatus = trim((string) $status);
+
+        return static::customerStatusOptions()[$normalizedStatus] ?? 'Không xác định';
+    }
+
+    public static function defaultCustomerStatus(): string
+    {
+        $options = static::customerStatusOptions();
+
+        if (array_key_exists('lead', $options)) {
+            return 'lead';
+        }
+
+        $first = array_key_first($options);
+
+        return $first !== null ? (string) $first : 'lead';
+    }
+
+    public static function defaultCustomerSource(): string
+    {
+        $options = static::customerSourceOptions();
+
+        if (array_key_exists('walkin', $options)) {
+            return 'walkin';
+        }
+
+        $first = array_key_first($options);
+
+        return $first !== null ? (string) $first : 'other';
+    }
+
+    public static function defaultWebLeadCustomerSource(): string
+    {
+        $options = static::customerSourceOptions();
+
+        if (array_key_exists('other', $options)) {
+            return 'other';
+        }
+
+        return static::defaultCustomerSource();
+    }
+
+    public static function defaultCareTypeOptions(): array
+    {
+        return [
+            'warranty' => 'Bảo hành',
+            'recall_recare' => 'Recall / Re-care',
+            'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
+            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
+            'appointment_reminder' => 'Nhắc lịch hẹn',
+            'no_show_recovery' => 'Recovery no-show',
+            'reactivation_follow_up' => 'Reactivation bệnh nhân',
+            'risk_high_follow_up' => 'Can thiệp risk cao',
+            'payment_reminder' => 'Nhắc thanh toán',
+            'medication_reminder' => 'Nhắc lịch uống thuốc',
+            'birthday_care' => 'Chăm sóc sinh nhật',
+            'general_care' => 'Chăm sóc chung',
+            'other' => 'Khác',
+        ];
+    }
+
+    public static function careTypeOptions(bool $includeSystemTypes = false): array
+    {
+        $options = static::catalogOptions(
+            'catalog.care_types',
+            static::defaultCareTypeOptions(),
+        );
+
+        if (! $includeSystemTypes) {
+            unset($options['birthday_care'], $options['general_care']);
+        }
+
+        if (! array_key_exists('other', $options)) {
+            $options['other'] = 'Khác';
+        }
+
+        return $options;
+    }
+
+    public static function careTypeDisplayOptions(): array
+    {
+        return static::careTypeOptions(includeSystemTypes: true);
+    }
+
+    public static function careTypeLabel(?string $type): string
+    {
+        $normalizedType = trim((string) $type);
+
+        return static::careTypeDisplayOptions()[$normalizedType] ?? 'Khác';
+    }
+
+    public static function defaultPaymentSourceLabels(): array
+    {
+        return [
+            'patient' => 'Bệnh nhân',
+            'insurance' => 'Bảo hiểm',
+            'other' => 'Khác',
+        ];
+    }
+
+    public static function paymentSourceLabels(): array
+    {
+        return static::catalogOptions(
+            'catalog.payment_sources',
+            static::defaultPaymentSourceLabels(),
+        );
+    }
+
+    public static function paymentSourceOptions(bool $withEmoji = true): array
+    {
+        $labels = static::paymentSourceLabels();
+
+        if (! $withEmoji) {
+            return $labels;
+        }
+
+        $emojiMap = [
+            'patient' => '👤',
+            'insurance' => '🏥',
+            'other' => '📄',
+        ];
+
+        $options = [];
+
+        foreach ($labels as $source => $label) {
+            $emoji = $emojiMap[$source] ?? '•';
+            $options[$source] = "{$emoji} {$label}";
+        }
+
+        return $options;
+    }
+
+    public static function paymentSourceLabel(?string $source): string
+    {
+        $normalizedSource = trim((string) $source);
+
+        return static::paymentSourceLabels()[$normalizedSource] ?? 'Không xác định';
+    }
+
+    public static function defaultPaymentSource(): string
+    {
+        $options = static::paymentSourceLabels();
+
+        if (array_key_exists('patient', $options)) {
+            return 'patient';
+        }
+
+        $first = array_key_first($options);
+
+        return $first !== null ? (string) $first : 'other';
+    }
+
+    public static function paymentSourceColor(?string $source): string
+    {
+        return match (trim((string) $source)) {
+            'patient' => 'success',
+            'insurance' => 'info',
+            'other' => 'gray',
+            default => 'gray',
+        };
+    }
+
+    public static function defaultPaymentDirectionLabels(): array
+    {
+        return [
+            'receipt' => 'Phiếu thu',
+            'refund' => 'Phiếu hoàn',
+        ];
+    }
+
+    public static function paymentDirectionLabels(): array
+    {
+        return static::catalogOptions(
+            'catalog.payment_directions',
+            static::defaultPaymentDirectionLabels(),
+        );
+    }
+
+    public static function paymentDirectionOptions(): array
+    {
+        return static::paymentDirectionLabels();
+    }
+
+    public static function paymentDirectionLabel(?string $direction): string
+    {
+        $normalizedDirection = trim((string) $direction);
+
+        return static::paymentDirectionLabels()[$normalizedDirection] ?? 'Phiếu thu';
+    }
+
+    public static function defaultPaymentDirection(): string
+    {
+        $options = static::paymentDirectionOptions();
+
+        if (array_key_exists('receipt', $options)) {
+            return 'receipt';
+        }
+
+        $first = array_key_first($options);
+
+        return $first !== null ? (string) $first : 'receipt';
+    }
+
+    public static function defaultGenderOptions(): array
+    {
+        return [
+            'male' => 'Nam',
+            'female' => 'Nữ',
+            'other' => 'Khác',
+        ];
+    }
+
+    public static function genderOptions(): array
+    {
+        return static::catalogOptions(
+            'catalog.gender_options',
+            static::defaultGenderOptions(),
+        );
+    }
+
+    public static function genderLabel(?string $gender): string
+    {
+        $normalized = trim((string) $gender);
+
+        return static::genderOptions()[$normalized] ?? 'Chưa xác định';
+    }
+
     public static function get(string $key, mixed $default = null): mixed
     {
         return ClinicSetting::getValue($key, $default);
@@ -405,6 +705,80 @@ class ClinicRuntimeSettings
         return static::boolean('finance.allow_deposit', true);
     }
 
+    public static function brandingClinicName(): string
+    {
+        $fallback = (string) config('app.name', 'Dental CRM');
+        $value = trim((string) static::get('branding.clinic_name', $fallback));
+
+        return $value !== '' ? $value : $fallback;
+    }
+
+    public static function brandingLogoUrl(): string
+    {
+        $value = trim((string) static::get('branding.logo_url', ''));
+
+        return $value !== '' ? $value : asset('images/logo.svg');
+    }
+
+    public static function brandingAddress(): string
+    {
+        return trim((string) static::get('branding.address', ''));
+    }
+
+    public static function brandingPhone(): string
+    {
+        return trim((string) static::get('branding.phone', ''));
+    }
+
+    public static function brandingEmail(): string
+    {
+        return trim((string) static::get('branding.email', ''));
+    }
+
+    public static function brandingButtonBackgroundColor(): string
+    {
+        return static::normalizeHexColor(
+            static::get('branding.button_bg_color', '#2f66f6'),
+            '#2f66f6',
+        );
+    }
+
+    public static function brandingButtonHoverBackgroundColor(): string
+    {
+        $configuredHover = trim((string) static::get('branding.button_bg_hover_color', ''));
+
+        if ($configuredHover !== '') {
+            return static::normalizeHexColor($configuredHover, '#2456dc');
+        }
+
+        return static::darkenHexColor(static::brandingButtonBackgroundColor(), 0.12);
+    }
+
+    public static function brandingButtonTextColor(): string
+    {
+        return static::normalizeHexColor(
+            static::get('branding.button_text_color', '#ffffff'),
+            '#ffffff',
+        );
+    }
+
+    /**
+     * @return array{clinic_name: string, logo_url: string, address: string, phone: string, email: string, button_bg_color: string, button_bg_hover_color: string, button_text_color: string}
+     */
+    public static function brandingProfile(): array
+    {
+        return [
+            'clinic_name' => static::brandingClinicName(),
+            'logo_url' => static::brandingLogoUrl(),
+            'address' => static::brandingAddress(),
+            'phone' => static::brandingPhone(),
+            'email' => static::brandingEmail(),
+            'button_bg_color' => static::brandingButtonBackgroundColor(),
+            'button_bg_hover_color' => static::brandingButtonHoverBackgroundColor(),
+            'button_text_color' => static::brandingButtonTextColor(),
+        ];
+    }
+
     public static function loyaltyPointsPerTenThousandVnd(): int
     {
         return max(
@@ -502,5 +876,111 @@ class ClinicRuntimeSettings
     public static function riskAutoCreateHighRiskTicket(): bool
     {
         return static::boolean('risk.auto_create_high_risk_ticket', true);
+    }
+
+    private static function normalizeHexColor(mixed $value, string $fallback): string
+    {
+        $candidate = strtoupper(trim((string) $value));
+
+        if (preg_match('/^#[0-9A-F]{6}$/', $candidate) === 1) {
+            return $candidate;
+        }
+
+        if (preg_match('/^#[0-9A-F]{3}$/', $candidate) === 1) {
+            return sprintf(
+                '#%1$s%1$s%2$s%2$s%3$s%3$s',
+                $candidate[1],
+                $candidate[2],
+                $candidate[3],
+            );
+        }
+
+        return strtoupper($fallback);
+    }
+
+    private static function darkenHexColor(string $hex, float $ratio): string
+    {
+        $normalizedHex = static::normalizeHexColor($hex, '#2F66F6');
+        $ratio = max(0.0, min(1.0, $ratio));
+
+        $red = hexdec(substr($normalizedHex, 1, 2));
+        $green = hexdec(substr($normalizedHex, 3, 2));
+        $blue = hexdec(substr($normalizedHex, 5, 2));
+
+        $red = (int) max(0, min(255, round($red * (1 - $ratio))));
+        $green = (int) max(0, min(255, round($green * (1 - $ratio))));
+        $blue = (int) max(0, min(255, round($blue * (1 - $ratio))));
+
+        return sprintf('#%02X%02X%02X', $red, $green, $blue);
+    }
+
+    /**
+     * @param  array<string, string>  $default
+     * @return array<string, string>
+     */
+    private static function catalogOptions(string $key, array $default): array
+    {
+        $configured = static::normalizeCatalogOptions(static::get($key, $default));
+
+        if ($configured === []) {
+            return $default;
+        }
+
+        return $configured;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function normalizeCatalogOptions(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = $decoded;
+            }
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $options = [];
+
+        foreach ($value as $rawKey => $rawLabel) {
+            $normalizedKey = null;
+            $normalizedLabel = null;
+
+            if (is_array($rawLabel)) {
+                $normalizedKey = Arr::get($rawLabel, 'value', Arr::get($rawLabel, 'key'));
+                $normalizedLabel = Arr::get($rawLabel, 'label', Arr::get($rawLabel, 'name'));
+            } else {
+                if (is_string($rawKey) && $rawKey !== '') {
+                    $normalizedKey = $rawKey;
+                } elseif (is_scalar($rawLabel)) {
+                    $normalizedKey = (string) $rawLabel;
+                }
+
+                if (is_scalar($rawLabel)) {
+                    $normalizedLabel = (string) $rawLabel;
+                }
+            }
+
+            if (! is_scalar($normalizedKey) || ! is_scalar($normalizedLabel)) {
+                continue;
+            }
+
+            $key = trim((string) $normalizedKey);
+            $label = trim((string) $normalizedLabel);
+
+            if ($key === '' || $label === '') {
+                continue;
+            }
+
+            $options[$key] = $label;
+        }
+
+        return $options;
     }
 }

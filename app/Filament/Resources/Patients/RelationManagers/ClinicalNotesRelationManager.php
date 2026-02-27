@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -85,18 +86,7 @@ class ClinicalNotesRelationManager extends RelationManager
                     ->schema([
                         CheckboxList::make('indications')
                             ->label('')
-                            ->options([
-                                'cephalometric' => 'Cephalometric',
-                                '3d' => '3D',
-                                'canchiep' => 'Cận chốp',
-                                'panorama' => 'Panorama',
-                                '3d5x5' => '3D 5x5',
-                                'ext' => 'Ảnh (ext)',
-                                'int' => 'Ảnh (int)',
-                                'khac' => 'Khác',
-                                'xet_nghiem_huyet_hoc' => 'Xét nghiệm huyết học',
-                                'xet_nghiem_sinh_hoa' => 'Xét nghiệm sinh hóa',
-                            ])
+                            ->options(fn (): array => ClinicRuntimeSettings::examIndicationOptions())
                             ->columns(5)
                             ->gridDirection('row')
                             ->live()

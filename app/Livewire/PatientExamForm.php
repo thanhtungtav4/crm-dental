@@ -7,6 +7,7 @@ use App\Models\Disease;
 use App\Models\Patient;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
@@ -49,18 +50,7 @@ class PatientExamForm extends Component
     public array $tempUploads = [];
 
     // Indication types configuration
-    public array $indicationTypes = [
-        'cephalometric' => 'Cephalometric',
-        '3d' => '3D',
-        'canchiep' => 'Cận chóp',
-        'xet_nghiem_huyet_hoc' => 'Xét nghiệm huyết học',
-        'panorama' => 'Panorama',
-        'ext' => 'Ảnh (ext)',
-        'int' => 'Ảnh (int)',
-        'xet_nghiem_sinh_hoa' => 'Xét nghiệm sinh hóa',
-        '3d5x5' => '3D 5x5',
-        'khac' => 'Khác',
-    ];
+    public array $indicationTypes = [];
 
     // For doctor search
     public string $examiningDoctorSearch = '';
@@ -80,6 +70,7 @@ class PatientExamForm extends Component
     public function mount(Patient $patient): void
     {
         $this->patient = $patient;
+        $this->indicationTypes = ClinicRuntimeSettings::examIndicationOptions();
         $this->newSessionDate = now()->toDateString();
 
         $latestSession = $this->getSessionQuery()->first();

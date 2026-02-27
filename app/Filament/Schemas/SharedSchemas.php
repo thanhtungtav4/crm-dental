@@ -2,6 +2,7 @@
 
 namespace App\Filament\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 
 class SharedSchemas
@@ -49,11 +50,7 @@ class SharedSchemas
 
             Forms\Components\Select::make('gender')
                 ->label('Giới tính')
-                ->options([
-                    'male' => 'Nam',
-                    'female' => 'Nữ',
-                    'other' => 'Khác',
-                ])
+                ->options(fn (): array => ClinicRuntimeSettings::genderOptions())
                 ->default('male')
                 ->columnSpan(1),
 

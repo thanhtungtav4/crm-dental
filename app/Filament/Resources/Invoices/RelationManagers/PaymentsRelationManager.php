@@ -52,11 +52,8 @@ class PaymentsRelationManager extends RelationManager
                         Select::make('direction')
                             ->label('Loại phiếu')
                             ->required()
-                            ->options([
-                                'receipt' => 'Phiếu thu',
-                                'refund' => 'Phiếu hoàn',
-                            ])
-                            ->default('receipt')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions())
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentDirection())
                             ->native(false)
                             ->reactive(),
 
@@ -100,12 +97,8 @@ class PaymentsRelationManager extends RelationManager
 
                         Select::make('payment_source')
                             ->label('Nguồn thanh toán')
-                            ->options([
-                                'patient' => '👤 Bệnh nhân',
-                                'insurance' => '🏥 Bảo hiểm',
-                                'other' => '📄 Khác',
-                            ])
-                            ->default('patient')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentSourceOptions(withEmoji: true))
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentSource())
                             ->native(false)
                             ->reactive(),
 
@@ -212,19 +205,12 @@ class PaymentsRelationManager extends RelationManager
                 SelectFilter::make('payment_source')
                     ->label('Nguồn')
                     ->multiple()
-                    ->options([
-                        'patient' => '👤 Bệnh nhân',
-                        'insurance' => '🏥 Bảo hiểm',
-                        'other' => '📄 Khác',
-                    ]),
+                    ->options(fn (): array => ClinicRuntimeSettings::paymentSourceOptions(withEmoji: true)),
 
                 SelectFilter::make('direction')
                     ->label('Loại phiếu')
                     ->multiple()
-                    ->options([
-                        'receipt' => 'Phiếu thu',
-                        'refund' => 'Phiếu hoàn',
-                    ]),
+                    ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions()),
             ])
             ->headerActions([
                 CreateAction::make()
@@ -258,10 +244,10 @@ class PaymentsRelationManager extends RelationManager
                             method: (string) ($data['method'] ?? 'cash'),
                             notes: $data['note'] ?? null,
                             paidAt: $data['paid_at'] ?? now(),
-                            direction: (string) ($data['direction'] ?? 'receipt'),
+                            direction: (string) ($data['direction'] ?? ClinicRuntimeSettings::defaultPaymentDirection()),
                             refundReason: $data['refund_reason'] ?? null,
                             transactionRef: $transactionRef,
-                            paymentSource: (string) ($data['payment_source'] ?? 'patient'),
+                            paymentSource: (string) ($data['payment_source'] ?? ClinicRuntimeSettings::defaultPaymentSource()),
                             insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
                             receivedBy: $data['received_by'] ?? auth()->id(),
                             reversalOfId: null,

@@ -11,6 +11,8 @@
                                 ? 'password'
                                 : match ($field['type'] ?? 'text') {
                                     'url' => 'url',
+                                    'email' => 'email',
+                                    'color' => 'color',
                                     'integer' => 'number',
                                     default => 'text',
                                 };
@@ -37,6 +39,24 @@
                                         @endforeach
                                     </x-filament::input.select>
                                 </x-filament::input.wrapper>
+                                @error($statePath)
+                                    <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @elseif(($field['type'] ?? null) === 'json')
+                            <div class="md:col-span-2">
+                                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                    {{ $field['label'] }}
+                                </label>
+                                <x-filament::input.wrapper>
+                                    <textarea
+                                        wire:model.blur="{{ $statePath }}"
+                                        rows="8"
+                                        class="fi-input fi-textarea min-h-[170px] font-mono text-xs"
+                                        placeholder='{"key":"label"}'
+                                    ></textarea>
+                                </x-filament::input.wrapper>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">JSON object dạng <code>{"code":"Nhãn"}</code>.</p>
                                 @error($statePath)
                                     <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                                 @enderror

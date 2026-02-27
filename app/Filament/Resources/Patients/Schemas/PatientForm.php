@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rule;
@@ -19,17 +20,17 @@ class PatientForm
     {
         return [
             Forms\Components\Select::make('customer_id')
-                ->relationship('customer', 'full_name', fn($query) => $query->doesntHave('patient'))
+                ->relationship('customer', 'full_name', fn ($query) => $query->doesntHave('patient'))
                 ->label('Khách hàng')
                 ->searchable()
                 ->preload()
                 ->live()
                 ->afterStateUpdated(function ($state, $set) {
-                    if (!$state) {
+                    if (! $state) {
                         return;
                     }
                     $customer = \App\Models\Customer::find($state);
-                    if (!$customer) {
+                    if (! $customer) {
                         return;
                     }
                     // Auto-fill patient name & phone from customer
@@ -55,7 +56,7 @@ class PatientForm
 
             Forms\Components\Placeholder::make('customer_readonly')
                 ->label('Khách hàng')
-                ->content(fn($record) => $record?->customer?->full_name)
+                ->content(fn ($record) => $record?->customer?->full_name)
                 ->visibleOn('edit')
                 ->columnSpanFull(),
 
@@ -92,11 +93,7 @@ class PatientForm
 
             Forms\Components\Select::make('gender')
                 ->label('Giới tính')
-                ->options([
-                    'male' => 'Nam',
-                    'female' => 'Nữ',
-                    'other' => 'Khác',
-                ])
+                ->options(fn (): array => ClinicRuntimeSettings::genderOptions())
                 ->nullable(),
 
             Forms\Components\TextInput::make('phone')
@@ -111,6 +108,7 @@ class PatientForm
                         ->where(function ($query) use ($branchId): void {
                             if ($branchId) {
                                 $query->where('first_branch_id', $branchId);
+
                                 return;
                             }
 

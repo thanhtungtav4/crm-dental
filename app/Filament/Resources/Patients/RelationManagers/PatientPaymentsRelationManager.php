@@ -69,10 +69,7 @@ class PatientPaymentsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('direction')
                     ->label('Loại phiếu')
-                    ->options([
-                        'receipt' => 'Phiếu thu',
-                        'refund' => 'Phiếu hoàn',
-                    ]),
+                    ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions()),
 
                 Tables\Filters\SelectFilter::make('method')
                     ->label('Hình thức')

@@ -99,6 +99,17 @@ class ClinicSetting extends Model
         return $record;
     }
 
+    public static function flushRuntimeCache(?string $key = null): void
+    {
+        if ($key === null) {
+            static::$runtimeCache = [];
+
+            return;
+        }
+
+        unset(static::$runtimeCache[$key]);
+    }
+
     protected function decodeValue(mixed $default = null): mixed
     {
         if ($this->value === null) {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ClinicRuntimeSettings;
 use App\Support\PatientCodeGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -184,12 +185,7 @@ class Patient extends Model
 
     public function getGenderLabel(): string
     {
-        return match ($this->gender) {
-            'male' => 'Nam',
-            'female' => 'Nữ',
-            'other' => 'Khác',
-            default => 'Chưa xác định',
-        };
+        return ClinicRuntimeSettings::genderLabel($this->gender);
     }
 
     protected static function booted(): void
@@ -207,10 +203,10 @@ class Patient extends Model
                 $customer->full_name = $patient->full_name;
                 $customer->phone = $patient->phone;
                 $customer->email = $patient->email ?? null;
-                $customer->source = 'walkin';
+                $customer->source = ClinicRuntimeSettings::defaultCustomerSource();
                 $customer->customer_group_id = $patient->customer_group_id ?? null;
                 $customer->promotion_group_id = $patient->promotion_group_id ?? null;
-                $customer->status = 'lead';
+                $customer->status = ClinicRuntimeSettings::defaultCustomerStatus();
                 $customer->notes = $patient->note ?: ($patient->first_visit_reason ?: 'Auto-created from Patient');
                 $customer->assigned_to = $patient->owner_staff_id ?? null;
                 $customer->save();

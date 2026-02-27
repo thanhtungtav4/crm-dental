@@ -56,11 +56,8 @@ class PaymentForm
 
                         Select::make('direction')
                             ->label('Loại phiếu')
-                            ->options([
-                                'receipt' => 'Phiếu thu',
-                                'refund' => 'Phiếu hoàn',
-                            ])
-                            ->default('receipt')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentDirectionOptions())
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentDirection())
                             ->required()
                             ->reactive()
                             ->native(false),
@@ -109,12 +106,8 @@ class PaymentForm
 
                         Select::make('payment_source')
                             ->label('Nguồn thanh toán')
-                            ->options([
-                                'patient' => '👤 Bệnh nhân',
-                                'insurance' => '🏥 Bảo hiểm',
-                                'other' => '📄 Khác',
-                            ])
-                            ->default('patient')
+                            ->options(fn (): array => ClinicRuntimeSettings::paymentSourceOptions(withEmoji: true))
+                            ->default(fn (): string => ClinicRuntimeSettings::defaultPaymentSource())
                             ->required()
                             ->reactive()
                             ->native(false),

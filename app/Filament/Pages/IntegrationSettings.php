@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Services\EmrIntegrationService;
+use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Notifications\Notification;
@@ -188,6 +189,21 @@ class IntegrationSettings extends Page
                 ],
             ],
             [
+                'group' => 'branding',
+                'title' => 'Branding phòng khám',
+                'description' => 'Cấu hình logo, thông tin phòng khám và màu nút dùng chung trên admin + biểu mẫu in.',
+                'fields' => [
+                    ['state' => 'branding_clinic_name', 'key' => 'branding.clinic_name', 'label' => 'Tên phòng khám', 'type' => 'text', 'default' => config('app.name', 'Dental CRM'), 'sort_order' => 600],
+                    ['state' => 'branding_logo_url', 'key' => 'branding.logo_url', 'label' => 'Logo URL', 'type' => 'url', 'default' => asset('images/logo.svg'), 'sort_order' => 601],
+                    ['state' => 'branding_address', 'key' => 'branding.address', 'label' => 'Địa chỉ phòng khám', 'type' => 'text', 'default' => '', 'sort_order' => 602],
+                    ['state' => 'branding_phone', 'key' => 'branding.phone', 'label' => 'Hotline', 'type' => 'text', 'default' => '', 'sort_order' => 603],
+                    ['state' => 'branding_email', 'key' => 'branding.email', 'label' => 'Email hiển thị', 'type' => 'email', 'default' => '', 'sort_order' => 604],
+                    ['state' => 'branding_button_bg_color', 'key' => 'branding.button_bg_color', 'label' => 'Màu nền nút (hex)', 'type' => 'color', 'default' => '#2f66f6', 'sort_order' => 605],
+                    ['state' => 'branding_button_bg_hover_color', 'key' => 'branding.button_bg_hover_color', 'label' => 'Màu nền nút hover (hex)', 'type' => 'color', 'default' => '#2456dc', 'sort_order' => 606],
+                    ['state' => 'branding_button_text_color', 'key' => 'branding.button_text_color', 'label' => 'Màu chữ nút (hex)', 'type' => 'color', 'default' => '#ffffff', 'sort_order' => 607],
+                ],
+            ],
+            [
                 'group' => 'finance',
                 'title' => 'Runtime tài chính',
                 'description' => 'Cấu hình policy thu tiền cọc, thu trước và overpay.',
@@ -328,6 +344,69 @@ class IntegrationSettings extends Page
                     ],
                 ],
             ],
+            [
+                'group' => 'catalog',
+                'title' => 'Danh mục động',
+                'description' => 'Cấu hình danh mục tùy chọn dùng chung cho CRM (định dạng JSON object: {\"key\":\"label\"}).',
+                'fields' => [
+                    [
+                        'state' => 'catalog_exam_indications_json',
+                        'key' => 'catalog.exam_indications',
+                        'label' => 'Danh mục chỉ định khám',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultExamIndicationOptions(),
+                        'sort_order' => 760,
+                    ],
+                    [
+                        'state' => 'catalog_customer_sources_json',
+                        'key' => 'catalog.customer_sources',
+                        'label' => 'Danh mục nguồn khách hàng',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultCustomerSourceOptions(),
+                        'sort_order' => 761,
+                    ],
+                    [
+                        'state' => 'catalog_customer_statuses_json',
+                        'key' => 'catalog.customer_statuses',
+                        'label' => 'Danh mục trạng thái lead',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultCustomerStatusOptions(),
+                        'sort_order' => 762,
+                    ],
+                    [
+                        'state' => 'catalog_care_types_json',
+                        'key' => 'catalog.care_types',
+                        'label' => 'Danh mục loại chăm sóc',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultCareTypeOptions(),
+                        'sort_order' => 763,
+                    ],
+                    [
+                        'state' => 'catalog_payment_sources_json',
+                        'key' => 'catalog.payment_sources',
+                        'label' => 'Danh mục nguồn thanh toán',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultPaymentSourceLabels(),
+                        'sort_order' => 764,
+                    ],
+                    [
+                        'state' => 'catalog_payment_directions_json',
+                        'key' => 'catalog.payment_directions',
+                        'label' => 'Danh mục loại phiếu thanh toán',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultPaymentDirectionLabels(),
+                        'sort_order' => 765,
+                    ],
+                    [
+                        'state' => 'catalog_gender_options_json',
+                        'key' => 'catalog.gender_options',
+                        'label' => 'Danh mục giới tính',
+                        'type' => 'json',
+                        'default' => ClinicRuntimeSettings::defaultGenderOptions(),
+                        'sort_order' => 766,
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -360,7 +439,10 @@ class IntegrationSettings extends Page
                 $rules[$attribute] = match ($field['type']) {
                     'boolean' => ['boolean'],
                     'url' => ['nullable', 'url', 'max:500'],
+                    'email' => ['nullable', 'email', 'max:255'],
                     'integer' => ['nullable', 'integer'],
+                    'color' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
+                    'json' => ['nullable', 'json'],
                     'select' => ['required', Rule::in(array_keys($field['options'] ?? []))],
                     default => ['nullable', 'string', 'max:3000'],
                 };
@@ -373,10 +455,15 @@ class IntegrationSettings extends Page
             foreach ($provider['fields'] as $field) {
                 $statePath = "settings.{$field['state']}";
                 $valueType = match ($field['type']) {
-                    'url', 'select' => 'text',
+                    'url', 'email', 'select', 'color' => 'text',
                     default => $field['type'],
                 };
                 $value = data_get($validated, $statePath, $field['default'] ?? null);
+
+                if (($field['type'] ?? null) === 'json') {
+                    $value = $this->decodeJsonFieldValue($value);
+                }
+
                 $normalizedNewValue = $this->normalizeValueForCompare($value, $valueType);
                 $oldValue = ClinicSetting::getValue(
                     key: $field['key'],
@@ -471,10 +558,12 @@ class IntegrationSettings extends Page
 
         foreach ($this->getProviders() as $provider) {
             foreach ($provider['fields'] as $field) {
-                $state[$field['state']] = ClinicSetting::getValue(
+                $value = ClinicSetting::getValue(
                     key: $field['key'],
                     default: $field['default'] ?? null,
                 );
+
+                $state[$field['state']] = $this->formatFieldStateValue($field, $value);
             }
         }
 
@@ -551,5 +640,45 @@ class IntegrationSettings extends Page
         }
 
         return (string) $value;
+    }
+
+    protected function formatFieldStateValue(array $field, mixed $value): mixed
+    {
+        if (($field['type'] ?? null) !== 'json') {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = $decoded;
+            }
+        }
+
+        if (! is_array($value)) {
+            $value = $field['default'] ?? [];
+        }
+
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: '{}';
+    }
+
+    protected function decodeJsonFieldValue(mixed $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (! is_string($value)) {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
     }
 }

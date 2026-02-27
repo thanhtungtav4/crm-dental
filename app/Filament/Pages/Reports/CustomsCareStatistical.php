@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\Note;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -75,19 +76,7 @@ class CustomsCareStatistical extends BaseReportPage
 
     protected function getCareTypeOptions(): array
     {
-        return [
-            'appointment_reminder' => 'Nhắc lịch hẹn',
-            'no_show_recovery' => 'Recovery no-show',
-            'reactivation_follow_up' => 'Reactivation bệnh nhân',
-            'risk_high_follow_up' => 'Can thiệp risk cao',
-            'recall_recare' => 'Recall / Re-care',
-            'payment_reminder' => 'Nhắc thanh toán',
-            'medication_reminder' => 'Nhắc lịch uống thuốc',
-            'post_treatment_follow_up' => 'Hỏi thăm sau điều trị',
-            'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
-            'birthday_care' => 'Chăm sóc sinh nhật',
-            'general_care' => 'Chăm sóc chung',
-        ];
+        return ClinicRuntimeSettings::careTypeDisplayOptions();
     }
 
     protected function getCareStatusOptions(): array

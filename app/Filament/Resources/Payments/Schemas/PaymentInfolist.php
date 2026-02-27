@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Support\ClinicRuntimeSettings;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -17,6 +18,7 @@ class PaymentInfolist
                     ->money('VND'),
                 TextEntry::make('direction_label')
                     ->label('Loại phiếu')
+                    ->getStateUsing(fn ($record): string => $record->getDirectionLabel())
                     ->badge(),
                 TextEntry::make('is_deposit')
                     ->label('Phiếu cọc')
@@ -30,6 +32,7 @@ class PaymentInfolist
                     ->placeholder('-'),
                 TextEntry::make('payment_source')
                     ->label('Nguồn thanh toán')
+                    ->formatStateUsing(fn (?string $state): string => ClinicRuntimeSettings::paymentSourceLabel($state))
                     ->badge(),
                 TextEntry::make('insurance_claim_number')
                     ->label('Mã hồ sơ BH')

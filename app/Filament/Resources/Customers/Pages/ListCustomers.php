@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Customers\Pages;
 
 use App\Filament\Resources\Customers\CustomerResource;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 
 class ListCustomers extends ListRecords
 {
@@ -13,24 +15,22 @@ class ListCustomers extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->color('info'),
         ];
     }
 
     public function getTabs(): array
     {
-        return [
-            'all' => \Filament\Schemas\Components\Tabs\Tab::make('Tất cả'),
-            'lead' => \Filament\Schemas\Components\Tabs\Tab::make('Lead Mới')
-                ->query(fn($query) => $query->where('status', 'lead')),
-            'contacted' => \Filament\Schemas\Components\Tabs\Tab::make('Đã liên hệ')
-                ->query(fn($query) => $query->where('status', 'contacted')),
-            'confirmed' => \Filament\Schemas\Components\Tabs\Tab::make('Đã xác nhận')
-                ->query(fn($query) => $query->where('status', 'confirmed')),
-            'converted' => \Filament\Schemas\Components\Tabs\Tab::make('Đã chuyển đổi')
-                ->query(fn($query) => $query->where('status', 'converted')),
-            'lost' => \Filament\Schemas\Components\Tabs\Tab::make('Mất Lead')
-                ->query(fn($query) => $query->where('status', 'lost')),
+        $tabs = [
+            'all' => Tab::make('Tất cả'),
         ];
+
+        foreach (ClinicRuntimeSettings::customerStatusOptions() as $status => $label) {
+            $tabs["status_{$status}"] = Tab::make($label)
+                ->query(fn ($query) => $query->where('status', $status));
+        }
+
+        return $tabs;
     }
 }

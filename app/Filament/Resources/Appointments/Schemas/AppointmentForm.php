@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Appointments\Schemas;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Services\DoctorBranchAssignmentService;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -118,10 +119,12 @@ class AppointmentForm
                             'phone' => $data['phone'],
                             'email' => $data['email'] ?? null,
                             'address' => $data['address'] ?? null,
-                            'gender' => $data['gender'] ?? 'male',
+                            'gender' => $data['gender'] ?? array_key_first(ClinicRuntimeSettings::genderOptions()) ?? 'male',
                             'birthday' => $data['birthday'] ?? null,
-                            'source' => 'appointment',
-                            'status' => 'lead',
+                            'source' => array_key_exists('appointment', ClinicRuntimeSettings::customerSourceOptions())
+                                ? 'appointment'
+                                : ClinicRuntimeSettings::defaultCustomerSource(),
+                            'status' => ClinicRuntimeSettings::defaultCustomerStatus(),
                             'assigned_to' => auth()->id(),
                             'created_by' => auth()->id(),
                             'updated_by' => auth()->id(),

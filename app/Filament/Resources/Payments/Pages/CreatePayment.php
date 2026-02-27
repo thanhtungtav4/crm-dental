@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Payments\Pages;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -54,10 +55,10 @@ class CreatePayment extends CreateRecord
                 method: (string) ($data['method'] ?? 'cash'),
                 notes: $data['note'] ?? null,
                 paidAt: $data['paid_at'] ?? now(),
-                direction: (string) ($data['direction'] ?? 'receipt'),
+                direction: (string) ($data['direction'] ?? ClinicRuntimeSettings::defaultPaymentDirection()),
                 refundReason: $data['refund_reason'] ?? null,
                 transactionRef: $transactionRef,
-                paymentSource: (string) ($data['payment_source'] ?? 'patient'),
+                paymentSource: (string) ($data['payment_source'] ?? ClinicRuntimeSettings::defaultPaymentSource()),
                 insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
                 receivedBy: $data['received_by'] ?? auth()->id(),
                 reversalOfId: null,
