@@ -479,3 +479,35 @@ Ghi chu:
 1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32, PM-38
 2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36
 3. `Go-live Gate C (debt cleanup)`: PM-37
+
+---
+
+## 9) Backlog mo rong sau audit production (Moi)
+
+### TICKET PM-39 (P1)
+- **Title**: Branch snapshot attribution cho clinical records (Prescription/Note/Consent)
+- **Type**: Story (BE + Data + Security)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Scope**:
+  - Bo sung `branch_id` tai record-level cho clinical entities quan trong de co ownership lich su.
+  - Migration backfill theo nguyen tac "branch tai thoi diem tao record".
+  - Cap nhat policy/print/audit de dung branch snapshot thay vi suy dien tu `patient.first_branch_id`.
+- **Acceptance Criteria (QA)**:
+  1. Chuyen chi nhanh benh nhan khong lam thay doi quyen truy cap record cu.
+  2. Print/export policy theo branch snapshot, khong phu thuoc branch hien tai cua patient.
+  3. Co test cross-branch denied/allowed cho record lich su.
+
+### TICKET PM-40 (P2)
+- **Title**: Harden scheduler actor model (service account + rotation policy)
+- **Type**: Task (Security + Ops)
+- **Estimate**: 3 SP
+- **Status**: Todo
+- **Scope**:
+  - Thay `CARE_AUTOMATION_ACTOR_USER_ID` bang service account chuyen biet cho automation.
+  - Bo sung health check canh bao khi actor bi khoa/mat permission.
+  - Chot quy trinh rotation/quyen toi thieu cho scheduler actor.
+- **Acceptance Criteria (QA)**:
+  1. Scheduler fail fast neu actor khong hop le va co alert ro rang.
+  2. Rotation actor khong gay gian doan command critical.
+  3. Co test gate cho actor automation.
