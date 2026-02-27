@@ -35,7 +35,7 @@ class IntegrationSettings extends Page
 
     public function mount(): void
     {
-        $this->hydrateSettings();
+        $this->loadSettingsState();
     }
 
     public function getHeading(): string
@@ -358,7 +358,7 @@ class IntegrationSettings extends Page
             ->send();
     }
 
-    protected function hydrateSettings(): void
+    protected function loadSettingsState(): void
     {
         $state = [];
 

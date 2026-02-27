@@ -16,3 +16,13 @@ it('does not expose vnpay provider or fields in integration settings', function 
         ->and($page->getSubheading())
         ->not->toContain('VNPay');
 });
+
+it('loads integration settings state without colliding with livewire hydrate hooks', function () {
+    $page = app(IntegrationSettings::class);
+
+    $page->mount();
+
+    expect(method_exists($page, 'hydrateSettings'))->toBeFalse()
+        ->and($page->settings)->toBeArray()
+        ->and($page->settings)->not->toBeEmpty();
+});
