@@ -153,6 +153,22 @@ class IntegrationSettings extends Page
                 'title' => 'Runtime scheduler',
                 'description' => 'Policy timeout/retry/alert cho scheduler command chạy automation.',
                 'fields' => [
+                    [
+                        'state' => 'scheduler_automation_actor_user_id',
+                        'key' => 'scheduler.automation_actor_user_id',
+                        'label' => 'User ID service account chạy scheduler',
+                        'type' => 'integer',
+                        'default' => config('care.scheduler_automation_actor_user_id'),
+                        'sort_order' => 592,
+                    ],
+                    [
+                        'state' => 'scheduler_automation_actor_required_role',
+                        'key' => 'scheduler.automation_actor_required_role',
+                        'label' => 'Role bắt buộc cho scheduler actor',
+                        'type' => 'text',
+                        'default' => config('care.scheduler_automation_actor_required_role', 'AutomationService'),
+                        'sort_order' => 593,
+                    ],
                     ['state' => 'scheduler_command_timeout_seconds', 'key' => 'scheduler.command_timeout_seconds', 'label' => 'Timeout mỗi lần chạy command (giây)', 'type' => 'integer', 'default' => 180, 'sort_order' => 595],
                     ['state' => 'scheduler_command_max_attempts', 'key' => 'scheduler.command_max_attempts', 'label' => 'Số lần retry tối đa', 'type' => 'integer', 'default' => 2, 'sort_order' => 596],
                     ['state' => 'scheduler_command_retry_delay_seconds', 'key' => 'scheduler.command_retry_delay_seconds', 'label' => 'Thời gian chờ giữa các lần retry (giây)', 'type' => 'integer', 'default' => 15, 'sort_order' => 597],
@@ -310,6 +326,12 @@ class IntegrationSettings extends Page
         foreach ($this->getProviders() as $provider) {
             foreach ($provider['fields'] as $field) {
                 $attribute = "settings.{$field['state']}";
+
+                if (($field['key'] ?? null) === 'scheduler.automation_actor_user_id') {
+                    $rules[$attribute] = ['nullable', 'integer', 'exists:users,id'];
+
+                    continue;
+                }
 
                 $rules[$attribute] = match ($field['type']) {
                     'boolean' => ['boolean'],

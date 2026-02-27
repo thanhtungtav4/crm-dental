@@ -17,6 +17,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'Manager',
             'Doctor',
             'CSKH',
+            'AutomationService',
         ];
 
         foreach ($roles as $roleName) {
@@ -86,6 +87,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $manager = Role::findByName('Manager');
         $doctor = Role::findByName('Doctor');
         $cskh = Role::findByName('CSKH');
+        $automationService = Role::findByName('AutomationService');
 
         // Admin: all permissions
         $admin->syncPermissions(Permission::all());
@@ -154,5 +156,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
         $cskhPerms[] = ActionPermission::PATIENT_BRANCH_TRANSFER;
         $cskh->syncPermissions($cskhPerms);
+
+        $automationService->syncPermissions([
+            ActionPermission::AUTOMATION_RUN,
+        ]);
     }
 }

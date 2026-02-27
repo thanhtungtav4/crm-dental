@@ -273,6 +273,30 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function schedulerAutomationActorUserId(): ?int
+    {
+        $value = static::get(
+            'scheduler.automation_actor_user_id',
+            config('care.scheduler_automation_actor_user_id'),
+        );
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $actorId = (int) $value;
+
+        return $actorId > 0 ? $actorId : null;
+    }
+
+    public static function schedulerAutomationActorRequiredRole(): string
+    {
+        return trim((string) static::get(
+            'scheduler.automation_actor_required_role',
+            (string) config('care.scheduler_automation_actor_required_role', 'AutomationService'),
+        ));
+    }
+
     public static function schedulerLockExpiresAfterMinutes(): int
     {
         $ttlSeconds = (static::schedulerCommandTimeoutSeconds() * static::schedulerCommandMaxAttempts())

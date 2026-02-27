@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\User;
+use App\Services\AutomationActorResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Validation\ValidationException;
 
@@ -26,7 +26,7 @@ class ActionGate
 
         if (! $user) {
             $details = app()->runningInConsole()
-                ? ' Thiếu user phiên console hợp lệ. Cấu hình CARE_AUTOMATION_ACTOR_USER_ID với tài khoản có quyền tương ứng.'
+                ? ' Thiếu scheduler actor hợp lệ. Kiểm tra scheduler.automation_actor_user_id và role/permission của service account.'
                 : '';
 
             throw ValidationException::withMessages([
@@ -43,18 +43,9 @@ class ActionGate
 
     protected static function resolveConsoleActor(string $permission): ?Authenticatable
     {
-        $actorId = config('care.automation_actor_user_id');
-
-        if (! filled($actorId)) {
-            return null;
-        }
-
-        $actor = User::query()->find((int) $actorId);
-
-        if (! $actor) {
-            return null;
-        }
-
-        return $actor->can($permission) ? $actor : null;
+        return app(AutomationActorResolver::class)->resolveForPermission(
+            permission: $permission,
+            enforceRequiredRole: true,
+        );
     }
 }

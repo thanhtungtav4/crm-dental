@@ -44,7 +44,13 @@ it('keeps anti bypass checklist markers valid', function () {
 });
 
 it('enforces role action matrix for all sensitive actions', function (string $permission, array $allowedRoles) {
-    $roleUsers = collect(['Admin', 'Manager', 'Doctor', 'CSKH'])
+    $roleNames = collect(SensitiveActionRegistry::roleMatrix())
+        ->flatMap(fn (array $roles): array => $roles)
+        ->unique()
+        ->values()
+        ->all();
+
+    $roleUsers = collect($roleNames)
         ->mapWithKeys(function (string $role): array {
             $user = User::factory()->create();
             $user->assignRole($role);

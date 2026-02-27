@@ -43,7 +43,7 @@ class SensitiveActionRegistry
                 ],
             ],
             ActionPermission::AUTOMATION_RUN => [
-                'allowed_roles' => ['Admin', 'Manager', 'CSKH'],
+                'allowed_roles' => ['Admin', 'Manager', 'CSKH', 'AutomationService'],
                 'guard_markers' => [
                     ['path' => 'app/Console/Commands/SnapshotOperationalKpis.php', 'contains' => 'ActionPermission::AUTOMATION_RUN'],
                     ['path' => 'app/Console/Commands/CheckSnapshotSla.php', 'contains' => 'ActionPermission::AUTOMATION_RUN'],

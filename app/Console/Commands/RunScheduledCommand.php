@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class RunScheduledCommand extends Command
@@ -26,10 +27,24 @@ class RunScheduledCommand extends Command
 
     public function handle(): int
     {
-        ActionGate::authorize(
-            ActionPermission::AUTOMATION_RUN,
-            'Bạn không có quyền chạy scheduler automation.',
-        );
+        try {
+            ActionGate::authorize(
+                ActionPermission::AUTOMATION_RUN,
+                'Bạn không có quyền chạy scheduler automation.',
+            );
+        } catch (ValidationException $exception) {
+            $this->recordAlert([
+                'target_command' => (string) $this->argument('target'),
+                'target_args' => (array) $this->option('target-args'),
+                'alert_reason' => 'actor_authorization_failed',
+                'exception' => $exception->getMessage(),
+                'will_retry' => false,
+            ]);
+
+            $this->error('Scheduler command thất bại do authorization actor.');
+
+            return self::FAILURE;
+        }
 
         $targetCommand = trim((string) $this->argument('target'));
 

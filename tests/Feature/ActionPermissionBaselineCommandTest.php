@@ -36,8 +36,14 @@ it('sync option repairs action permission baseline and passes', function () {
         expect($permission)->not->toBeNull("Thiếu permission {$permissionName} sau khi sync");
     }
 
+    $roleNames = collect(SensitiveActionRegistry::roleMatrix())
+        ->flatMap(fn (array $roles): array => $roles)
+        ->unique()
+        ->values()
+        ->all();
+
     foreach (SensitiveActionRegistry::roleMatrix() as $permissionName => $allowedRoles) {
-        foreach (['Admin', 'Manager', 'Doctor', 'CSKH'] as $roleName) {
+        foreach ($roleNames as $roleName) {
             $role = Role::query()->where('name', $roleName)->firstOrFail();
 
             expect($role->hasPermissionTo($permissionName))

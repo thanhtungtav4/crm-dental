@@ -19,6 +19,12 @@ $scheduleAutomation = function (string $targetCommand) use ($scheduleLockTtlMinu
         ->onOneServer();
 };
 
+Schedule::command('security:check-automation-actor', ['--strict' => true])
+    ->name('security:check-automation-actor')
+    ->hourlyAt(0)
+    ->withoutOverlapping($scheduleLockTtlMinutes)
+    ->onOneServer();
+
 $scheduleAutomation('care:generate-birthday-tickets')->dailyAt('00:05');
 $scheduleAutomation('care:generate-recall-tickets')->dailyAt('00:10');
 $scheduleAutomation('reports:snapshot-operational-kpis')->dailyAt('00:20');

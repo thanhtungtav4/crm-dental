@@ -2,6 +2,11 @@
 
 return [
     'automation_actor_user_id' => env('CARE_AUTOMATION_ACTOR_USER_ID'),
+    'scheduler_automation_actor_user_id' => env(
+        'SCHEDULER_AUTOMATION_ACTOR_USER_ID',
+        env('CARE_AUTOMATION_ACTOR_USER_ID'),
+    ),
+    'scheduler_automation_actor_required_role' => env('SCHEDULER_AUTOMATION_ACTOR_REQUIRED_ROLE', 'AutomationService'),
     'medication_reminder_offset_days' => (int) env('CARE_MEDICATION_OFFSET_DAYS', 0),
     'post_treatment_follow_up_offset_days' => (int) env('CARE_FOLLOW_UP_OFFSET_DAYS', 3),
     'recall_default_offset_days' => (int) env('CARE_RECALL_DEFAULT_OFFSET_DAYS', 180),
