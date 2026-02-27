@@ -215,6 +215,39 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function kpiNoShowRateMaxThreshold(): float
+    {
+        return max(
+            0.0,
+            min(
+                100.0,
+                (float) static::get('report.kpi_no_show_rate_max', 15.0),
+            ),
+        );
+    }
+
+    public static function kpiChairUtilizationRateMinThreshold(): float
+    {
+        return max(
+            0.0,
+            min(
+                100.0,
+                (float) static::get('report.kpi_chair_utilization_rate_min', 65.0),
+            ),
+        );
+    }
+
+    public static function kpiTreatmentAcceptanceRateMinThreshold(): float
+    {
+        return max(
+            0.0,
+            min(
+                100.0,
+                (float) static::get('report.kpi_treatment_acceptance_rate_min', 55.0),
+            ),
+        );
+    }
+
     public static function careChannelOptions(): array
     {
         $channels = [

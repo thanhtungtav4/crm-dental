@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Note;
 use App\Models\Payment;
 use App\Models\PlanItem;
+use App\Models\User;
 use App\Models\VisitEpisode;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +15,7 @@ class OperationalKpiService
 {
     /**
      * @return array{
-     *     metrics:array<string, float|int>,
+     *     metrics:array<string, mixed>,
      *     lineage:array{
      *         generated_at:string,
      *         branch_id:int|null,
@@ -112,6 +113,8 @@ class OperationalKpiService
             ->unique()
             ->count();
 
+        $doctorBenchmark = $this->buildDoctorBenchmark($from, $to, $branchId);
+
         $metrics = [
             'booking_count' => $totalBookings,
             'visit_count' => $attendedVisits,
@@ -123,6 +126,7 @@ class OperationalKpiService
             'chair_utilization_rate' => $this->ratioPercent($actualChairMinutes, $plannedChairMinutes),
             'recall_rate' => $this->ratioPercent($recallDone, $recallTotal),
             'ltv_patient' => $lifetimePatients > 0 ? round($lifetimeReceipts / $lifetimePatients, 2) : 0.0,
+            'doctor_benchmark' => $doctorBenchmark,
         ];
 
         return [
@@ -143,6 +147,75 @@ class OperationalKpiService
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     doctor_id:int,
+     *     doctor_name:string,
+     *     booking_count:int,
+     *     attended_count:int,
+     *     no_show_count:int,
+     *     booking_to_visit_rate:float,
+     *     no_show_rate:float
+     * }>
+     */
+    protected function buildDoctorBenchmark(Carbon $from, Carbon $to, ?int $branchId = null): array
+    {
+        $appointments = Appointment::query()
+            ->whereBetween('date', [$from, $to])
+            ->whereNotNull('doctor_id')
+            ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->get(['doctor_id', 'status']);
+
+        if ($appointments->isEmpty()) {
+            return [];
+        }
+
+        $doctorNames = User::query()
+            ->whereIn('id', $appointments->pluck('doctor_id')->filter()->unique()->values()->all())
+            ->pluck('name', 'id');
+
+        return $appointments
+            ->groupBy('doctor_id')
+            ->map(function ($rows, $doctorId) use ($doctorNames): array {
+                $bookingCount = (int) $rows->count();
+                $attendedCount = (int) $rows
+                    ->filter(fn (Appointment $appointment) => in_array(
+                        $appointment->status,
+                        Appointment::statusesForQuery([
+                            Appointment::STATUS_CONFIRMED,
+                            Appointment::STATUS_IN_PROGRESS,
+                            Appointment::STATUS_COMPLETED,
+                        ]),
+                        true,
+                    ))
+                    ->count();
+                $noShowCount = (int) $rows
+                    ->filter(fn (Appointment $appointment) => in_array(
+                        $appointment->status,
+                        Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]),
+                        true,
+                    ))
+                    ->count();
+
+                return [
+                    'doctor_id' => (int) $doctorId,
+                    'doctor_name' => (string) ($doctorNames->get((int) $doctorId) ?? ('Doctor #'.$doctorId)),
+                    'booking_count' => $bookingCount,
+                    'attended_count' => $attendedCount,
+                    'no_show_count' => $noShowCount,
+                    'booking_to_visit_rate' => $this->ratioPercent($attendedCount, $bookingCount),
+                    'no_show_rate' => $this->ratioPercent($noShowCount, $bookingCount),
+                ];
+            })
+            ->sortBy([
+                ['booking_to_visit_rate', 'desc'],
+                ['booking_count', 'desc'],
+            ])
+            ->values()
+            ->take(5)
+            ->all();
     }
 
     protected function ratioPercent(float|int $numerator, float|int $denominator): float

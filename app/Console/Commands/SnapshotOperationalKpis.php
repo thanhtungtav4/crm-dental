@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ReportSnapshot;
+use App\Services\OperationalKpiAlertService;
 use App\Services\OperationalKpiService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -18,8 +19,10 @@ class SnapshotOperationalKpis extends Command
 
     protected $description = 'Chụp snapshot KPI vận hành kèm data lineage.';
 
-    public function __construct(protected OperationalKpiService $kpiService)
-    {
+    public function __construct(
+        protected OperationalKpiService $kpiService,
+        protected OperationalKpiAlertService $alertService,
+    ) {
         parent::__construct();
     }
 
@@ -62,13 +65,11 @@ class SnapshotOperationalKpis extends Command
                 $snapshot = $this->kpiService->buildSnapshot($from, $to, $branchId);
 
                 if (! $dryRun) {
-                    ReportSnapshot::query()->updateOrCreate(
-                        [
-                            'snapshot_key' => $snapshotKey,
-                            'snapshot_date' => $snapshotDate->toDateString(),
-                            'branch_id' => $branchId,
-                        ],
-                        [
+                    $snapshotRecord = $this->upsertSnapshot(
+                        snapshotKey: $snapshotKey,
+                        snapshotDate: $snapshotDate,
+                        branchId: $branchId,
+                        attributes: [
                             'status' => ReportSnapshot::STATUS_SUCCESS,
                             'sla_status' => ReportSnapshot::SLA_ON_TIME,
                             'generated_at' => now(),
@@ -78,6 +79,11 @@ class SnapshotOperationalKpis extends Command
                             'error_message' => null,
                             'created_by' => auth()->id(),
                         ],
+                    );
+
+                    $this->alertService->evaluateSnapshot(
+                        snapshot: $snapshotRecord,
+                        actorId: auth()->id(),
                     );
 
                     AuditLog::record(
@@ -98,13 +104,11 @@ class SnapshotOperationalKpis extends Command
                 $failed++;
 
                 if (! $dryRun) {
-                    ReportSnapshot::query()->updateOrCreate(
-                        [
-                            'snapshot_key' => $snapshotKey,
-                            'snapshot_date' => $snapshotDate->toDateString(),
-                            'branch_id' => $branchId,
-                        ],
-                        [
+                    $this->upsertSnapshot(
+                        snapshotKey: $snapshotKey,
+                        snapshotDate: $snapshotDate,
+                        branchId: $branchId,
+                        attributes: [
                             'status' => ReportSnapshot::STATUS_FAILED,
                             'sla_status' => ReportSnapshot::SLA_LATE,
                             'generated_at' => null,
@@ -123,5 +127,42 @@ class SnapshotOperationalKpis extends Command
         $this->info("[{$mode}] KPI snapshots processed. success={$created}, failed={$failed}, snapshot_date={$snapshotDate->toDateString()}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function upsertSnapshot(
+        string $snapshotKey,
+        Carbon $snapshotDate,
+        ?int $branchId,
+        array $attributes,
+    ): ReportSnapshot {
+        $query = ReportSnapshot::query()
+            ->where('snapshot_key', $snapshotKey)
+            ->whereDate('snapshot_date', $snapshotDate->toDateString());
+
+        if ($branchId === null) {
+            $query->whereNull('branch_id');
+        } else {
+            $query->where('branch_id', $branchId);
+        }
+
+        $snapshot = $query
+            ->latest('id')
+            ->first();
+
+        if (! $snapshot) {
+            $snapshot = new ReportSnapshot([
+                'snapshot_key' => $snapshotKey,
+                'snapshot_date' => $snapshotDate->toDateString(),
+                'branch_id' => $branchId,
+            ]);
+        }
+
+        $snapshot->fill($attributes);
+        $snapshot->save();
+
+        return $snapshot;
     }
 }

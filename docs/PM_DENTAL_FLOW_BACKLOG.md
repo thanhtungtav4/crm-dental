@@ -225,7 +225,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: KPI benchmarking + anomaly alert (chi nhanh/bac si/khung gio)
 - **Type**: Story (Data + BE + FE)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Acceptance Criteria (QA)**:
   1. KPI view co benchmark theo branch va doctor (ngay/tuan/thang).
   2. Co alert khi vuot nguong no-show, chair utilization, treatment acceptance.

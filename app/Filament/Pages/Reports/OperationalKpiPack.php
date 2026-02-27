@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\Branch;
+use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -29,7 +30,13 @@ class OperationalKpiPack extends BaseReportPage
     {
         return ReportSnapshot::query()
             ->where('snapshot_key', 'operational_kpi_pack')
-            ->with('branch');
+            ->with('branch')
+            ->withCount([
+                'alerts as active_alerts_count' => fn (Builder $query) => $query->whereIn('status', [
+                    OperationalKpiAlert::STATUS_NEW,
+                    OperationalKpiAlert::STATUS_ACK,
+                ]),
+            ]);
     }
 
     protected function getTableColumns(): array
@@ -87,6 +94,13 @@ class OperationalKpiPack extends BaseReportPage
             TextColumn::make('payload.ltv_patient')
                 ->label('LTV')
                 ->formatStateUsing(fn ($state) => $this->formatCurrency($state)),
+            TextColumn::make('payload.doctor_benchmark.0.doctor_name')
+                ->label('Top doctor')
+                ->placeholder('-'),
+            TextColumn::make('active_alerts_count')
+                ->label('Alert mở')
+                ->badge()
+                ->color(fn ($state) => (int) $state > 0 ? 'danger' : 'success'),
         ];
     }
 
@@ -148,8 +162,14 @@ class OperationalKpiPack extends BaseReportPage
         }
 
         $payload = (array) $snapshot->payload;
+        $branchBenchmark = $this->buildBranchBenchmarkSummary($snapshot);
+        $topDoctorBenchmark = data_get($payload, 'doctor_benchmark.0');
+        $activeAlertCount = OperationalKpiAlert::query()
+            ->where('snapshot_id', $snapshot->id)
+            ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
+            ->count();
 
-        return [
+        $stats = [
             ['label' => 'Booking -> Visit', 'value' => $this->formatPercent($payload['booking_to_visit_rate'] ?? 0)],
             ['label' => 'No-show rate', 'value' => $this->formatPercent($payload['no_show_rate'] ?? 0)],
             ['label' => 'Treatment acceptance', 'value' => $this->formatPercent($payload['treatment_acceptance_rate'] ?? 0)],
@@ -163,6 +183,30 @@ class OperationalKpiPack extends BaseReportPage
                 'description' => 'Snapshot '.$snapshot->snapshot_date?->format('d/m/Y'),
             ],
         ];
+
+        if ($branchBenchmark !== null) {
+            $stats[] = [
+                'label' => 'Benchmark chi nhánh',
+                'value' => 'No-show '.$this->formatSignedPercent($branchBenchmark['no_show_delta']),
+                'description' => 'Acceptance '.$this->formatSignedPercent($branchBenchmark['acceptance_delta']).' | Chair '.$this->formatSignedPercent($branchBenchmark['chair_delta']),
+            ];
+        }
+
+        if (is_array($topDoctorBenchmark)) {
+            $stats[] = [
+                'label' => 'Benchmark bác sĩ',
+                'value' => (string) data_get($topDoctorBenchmark, 'doctor_name', '-'),
+                'description' => 'Visit '.$this->formatPercent(data_get($topDoctorBenchmark, 'booking_to_visit_rate', 0)).' | No-show '.$this->formatPercent(data_get($topDoctorBenchmark, 'no_show_rate', 0)),
+            ];
+        }
+
+        $stats[] = [
+            'label' => 'Alert KPI mở',
+            'value' => (string) $activeAlertCount,
+            'description' => $activeAlertCount > 0 ? 'Cần owner follow-up.' : 'Không có alert mở.',
+        ];
+
+        return $stats;
     }
 
     protected function buildFilteredSnapshotQuery(): Builder
@@ -223,5 +267,46 @@ class OperationalKpiPack extends BaseReportPage
     protected function formatCurrency(mixed $value): string
     {
         return number_format((float) $value, 0, ',', '.').'đ';
+    }
+
+    /**
+     * @return array{no_show_delta:float,acceptance_delta:float,chair_delta:float}|null
+     */
+    protected function buildBranchBenchmarkSummary(ReportSnapshot $snapshot): ?array
+    {
+        if (! $snapshot->branch_id) {
+            return null;
+        }
+
+        $peerSnapshots = ReportSnapshot::query()
+            ->where('snapshot_key', 'operational_kpi_pack')
+            ->whereDate('snapshot_date', $snapshot->snapshot_date)
+            ->whereNotNull('branch_id')
+            ->get(['id', 'payload']);
+
+        if ($peerSnapshots->count() < 2) {
+            return null;
+        }
+
+        $averageNoShow = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'no_show_rate', 0)), 2);
+        $averageAcceptance = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'treatment_acceptance_rate', 0)), 2);
+        $averageChair = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'chair_utilization_rate', 0)), 2);
+
+        $currentNoShow = (float) data_get($snapshot->payload, 'no_show_rate', 0);
+        $currentAcceptance = (float) data_get($snapshot->payload, 'treatment_acceptance_rate', 0);
+        $currentChair = (float) data_get($snapshot->payload, 'chair_utilization_rate', 0);
+
+        return [
+            'no_show_delta' => round($currentNoShow - $averageNoShow, 2),
+            'acceptance_delta' => round($currentAcceptance - $averageAcceptance, 2),
+            'chair_delta' => round($currentChair - $averageChair, 2),
+        ];
+    }
+
+    protected function formatSignedPercent(float $value): string
+    {
+        $prefix = $value > 0 ? '+' : '';
+
+        return $prefix.number_format($value, 2).'%';
     }
 }
