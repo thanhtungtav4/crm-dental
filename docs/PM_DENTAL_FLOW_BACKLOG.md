@@ -407,14 +407,15 @@ Ghi chu:
 - **Title**: DB index pack cho scale (care/appointment/finance)
 - **Type**: Task (DB + BE)
 - **Estimate**: 5 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Bo sung composite index theo query thuc te cho notes care queue, appointment capacity, finance aging.
   - Do EXPLAIN truoc/sau.
   - Chot playbook index rollout an toan.
 - **Status Note**:
   - Da bo sung index cho notes/appointments/finance branch hot-path.
-  - Con thieu baseline EXPLAIN truoc/sau va tai lieu ket qua de dong ticket.
+  - Da bo sung command `reports:explain-ops-hotpaths` de sinh EXPLAIN baseline artifact (JSON) cho cac hot-path query.
+  - Da bo sung test command baseline va flag full-scan detection cho tung query key.
 - **Acceptance Criteria (QA)**:
   1. Query dashboard/list chinh dat SLA de ra.
   2. Khong full scan tren table lon o filter pho bien.
