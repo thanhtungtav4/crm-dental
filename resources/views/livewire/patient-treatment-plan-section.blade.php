@@ -101,7 +101,10 @@
                                 </span>
                             </td>
                             <td class="is-center">
-                                <a href="{{ route('filament.admin.resources.plan-items.edit', ['record' => $item->id]) }}"
+                                <a href="{{ route('filament.admin.resources.plan-items.edit', [
+                                    'record' => $item->id,
+                                    'return_url' => request()->fullUrl(),
+                                ]) }}"
                                    class="crm-table-icon-btn"
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
