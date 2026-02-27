@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class InvoicePolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Invoice');
+        return $authUser->can('ViewAny:Invoice') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Invoice $invoice): bool
+    public function view(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('View:Invoice');
+        return $authUser->can('View:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Invoice');
+        return $authUser->can('Create:Invoice') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Invoice $invoice): bool
+    public function update(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Update:Invoice');
+        return $authUser->can('Update:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function delete(AuthUser $authUser, Invoice $invoice): bool
+    public function delete(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Delete:Invoice');
+        return $authUser->can('Delete:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function restore(AuthUser $authUser, Invoice $invoice): bool
+    public function restore(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Restore:Invoice');
+        return $authUser->can('Restore:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function forceDelete(AuthUser $authUser, Invoice $invoice): bool
+    public function forceDelete(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('ForceDelete:Invoice');
+        return $authUser->can('ForceDelete:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Invoice');
+        return $authUser->can('ForceDeleteAny:Invoice') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Invoice');
+        return $authUser->can('RestoreAny:Invoice') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Invoice $invoice): bool
+    public function replicate(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Replicate:Invoice');
+        return $authUser->can('Replicate:Invoice') && $this->canAccessInvoice($authUser, $invoice);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Invoice');
+        return $authUser->can('Reorder:Invoice') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessInvoice(User $authUser, Invoice $invoice): bool
+    {
+        return $authUser->canAccessBranch($invoice->resolveBranchId());
+    }
 }

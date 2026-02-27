@@ -81,6 +81,15 @@ class SensitiveActionRegistry
                     ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::MPI_DEDUPE_REVIEW'],
                 ],
             ],
+            ActionPermission::PATIENT_BRANCH_TRANSFER => [
+                'allowed_roles' => ['Admin', 'Manager', 'CSKH'],
+                'guard_markers' => [
+                    ['path' => 'app/Services/PatientBranchTransferService.php', 'contains' => 'ActionPermission::PATIENT_BRANCH_TRANSFER'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::PATIENT_BRANCH_TRANSFER'],
+                ],
+            ],
         ];
     }
 

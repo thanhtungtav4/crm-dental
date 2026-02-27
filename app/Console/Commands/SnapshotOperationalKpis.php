@@ -14,6 +14,8 @@ use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class SnapshotOperationalKpis extends Command
 {
@@ -187,32 +189,66 @@ class SnapshotOperationalKpis extends Command
         ?int $branchId,
         array $attributes,
     ): ReportSnapshot {
-        $query = ReportSnapshot::query()
-            ->where('snapshot_key', $snapshotKey)
-            ->whereDate('snapshot_date', $snapshotDate->toDateString());
+        $scopeId = $branchId ?? 0;
+        $snapshotDateString = $snapshotDate->toDateString();
 
-        if ($branchId === null) {
-            $query->whereNull('branch_id');
-        } else {
-            $query->where('branch_id', $branchId);
-        }
+        return DB::transaction(function () use (
+            $snapshotKey,
+            $snapshotDateString,
+            $scopeId,
+            $branchId,
+            $attributes
+        ): ReportSnapshot {
+            $query = ReportSnapshot::query()
+                ->where('snapshot_key', $snapshotKey)
+                ->where('branch_scope_id', $scopeId)
+                ->whereDate('snapshot_date', $snapshotDateString);
 
-        $snapshot = $query
-            ->latest('id')
-            ->first();
+            $snapshot = $query
+                ->lockForUpdate()
+                ->latest('id')
+                ->first();
 
-        if (! $snapshot) {
-            $snapshot = new ReportSnapshot([
-                'snapshot_key' => $snapshotKey,
-                'snapshot_date' => $snapshotDate->toDateString(),
+            if (! $snapshot) {
+                $snapshot = new ReportSnapshot([
+                    'snapshot_key' => $snapshotKey,
+                    'snapshot_date' => $snapshotDateString,
+                    'branch_scope_id' => $scopeId,
+                    'branch_id' => $branchId,
+                ]);
+            }
+
+            $snapshot->fill(array_merge($attributes, [
                 'branch_id' => $branchId,
-            ]);
-        }
+                'branch_scope_id' => $scopeId,
+            ]));
 
-        $snapshot->fill($attributes);
-        $snapshot->save();
+            try {
+                $snapshot->save();
+            } catch (QueryException $exception) {
+                $isUniqueViolation = str_contains((string) $exception->getCode(), '23000')
+                    || str_contains(strtolower($exception->getMessage()), 'unique');
 
-        return $snapshot;
+                if (! $isUniqueViolation) {
+                    throw $exception;
+                }
+
+                $snapshot = ReportSnapshot::query()
+                    ->where('snapshot_key', $snapshotKey)
+                    ->where('branch_scope_id', $scopeId)
+                    ->whereDate('snapshot_date', $snapshotDateString)
+                    ->latest('id')
+                    ->firstOrFail();
+
+                $snapshot->fill(array_merge($attributes, [
+                    'branch_id' => $branchId,
+                    'branch_scope_id' => $scopeId,
+                ]));
+                $snapshot->save();
+            }
+
+            return $snapshot;
+        }, 3);
     }
 
     protected function findSnapshotForDate(string $snapshotKey, Carbon $snapshotDate, ?int $branchId): ?ReportSnapshot
@@ -252,10 +288,6 @@ class SnapshotOperationalKpis extends Command
     {
         return ReportSnapshot::query()
             ->where('snapshot_key', $snapshotKey)
-            ->when(
-                $branchId === null,
-                fn (Builder $query): Builder => $query->whereNull('branch_id'),
-                fn (Builder $query): Builder => $query->where('branch_id', $branchId),
-            );
+            ->where('branch_scope_id', $branchId ?? 0);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DoctorBranchAssignmentService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -180,6 +181,11 @@ class Appointment extends Model
         'overbooking_override_at' => 'datetime',
     ];
 
+    public function save(array $options = []): bool
+    {
+        return DB::transaction(fn (): bool => parent::save($options), 3);
+    }
+
     protected static function booted(): void
     {
         static::saving(function (self $appointment): void {
@@ -212,6 +218,7 @@ class Appointment extends Model
 
             static::assertOperationalOverridePermission($appointment);
             static::assertStatusReasonRequirement($appointment, $normalizedStatus);
+            static::assertDoctorBranchCompatibility($appointment);
             static::assertOverbookingPolicy($appointment);
         });
     }
@@ -444,6 +451,25 @@ class Appointment extends Model
         }
     }
 
+    protected static function assertDoctorBranchCompatibility(self $appointment): void
+    {
+        if ($appointment->exists && ! $appointment->isDirty(['doctor_id', 'branch_id', 'date'])) {
+            return;
+        }
+
+        if (! $appointment->doctor_id || ! $appointment->branch_id) {
+            return;
+        }
+
+        $appointmentDate = $appointment->date;
+
+        app(DoctorBranchAssignmentService::class)->ensureDoctorCanWorkAtBranch(
+            doctorId: (int) $appointment->doctor_id,
+            branchId: (int) $appointment->branch_id,
+            at: $appointmentDate,
+        );
+    }
+
     protected static function statusesOccupyingCapacity(): array
     {
         return [
@@ -480,6 +506,7 @@ class Appointment extends Model
             ->when($appointment->exists, fn ($query) => $query->where('id', '!=', $appointment->id))
             ->where('date', '<', $end->format('Y-m-d H:i:s'))
             ->where('date', '>=', $start->copy()->subDay()->format('Y-m-d H:i:s'))
+            ->lockForUpdate()
             ->get(['id', 'date', 'duration_minutes']);
 
         $overlapCount = $candidateAppointments

@@ -7,6 +7,7 @@ use App\Support\ActionPermission;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class InsuranceClaim extends Model
@@ -74,17 +75,20 @@ class InsuranceClaim extends Model
 
             if (blank($claim->claim_number)) {
                 $prefix = 'CLM-'.now()->format('Ymd').'-';
-                $latestCode = self::query()
-                    ->where('claim_number', 'like', $prefix.'%')
-                    ->orderByDesc('id')
-                    ->value('claim_number');
+                $claim->claim_number = Cache::lock("insurance_claim:{$prefix}", 5)
+                    ->block(5, function () use ($prefix): string {
+                        $latestCode = self::query()
+                            ->where('claim_number', 'like', $prefix.'%')
+                            ->orderByDesc('claim_number')
+                            ->value('claim_number');
 
-                $sequence = 1;
-                if (is_string($latestCode) && preg_match('/(\d{4})$/', $latestCode, $matches) === 1) {
-                    $sequence = ((int) $matches[1]) + 1;
-                }
+                        $sequence = 1;
+                        if (is_string($latestCode) && preg_match('/(\d{4})$/', $latestCode, $matches) === 1) {
+                            $sequence = ((int) $matches[1]) + 1;
+                        }
 
-                $claim->claim_number = $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                        return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                    });
             }
 
             if ($claim->exists && $claim->isDirty('status')) {

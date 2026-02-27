@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'automation_actor_user_id' => env('CARE_AUTOMATION_ACTOR_USER_ID'),
     'medication_reminder_offset_days' => (int) env('CARE_MEDICATION_OFFSET_DAYS', 0),
     'post_treatment_follow_up_offset_days' => (int) env('CARE_FOLLOW_UP_OFFSET_DAYS', 3),
     'recall_default_offset_days' => (int) env('CARE_RECALL_DEFAULT_OFFSET_DAYS', 180),

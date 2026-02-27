@@ -18,6 +18,8 @@ class ActionPermission
 
     public const MPI_DEDUPE_REVIEW = 'Action:MpiDedupeReview';
 
+    public const PATIENT_BRANCH_TRANSFER = 'Action:PatientBranchTransfer';
+
     /**
      * @return array<int, string>
      */
@@ -31,6 +33,7 @@ class ActionPermission
             self::MASTER_DATA_SYNC,
             self::INSURANCE_CLAIM_DECISION,
             self::MPI_DEDUPE_REVIEW,
+            self::PATIENT_BRANCH_TRANSFER,
         ];
     }
 }

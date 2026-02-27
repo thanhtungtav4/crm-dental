@@ -4,67 +4,73 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\TreatmentPlan;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentPlanPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:TreatmentPlan');
+        return $authUser->can('ViewAny:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function view(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('View:TreatmentPlan');
+        return $authUser->can('View:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:TreatmentPlan');
+        return $authUser->can('Create:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function update(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Update:TreatmentPlan');
+        return $authUser->can('Update:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function delete(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function delete(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Delete:TreatmentPlan');
+        return $authUser->can('Delete:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function restore(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function restore(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Restore:TreatmentPlan');
+        return $authUser->can('Restore:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function forceDelete(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function forceDelete(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('ForceDelete:TreatmentPlan');
+        return $authUser->can('ForceDelete:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentPlan');
+        return $authUser->can('ForceDeleteAny:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentPlan');
+        return $authUser->can('RestoreAny:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, TreatmentPlan $treatmentPlan): bool
+    public function replicate(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Replicate:TreatmentPlan');
+        return $authUser->can('Replicate:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:TreatmentPlan');
+        return $authUser->can('Reorder:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessTreatmentPlan(User $authUser, TreatmentPlan $treatmentPlan): bool
+    {
+        $branchId = $treatmentPlan->branch_id ?? $treatmentPlan->patient?->first_branch_id;
+
+        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
+    }
 }

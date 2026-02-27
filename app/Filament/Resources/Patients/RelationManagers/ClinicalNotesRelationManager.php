@@ -10,11 +10,11 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\ViewField;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -114,7 +114,7 @@ class ClinicalNotesRelationManager extends RelationManager
                             ->panelLayout('grid')
                             ->reorderable()
                             ->appendFiles()
-                            ->visible(fn(Get $get): bool => in_array('ext', $get('indications') ?? []))
+                            ->visible(fn (Get $get): bool => in_array('ext', $get('indications') ?? []))
                             ->columnSpanFull(),
 
                         // Dynamic image upload for Ảnh (int) - appears when checkbox is checked
@@ -129,7 +129,7 @@ class ClinicalNotesRelationManager extends RelationManager
                             ->panelLayout('grid')
                             ->reorderable()
                             ->appendFiles()
-                            ->visible(fn(Get $get): bool => in_array('int', $get('indications') ?? []))
+                            ->visible(fn (Get $get): bool => in_array('int', $get('indications') ?? []))
                             ->columnSpanFull(),
 
                         // Dynamic disease select - appears when "Khác" checkbox is checked
@@ -137,16 +137,16 @@ class ClinicalNotesRelationManager extends RelationManager
                             ->label('Chọn bệnh khác')
                             ->multiple()
                             ->options(
-                                fn() => \App\Models\Disease::active()
+                                fn () => \App\Models\Disease::active()
                                     ->with('diseaseGroup')
                                     ->get()
                                     ->groupBy('diseaseGroup.name')
-                                    ->map(fn($diseases, $group) => $diseases->pluck('full_name', 'id'))
+                                    ->map(fn ($diseases, $group) => $diseases->pluck('full_name', 'id'))
                                     ->toArray()
                             )
                             ->searchable()
                             ->preload()
-                            ->visible(fn(Get $get): bool => in_array('khac', $get('indications') ?? []))
+                            ->visible(fn (Get $get): bool => in_array('khac', $get('indications') ?? []))
                             ->columnSpanFull(),
                     ]),
 
@@ -191,7 +191,7 @@ class ClinicalNotesRelationManager extends RelationManager
                     ->label('Chỉ định')
                     ->badge()
                     ->separator(',')
-                    ->formatStateUsing(fn($state) => is_array($state) ? count($state) . ' chỉ định' : '—'),
+                    ->formatStateUsing(fn ($state) => is_array($state) ? count($state).' chỉ định' : '—'),
 
                 TextColumn::make('general_exam_notes')
                     ->label('Ghi chú')

@@ -17,6 +17,7 @@ class Payment extends Model
 
     protected $fillable = [
         'invoice_id',
+        'branch_id',
         'reversal_of_id',
         'amount',
         'direction',
@@ -35,6 +36,7 @@ class Payment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'branch_id' => 'integer',
         'is_deposit' => 'boolean',
         'paid_at' => 'datetime',
         'reversed_at' => 'datetime',
@@ -42,7 +44,13 @@ class Payment extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (self $payment) {
+        static::saving(function (self $payment): void {
+            if (blank($payment->branch_id) && $payment->invoice_id) {
+                $payment->branch_id = Invoice::query()
+                    ->whereKey((int) $payment->invoice_id)
+                    ->value('branch_id');
+            }
+
             if ($payment->direction === 'refund') {
                 ActionGate::authorize(
                     ActionPermission::PAYMENT_REVERSAL,
@@ -88,6 +96,11 @@ class Payment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function receiver(): BelongsTo
@@ -187,6 +200,13 @@ class Payment extends Model
     public function canReverse(): bool
     {
         return ! $this->isRefund() && ! $this->isReversal() && ! $this->isReversed();
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id ?? $this->invoice?->branch_id ?? $this->invoice?->patient?->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
     }
 
     public function markReversed(?int $userId = null): void

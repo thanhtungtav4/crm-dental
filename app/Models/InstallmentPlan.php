@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class InstallmentPlan extends Model
 {
@@ -60,17 +61,20 @@ class InstallmentPlan extends Model
         static::creating(function (self $plan): void {
             if (blank($plan->plan_code)) {
                 $prefix = 'INS-'.now()->format('Ymd').'-';
-                $latestCode = self::query()
-                    ->where('plan_code', 'like', $prefix.'%')
-                    ->orderByDesc('id')
-                    ->value('plan_code');
+                $plan->plan_code = Cache::lock("installment_plan:{$prefix}", 5)
+                    ->block(5, function () use ($prefix): string {
+                        $latestCode = self::query()
+                            ->where('plan_code', 'like', $prefix.'%')
+                            ->orderByDesc('plan_code')
+                            ->value('plan_code');
 
-                $sequence = 1;
-                if (is_string($latestCode) && preg_match('/(\d{4})$/', $latestCode, $matches) === 1) {
-                    $sequence = ((int) $matches[1]) + 1;
-                }
+                        $sequence = 1;
+                        if (is_string($latestCode) && preg_match('/(\d{4})$/', $latestCode, $matches) === 1) {
+                            $sequence = ((int) $matches[1]) + 1;
+                        }
 
-                $plan->plan_code = $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                        return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+                    });
             }
 
             if (blank($plan->schedule)) {

@@ -9,6 +9,7 @@ use App\Filament\Resources\Patients\Pages\ViewPatient;
 use App\Filament\Resources\Patients\Schemas\PatientForm;
 use App\Filament\Resources\Patients\Tables\PatientsTable;
 use App\Models\Patient;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -55,6 +56,23 @@ class PatientResource extends Resource
         return PatientsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('first_branch_id', $branchIds);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -78,7 +96,7 @@ class PatientResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

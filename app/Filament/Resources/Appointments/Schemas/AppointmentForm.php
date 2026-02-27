@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Appointments\Schemas;
 
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Services\DoctorBranchAssignmentService;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -141,49 +142,78 @@ class AppointmentForm
 
                 Forms\Components\Select::make('doctor_id')
                     ->label('Bác sĩ')
-                    ->searchable()
-                    ->getSearchResultsUsing(function (string $search): array {
-                        return \App\Models\User::role('Doctor')
-                            ->where(function ($q) use ($search) {
-                                $q->where('name', 'like', "%{$search}%")
-                                    ->orWhere('phone', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                            })
-                            ->orderBy('name')
-                            ->limit(50)
-                            ->get()
-                            ->mapWithKeys(function ($u) {
-                                $spec = $u->specialty ? " — {$u->specialty}" : '';
-                                $phone = $u->phone ? " — {$u->phone}" : '';
+                    ->options(function (callable $get): array {
+                        $branchId = $get('branch_id');
+                        $date = $get('date');
 
-                                return [$u->id => $u->name.$spec.$phone];
-                            })
-                            ->toArray();
+                        $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                        return app(DoctorBranchAssignmentService::class)
+                            ->doctorOptionsForBranch(
+                                branchId: filled($branchId) ? (int) $branchId : null,
+                                at: $appointmentAt,
+                            );
                     })
-                    ->getOptionLabelUsing(function ($value): ?string {
-                        $u = $value ? \App\Models\User::find($value) : null;
-                        if (! $u) {
-                            return null;
-                        }
-                        $spec = $u->specialty ? " — {$u->specialty}" : '';
-                        $phone = $u->phone ? " — {$u->phone}" : '';
-
-                        return $u->name.$spec.$phone;
-                    }),
+                    ->getOptionLabelUsing(fn ($value): ?string => $value ? \App\Models\User::query()->whereKey($value)->value('name') : null)
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->helperText('Chỉ hiển thị bác sĩ đã được phân công theo chi nhánh và lịch hiệu lực.'),
 
                 Forms\Components\Select::make('branch_id')
                     ->relationship('branch', 'name')
                     ->label('Chi nhánh')
                     ->searchable()
                     ->preload()
-                    ->default(fn () => auth()->user()?->branch_id),
+                    ->default(fn () => auth()->user()?->branch_id)
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                        $doctorId = $get('doctor_id');
+
+                        if (! filled($doctorId) || ! filled($state)) {
+                            return;
+                        }
+
+                        $date = $get('date');
+                        $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                        $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                            doctorId: (int) $doctorId,
+                            branchId: (int) $state,
+                            at: $appointmentAt,
+                        );
+
+                        if (! $isAllowed) {
+                            $set('doctor_id', null);
+                        }
+                    }),
 
                 Forms\Components\DateTimePicker::make('date')
                     ->label('Thời gian')
                     ->required()
                     ->native(false)
                     ->seconds(false)
-                    ->displayFormat('d/m/Y H:i'),
+                    ->displayFormat('d/m/Y H:i')
+                    ->live()
+                    ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                        $doctorId = $get('doctor_id');
+                        $branchId = $get('branch_id');
+
+                        if (! filled($doctorId) || ! filled($branchId) || ! filled($state)) {
+                            return;
+                        }
+
+                        $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                            doctorId: (int) $doctorId,
+                            branchId: (int) $branchId,
+                            at: \Carbon\Carbon::parse((string) $state),
+                        );
+
+                        if (! $isAllowed) {
+                            $set('doctor_id', null);
+                        }
+                    }),
 
                 Forms\Components\Select::make('appointment_type')
                     ->label('Loại lịch hẹn')

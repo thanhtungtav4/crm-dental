@@ -47,6 +47,8 @@ class AuditLog extends Model
 
     public const ENTITY_MASTER_PATIENT_MERGE = 'master_patient_merge';
 
+    public const ENTITY_BRANCH_TRANSFER = 'branch_transfer';
+
     public const ENTITY_REPORT_SNAPSHOT = 'report_snapshot';
 
     public const ENTITY_AUTOMATION = 'automation';
@@ -82,6 +84,8 @@ class AuditLog extends Model
     public const ACTION_MERGE = 'merge';
 
     public const ACTION_ROLLBACK = 'rollback';
+
+    public const ACTION_TRANSFER = 'transfer';
 
     public const ACTION_RUN = 'run';
 

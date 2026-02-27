@@ -17,13 +17,15 @@ class InvoiceFactory extends Factory
         $session = TreatmentSession::inRandomOrder()->first() ?? TreatmentSession::factory()->create();
         $plan = TreatmentPlan::find($session->treatment_plan_id) ?? TreatmentPlan::factory()->create();
         $patient = Patient::find($plan->patient_id) ?? Patient::factory()->create();
-    return [
+
+        return [
             'treatment_session_id' => $session->id,
             'treatment_plan_id' => $plan->id,
             'patient_id' => $patient->id,
-            'invoice_no' => 'INV-' . $this->faker->unique()->numerify('########'),
+            'branch_id' => $plan->branch_id ?? $patient->first_branch_id,
+            'invoice_no' => 'INV-'.$this->faker->unique()->numerify('########'),
             'total_amount' => $this->faker->numberBetween(500_000, 10_000_000),
-            'status' => $this->faker->randomElement(['draft','issued','partial','paid']),
+            'status' => $this->faker->randomElement(['draft', 'issued', 'partial', 'paid']),
         ];
     }
 }

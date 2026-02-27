@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Payment;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PaymentPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Payment');
+        return $authUser->can('ViewAny:Payment') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Payment $payment): bool
+    public function view(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('View:Payment');
+        return $authUser->can('View:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Payment');
+        return $authUser->can('Create:Payment') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Payment $payment): bool
+    public function update(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Update:Payment');
+        return $authUser->can('Update:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function delete(AuthUser $authUser, Payment $payment): bool
+    public function delete(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Delete:Payment');
+        return $authUser->can('Delete:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function restore(AuthUser $authUser, Payment $payment): bool
+    public function restore(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Restore:Payment');
+        return $authUser->can('Restore:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function forceDelete(AuthUser $authUser, Payment $payment): bool
+    public function forceDelete(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('ForceDelete:Payment');
+        return $authUser->can('ForceDelete:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Payment');
+        return $authUser->can('ForceDeleteAny:Payment') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Payment');
+        return $authUser->can('RestoreAny:Payment') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Payment $payment): bool
+    public function replicate(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Replicate:Payment');
+        return $authUser->can('Replicate:Payment') && $this->canAccessPayment($authUser, $payment);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Payment');
+        return $authUser->can('Reorder:Payment') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessPayment(User $authUser, Payment $payment): bool
+    {
+        return $authUser->canAccessBranch($payment->resolveBranchId());
+    }
 }

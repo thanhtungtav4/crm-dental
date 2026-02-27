@@ -15,13 +15,15 @@ class PaymentFactory extends Factory
     {
         $invoice = Invoice::inRandomOrder()->first() ?? Invoice::factory()->create();
         $receiver = User::inRandomOrder()->first() ?? User::factory()->create();
+
         return [
             'invoice_id' => $invoice->id,
+            'branch_id' => $invoice->branch_id,
             'amount' => $this->faker->numberBetween(100_000, (int) $invoice->total_amount),
             'method' => $this->faker->randomElement(['cash', 'card', 'transfer', 'vnpay', 'other']),
             'paid_at' => $this->faker->dateTimeBetween('-3 days', 'now'),
             'received_by' => $receiver->id,
-            'note' => $this->faker->randomElement(['Thanh toán đợt 1','Thanh toán đủ','Thanh toán chuyển khoản','Giảm giá khuyến mãi']),
+            'note' => $this->faker->randomElement(['Thanh toán đợt 1', 'Thanh toán đủ', 'Thanh toán chuyển khoản', 'Giảm giá khuyến mãi']),
         ];
     }
 }

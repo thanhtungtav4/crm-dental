@@ -4,67 +4,73 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Note;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class NotePolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Note');
+        return $authUser->can('ViewAny:Note') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Note $note): bool
+    public function view(User $authUser, Note $note): bool
     {
-        return $authUser->can('View:Note');
+        return $authUser->can('View:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Note');
+        return $authUser->can('Create:Note') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Note $note): bool
+    public function update(User $authUser, Note $note): bool
     {
-        return $authUser->can('Update:Note');
+        return $authUser->can('Update:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function delete(AuthUser $authUser, Note $note): bool
+    public function delete(User $authUser, Note $note): bool
     {
-        return $authUser->can('Delete:Note');
+        return $authUser->can('Delete:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function restore(AuthUser $authUser, Note $note): bool
+    public function restore(User $authUser, Note $note): bool
     {
-        return $authUser->can('Restore:Note');
+        return $authUser->can('Restore:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function forceDelete(AuthUser $authUser, Note $note): bool
+    public function forceDelete(User $authUser, Note $note): bool
     {
-        return $authUser->can('ForceDelete:Note');
+        return $authUser->can('ForceDelete:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Note');
+        return $authUser->can('ForceDeleteAny:Note') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Note');
+        return $authUser->can('RestoreAny:Note') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Note $note): bool
+    public function replicate(User $authUser, Note $note): bool
     {
-        return $authUser->can('Replicate:Note');
+        return $authUser->can('Replicate:Note') && $this->canAccessNote($authUser, $note);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Note');
+        return $authUser->can('Reorder:Note') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessNote(User $authUser, Note $note): bool
+    {
+        $branchId = $note->patient?->first_branch_id ?? $note->customer?->branch_id;
+
+        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
+    }
 }

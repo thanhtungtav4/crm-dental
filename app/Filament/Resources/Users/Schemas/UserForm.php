@@ -21,6 +21,32 @@ class UserForm
                     ->preload()
                     ->nullable(),
 
+                Forms\Components\Select::make('doctor_branch_ids')
+                    ->label('Chi nhánh làm việc (Bác sĩ)')
+                    ->options(fn (): array => \App\Models\Branch::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->afterStateHydrated(function (Forms\Components\Select $component, $state, $record): void {
+                        if (! $record || filled($state)) {
+                            return;
+                        }
+
+                        $branchIds = $record->activeDoctorBranchAssignments()
+                            ->pluck('branch_id')
+                            ->map(fn ($branchId): int => (int) $branchId)
+                            ->values()
+                            ->all();
+
+                        if ($branchIds === [] && filled($record->branch_id)) {
+                            $branchIds = [(int) $record->branch_id];
+                        }
+
+                        $component->state($branchIds);
+                    })
+                    ->helperText('Dùng cho user có vai trò Bác sĩ. Có thể phân công 1 bác sĩ tại nhiều chi nhánh.')
+                    ->columnSpanFull(),
+
                 Forms\Components\TextInput::make('name')
                     ->label('Tên')
                     ->required()
@@ -58,8 +84,8 @@ class UserForm
                     ->password()
                     ->revealable()
                     ->rule(Password::defaults())
-                    ->dehydrated(fn($state) => filled($state))
-                    ->required(fn(string $operation) => $operation === 'create')
+                    ->dehydrated(fn ($state) => filled($state))
+                    ->required(fn (string $operation) => $operation === 'create')
                     ->maxLength(255)
                     ->columnSpanFull(),
 
@@ -112,8 +138,9 @@ class UserForm
                                 default => 'Khác',
                             };
                             $label = str_replace(['_', '-'], ' ', $perm->name);
-                            $options[$perm->id] = "$group — " . ucwords($label);
+                            $options[$perm->id] = "$group — ".ucwords($label);
                         }
+
                         return $options;
                     })
                     ->columns(3)

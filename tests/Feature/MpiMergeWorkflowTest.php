@@ -4,6 +4,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\DoctorBranchAssignment;
 use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientMerge;
 use App\Models\Note;
@@ -48,8 +49,23 @@ it('merges duplicate patients into canonical record and keeps mapping history', 
         'status' => 'active',
     ]);
 
+    $doctor = User::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $doctor->id,
+        'branch_id' => $branchB->id,
+        'is_primary' => true,
+        'is_active' => true,
+        'assigned_from' => null,
+        'assigned_until' => null,
+    ]);
+
     $appointment = Appointment::factory()->create([
         'patient_id' => $mergedPatient->id,
+        'doctor_id' => $doctor->id,
         'branch_id' => $branchB->id,
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
@@ -145,8 +161,23 @@ it('rolls back patient merge and restores previous patient references', function
         'status' => 'active',
     ]);
 
+    $doctor = User::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $doctor->id,
+        'branch_id' => $branchB->id,
+        'is_primary' => true,
+        'is_active' => true,
+        'assigned_from' => null,
+        'assigned_until' => null,
+    ]);
+
     $appointment = Appointment::factory()->create([
         'patient_id' => $mergedPatient->id,
+        'doctor_id' => $doctor->id,
         'branch_id' => $branchB->id,
         'status' => Appointment::STATUS_SCHEDULED,
     ]);

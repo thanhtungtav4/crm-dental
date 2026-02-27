@@ -49,6 +49,21 @@ class Branch extends Model
         return $this->hasMany(User::class);
     }
 
+    public function doctorBranchAssignments()
+    {
+        return $this->hasMany(DoctorBranchAssignment::class);
+    }
+
+    public function transferRequestsFrom()
+    {
+        return $this->hasMany(BranchTransferRequest::class, 'from_branch_id');
+    }
+
+    public function transferRequestsTo()
+    {
+        return $this->hasMany(BranchTransferRequest::class, 'to_branch_id');
+    }
+
     public function overbookingPolicy()
     {
         return $this->hasOne(BranchOverbookingPolicy::class);

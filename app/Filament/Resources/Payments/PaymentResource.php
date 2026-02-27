@@ -9,11 +9,13 @@ use App\Filament\Resources\Payments\Schemas\PaymentForm;
 use App\Filament\Resources\Payments\Schemas\PaymentInfolist;
 use App\Filament\Resources\Payments\Tables\PaymentsTable;
 use App\Models\Payment;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class PaymentResource extends Resource
@@ -64,6 +66,32 @@ class PaymentResource extends Resource
         return PaymentsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $innerQuery) use ($branchIds): void {
+            $innerQuery->whereIn('branch_id', $branchIds)
+                ->orWhere(function (Builder $fallbackQuery) use ($branchIds): void {
+                    $fallbackQuery->whereNull('branch_id')
+                        ->whereHas('invoice', function (Builder $invoiceQuery) use ($branchIds): void {
+                            $invoiceQuery->whereIn('branch_id', $branchIds)
+                                ->orWhereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds));
+                        });
+                });
+        });
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -93,5 +121,10 @@ class PaymentResource extends Resource
             'create' => CreatePayment::route('/create'),
             'view' => ViewPayment::route('/{record}'),
         ];
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 }

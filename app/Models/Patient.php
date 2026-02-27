@@ -12,6 +12,10 @@ class Patient extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public ?string $branchTransferLogNote = null;
+
+    public ?int $branchTransferActorId = null;
+
     protected $fillable = [
         'customer_id',
         'patient_code',
@@ -65,6 +69,11 @@ class Patient extends Model
     public function branchLogs()
     {
         return $this->hasMany(BranchLog::class);
+    }
+
+    public function branchTransferRequests()
+    {
+        return $this->hasMany(BranchTransferRequest::class);
     }
 
     public function invoices()
@@ -224,8 +233,8 @@ class Patient extends Model
                         'patient_id' => $patient->id,
                         'from_branch_id' => $from,
                         'to_branch_id' => $to,
-                        'moved_by' => Auth::id(),
-                        'note' => 'Chuyển chi nhánh',
+                        'moved_by' => $patient->branchTransferActorId ?? Auth::id(),
+                        'note' => $patient->branchTransferLogNote ?: 'Chuyển chi nhánh',
                     ]);
                 }
             }

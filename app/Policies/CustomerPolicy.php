@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class CustomerPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Customer');
+        return $authUser->can('ViewAny:Customer') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Customer $customer): bool
+    public function view(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('View:Customer');
+        return $authUser->can('View:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Customer');
+        return $authUser->can('Create:Customer') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Customer $customer): bool
+    public function update(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('Update:Customer');
+        return $authUser->can('Update:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function delete(AuthUser $authUser, Customer $customer): bool
+    public function delete(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('Delete:Customer');
+        return $authUser->can('Delete:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function restore(AuthUser $authUser, Customer $customer): bool
+    public function restore(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('Restore:Customer');
+        return $authUser->can('Restore:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function forceDelete(AuthUser $authUser, Customer $customer): bool
+    public function forceDelete(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('ForceDelete:Customer');
+        return $authUser->can('ForceDelete:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Customer');
+        return $authUser->can('ForceDeleteAny:Customer') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Customer');
+        return $authUser->can('RestoreAny:Customer') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Customer $customer): bool
+    public function replicate(User $authUser, Customer $customer): bool
     {
-        return $authUser->can('Replicate:Customer');
+        return $authUser->can('Replicate:Customer') && $this->canAccessCustomer($authUser, $customer);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Customer');
+        return $authUser->can('Reorder:Customer') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessCustomer(User $authUser, Customer $customer): bool
+    {
+        return $authUser->canAccessBranch($customer->branch_id);
+    }
 }

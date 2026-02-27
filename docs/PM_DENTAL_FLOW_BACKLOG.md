@@ -1,6 +1,6 @@
 # PM Backlog - Dental CRM Flow Hardening
 
-Cap nhat: 2026-02-26
+Cap nhat: 2026-02-27
 Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `docs/IMPLEMENTATION_SPRINT_BACKLOG.md`
 
 ## 1) Muc tieu backlog
@@ -275,3 +275,160 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 2. `Wave 2 (tu dong hoa + do luong)`: PM-11..PM-20
 3. `Wave 3 (scale hardening)`: PM-23..PM-27
 4. `Wave 4 (tang truong)`: PM-21..PM-22
+
+---
+
+## 7) Backlog Production-Ready cho Multi-Branch (Re-open)
+
+Ghi chu:
+- Backlog PM-01..PM-27 duoc danh dau Done theo pham vi code/ticket.
+- Audit production cho mo hinh da chi nhanh cho thay con khoang trong ve security, tenancy, data attribution, migration drift.
+- Cac ticket duoi day la backlog bo sung bat buoc truoc go-live da chi nhanh.
+
+### TICKET PM-28 (P0)
+- **Title**: Security gate hardening cho Admin panel + automation command
+- **Type**: Story (BE + Security)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Scope**:
+  - Bo `canAccessPanel(): true` vo dieu kien, enforce theo role + status user.
+  - Khong cho bypass `ActionGate` o console khi khong co actor hop le.
+  - Chuan hoa co che service-account/automation-actor cho scheduler.
+- **Acceptance Criteria (QA)**:
+  1. User khong du role khong vao duoc Filament admin.
+  2. Command nhay cam fail neu khong co actor hop le.
+  3. Co test role matrix cho login panel + command authorization.
+
+### TICKET PM-29 (P0)
+- **Title**: Branch isolation enforcement backend (tenancy by policy + query)
+- **Type**: Story (BE + Architecture)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Scope**:
+  - Enforce branch-scope o policy/query cho Patient, Appointment, Invoice, Payment, Prescription, Note, print endpoints.
+  - Chan truy cap cheo chi nhanh khi chi co role van hanh tai 1 chi nhanh.
+  - Dinh nghia ro role co quyen xem lien chi nhanh (vd Admin HQ).
+- **Acceptance Criteria (QA)**:
+  1. User chi nhanh A khong xem/sua du lieu chi nhanh B (tru role HQ).
+  2. Tat ca API/page/print route nhay cam deu qua branch-aware authorization.
+  3. Co test integration cho cross-branch access denied.
+
+### TICKET PM-30 (P0)
+- **Title**: Finance branch attribution model (invoice/payment branch_id) + KPI dong bo
+- **Type**: Story (BE + Data)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Scope**:
+  - Bo sung/hoan tat `branch_id` tren finance entities can thiet.
+  - Backfill du lieu lich su theo quy tac nghiep vu.
+  - Sua KPI doanh thu/collection khong con phu thuoc `patient.first_branch_id`.
+- **Acceptance Criteria (QA)**:
+  1. Revenue theo chi nhanh khop so lieu van hanh va ledger.
+  2. Chuyen chi nhanh benh nhan khong lam sai lich su doanh thu.
+  3. Co reconciliation report truoc/sau migration.
+
+### TICKET PM-31 (P0)
+- **Title**: Migration drift gate truoc go-live
+- **Type**: Task (DevEx + BE)
+- **Estimate**: 3 SP
+- **Status**: Todo
+- **Scope**:
+  - Dong bo schema voi code (xu ly toan bo migration pending tren env deploy).
+  - Them pre-deploy check fail neu con migration pending.
+  - Khoa quy trinh release: khong cho push release neu schema drift.
+- **Acceptance Criteria (QA)**:
+  1. `migrate:status` tren staging/prod = khong pending.
+  2. CI/CD fail neu phat hien schema drift.
+  3. Trang report/feature moi khong loi do thieu bang/cot.
+
+### TICKET PM-32 (P0)
+- **Title**: Concurrency hardening (invoice no, plan code, claim no, overbooking/overpay)
+- **Type**: Story (BE + DB)
+- **Estimate**: 8 SP
+- **Status**: Todo
+- **Scope**:
+  - Chuyen sinh so chung tu sang co che an toan concurrency (lock/sequence).
+  - Hardening transaction cho overbooking check va overpay gate.
+  - Bo sung test race condition cho cac luong tai chinh/lich hen.
+- **Acceptance Criteria (QA)**:
+  1. Khong tao trung ma hoa don/claim/installment khi request dong thoi.
+  2. Khong vuot policy overpay/overbooking duoi tai cao.
+  3. Co test stress/parallel cho cac case quan trong.
+
+### TICKET PM-33 (P1)
+- **Title**: Print/export authorization + side-effect separation
+- **Type**: Story (BE + Security)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Scope**:
+  - Them authorize day du cho invoice/payment/prescription print.
+  - Tach side-effect `invoice_exported` khoi GET route (chuyen sang explicit action).
+  - Log audit ro actor + branch + loai export.
+- **Acceptance Criteria (QA)**:
+  1. Print route cheo chi nhanh bi chan dung policy.
+  2. GET print khong mutating data.
+  3. Audit export day du va truy vet duoc.
+
+### TICKET PM-34 (P1)
+- **Title**: KPI formula hardening cho multi-branch operations
+- **Type**: Story (Data + Product)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Scope**:
+  - Rasoat lai cong thuc booking->visit, chair utilization, recall, no-show.
+  - Chot definition event-level (booked, arrived, in-chair, completed).
+  - Align dashboard + export + snapshot lineage voi metric definition moi.
+- **Acceptance Criteria (QA)**:
+  1. KPI dictionary duoc version hoa va ap dung thong nhat.
+  2. So lieu dashboard khop query kiem toan.
+  3. Co regression test cho cong thuc KPI chinh.
+
+### TICKET PM-35 (P1)
+- **Title**: DB index pack cho scale (care/appointment/finance)
+- **Type**: Task (DB + BE)
+- **Estimate**: 5 SP
+- **Status**: Todo
+- **Scope**:
+  - Bo sung composite index theo query thuc te cho notes care queue, appointment capacity, finance aging.
+  - Do EXPLAIN truoc/sau.
+  - Chot playbook index rollout an toan.
+- **Acceptance Criteria (QA)**:
+  1. Query dashboard/list chinh dat SLA de ra.
+  2. Khong full scan tren table lon o filter pho bien.
+  3. Co tai lieu EXPLAIN baseline truoc/sau.
+
+### TICKET PM-36 (P1)
+- **Title**: Scheduler hardening cho environment nhieu node
+- **Type**: Task (BE + Ops)
+- **Estimate**: 3 SP
+- **Status**: Todo
+- **Scope**:
+  - Them lock `withoutOverlapping`/`onOneServer` cho command quan trong.
+  - Chot timeout/retry/alert khi command fail.
+  - Tranh duplicate run gay duplicate ticket/snapshot.
+- **Acceptance Criteria (QA)**:
+  1. Command khong bi chay trung khi scale app nodes.
+  2. Co canh bao khi job qua SLA.
+  3. Khong tao duplicate care/snapshot do scheduler.
+
+### TICKET PM-37 (P2)
+- **Title**: Tech debt cleanup (legacy Doctor artifact + dead code path)
+- **Type**: Task (BE Refactor)
+- **Estimate**: 3 SP
+- **Status**: Todo
+- **Scope**:
+  - Xoa/phan tach ro cac artifact legacy `Doctor` khong con dung.
+  - Dung factory/policy/resource khong con schema backing.
+  - Don dep code va test lien quan de giam nhieu maintenance.
+- **Acceptance Criteria (QA)**:
+  1. Khong con model/resource/factory orphan khong co table.
+  2. Khong anh huong flow user doctor qua `users` resource.
+  3. Test suite pass sau cleanup.
+
+---
+
+## 8) Thu tu go-live de xuat cho da chi nhanh
+
+1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32
+2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36
+3. `Go-live Gate C (debt cleanup)`: PM-37

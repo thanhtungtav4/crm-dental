@@ -8,6 +8,7 @@ use App\Filament\Resources\TreatmentPlans\Pages\ListTreatmentPlans;
 use App\Filament\Resources\TreatmentPlans\Schemas\TreatmentPlanForm;
 use App\Filament\Resources\TreatmentPlans\Tables\TreatmentPlansTable;
 use App\Models\TreatmentPlan;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -31,7 +32,7 @@ class TreatmentPlanResource extends Resource
     {
         return 'Hoạt động hàng ngày';
     }
-    
+
     protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
@@ -42,6 +43,23 @@ class TreatmentPlanResource extends Resource
     public static function table(Table $table): Table
     {
         return TreatmentPlansTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('branch_id', $branchIds);
     }
 
     public static function getRelations(): array
@@ -62,7 +80,7 @@ class TreatmentPlanResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

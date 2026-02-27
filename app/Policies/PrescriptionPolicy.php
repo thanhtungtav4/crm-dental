@@ -5,65 +5,72 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\Prescription;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Illuminate\Foundation\Auth\User as AuthUser;
 
 class PrescriptionPolicy
 {
     use HandlesAuthorization;
 
-    public function viewAny(AuthUser $authUser): bool
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Prescription');
+        return $authUser->can('ViewAny:Prescription') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Prescription $prescription): bool
+    public function view(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('View:Prescription');
+        return $authUser->can('View:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Prescription');
+        return $authUser->can('Create:Prescription') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Prescription $prescription): bool
+    public function update(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('Update:Prescription');
+        return $authUser->can('Update:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function delete(AuthUser $authUser, Prescription $prescription): bool
+    public function delete(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('Delete:Prescription');
+        return $authUser->can('Delete:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function restore(AuthUser $authUser, Prescription $prescription): bool
+    public function restore(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('Restore:Prescription');
+        return $authUser->can('Restore:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function forceDelete(AuthUser $authUser, Prescription $prescription): bool
+    public function forceDelete(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('ForceDelete:Prescription');
+        return $authUser->can('ForceDelete:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Prescription');
+        return $authUser->can('ForceDeleteAny:Prescription') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Prescription');
+        return $authUser->can('RestoreAny:Prescription') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Prescription $prescription): bool
+    public function replicate(User $authUser, Prescription $prescription): bool
     {
-        return $authUser->can('Replicate:Prescription');
+        return $authUser->can('Replicate:Prescription') && $this->canAccessPrescription($authUser, $prescription);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Prescription');
+        return $authUser->can('Reorder:Prescription') && $authUser->hasAnyAccessibleBranch();
+    }
+
+    protected function canAccessPrescription(User $authUser, Prescription $prescription): bool
+    {
+        $branchId = $prescription->patient?->first_branch_id;
+
+        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
     }
 }

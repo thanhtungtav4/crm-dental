@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -56,6 +57,7 @@ class Invoice extends Model
         'treatment_session_id',
         'treatment_plan_id',
         'patient_id',
+        'branch_id',
         'invoice_no',
         'subtotal',
         'discount_amount',
@@ -72,6 +74,7 @@ class Invoice extends Model
     ];
 
     protected $casts = [
+        'branch_id' => 'integer',
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',
@@ -195,17 +198,19 @@ class Invoice extends Model
     {
         $prefix = 'INV-'.now()->format('Ymd').'-';
 
-        $latestInvoiceNo = static::withTrashed()
-            ->where('invoice_no', 'like', "{$prefix}%")
-            ->orderByDesc('id')
-            ->value('invoice_no');
+        return Cache::lock("invoice_no:{$prefix}", 5)->block(5, function () use ($prefix): string {
+            $latestInvoiceNo = static::withTrashed()
+                ->where('invoice_no', 'like', "{$prefix}%")
+                ->orderByDesc('invoice_no')
+                ->value('invoice_no');
 
-        $nextSequence = 1;
-        if (is_string($latestInvoiceNo) && preg_match('/(\d{4})$/', $latestInvoiceNo, $matches) === 1) {
-            $nextSequence = ((int) $matches[1]) + 1;
-        }
+            $nextSequence = 1;
+            if (is_string($latestInvoiceNo) && preg_match('/(\d{4})$/', $latestInvoiceNo, $matches) === 1) {
+                $nextSequence = ((int) $matches[1]) + 1;
+            }
 
-        return $prefix.str_pad((string) $nextSequence, 4, '0', STR_PAD_LEFT);
+            return $prefix.str_pad((string) $nextSequence, 4, '0', STR_PAD_LEFT);
+        });
     }
 
     public static function calculateTotalAmount(
@@ -238,6 +243,18 @@ class Invoice extends Model
                 ->whereKey((int) $invoice->treatment_plan_id)
                 ->value('patient_id');
         }
+
+        if ($invoice->treatment_plan_id && blank($invoice->branch_id)) {
+            $invoice->branch_id = TreatmentPlan::query()
+                ->whereKey((int) $invoice->treatment_plan_id)
+                ->value('branch_id');
+        }
+
+        if ($invoice->patient_id && blank($invoice->branch_id)) {
+            $invoice->branch_id = Patient::query()
+                ->whereKey((int) $invoice->patient_id)
+                ->value('first_branch_id');
+        }
     }
 
     private static function normalizeMonetaryValue(mixed $value): float
@@ -262,6 +279,11 @@ class Invoice extends Model
         return $this->belongsTo(Patient::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -275,6 +297,13 @@ class Invoice extends Model
     public function insuranceClaims(): HasMany
     {
         return $this->hasMany(InsuranceClaim::class);
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id ?? $this->plan?->branch_id ?? $this->patient?->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
     }
 
     // ==================== PAYMENT TRACKING METHODS ====================
@@ -381,29 +410,6 @@ class Invoice extends Model
             );
         }
 
-        if ($direction === 'receipt') {
-            if ($this->status === self::STATUS_DRAFT && ! ClinicRuntimeSettings::allowDraftPrepay()) {
-                throw ValidationException::withMessages([
-                    'invoice_id' => 'Chính sách hiện tại không cho phép thu trước trên hóa đơn nháp.',
-                ]);
-            }
-
-            if ($isDeposit && ! ClinicRuntimeSettings::allowDeposit()) {
-                throw ValidationException::withMessages([
-                    'is_deposit' => 'Chính sách hiện tại không cho phép ghi nhận tiền cọc.',
-                ]);
-            }
-
-            if (! ClinicRuntimeSettings::allowOverpay()) {
-                $balance = $this->calculateBalance();
-                if ($amount > $balance) {
-                    throw ValidationException::withMessages([
-                        'amount' => 'Số tiền thu vượt công nợ hiện tại theo chính sách chống overpay.',
-                    ]);
-                }
-            }
-        }
-
         return DB::transaction(function () use (
             $amount,
             $direction,
@@ -418,15 +424,52 @@ class Invoice extends Model
             $reversalOfId,
             $isDeposit
         ): Payment {
+            $lockedInvoice = self::query()
+                ->whereKey($this->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($direction === 'receipt') {
+                if ($lockedInvoice->status === self::STATUS_DRAFT && ! ClinicRuntimeSettings::allowDraftPrepay()) {
+                    throw ValidationException::withMessages([
+                        'invoice_id' => 'Chính sách hiện tại không cho phép thu trước trên hóa đơn nháp.',
+                    ]);
+                }
+
+                if ($isDeposit && ! ClinicRuntimeSettings::allowDeposit()) {
+                    throw ValidationException::withMessages([
+                        'is_deposit' => 'Chính sách hiện tại không cho phép ghi nhận tiền cọc.',
+                    ]);
+                }
+            }
+
             if ($transactionRef) {
-                $existingPayment = $this->payments()
+                $existingPayment = $lockedInvoice->payments()
                     ->where('transaction_ref', $transactionRef)
+                    ->lockForUpdate()
                     ->first();
 
                 if ($existingPayment) {
-                    $this->updatePaidAmount();
+                    $lockedInvoice->updatePaidAmount();
+                    $this->refresh();
 
                     return $existingPayment;
+                }
+            }
+
+            if ($direction === 'receipt' && ! ClinicRuntimeSettings::allowOverpay()) {
+                $currentPaid = (float) $lockedInvoice->payments()
+                    ->select(['id', 'amount'])
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('amount');
+
+                $balance = round(max(0, (float) $lockedInvoice->total_amount - $currentPaid), 2);
+
+                if ($amount > $balance) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Số tiền thu vượt công nợ hiện tại theo chính sách chống overpay.',
+                    ]);
                 }
             }
 
@@ -436,6 +479,7 @@ class Invoice extends Model
                 'method' => $method,
                 'paid_at' => $paidAt ?: now(),
                 'received_by' => $receivedBy ?: auth()->id(),
+                'branch_id' => $lockedInvoice->resolveBranchId(),
                 'note' => $notes,
                 'refund_reason' => $refundReason,
                 'payment_source' => $paymentSource,
@@ -446,7 +490,7 @@ class Invoice extends Model
             ];
 
             try {
-                $payment = $this->payments()->create($payload);
+                $payment = $lockedInvoice->payments()->create($payload);
             } catch (QueryException $exception) {
                 $isDuplicateTransaction = str_contains((string) $exception->getCode(), '23000');
 
@@ -454,12 +498,13 @@ class Invoice extends Model
                     throw $exception;
                 }
 
-                $payment = $this->payments()
+                $payment = $lockedInvoice->payments()
                     ->where('transaction_ref', $transactionRef)
                     ->firstOrFail();
             }
 
-            $this->updatePaidAmount();
+            $lockedInvoice->updatePaidAmount();
+            $this->refresh();
 
             return $payment;
         });

@@ -38,6 +38,7 @@ class ReportSnapshot extends Model
         'schema_version',
         'snapshot_date',
         'branch_id',
+        'branch_scope_id',
         'status',
         'sla_status',
         'generated_at',
@@ -57,12 +58,22 @@ class ReportSnapshot extends Model
     {
         return [
             'snapshot_date' => 'date',
+            'branch_scope_id' => 'integer',
             'generated_at' => 'datetime',
             'sla_due_at' => 'datetime',
             'payload' => 'array',
             'drift_details' => 'array',
             'lineage' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $snapshot): void {
+            $snapshot->branch_scope_id = $snapshot->branch_id !== null
+                ? (int) $snapshot->branch_id
+                : 0;
+        });
     }
 
     public function branch(): BelongsTo

@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\Patients\Tables;
 
 use App\Models\Appointment;
+use App\Services\DoctorBranchAssignmentService;
+use App\Services\PatientBranchTransferService;
+use App\Support\ActionPermission;
+use App\Support\GenderBadge;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use App\Support\GenderBadge;
 
 class PatientsTable
 {
@@ -88,6 +91,7 @@ class PatientsTable
                                             optional($a->doctor)->name ?? 'Chưa chọn bác sĩ',
                                             Appointment::statusLabel($a->status)
                                         );
+
                                         return [$a->id => $label];
                                     });
                             })
@@ -106,20 +110,72 @@ class PatientsTable
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
                             ->label('Bác sĩ')
-                            ->options(fn () => \App\Models\User::role('Doctor')->pluck('name', 'id'))
+                            ->options(function (callable $get): array {
+                                $branchId = $get('branch_id');
+                                $date = $get('date');
+
+                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                                return app(DoctorBranchAssignmentService::class)
+                                    ->doctorOptionsForBranch(
+                                        branchId: filled($branchId) ? (int) $branchId : null,
+                                        at: $appointmentAt,
+                                    );
+                            })
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->helperText('Chỉ hiển thị bác sĩ đang được phân công ở chi nhánh đã chọn.'),
                         \Filament\Forms\Components\Select::make('branch_id')
                             ->label('Chi nhánh')
                             ->options(fn () => \App\Models\Branch::query()->pluck('name', 'id'))
                             ->searchable()
                             ->preload()
                             ->default(fn ($record) => $record?->first_branch_id)
+                            ->live()
+                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                                $doctorId = $get('doctor_id');
+
+                                if (! filled($doctorId) || ! filled($state)) {
+                                    return;
+                                }
+
+                                $date = $get('date');
+                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                                    doctorId: (int) $doctorId,
+                                    branchId: (int) $state,
+                                    at: $appointmentAt,
+                                );
+
+                                if (! $isAllowed) {
+                                    $set('doctor_id', null);
+                                }
+                            })
                             ->required(),
                         \Filament\Forms\Components\DateTimePicker::make('date')
                             ->label('Thời gian')
                             ->default(fn () => now()->addDay())
+                            ->live()
+                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                                $doctorId = $get('doctor_id');
+                                $branchId = $get('branch_id');
+
+                                if (! filled($doctorId) || ! filled($branchId) || ! filled($state)) {
+                                    return;
+                                }
+
+                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                                    doctorId: (int) $doctorId,
+                                    branchId: (int) $branchId,
+                                    at: \Carbon\Carbon::parse((string) $state),
+                                );
+
+                                if (! $isAllowed) {
+                                    $set('doctor_id', null);
+                                }
+                            })
                             ->required(),
                         \Filament\Forms\Components\Select::make('appointment_kind')
                             ->label('Loại lịch hẹn')
@@ -164,7 +220,51 @@ class PatientsTable
                             ->success()
                             ->send();
                     }),
-            ])
-            ;
+                Action::make('transferBranch')
+                    ->label('Chuyển chi nhánh')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('warning')
+                    ->visible(fn () => auth()->user()?->can(ActionPermission::PATIENT_BRANCH_TRANSFER) ?? false)
+                    ->modalHeading('Chuyển bệnh nhân sang chi nhánh khác')
+                    ->form([
+                        \Filament\Forms\Components\Select::make('to_branch_id')
+                            ->label('Chi nhánh nhận')
+                            ->options(function ($record): array {
+                                return \App\Models\Branch::query()
+                                    ->where('active', true)
+                                    ->when(
+                                        filled($record->first_branch_id),
+                                        fn ($query) => $query->where('id', '!=', (int) $record->first_branch_id)
+                                    )
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        \Filament\Forms\Components\Textarea::make('reason')
+                            ->label('Lý do chuyển')
+                            ->rows(2)
+                            ->required(),
+                        \Filament\Forms\Components\Textarea::make('note')
+                            ->label('Ghi chú nội bộ')
+                            ->rows(2),
+                    ])
+                    ->action(function (array $data, $record): void {
+                        app(PatientBranchTransferService::class)->transferDirect(
+                            patient: $record,
+                            toBranchId: (int) $data['to_branch_id'],
+                            actorId: auth()->id(),
+                            reason: (string) ($data['reason'] ?? ''),
+                            note: $data['note'] ?? null,
+                        );
+
+                        Notification::make()
+                            ->title('Đã chuyển chi nhánh thành công')
+                            ->success()
+                            ->send();
+                    }),
+            ]);
     }
 }

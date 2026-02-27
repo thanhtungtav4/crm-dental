@@ -15,6 +15,7 @@ it('keeps sensitive action registry in sync with action permissions', function (
         ActionPermission::MASTER_DATA_SYNC,
         ActionPermission::INSURANCE_CLAIM_DECISION,
         ActionPermission::MPI_DEDUPE_REVIEW,
+        ActionPermission::PATIENT_BRANCH_TRANSFER,
     ];
 
     expect($matrixAnchors)->toEqualCanonicalizing(ActionPermission::all())
@@ -68,5 +69,6 @@ it('passes strict security checklist review command', function () {
     $this->artisan('security:review-sensitive-actions', ['--strict' => true])
         ->expectsOutputToContain('Action:PaymentReversal')
         ->expectsOutputToContain('Action:MpiDedupeReview')
+        ->expectsOutputToContain('Action:PatientBranchTransfer')
         ->assertSuccessful();
 });

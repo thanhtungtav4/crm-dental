@@ -108,6 +108,7 @@ class RolesAndPermissionsSeeder extends Seeder
             ActionPermission::MASTER_DATA_SYNC,
             ActionPermission::INSURANCE_CLAIM_DECISION,
             ActionPermission::MPI_DEDUPE_REVIEW,
+            ActionPermission::PATIENT_BRANCH_TRANSFER,
         ]);
         $manager->syncPermissions($managerPerms);
 
@@ -150,6 +151,7 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
         $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
+        $cskhPerms[] = ActionPermission::PATIENT_BRANCH_TRANSFER;
         $cskh->syncPermissions($cskhPerms);
     }
 }

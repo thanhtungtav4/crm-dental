@@ -8,6 +8,7 @@ use App\Filament\Resources\Notes\Pages\ListNotes;
 use App\Filament\Resources\Notes\Schemas\NoteForm;
 use App\Filament\Resources\Notes\Tables\NotesTable;
 use App\Models\Note;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -31,7 +32,7 @@ class NoteResource extends Resource
     {
         return 'Quản lý khách hàng';
     }
-    
+
     protected static ?int $navigationSort = 22;
 
     public static function form(Schema $schema): Schema
@@ -42,6 +43,26 @@ class NoteResource extends Resource
     public static function table(Table $table): Table
     {
         return NotesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $innerQuery) use ($branchIds): void {
+            $innerQuery->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds))
+                ->orWhereHas('customer', fn (Builder $customerQuery) => $customerQuery->whereIn('branch_id', $branchIds));
+        });
     }
 
     public static function getRelations(): array
@@ -68,7 +89,7 @@ class NoteResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

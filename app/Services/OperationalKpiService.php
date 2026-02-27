@@ -65,7 +65,18 @@ class OperationalKpiService
             ->whereBetween('paid_at', [$from, $to])
             ->when(
                 $branchId !== null,
-                fn (Builder $query) => $query->whereHas('invoice.patient', fn (Builder $innerQuery) => $innerQuery->where('first_branch_id', $branchId))
+                function (Builder $query) use ($branchId): void {
+                    $query->where(function (Builder $innerQuery) use ($branchId): void {
+                        $innerQuery->where('branch_id', $branchId)
+                            ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
+                                $fallbackQuery->whereNull('branch_id')
+                                    ->whereHas('invoice', function (Builder $invoiceQuery) use ($branchId): void {
+                                        $invoiceQuery->where('branch_id', $branchId)
+                                            ->orWhereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
+                                    });
+                            });
+                    });
+                }
             );
 
         $receiptsAmount = (float) (clone $receiptsQuery)->sum('amount');
@@ -101,7 +112,18 @@ class OperationalKpiService
             ->where('direction', 'receipt')
             ->when(
                 $branchId !== null,
-                fn (Builder $query) => $query->whereHas('invoice.patient', fn (Builder $innerQuery) => $innerQuery->where('first_branch_id', $branchId))
+                function (Builder $query) use ($branchId): void {
+                    $query->where(function (Builder $innerQuery) use ($branchId): void {
+                        $innerQuery->where('branch_id', $branchId)
+                            ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
+                                $fallbackQuery->whereNull('branch_id')
+                                    ->whereHas('invoice', function (Builder $invoiceQuery) use ($branchId): void {
+                                        $invoiceQuery->where('branch_id', $branchId)
+                                            ->orWhereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
+                                    });
+                            });
+                    });
+                }
             );
 
         $lifetimeReceipts = (float) (clone $lifetimeReceiptsQuery)->sum('amount');

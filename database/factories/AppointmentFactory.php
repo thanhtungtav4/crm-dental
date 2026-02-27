@@ -4,8 +4,9 @@ namespace Database\Factories;
 
 use App\Models\Appointment;
 use App\Models\Branch;
-use App\Models\User;
+use App\Models\DoctorBranchAssignment;
 use App\Models\Patient;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AppointmentFactory extends Factory
@@ -16,11 +17,28 @@ class AppointmentFactory extends Factory
     {
         $patient = Patient::inRandomOrder()->first() ?? Patient::factory()->create();
         $branch = Branch::find($patient->first_branch_id) ?? Branch::factory()->create();
-        $doctor = User::role('Doctor')->inRandomOrder()->first();
-        if (!$doctor) {
+        $doctor = User::role('Doctor')
+            ->where('branch_id', $branch->id)
+            ->inRandomOrder()
+            ->first();
+        if (! $doctor) {
             $doctor = User::factory()->create(['branch_id' => $branch->id]);
             $doctor->assignRole('Doctor');
         }
+
+        DoctorBranchAssignment::query()->updateOrCreate(
+            [
+                'user_id' => $doctor->id,
+                'branch_id' => $branch->id,
+            ],
+            [
+                'is_active' => true,
+                'is_primary' => (int) $doctor->branch_id === (int) $branch->id,
+                'assigned_from' => null,
+                'assigned_until' => null,
+            ]
+        );
+
         return [
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,

@@ -8,12 +8,13 @@ use App\Filament\Resources\Appointments\Pages\ListAppointments;
 use App\Filament\Resources\Appointments\Schemas\AppointmentForm;
 use App\Filament\Resources\Appointments\Tables\AppointmentsTable;
 use App\Models\Appointment;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
-
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AppointmentResource extends Resource
 {
@@ -30,7 +31,7 @@ class AppointmentResource extends Resource
     {
         return 'Hoạt động hàng ngày';
     }
-    
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
@@ -43,6 +44,23 @@ class AppointmentResource extends Resource
         return AppointmentsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('branch_id', $branchIds);
+    }
+
     public static function getPages(): array
     {
         return [
@@ -51,5 +69,10 @@ class AppointmentResource extends Resource
             'edit' => EditAppointment::route('/{record}/edit'),
             'calendar' => Pages\CalendarAppointments::route('/calendar'),
         ];
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 }
