@@ -60,6 +60,17 @@
                         @endif
                     @endforeach
                 </div>
+
+                @if(($provider['group'] ?? null) === 'emr')
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testEmrConnection">
+                            Test EMR
+                        </x-filament::button>
+                        <x-filament::button type="button" color="info" icon="heroicon-o-arrow-top-right-on-square" wire:click="openEmrConfigUrl">
+                            Mở config EMR
+                        </x-filament::button>
+                    </div>
+                @endif
             </x-filament::section>
         @endforeach
 

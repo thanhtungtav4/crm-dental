@@ -10,6 +10,17 @@ class EditPatientMedicalRecord extends EditRecord
 {
     protected static string $resource = PatientMedicalRecordResource::class;
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['updated_by'] = auth()->id();
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

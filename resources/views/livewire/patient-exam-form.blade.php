@@ -58,11 +58,11 @@
 
                         <div class="flex items-center gap-2">
                             <a
-                                href="{{ route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $patient->id]) }}"
+                                href="{{ $medicalRecordActionUrl }}"
                                 target="_blank"
                                 class="crm-btn crm-btn-primary h-8 px-3 text-xs"
                             >
-                                Tạo bệnh án điện tử
+                                {{ $medicalRecordActionLabel }}
                             </a>
 
                             <button

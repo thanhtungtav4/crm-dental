@@ -33,6 +33,31 @@ class ClinicRuntimeSettings
         return (string) static::get('google_calendar.sync_mode', 'two_way');
     }
 
+    public static function isEmrEnabled(): bool
+    {
+        return static::boolean('emr.enabled', false);
+    }
+
+    public static function emrProvider(): string
+    {
+        return trim((string) static::get('emr.provider', 'internal'));
+    }
+
+    public static function emrBaseUrl(): string
+    {
+        return trim((string) static::get('emr.base_url', ''));
+    }
+
+    public static function emrApiKey(): string
+    {
+        return trim((string) static::get('emr.api_key', ''));
+    }
+
+    public static function emrClinicCode(): string
+    {
+        return trim((string) static::get('emr.clinic_code', ''));
+    }
+
     public static function isVnpayEnabled(): bool
     {
         return static::boolean('vnpay.enabled', false);

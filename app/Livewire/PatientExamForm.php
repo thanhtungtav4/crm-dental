@@ -473,10 +473,23 @@ class PatientExamForm extends Component
             $session->setAttribute('is_locked', $sessionDate !== null && isset($lockedDates[$sessionDate]));
         }
 
+        $medicalRecordId = $this->patient->medicalRecord()
+            ->value('id');
+
+        $medicalRecordActionUrl = $medicalRecordId
+            ? route('filament.admin.resources.patient-medical-records.edit', ['record' => $medicalRecordId])
+            : route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $this->patient->id]);
+
+        $medicalRecordActionLabel = $medicalRecordId
+            ? 'Mở bệnh án điện tử'
+            : 'Tạo bệnh án điện tử';
+
         return view('livewire.patient-exam-form', [
             'sessions' => $sessions,
             'examiningDoctors' => $this->getDoctors($this->examiningDoctorSearch),
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
+            'medicalRecordActionUrl' => $medicalRecordActionUrl,
+            'medicalRecordActionLabel' => $medicalRecordActionLabel,
             'conditions' => $conditions,
             'conditionsJson' => $conditionsArray,
             'conditionOrder' => $conditionOrder,

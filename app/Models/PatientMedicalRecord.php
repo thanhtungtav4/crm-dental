@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,6 +32,15 @@ class PatientMedicalRecord extends Model
         'insurance_expiry_date' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $record): void {
+            if (auth()->check()) {
+                $record->updated_by = auth()->id();
+            }
+        });
+    }
+
     /**
      * Patient this record belongs to
      */
@@ -52,7 +62,7 @@ class PatientMedicalRecord extends Model
      */
     public function hasAllergies(): bool
     {
-        return !empty($this->allergies) && count($this->allergies) > 0;
+        return ! empty($this->allergies) && count($this->allergies) > 0;
     }
 
     /**
@@ -60,7 +70,7 @@ class PatientMedicalRecord extends Model
      */
     public function hasChronicDiseases(): bool
     {
-        return !empty($this->chronic_diseases) && count($this->chronic_diseases) > 0;
+        return ! empty($this->chronic_diseases) && count($this->chronic_diseases) > 0;
     }
 
     /**
@@ -68,10 +78,15 @@ class PatientMedicalRecord extends Model
      */
     public function isInsuranceExpired(): bool
     {
-        if (!$this->insurance_expiry_date) {
+        if (! $this->insurance_expiry_date) {
             return false;
         }
-        
+
         return $this->insurance_expiry_date < now();
+    }
+
+    public function scopeForPatient(Builder $query, int $patientId): Builder
+    {
+        return $query->where('patient_id', $patientId);
     }
 }

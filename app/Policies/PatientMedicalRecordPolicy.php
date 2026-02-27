@@ -4,67 +4,74 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\PatientMedicalRecord;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PatientMedicalRecordPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:PatientMedicalRecord');
+        return $authUser->can('ViewAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function view(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('View:PatientMedicalRecord');
+        return $authUser->can('View:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:PatientMedicalRecord');
+        return $authUser->can('Create:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function update(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Update:PatientMedicalRecord');
+        return $authUser->can('Update:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function delete(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function delete(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Delete:PatientMedicalRecord');
+        return $authUser->can('Delete:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function restore(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function restore(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Restore:PatientMedicalRecord');
+        return $authUser->can('Restore:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function forceDelete(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function forceDelete(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('ForceDelete:PatientMedicalRecord');
+        return $authUser->can('ForceDelete:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:PatientMedicalRecord');
+        return $authUser->can('ForceDeleteAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:PatientMedicalRecord');
+        return $authUser->can('RestoreAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    public function replicate(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Replicate:PatientMedicalRecord');
+        return $authUser->can('Replicate:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:PatientMedicalRecord');
+        return $authUser->can('Reorder:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessRecord(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
+    {
+        $branchId = $patientMedicalRecord->patient?->first_branch_id
+            ?? $patientMedicalRecord->patient?->customer?->branch_id;
+
+        return $authUser->canAccessBranch($branchId ? (int) $branchId : null);
+    }
 }

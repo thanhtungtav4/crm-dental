@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
+use App\Services\EmrIntegrationService;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Notifications\Notification;
@@ -356,6 +357,44 @@ class IntegrationSettings extends Page
             ->title('Đã lưu cài đặt tích hợp')
             ->success()
             ->send();
+    }
+
+    public function testEmrConnection(): void
+    {
+        $result = app(EmrIntegrationService::class)->authenticate();
+
+        if (($result['success'] ?? false) === true) {
+            Notification::make()
+                ->title('Kết nối EMR thành công')
+                ->body((string) ($result['message'] ?? 'Authenticate thành công.'))
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Kết nối EMR thất bại')
+            ->body((string) ($result['message'] ?? 'Không thể kết nối tới EMR.'))
+            ->danger()
+            ->send();
+    }
+
+    public function openEmrConfigUrl(): void
+    {
+        $result = app(EmrIntegrationService::class)->resolveConfigUrl();
+
+        if (($result['success'] ?? false) !== true || ! filled($result['url'] ?? null)) {
+            Notification::make()
+                ->title('Không thể mở trang cấu hình EMR')
+                ->body((string) ($result['message'] ?? 'EMR chưa trả về URL cấu hình hợp lệ.'))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->redirect((string) $result['url'], navigate: false);
     }
 
     protected function loadSettingsState(): void

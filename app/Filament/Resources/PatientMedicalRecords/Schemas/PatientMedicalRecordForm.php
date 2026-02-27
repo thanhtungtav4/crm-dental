@@ -3,15 +3,17 @@
 namespace App\Filament\Resources\PatientMedicalRecords\Schemas;
 
 use App\Models\Disease;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class PatientMedicalRecordForm
 {
@@ -23,7 +25,24 @@ class PatientMedicalRecordForm
                     ->schema([
                         Select::make('patient_id')
                             ->label('Bệnh nhân')
-                            ->relationship('patient', 'full_name')
+                            ->relationship(
+                                name: 'patient',
+                                titleAttribute: 'full_name',
+                                modifyQueryUsing: function (Builder $query): Builder {
+                                    $authUser = auth()->user();
+
+                                    if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+                                        return $query;
+                                    }
+
+                                    $branchIds = $authUser->accessibleBranchIds();
+                                    if ($branchIds === []) {
+                                        return $query->whereRaw('1 = 0');
+                                    }
+
+                                    return $query->whereIn('first_branch_id', $branchIds);
+                                },
+                            )
                             ->searchable()
                             ->preload()
                             ->default(fn () => request()->integer('patient_id') ?: null)
