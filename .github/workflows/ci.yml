@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mbstring, pdo_sqlite, sqlite3, dom, fileinfo
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Migrate
+        run: php artisan migrate --force --no-interaction
+
+      - name: Schema drift gate
+        run: php artisan schema:assert-no-pending-migrations --no-interaction
+
+      - name: Run test suite
+        run: php artisan test --no-interaction

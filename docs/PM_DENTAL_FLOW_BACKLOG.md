@@ -335,14 +335,15 @@ Ghi chu:
 - **Title**: Migration drift gate truoc go-live
 - **Type**: Task (DevEx + BE)
 - **Estimate**: 3 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Dong bo schema voi code (xu ly toan bo migration pending tren env deploy).
   - Them pre-deploy check fail neu con migration pending.
   - Khoa quy trinh release: khong cho push release neu schema drift.
 - **Status Note**:
-  - Da co test guard migration drift trong test suite (`MigrationDriftGuardTest`).
-  - Con thieu gate chinh thuc trong CI/CD deploy pipeline (repo chua co `.github/workflows`).
+  - Da co command `schema:assert-no-pending-migrations` de fail fast khi con migration pending.
+  - Da them test command gate + regression test `MigrationDriftGuardTest`.
+  - Da them workflow CI (`.github/workflows/ci.yml`) chay migrate + schema drift gate truoc test suite.
 - **Acceptance Criteria (QA)**:
   1. `migrate:status` tren staging/prod = khong pending.
   2. CI/CD fail neu phat hien schema drift.
