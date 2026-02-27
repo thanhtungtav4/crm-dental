@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Payment;
 use Illuminate\Http\Response;
 
@@ -14,7 +15,23 @@ class PaymentReceiptController extends Controller
             'receiver',
         ]);
 
-        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && request()->boolean('pdf', true)) {
+        $isPdf = request()->boolean('pdf', true);
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_PAYMENT,
+            entityId: (int) $payment->id,
+            action: AuditLog::ACTION_PRINT,
+            actorId: auth()->id(),
+            metadata: [
+                'channel' => 'payment_receipt_print',
+                'output' => $isPdf ? 'pdf' : 'html',
+                'branch_id' => $payment->resolveBranchId(),
+                'invoice_id' => $payment->invoice_id,
+                'patient_id' => $payment->invoice?->patient_id,
+            ],
+        );
+
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && $isPdf) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.receipt', [
                 'payment' => $payment,
                 'isPdf' => true,
@@ -22,6 +39,7 @@ class PaymentReceiptController extends Controller
 
             /** @var Response $response */
             $response = $pdf->stream("phieu-{$payment->id}.pdf");
+
             return $response;
         }
 

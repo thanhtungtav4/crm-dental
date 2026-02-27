@@ -23,7 +23,7 @@ class AuditLogsTable
                     ->label('Entity')
                     ->colors([
                         'primary' => AuditLog::ENTITY_PAYMENT,
-                        'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM],
+                        'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM, AuditLog::ENTITY_PRESCRIPTION],
                         'info' => [
                             AuditLog::ENTITY_APPOINTMENT,
                             AuditLog::ENTITY_MASTER_PATIENT_INDEX,
@@ -44,9 +44,9 @@ class AuditLogsTable
                     ->label('Hành động')
                     ->colors([
                         'info' => [AuditLog::ACTION_CREATE, AuditLog::ACTION_FOLLOW_UP, AuditLog::ACTION_SNAPSHOT],
-                        'warning' => [AuditLog::ACTION_UPDATE, AuditLog::ACTION_RESCHEDULE, AuditLog::ACTION_RUN],
+                        'warning' => [AuditLog::ACTION_UPDATE, AuditLog::ACTION_RESCHEDULE, AuditLog::ACTION_RUN, AuditLog::ACTION_EXPORT],
                         'danger' => [AuditLog::ACTION_REFUND, AuditLog::ACTION_FAIL, AuditLog::ACTION_MERGE, AuditLog::ACTION_ROLLBACK],
-                        'primary' => [AuditLog::ACTION_REVERSAL, AuditLog::ACTION_APPROVE, AuditLog::ACTION_RESOLVE],
+                        'primary' => [AuditLog::ACTION_REVERSAL, AuditLog::ACTION_APPROVE, AuditLog::ACTION_RESOLVE, AuditLog::ACTION_PRINT],
                         'gray' => [AuditLog::ACTION_CANCEL, AuditLog::ACTION_NO_SHOW, AuditLog::ACTION_SYNC, AuditLog::ACTION_DEDUPE, AuditLog::ACTION_SLA_CHECK],
                         'success' => AuditLog::ACTION_COMPLETE,
                     ]),
@@ -65,6 +65,7 @@ class AuditLogsTable
                     ->options([
                         AuditLog::ENTITY_PAYMENT => 'Payment',
                         AuditLog::ENTITY_INVOICE => 'Invoice',
+                        AuditLog::ENTITY_PRESCRIPTION => 'Prescription',
                         AuditLog::ENTITY_APPOINTMENT => 'Appointment',
                         AuditLog::ENTITY_CARE_TICKET => 'Care Ticket',
                         AuditLog::ENTITY_PLAN_ITEM => 'Plan Item',
@@ -100,6 +101,8 @@ class AuditLogsTable
                         AuditLog::ACTION_RUN => 'Run',
                         AuditLog::ACTION_APPROVE => 'Approve',
                         AuditLog::ACTION_RESOLVE => 'Resolve',
+                        AuditLog::ACTION_PRINT => 'Print',
+                        AuditLog::ACTION_EXPORT => 'Export',
                     ]),
             ])
             ->recordActions([

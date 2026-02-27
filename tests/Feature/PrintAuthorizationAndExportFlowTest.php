@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -101,6 +102,17 @@ it('does not mutate export flags when rendering invoice print via get', function
     expect($invoice)->not->toBeNull()
         ->and($invoice?->invoice_exported)->toBeFalse()
         ->and($invoice?->exported_at)->toBeNull();
+
+    $printAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_INVOICE)
+        ->where('entity_id', $fixture['invoice']->id)
+        ->where('action', AuditLog::ACTION_PRINT)
+        ->latest('id')
+        ->first();
+
+    expect($printAudit)->not->toBeNull()
+        ->and((string) data_get($printAudit?->metadata, 'channel'))->toBe('invoice_print')
+        ->and((string) data_get($printAudit?->metadata, 'output'))->toBe('html');
 });
 
 it('marks invoice as exported through explicit post endpoint', function () {
@@ -118,4 +130,45 @@ it('marks invoice as exported through explicit post endpoint', function () {
     expect($invoice)->not->toBeNull()
         ->and($invoice?->invoice_exported)->toBeTrue()
         ->and($invoice?->exported_at)->not->toBeNull();
+
+    $exportAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_INVOICE)
+        ->where('entity_id', $fixture['invoice']->id)
+        ->where('action', AuditLog::ACTION_EXPORT)
+        ->latest('id')
+        ->first();
+
+    expect($exportAudit)->not->toBeNull()
+        ->and((string) data_get($exportAudit?->metadata, 'channel'))->toBe('invoice_export')
+        ->and((bool) data_get($exportAudit?->metadata, 'is_exported'))->toBeTrue();
+});
+
+it('writes print audit logs for payment receipt and prescription print actions', function () {
+    $fixture = makePrintFixture();
+
+    $this->actingAs($fixture['manager_a']);
+
+    $this->get(route('payments.print', ['payment' => $fixture['payment'], 'pdf' => 0]))
+        ->assertSuccessful();
+    $this->get(route('prescriptions.print', ['prescription' => $fixture['prescription'], 'pdf' => 0]))
+        ->assertSuccessful();
+
+    $paymentAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_PAYMENT)
+        ->where('entity_id', $fixture['payment']->id)
+        ->where('action', AuditLog::ACTION_PRINT)
+        ->latest('id')
+        ->first();
+
+    $prescriptionAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_PRESCRIPTION)
+        ->where('entity_id', $fixture['prescription']->id)
+        ->where('action', AuditLog::ACTION_PRINT)
+        ->latest('id')
+        ->first();
+
+    expect($paymentAudit)->not->toBeNull()
+        ->and((string) data_get($paymentAudit?->metadata, 'channel'))->toBe('payment_receipt_print')
+        ->and($prescriptionAudit)->not->toBeNull()
+        ->and((string) data_get($prescriptionAudit?->metadata, 'channel'))->toBe('prescription_print');
 });

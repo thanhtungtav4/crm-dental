@@ -371,14 +371,15 @@ Ghi chu:
 - **Title**: Print/export authorization + side-effect separation
 - **Type**: Story (BE + Security)
 - **Estimate**: 5 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Them authorize day du cho invoice/payment/prescription print.
   - Tach side-effect `invoice_exported` khoi GET route (chuyen sang explicit action).
   - Log audit ro actor + branch + loai export.
 - **Status Note**:
   - Da xong authorize print route + tach side-effect GET sang POST export.
-  - Con thieu audit log rieng cho hanh dong export/print (actor/branch/type).
+  - Da bo sung audit log rieng cho print/export (invoice/payment/prescription) voi actor + branch + channel + output.
+  - Da bo sung test xac nhan GET khong mutate va co audit log truy vet.
 - **Acceptance Criteria (QA)**:
   1. Print route cheo chi nhanh bi chan dung policy.
   2. GET print khong mutating data.

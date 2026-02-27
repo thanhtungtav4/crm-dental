@@ -27,6 +27,8 @@ class AuditLog extends Model
 
     public const ENTITY_INVOICE = 'invoice';
 
+    public const ENTITY_PRESCRIPTION = 'prescription';
+
     public const ENTITY_APPOINTMENT = 'appointment';
 
     public const ENTITY_CARE_TICKET = 'care_ticket';
@@ -92,6 +94,10 @@ class AuditLog extends Model
     public const ACTION_APPROVE = 'approve';
 
     public const ACTION_RESOLVE = 'resolve';
+
+    public const ACTION_PRINT = 'print';
+
+    public const ACTION_EXPORT = 'export';
 
     public function actor(): BelongsTo
     {
