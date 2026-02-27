@@ -353,14 +353,15 @@ Ghi chu:
 - **Title**: Concurrency hardening (invoice no, plan code, claim no, overbooking/overpay)
 - **Type**: Story (BE + DB)
 - **Estimate**: 8 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Chuyen sinh so chung tu sang co che an toan concurrency (lock/sequence).
   - Hardening transaction cho overbooking check va overpay gate.
   - Bo sung test race condition cho cac luong tai chinh/lich hen.
 - **Status Note**:
   - Da xong lock/transaction cho luong chinh (`invoice/installment/claim/overbooking/overpay`).
-  - Con thieu bo test race/stress song song de chot acceptance concurrency duoi tai cao.
+  - Da bo sung stress suite cho idempotency thanh toan + uniqueness ma chung tu + guard overpay/overbooking.
+  - Da chay regression test lien quan finance/insurance/appointment sau hardening.
 - **Acceptance Criteria (QA)**:
   1. Khong tao trung ma hoa don/claim/installment khi request dong thoi.
   2. Khong vuot policy overpay/overbooking duoi tai cao.
