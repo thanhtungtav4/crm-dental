@@ -29,6 +29,15 @@ Schedule::command('finance:run-invoice-aging-reminders')
 Schedule::command('care:run-plan-follow-up')
     ->dailyAt('09:00');
 
+Schedule::command('growth:run-loyalty-program')
+    ->dailyAt('00:35');
+
+Schedule::command('patients:score-risk')
+    ->dailyAt('00:45');
+
+Schedule::command('growth:run-reactivation-flow')
+    ->dailyAt('09:30');
+
 Schedule::command('reports:check-snapshot-sla')
     ->dailyAt('10:00');
 

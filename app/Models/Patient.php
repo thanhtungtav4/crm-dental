@@ -137,6 +137,22 @@ class Patient extends Model
         return $this->hasMany(InstallmentPlan::class);
     }
 
+    public function loyalty()
+    {
+        return $this->hasOne(PatientLoyalty::class);
+    }
+
+    public function riskProfiles()
+    {
+        return $this->hasMany(PatientRiskProfile::class);
+    }
+
+    public function latestRiskProfile()
+    {
+        return $this->hasOne(PatientRiskProfile::class)
+            ->latestOfMany('as_of_date');
+    }
+
     public function customerGroup()
     {
         return $this->belongsTo(CustomerGroup::class);

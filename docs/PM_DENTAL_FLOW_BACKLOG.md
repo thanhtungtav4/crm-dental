@@ -259,13 +259,13 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Loyalty + referral + reactivation flow
 - **Type**: Story (Product + BE/FE)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 
 ### TICKET PM-22 (P2)
 - **Title**: Predictive model cho no-show/churn risk
 - **Type**: Discovery + Story (Data)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 
 ---
 

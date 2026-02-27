@@ -302,4 +302,103 @@ class ClinicRuntimeSettings
     {
         return static::boolean('finance.allow_deposit', true);
     }
+
+    public static function loyaltyPointsPerTenThousandVnd(): int
+    {
+        return max(
+            0,
+            static::integer('loyalty.points_per_ten_thousand_vnd', 1),
+        );
+    }
+
+    public static function loyaltyReferralBonusReferrerPoints(): int
+    {
+        return max(
+            0,
+            static::integer('loyalty.referral_bonus_referrer_points', 100),
+        );
+    }
+
+    public static function loyaltyReferralBonusRefereePoints(): int
+    {
+        return max(
+            0,
+            static::integer('loyalty.referral_bonus_referee_points', 50),
+        );
+    }
+
+    public static function loyaltyReactivationBonusPoints(): int
+    {
+        return max(
+            0,
+            static::integer('loyalty.reactivation_bonus_points', 80),
+        );
+    }
+
+    public static function loyaltyTierSilverRevenueThreshold(): float
+    {
+        return max(
+            0.0,
+            (float) static::get('loyalty.tier_silver_revenue_threshold', 5000000),
+        );
+    }
+
+    public static function loyaltyTierGoldRevenueThreshold(): float
+    {
+        return max(
+            static::loyaltyTierSilverRevenueThreshold(),
+            (float) static::get('loyalty.tier_gold_revenue_threshold', 20000000),
+        );
+    }
+
+    public static function loyaltyTierPlatinumRevenueThreshold(): float
+    {
+        return max(
+            static::loyaltyTierGoldRevenueThreshold(),
+            (float) static::get('loyalty.tier_platinum_revenue_threshold', 50000000),
+        );
+    }
+
+    public static function loyaltyReactivationInactiveDays(): int
+    {
+        return max(
+            30,
+            static::integer('loyalty.reactivation_inactive_days', 90),
+        );
+    }
+
+    public static function riskNoShowWindowDays(): int
+    {
+        return max(
+            30,
+            static::integer('risk.no_show_window_days', 90),
+        );
+    }
+
+    public static function riskMediumThreshold(): float
+    {
+        return max(
+            0.0,
+            min(
+                100.0,
+                (float) static::get('risk.medium_threshold', 45.0),
+            ),
+        );
+    }
+
+    public static function riskHighThreshold(): float
+    {
+        return max(
+            static::riskMediumThreshold(),
+            min(
+                100.0,
+                (float) static::get('risk.high_threshold', 70.0),
+            ),
+        );
+    }
+
+    public static function riskAutoCreateHighRiskTicket(): bool
+    {
+        return static::boolean('risk.auto_create_high_risk_ticket', true);
+    }
 }

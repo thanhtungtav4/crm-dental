@@ -352,6 +352,8 @@ class PatientNotesRelationManager extends RelationManager
             'treatment_plan_follow_up' => 'Theo dõi chưa chốt kế hoạch',
             'appointment_reminder' => 'Nhắc lịch hẹn',
             'no_show_recovery' => 'Recovery no-show',
+            'reactivation_follow_up' => 'Reactivation bệnh nhân',
+            'risk_high_follow_up' => 'Can thiệp risk cao',
             'payment_reminder' => 'Nhắc thanh toán',
             'medication_reminder' => 'Nhắc lịch uống thuốc',
             'other' => 'Khác',
