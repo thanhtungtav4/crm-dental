@@ -453,10 +453,28 @@ Ghi chu:
   2. Khong anh huong flow user doctor qua `users` resource.
   3. Test suite pass sau cleanup.
 
+### TICKET PM-38 (P0)
+- **Title**: Action permission baseline hardening (drift guard + backfill)
+- **Type**: Story (Security + Ops)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Backfill idempotent `Action:*` permissions + role matrix cho env da migrate nhung chua reseed.
+  - Bo sung command gate `security:assert-action-permission-baseline` (co `--sync`) de check drift runtime.
+  - Gan gate vao CI sau migration de chan deploy khi baseline phan quyen action-level lech.
+- **Status Note**:
+  - Da them migration backfill `ActionPermission` + matrix role theo `SensitiveActionRegistry`.
+  - Da them command assert/sync baseline va test drift + repair.
+  - Da cap nhat CI workflow voi `Action permission baseline gate`.
+- **Acceptance Criteria (QA)**:
+  1. Command automation khong fail do thieu permission `Action:*` tren env da chi nhanh.
+  2. Role matrix action-level khop `SensitiveActionRegistry`.
+  3. CI fail neu baseline permission bi drift.
+
 ---
 
 ## 8) Thu tu go-live de xuat cho da chi nhanh
 
-1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32
+1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32, PM-38
 2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36
 3. `Go-live Gate C (debt cleanup)`: PM-37
