@@ -50,7 +50,7 @@ class IntegrationSettings extends Page
 
     public function getSubheading(): string
     {
-        return 'Quản lý cấu hình kết nối Zalo, ZNS, Google Calendar, VNPay, EMR và runtime CSKH.';
+        return 'Quản lý cấu hình kết nối Zalo, ZNS, Google Calendar, EMR và runtime CSKH.';
     }
 
     /**
@@ -93,19 +93,6 @@ class IntegrationSettings extends Page
                     ['state' => 'google_calendar_client_secret', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 230],
                     ['state' => 'google_calendar_calendar_id', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'type' => 'text', 'default' => '', 'sort_order' => 240],
                     ['state' => 'google_calendar_sync_mode', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'type' => 'text', 'default' => 'two_way', 'sort_order' => 250],
-                ],
-            ],
-            [
-                'group' => 'vnpay',
-                'title' => 'VNPay',
-                'description' => 'Cấu hình thanh toán online qua cổng VNPay.',
-                'fields' => [
-                    ['state' => 'vnpay_enabled', 'key' => 'vnpay.enabled', 'label' => 'Bật tích hợp VNPay', 'type' => 'boolean', 'default' => false, 'sort_order' => 310],
-                    ['state' => 'vnpay_tmn_code', 'key' => 'vnpay.tmn_code', 'label' => 'TMN Code', 'type' => 'text', 'default' => '', 'sort_order' => 320],
-                    ['state' => 'vnpay_hash_secret', 'key' => 'vnpay.hash_secret', 'label' => 'Hash Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 330],
-                    ['state' => 'vnpay_return_url', 'key' => 'vnpay.return_url', 'label' => 'Return URL', 'type' => 'url', 'default' => '', 'sort_order' => 340],
-                    ['state' => 'vnpay_ipn_url', 'key' => 'vnpay.ipn_url', 'label' => 'IPN URL', 'type' => 'url', 'default' => '', 'sort_order' => 350],
-                    ['state' => 'vnpay_sandbox', 'key' => 'vnpay.sandbox', 'label' => 'Chế độ Sandbox', 'type' => 'boolean', 'default' => true, 'sort_order' => 360],
                 ],
             ],
             [

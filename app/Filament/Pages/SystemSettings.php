@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Branches\BranchResource;
 use App\Filament\Resources\CustomerGroups\CustomerGroupResource;
 use App\Filament\Resources\Diseases\DiseaseGroupResource;
 use App\Filament\Resources\Diseases\DiseaseResource;
@@ -9,7 +10,6 @@ use App\Filament\Resources\PromotionGroups\PromotionGroupResource;
 use App\Filament\Resources\ServiceCategories\ServiceCategoryResource;
 use App\Filament\Resources\ToothConditions\ToothConditionResource;
 use App\Filament\Resources\Users\UserResource;
-use App\Filament\Resources\Branches\BranchResource;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 
@@ -85,7 +85,7 @@ class SystemSettings extends Page
                 'description' => 'Thiết lập các kết nối ngoài hệ thống.',
                 'items' => [
                     [
-                        'label' => 'Zalo, ZNS, Google Calendar, VNPay, EMR',
+                        'label' => 'Zalo, ZNS, Google Calendar, EMR',
                         'description' => 'Quản lý toàn bộ cấu hình tích hợp trong bảng clinic_settings.',
                         'url' => IntegrationSettings::getUrl(),
                         'can' => static fn (): bool => IntegrationSettings::canAccess(),
@@ -140,7 +140,7 @@ class SystemSettings extends Page
             ->map(function (array $section): array {
                 $section['items'] = collect($section['items'] ?? [])
                     ->filter(function (array $item): bool {
-                        if (!array_key_exists('can', $item)) {
+                        if (! array_key_exists('can', $item)) {
                             return true;
                         }
 
@@ -151,7 +151,7 @@ class SystemSettings extends Page
 
                 return $section;
             })
-            ->filter(fn (array $section): bool => !empty($section['items']))
+            ->filter(fn (array $section): bool => ! empty($section['items']))
             ->values()
             ->all();
     }
