@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Crypt;
 
 class ClinicSetting extends Model
@@ -50,12 +51,22 @@ class ClinicSetting extends Model
             return static::$runtimeCache[$key];
         }
 
-        $setting = static::query()
-            ->where('key', $key)
-            ->where('is_active', true)
-            ->first();
+        try {
+            $setting = static::query()
+                ->where('key', $key)
+                ->where('is_active', true)
+                ->first();
+        } catch (QueryException $exception) {
+            if (! static::isMissingTableException($exception)) {
+                throw $exception;
+            }
 
-        if (!$setting) {
+            static::$runtimeCache[$key] = $default;
+
+            return $default;
+        }
+
+        if (! $setting) {
             static::$runtimeCache[$key] = $default;
 
             return $default;
@@ -121,10 +132,19 @@ class ClinicSetting extends Model
             default => filled($value) ? (string) $value : null,
         };
 
-        if ($normalized === null || !$this->is_secret) {
+        if ($normalized === null || ! $this->is_secret) {
             return $normalized;
         }
 
         return Crypt::encryptString($normalized);
+    }
+
+    protected static function isMissingTableException(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'no such table')
+            || str_contains($message, "doesn't exist")
+            || str_contains($message, 'base table or view not found');
     }
 }

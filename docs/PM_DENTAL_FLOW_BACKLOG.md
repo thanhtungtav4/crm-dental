@@ -425,14 +425,15 @@ Ghi chu:
 - **Title**: Scheduler hardening cho environment nhieu node
 - **Type**: Task (BE + Ops)
 - **Estimate**: 3 SP
-- **Status**: In Progress (`2026-02-27`)
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Them lock `withoutOverlapping`/`onOneServer` cho command quan trong.
   - Chot timeout/retry/alert khi command fail.
   - Tranh duplicate run gay duplicate ticket/snapshot.
 - **Status Note**:
-  - Da xong `withoutOverlapping` + `onOneServer` cho command chinh.
-  - Con thieu timeout/retry policy va alerting khi command qua SLA tren scheduler command.
+  - Da chuyen scheduler critical command qua wrapper `ops:run-scheduled-command` de enforce timeout/retry/alert policy thong nhat.
+  - Da bo sung runtime config scheduler trong Integration Settings (`scheduler.command_*`) + lock TTL tinh theo policy runtime.
+  - Da bo sung audit alert cho `command_failed`/`timeout`/`sla_breach` va test regression cho retry + schedule lock.
 - **Acceptance Criteria (QA)**:
   1. Command khong bi chay trung khi scale app nodes.
   2. Co canh bao khi job qua SLA.

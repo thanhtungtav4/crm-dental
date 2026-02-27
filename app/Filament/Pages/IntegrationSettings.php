@@ -149,6 +149,17 @@ class IntegrationSettings extends Page
                 ],
             ],
             [
+                'group' => 'scheduler',
+                'title' => 'Runtime scheduler',
+                'description' => 'Policy timeout/retry/alert cho scheduler command chạy automation.',
+                'fields' => [
+                    ['state' => 'scheduler_command_timeout_seconds', 'key' => 'scheduler.command_timeout_seconds', 'label' => 'Timeout mỗi lần chạy command (giây)', 'type' => 'integer', 'default' => 180, 'sort_order' => 595],
+                    ['state' => 'scheduler_command_max_attempts', 'key' => 'scheduler.command_max_attempts', 'label' => 'Số lần retry tối đa', 'type' => 'integer', 'default' => 2, 'sort_order' => 596],
+                    ['state' => 'scheduler_command_retry_delay_seconds', 'key' => 'scheduler.command_retry_delay_seconds', 'label' => 'Thời gian chờ giữa các lần retry (giây)', 'type' => 'integer', 'default' => 15, 'sort_order' => 597],
+                    ['state' => 'scheduler_command_alert_after_seconds', 'key' => 'scheduler.command_alert_after_seconds', 'label' => 'Ngưỡng cảnh báo SLA runtime (giây)', 'type' => 'integer', 'default' => 120, 'sort_order' => 598],
+                ],
+            ],
+            [
                 'group' => 'finance',
                 'title' => 'Runtime tài chính',
                 'description' => 'Cấu hình policy thu tiền cọc, thu trước và overpay.',

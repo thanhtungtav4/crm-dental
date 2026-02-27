@@ -11,4 +11,8 @@ return [
     'invoice_aging_reminder_min_interval_hours' => (int) env('CARE_INVOICE_AGING_REMINDER_MIN_INTERVAL_HOURS', 24),
     'report_snapshot_sla_hours' => (int) env('CARE_REPORT_SNAPSHOT_SLA_HOURS', 6),
     'report_snapshot_stale_after_hours' => (int) env('CARE_REPORT_SNAPSHOT_STALE_AFTER_HOURS', 24),
+    'scheduler_command_timeout_seconds' => (int) env('CARE_SCHEDULER_COMMAND_TIMEOUT_SECONDS', 180),
+    'scheduler_command_max_attempts' => (int) env('CARE_SCHEDULER_COMMAND_MAX_ATTEMPTS', 2),
+    'scheduler_command_retry_delay_seconds' => (int) env('CARE_SCHEDULER_COMMAND_RETRY_DELAY_SECONDS', 15),
+    'scheduler_command_alert_after_seconds' => (int) env('CARE_SCHEDULER_COMMAND_ALERT_AFTER_SECONDS', 120),
 ];

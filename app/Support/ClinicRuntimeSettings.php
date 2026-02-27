@@ -229,6 +229,59 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function schedulerCommandTimeoutSeconds(): int
+    {
+        return max(
+            10,
+            static::integer(
+                'scheduler.command_timeout_seconds',
+                (int) config('care.scheduler_command_timeout_seconds', 180),
+            ),
+        );
+    }
+
+    public static function schedulerCommandMaxAttempts(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'scheduler.command_max_attempts',
+                (int) config('care.scheduler_command_max_attempts', 2),
+            ),
+        );
+    }
+
+    public static function schedulerCommandRetryDelaySeconds(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'scheduler.command_retry_delay_seconds',
+                (int) config('care.scheduler_command_retry_delay_seconds', 15),
+            ),
+        );
+    }
+
+    public static function schedulerCommandAlertAfterSeconds(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'scheduler.command_alert_after_seconds',
+                (int) config('care.scheduler_command_alert_after_seconds', 120),
+            ),
+        );
+    }
+
+    public static function schedulerLockExpiresAfterMinutes(): int
+    {
+        $ttlSeconds = (static::schedulerCommandTimeoutSeconds() * static::schedulerCommandMaxAttempts())
+            + (static::schedulerCommandRetryDelaySeconds() * max(0, static::schedulerCommandMaxAttempts() - 1))
+            + 120;
+
+        return max(5, (int) ceil($ttlSeconds / 60));
+    }
+
     public static function mpiDedupeMinConfidence(): float
     {
         return max(
