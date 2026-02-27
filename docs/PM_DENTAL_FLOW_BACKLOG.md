@@ -476,8 +476,8 @@ Ghi chu:
 
 ## 8) Thu tu go-live de xuat cho da chi nhanh
 
-1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32, PM-38
-2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36
+1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32, PM-38, PM-39
+2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36, PM-40
 3. `Go-live Gate C (debt cleanup)`: PM-37
 
 ---
@@ -488,11 +488,15 @@ Ghi chu:
 - **Title**: Branch snapshot attribution cho clinical records (Prescription/Note/Consent)
 - **Type**: Story (BE + Data + Security)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Bo sung `branch_id` tai record-level cho clinical entities quan trong de co ownership lich su.
   - Migration backfill theo nguyen tac "branch tai thoi diem tao record".
   - Cap nhat policy/print/audit de dung branch snapshot thay vi suy dien tu `patient.first_branch_id`.
+- **Status Note**:
+  - Da bo sung `branch_id` + index cho `prescriptions`, `notes`, `consents` kem migration backfill du lieu lich su.
+  - Da cap nhat model/policy/resource de enforce branch isolation bang snapshot record-level.
+  - Da bo sung audit metadata + test cross-branch cho note/consent/prescription print sau khi chuyen chi nhanh patient.
 - **Acceptance Criteria (QA)**:
   1. Chuyen chi nhanh benh nhan khong lam thay doi quyen truy cap record cu.
   2. Print/export policy theo branch snapshot, khong phu thuoc branch hien tai cua patient.
@@ -502,11 +506,15 @@ Ghi chu:
 - **Title**: Harden scheduler actor model (service account + rotation policy)
 - **Type**: Task (Security + Ops)
 - **Estimate**: 3 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Thay `CARE_AUTOMATION_ACTOR_USER_ID` bang service account chuyen biet cho automation.
   - Bo sung health check canh bao khi actor bi khoa/mat permission.
   - Chot quy trinh rotation/quyen toi thieu cho scheduler actor.
+- **Status Note**:
+  - Da them baseline role `AutomationService` + permission toi thieu `Action:AutomationRun` va service account scheduler.
+  - Da bo sung `AutomationActorResolver` + command `security:check-automation-actor --strict` va scheduler health check dinh ky.
+  - Da cap nhat `ActionGate` va wrapper scheduler de fail-fast + audit alert khi actor khong hop le.
 - **Acceptance Criteria (QA)**:
   1. Scheduler fail fast neu actor khong hop le va co alert ro rang.
   2. Rotation actor khong gay gian doan command critical.
