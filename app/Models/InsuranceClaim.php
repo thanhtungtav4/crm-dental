@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,6 +88,11 @@ class InsuranceClaim extends Model
             }
 
             if ($claim->exists && $claim->isDirty('status')) {
+                ActionGate::authorize(
+                    ActionPermission::INSURANCE_CLAIM_DECISION,
+                    'Bạn không có quyền phê duyệt/từ chối hồ sơ bảo hiểm.',
+                );
+
                 $fromStatus = (string) $claim->getOriginal('status');
                 $toStatus = (string) $claim->status;
 

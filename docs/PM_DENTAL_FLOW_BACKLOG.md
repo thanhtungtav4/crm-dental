@@ -165,7 +165,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: KPI pack van hanh nha khoa (booking->visit, no-show, acceptance, chair, recall, LTV)
 - **Type**: Story (BE + Data + FE)
 - **Estimate**: 8 SP
-- **Status**: In Progress (partial: co engine KPI + snapshot command + test, chua co KPI pack dashboard hoan chinh trong admin)
+- **Status**: Done (`2026-02-27`)
 
 ### TICKET PM-16 (P1)
 - **Title**: Report data lineage + snapshot SLA hardening
@@ -177,25 +177,25 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Multi-branch master data sync + conflict resolution
 - **Type**: Story (BE)
 - **Estimate**: 8 SP
-- **Status**: In Progress (partial: sync `materials`, audit log, command)
+- **Status**: Done (`2026-02-27`)
 
 ### TICKET PM-18 (P1)
 - **Title**: MPI + dedupe policy lien chi nhanh
 - **Type**: Story (BE + Ops)
 - **Estimate**: 5 SP
-- **Status**: In Progress (partial: identity hash dedupe + observer + command)
+- **Status**: Done (`2026-02-27`)
 
 ### TICKET PM-19 (P1)
 - **Title**: RBAC action-level freeze va enforce backend
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
-- **Status**: In Progress (partial: action gate cho override/reversal/approval/automation/sync)
+- **Status**: Done (`2026-02-27`)
 
 ### TICKET PM-20 (P1)
 - **Title**: Audit log mo rong cho clinical/finance/care critical events
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
-- **Status**: In Progress (partial: finance + appointment + care + automation/report/master sync)
+- **Status**: Done (`2026-02-27`)
 
 ---
 

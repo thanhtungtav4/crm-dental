@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\AuditLog;
+use App\Models\MasterPatientDuplicate;
 use App\Models\Patient;
 use App\Services\MasterPatientIndexService;
 
@@ -46,6 +47,10 @@ class PatientObserver
                 'patient_id' => $patient->id,
                 'branch_id' => $patient->first_branch_id,
                 'synced_identities' => $identityCount,
+                'open_duplicate_cases' => MasterPatientDuplicate::query()
+                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                    ->whereJsonContains('matched_patient_ids', $patient->id)
+                    ->count(),
             ],
         );
     }

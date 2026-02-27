@@ -105,6 +105,9 @@ class RolesAndPermissionsSeeder extends Seeder
             ActionPermission::APPOINTMENT_OVERRIDE,
             ActionPermission::PLAN_APPROVAL,
             ActionPermission::AUTOMATION_RUN,
+            ActionPermission::MASTER_DATA_SYNC,
+            ActionPermission::INSURANCE_CLAIM_DECISION,
+            ActionPermission::MPI_DEDUPE_REVIEW,
         ]);
         $manager->syncPermissions($managerPerms);
 

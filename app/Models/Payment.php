@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,9 +44,21 @@ class Payment extends Model
     {
         static::saving(function (self $payment) {
             if ($payment->direction === 'refund') {
+                ActionGate::authorize(
+                    ActionPermission::PAYMENT_REVERSAL,
+                    'Bạn không có quyền thực hiện hoàn tiền hoặc đảo phiếu thu.',
+                );
+
                 $payment->amount = -abs((float) $payment->amount);
             } else {
                 $payment->amount = abs((float) $payment->amount);
+            }
+
+            if ($payment->reversal_of_id !== null) {
+                ActionGate::authorize(
+                    ActionPermission::PAYMENT_REVERSAL,
+                    'Bạn không có quyền thực hiện hoàn tiền hoặc đảo phiếu thu.',
+                );
             }
 
             if ($payment->transaction_ref !== null) {

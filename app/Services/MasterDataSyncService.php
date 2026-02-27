@@ -7,9 +7,18 @@ use App\Models\MasterDataSyncLog;
 use App\Models\Material;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use Illuminate\Validation\ValidationException;
 
 class MasterDataSyncService
 {
+    public const ENTITY_MATERIALS = 'materials';
+
+    public const CONFLICT_POLICY_OVERWRITE = 'overwrite';
+
+    public const CONFLICT_POLICY_SKIP = 'skip';
+
+    public const CONFLICT_POLICY_MANUAL = 'manual';
+
     /**
      * @param  array<int, int>  $targetBranchIds
      * @return array<int, array{target_branch_id:int,synced_count:int,skipped_count:int,conflict_count:int,status:string}>
@@ -18,6 +27,7 @@ class MasterDataSyncService
         int $sourceBranchId,
         array $targetBranchIds,
         bool $dryRun = false,
+        string $conflictPolicy = self::CONFLICT_POLICY_OVERWRITE,
         ?int $triggeredBy = null,
     ): array {
         ActionGate::authorize(
@@ -30,6 +40,8 @@ class MasterDataSyncService
             ->orderBy('id')
             ->get();
 
+        $conflictPolicy = $this->normalizeConflictPolicy($conflictPolicy);
+
         $results = [];
 
         foreach ($targetBranchIds as $targetBranchId) {
@@ -41,6 +53,7 @@ class MasterDataSyncService
             $syncedCount = 0;
             $skippedCount = 0;
             $conflictCount = 0;
+            $conflictRows = [];
 
             foreach ($sourceMaterials as $sourceMaterial) {
                 $lookup = Material::query()
@@ -60,6 +73,19 @@ class MasterDataSyncService
 
                     if (! $changed) {
                         $skippedCount++;
+
+                        continue;
+                    }
+
+                    if (in_array($conflictPolicy, [self::CONFLICT_POLICY_SKIP, self::CONFLICT_POLICY_MANUAL], true)) {
+                        $conflictCount++;
+                        $skippedCount++;
+                        $conflictRows[] = [
+                            'source_material_id' => $sourceMaterial->id,
+                            'target_material_id' => $targetMaterial->id,
+                            'sku' => $sourceMaterial->sku,
+                            'name' => $sourceMaterial->name,
+                        ];
 
                         continue;
                     }
@@ -99,6 +125,8 @@ class MasterDataSyncService
                 'finished_at' => now(),
                 'metadata' => [
                     'source_materials' => $sourceMaterials->count(),
+                    'conflict_policy' => $conflictPolicy,
+                    'conflicts' => $conflictRows,
                 ],
                 'triggered_by' => $triggeredBy,
             ]);
@@ -116,6 +144,7 @@ class MasterDataSyncService
                     'synced_count' => $syncedCount,
                     'skipped_count' => $skippedCount,
                     'conflict_count' => $conflictCount,
+                    'conflict_policy' => $conflictPolicy,
                 ],
             );
 
@@ -129,6 +158,23 @@ class MasterDataSyncService
         }
 
         return $results;
+    }
+
+    public function normalizeConflictPolicy(string $conflictPolicy): string
+    {
+        $normalized = strtolower(trim($conflictPolicy));
+
+        if (! in_array($normalized, [
+            self::CONFLICT_POLICY_OVERWRITE,
+            self::CONFLICT_POLICY_SKIP,
+            self::CONFLICT_POLICY_MANUAL,
+        ], true)) {
+            throw ValidationException::withMessages([
+                'conflict_policy' => 'Conflict policy không hợp lệ. Chọn overwrite/skip/manual.',
+            ]);
+        }
+
+        return $normalized;
     }
 
     /**

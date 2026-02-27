@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientIdentity;
 use App\Models\Patient;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -40,6 +42,8 @@ class MasterPatientIndexService
             );
         }
 
+        $this->syncDuplicateCases($patient, $identities);
+
         return count($identities);
     }
 
@@ -48,6 +52,19 @@ class MasterPatientIndexService
         MasterPatientIdentity::query()
             ->where('patient_id', $patientId)
             ->delete();
+
+        MasterPatientDuplicate::query()
+            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+            ->where(function ($query) use ($patientId): void {
+                $query->where('patient_id', $patientId)
+                    ->orWhereJsonContains('matched_patient_ids', $patientId);
+            })
+            ->update([
+                'status' => MasterPatientDuplicate::STATUS_IGNORED,
+                'review_note' => 'Auto-ignore do bệnh nhân đã bị gỡ khỏi MPI.',
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
     }
 
     public function hasCrossBranchDuplicate(Patient $patient): bool
@@ -79,6 +96,19 @@ class MasterPatientIndexService
             ->groupBy('identity_type', 'identity_hash')
             ->havingRaw('COUNT(DISTINCT patient_id) > 1')
             ->orderByDesc('patient_count')
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, MasterPatientDuplicate>
+     */
+    public function openDuplicateCases(?string $identityType = null): Collection
+    {
+        return MasterPatientDuplicate::query()
+            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+            ->when($identityType !== null, fn ($query) => $query->where('identity_type', $identityType))
+            ->orderByDesc('confidence_score')
+            ->latest('id')
             ->get();
     }
 
@@ -165,5 +195,102 @@ class MasterPatientIndexService
     protected function hashIdentity(string $type, string $value): string
     {
         return hash('sha256', $type.'|'.$value);
+    }
+
+    /**
+     * @param  array<int, array{identity_type:string,identity_hash:string,identity_value:string,is_primary:bool,confidence_score:float}>  $identities
+     */
+    protected function syncDuplicateCases(Patient $patient, array $identities): void
+    {
+        if ($identities === []) {
+            return;
+        }
+
+        $minimumConfidence = ClinicRuntimeSettings::mpiDedupeMinConfidence();
+
+        $trackedIdentityHashes = collect($identities)->pluck('identity_hash')->all();
+
+        MasterPatientDuplicate::query()
+            ->where('patient_id', $patient->id)
+            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+            ->when(
+                $trackedIdentityHashes !== [],
+                fn ($query) => $query->whereNotIn('identity_hash', $trackedIdentityHashes)
+            )
+            ->update([
+                'status' => MasterPatientDuplicate::STATUS_IGNORED,
+                'review_note' => 'Auto-ignore do định danh không còn khớp.',
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
+
+        foreach ($identities as $identity) {
+            if ((float) $identity['confidence_score'] < $minimumConfidence) {
+                continue;
+            }
+
+            $matchedIdentities = MasterPatientIdentity::query()
+                ->where('identity_type', $identity['identity_type'])
+                ->where('identity_hash', $identity['identity_hash'])
+                ->where('patient_id', '!=', $patient->id)
+                ->get(['patient_id', 'branch_id', 'confidence_score']);
+
+            if ($matchedIdentities->isEmpty()) {
+                MasterPatientDuplicate::query()
+                    ->where('identity_type', $identity['identity_type'])
+                    ->where('identity_hash', $identity['identity_hash'])
+                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                    ->update([
+                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
+                        'review_note' => 'Auto-ignore do không còn trùng liên chi nhánh.',
+                        'reviewed_by' => auth()->id(),
+                        'reviewed_at' => now(),
+                    ]);
+
+                continue;
+            }
+
+            $matchedPatientIds = collect([$patient->id])
+                ->merge($matchedIdentities->pluck('patient_id'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $matchedBranchIds = collect([$patient->first_branch_id])
+                ->merge($matchedIdentities->pluck('branch_id'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $maxConfidence = max(
+                (float) $identity['confidence_score'],
+                (float) ($matchedIdentities->max('confidence_score') ?? 0),
+            );
+
+            MasterPatientDuplicate::query()->updateOrCreate(
+                [
+                    'identity_type' => $identity['identity_type'],
+                    'identity_hash' => $identity['identity_hash'],
+                    'status' => MasterPatientDuplicate::STATUS_OPEN,
+                ],
+                [
+                    'patient_id' => $patient->id,
+                    'branch_id' => $patient->first_branch_id,
+                    'identity_value' => $identity['identity_value'],
+                    'matched_patient_ids' => $matchedPatientIds,
+                    'matched_branch_ids' => $matchedBranchIds,
+                    'confidence_score' => $maxConfidence,
+                    'review_note' => null,
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                    'metadata' => [
+                        'patient_count' => count($matchedPatientIds),
+                        'branch_count' => count($matchedBranchIds),
+                    ],
+                ],
+            );
+        }
     }
 }

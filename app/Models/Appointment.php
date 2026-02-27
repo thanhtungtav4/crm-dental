@@ -210,6 +210,7 @@ class Appointment extends Model
                 }
             }
 
+            static::assertOperationalOverridePermission($appointment);
             static::assertStatusReasonRequirement($appointment, $normalizedStatus);
             static::assertOverbookingPolicy($appointment);
         });
@@ -530,6 +531,26 @@ class Appointment extends Model
         $appointment->is_overbooked = true;
         $appointment->overbooking_override_at = $appointment->overbooking_override_at ?? now();
         $appointment->overbooking_override_by = $appointment->overbooking_override_by ?? auth()->id();
+    }
+
+    protected static function assertOperationalOverridePermission(self $appointment): void
+    {
+        if (! $appointment->isDirty([
+            'is_walk_in',
+            'is_emergency',
+            'late_arrival_minutes',
+            'operation_override_reason',
+            'operation_override_at',
+            'operation_override_by',
+            'overbooking_reason',
+        ])) {
+            return;
+        }
+
+        ActionGate::authorize(
+            ActionPermission::APPOINTMENT_OVERRIDE,
+            'Bạn không có quyền override vận hành lịch hẹn.',
+        );
     }
 
     public function applyOperationalOverride(string $overrideType, string $reason, ?int $actorId = null, array $context = []): void

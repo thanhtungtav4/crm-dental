@@ -23,10 +23,16 @@ class AuditLogsTable
                     ->label('Entity')
                     ->colors([
                         'primary' => AuditLog::ENTITY_PAYMENT,
-                        'warning' => AuditLog::ENTITY_INVOICE,
-                        'info' => [AuditLog::ENTITY_APPOINTMENT, AuditLog::ENTITY_MASTER_PATIENT_INDEX, AuditLog::ENTITY_PLAN_ITEM],
+                        'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM],
+                        'info' => [
+                            AuditLog::ENTITY_APPOINTMENT,
+                            AuditLog::ENTITY_MASTER_PATIENT_INDEX,
+                            AuditLog::ENTITY_PLAN_ITEM,
+                            AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE,
+                            AuditLog::ENTITY_TREATMENT_SESSION,
+                        ],
                         'success' => AuditLog::ENTITY_CARE_TICKET,
-                        'gray' => [AuditLog::ENTITY_AUTOMATION, AuditLog::ENTITY_REPORT_SNAPSHOT],
+                        'gray' => [AuditLog::ENTITY_AUTOMATION, AuditLog::ENTITY_REPORT_SNAPSHOT, AuditLog::ENTITY_CONSENT],
                         'danger' => AuditLog::ENTITY_MASTER_DATA_SYNC,
                     ])
                     ->sortable(),
@@ -39,7 +45,7 @@ class AuditLogsTable
                         'info' => [AuditLog::ACTION_CREATE, AuditLog::ACTION_FOLLOW_UP, AuditLog::ACTION_SNAPSHOT],
                         'warning' => [AuditLog::ACTION_UPDATE, AuditLog::ACTION_RESCHEDULE, AuditLog::ACTION_RUN],
                         'danger' => [AuditLog::ACTION_REFUND, AuditLog::ACTION_FAIL],
-                        'primary' => [AuditLog::ACTION_REVERSAL, AuditLog::ACTION_APPROVE],
+                        'primary' => [AuditLog::ACTION_REVERSAL, AuditLog::ACTION_APPROVE, AuditLog::ACTION_RESOLVE],
                         'gray' => [AuditLog::ACTION_CANCEL, AuditLog::ACTION_NO_SHOW, AuditLog::ACTION_SYNC, AuditLog::ACTION_DEDUPE, AuditLog::ACTION_SLA_CHECK],
                         'success' => AuditLog::ACTION_COMPLETE,
                     ]),
@@ -63,8 +69,12 @@ class AuditLogsTable
                         AuditLog::ENTITY_PLAN_ITEM => 'Plan Item',
                         AuditLog::ENTITY_MASTER_DATA_SYNC => 'Master Data Sync',
                         AuditLog::ENTITY_MASTER_PATIENT_INDEX => 'MPI',
+                        AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE => 'MPI Duplicate Case',
                         AuditLog::ENTITY_REPORT_SNAPSHOT => 'Report Snapshot',
                         AuditLog::ENTITY_AUTOMATION => 'Automation',
+                        AuditLog::ENTITY_CONSENT => 'Consent',
+                        AuditLog::ENTITY_INSURANCE_CLAIM => 'Insurance Claim',
+                        AuditLog::ENTITY_TREATMENT_SESSION => 'Treatment Session',
                     ]),
                 SelectFilter::make('action')
                     ->label('Hành động')
@@ -85,6 +95,7 @@ class AuditLogsTable
                         AuditLog::ACTION_DEDUPE => 'Dedupe',
                         AuditLog::ACTION_RUN => 'Run',
                         AuditLog::ACTION_APPROVE => 'Approve',
+                        AuditLog::ACTION_RESOLVE => 'Resolve',
                     ]),
             ])
             ->recordActions([

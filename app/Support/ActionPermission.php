@@ -14,6 +14,10 @@ class ActionPermission
 
     public const MASTER_DATA_SYNC = 'Action:MasterDataSync';
 
+    public const INSURANCE_CLAIM_DECISION = 'Action:InsuranceClaimDecision';
+
+    public const MPI_DEDUPE_REVIEW = 'Action:MpiDedupeReview';
+
     /**
      * @return array<int, string>
      */
@@ -25,6 +29,8 @@ class ActionPermission
             self::PLAN_APPROVAL,
             self::AUTOMATION_RUN,
             self::MASTER_DATA_SYNC,
+            self::INSURANCE_CLAIM_DECISION,
+            self::MPI_DEDUPE_REVIEW,
         ];
     }
 }

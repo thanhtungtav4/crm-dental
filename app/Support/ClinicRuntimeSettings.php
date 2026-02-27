@@ -204,6 +204,17 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function mpiDedupeMinConfidence(): float
+    {
+        return max(
+            0.0,
+            min(
+                100.0,
+                (float) static::get('mpi.dedupe_min_confidence', 90),
+            ),
+        );
+    }
+
     public static function careChannelOptions(): array
     {
         $channels = [

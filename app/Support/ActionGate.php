@@ -11,6 +11,12 @@ class ActionGate
         $user = auth()->user();
 
         if (! $user) {
+            if (! app()->runningInConsole()) {
+                throw ValidationException::withMessages([
+                    'authorization' => $message,
+                ]);
+            }
+
             return;
         }
 

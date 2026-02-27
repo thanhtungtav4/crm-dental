@@ -33,9 +33,17 @@ class AuditLog extends Model
 
     public const ENTITY_PLAN_ITEM = 'plan_item';
 
+    public const ENTITY_CONSENT = 'consent';
+
+    public const ENTITY_INSURANCE_CLAIM = 'insurance_claim';
+
+    public const ENTITY_TREATMENT_SESSION = 'treatment_session';
+
     public const ENTITY_MASTER_DATA_SYNC = 'master_data_sync';
 
     public const ENTITY_MASTER_PATIENT_INDEX = 'master_patient_index';
+
+    public const ENTITY_MASTER_PATIENT_DUPLICATE = 'master_patient_duplicate';
 
     public const ENTITY_REPORT_SNAPSHOT = 'report_snapshot';
 
@@ -72,6 +80,8 @@ class AuditLog extends Model
     public const ACTION_RUN = 'run';
 
     public const ACTION_APPROVE = 'approve';
+
+    public const ACTION_RESOLVE = 'resolve';
 
     public function actor(): BelongsTo
     {

@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 
 class SyncMasterPatientIndex extends Command
 {
-    protected $signature = 'mpi:sync {--patient_id= : Đồng bộ 1 bệnh nhân cụ thể} {--identity_type= : Lọc duplicate theo identity type} {--show-duplicates : In danh sách duplicate groups} {--dry-run : Chỉ preview, không ghi DB}';
+    protected $signature = 'mpi:sync {--patient_id= : Đồng bộ 1 bệnh nhân cụ thể} {--identity_type= : Lọc duplicate theo identity type} {--show-duplicates : In danh sách duplicate groups} {--show-cases : In queue duplicate cases đang mở} {--dry-run : Chỉ preview, không ghi DB}';
 
     protected $description = 'Đồng bộ MPI và kiểm tra duplicate liên chi nhánh.';
 
@@ -50,6 +50,7 @@ class SyncMasterPatientIndex extends Command
         });
 
         $duplicateRows = collect();
+        $duplicateCases = collect();
 
         if ((bool) $this->option('show-duplicates')) {
             $duplicateRows = $this->mpiService->duplicateGroups(
@@ -69,6 +70,27 @@ class SyncMasterPatientIndex extends Command
             );
         }
 
+        if ((bool) $this->option('show-cases')) {
+            $duplicateCases = $this->mpiService->openDuplicateCases(
+                $this->option('identity_type') ? (string) $this->option('identity_type') : null,
+            );
+
+            $this->table(
+                ['Case ID', 'Identity', 'Value', 'Patients', 'Branches', 'Confidence', 'Status'],
+                $duplicateCases
+                    ->map(fn ($case) => [
+                        $case->id,
+                        $case->identity_type,
+                        $case->identity_value,
+                        count($case->matched_patient_ids ?? []),
+                        count($case->matched_branch_ids ?? []),
+                        number_format((float) $case->confidence_score, 2),
+                        $case->status,
+                    ])
+                    ->all()
+            );
+        }
+
         if (! $dryRun) {
             AuditLog::record(
                 entityType: AuditLog::ENTITY_MASTER_PATIENT_INDEX,
@@ -81,6 +103,7 @@ class SyncMasterPatientIndex extends Command
                     'synced_identities' => $syncedIdentities,
                     'duplicate_patients' => $duplicatePatients,
                     'duplicate_groups' => $duplicateRows->count(),
+                    'duplicate_cases_open' => $duplicateCases->count(),
                 ],
             );
         }
