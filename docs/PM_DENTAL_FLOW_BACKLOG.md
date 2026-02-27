@@ -235,7 +235,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: Snapshot lineage versioning + checksum + drift detection
 - **Type**: Story (Data + BE)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Acceptance Criteria (QA)**:
   1. Moi snapshot co `schema_version` + checksum payload.
   2. Detect duoc drift khi cong thuc/khoi nguon thay doi.
@@ -245,7 +245,7 @@ Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `doc
 - **Title**: RBAC defense-in-depth: anti-bypass review + policy test matrix
 - **Type**: Story (BE + QA)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Acceptance Criteria (QA)**:
   1. Co checklist endpoint/action nhay cam khong duoc bypass gate/policy.
   2. Co test matrix role-action cho cac action-level permission quan trong.

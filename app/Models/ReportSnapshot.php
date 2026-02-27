@@ -23,8 +23,19 @@ class ReportSnapshot extends Model
 
     public const SLA_MISSING = 'missing';
 
+    public const DRIFT_UNKNOWN = 'unknown';
+
+    public const DRIFT_NONE = 'none';
+
+    public const DRIFT_SCHEMA_CHANGED = 'schema_changed';
+
+    public const DRIFT_FORMULA_CHANGED = 'formula_changed';
+
+    public const DRIFT_SOURCE_CHANGED = 'source_changed';
+
     protected $fillable = [
         'snapshot_key',
+        'schema_version',
         'snapshot_date',
         'branch_id',
         'status',
@@ -32,6 +43,11 @@ class ReportSnapshot extends Model
         'generated_at',
         'sla_due_at',
         'payload',
+        'payload_checksum',
+        'lineage_checksum',
+        'drift_status',
+        'drift_details',
+        'compared_snapshot_id',
         'lineage',
         'error_message',
         'created_by',
@@ -44,6 +60,7 @@ class ReportSnapshot extends Model
             'generated_at' => 'datetime',
             'sla_due_at' => 'datetime',
             'payload' => 'array',
+            'drift_details' => 'array',
             'lineage' => 'array',
         ];
     }
@@ -61,5 +78,10 @@ class ReportSnapshot extends Model
     public function alerts(): HasMany
     {
         return $this->hasMany(OperationalKpiAlert::class, 'snapshot_id');
+    }
+
+    public function comparedSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'compared_snapshot_id');
     }
 }
