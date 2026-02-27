@@ -479,6 +479,7 @@ Ghi chu:
 1. `Go-live Gate A (bat buoc)`: PM-28, PM-29, PM-30, PM-31, PM-32, PM-38, PM-39
 2. `Go-live Gate B (on dinh van hanh)`: PM-33, PM-34, PM-35, PM-36, PM-40
 3. `Go-live Gate C (debt cleanup)`: PM-37
+4. `Go-live Gate D (release control + regression)` : PM-41, PM-42, PM-43, PM-44, PM-45, PM-46
 
 ---
 
@@ -519,3 +520,81 @@ Ghi chu:
   1. Scheduler fail fast neu actor khong hop le va co alert ro rang.
   2. Rotation actor khong gay gian doan command critical.
   3. Co test gate cho actor automation.
+
+### TICKET PM-41 (P1)
+- **Title**: Release gate orchestration command (single entrypoint)
+- **Type**: Story (DevEx + QA + Ops)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Them command `ops:run-release-gates` de chay checklist gate theo profile (`ci/ops/production`).
+  - Ho tro `--dry-run` de kiem tra release plan truoc khi chay that.
+  - Ho tro `--with-finance --from --to` de chen gate doi soat finance attribution vao checklist.
+- **Acceptance Criteria (QA)**:
+  1. Co 1 command duy nhat de chay gate checklist khong can go tung command le.
+  2. Command fail neu gate con loi va in danh sach step fail.
+  3. Co test regression cho invalid profile + dry-run + profile ci.
+
+### TICKET PM-42 (P1)
+- **Title**: CI gate profile standardization
+- **Type**: Task (DevEx)
+- **Estimate**: 2 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Cap nhat workflow CI su dung `ops:run-release-gates --profile=ci`.
+  - Giam drift giua local go-live checklist va CI pipeline.
+- **Acceptance Criteria (QA)**:
+  1. CI co step gate profile ro rang.
+  2. Schema drift + action baseline tiep tuc duoc enforce thong qua command tong.
+
+### TICKET PM-43 (P1)
+- **Title**: Admin critical page smoke pack (treatment + integration)
+- **Type**: Story (QA + FE)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Bo sung smoke test route-level cho cac man hinh critical:
+    - patient exam-treatment
+    - treatment plan create (chan doan dieu tri)
+    - integration settings
+    - customer list
+  - Chan regression 500/permission/layout break sau cac dot refactor.
+- **Acceptance Criteria (QA)**:
+  1. Test fail ngay khi mot page critical khong load duoc.
+  2. Co assertion text key de bao dam page render dung context nghiep vu.
+
+### TICKET PM-44 (P2)
+- **Title**: Release gate profile expansion cho ops/production
+- **Type**: Story (Ops)
+- **Estimate**: 2 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Profile `ops` bo sung gate `reports:explain-ops-hotpaths --strict`.
+  - Profile `production` bo sung gate health check scheduler actor (`security:check-automation-actor --strict`).
+- **Acceptance Criteria (QA)**:
+  1. Profile `ci`, `ops`, `production` cho output step list khac nhau dung theo muc dich.
+  2. Dry-run hien ro command map cua tung profile.
+
+### TICKET PM-45 (P2)
+- **Title**: Finance reconciliation hook vao release gate
+- **Type**: Task (Finance + Ops)
+- **Estimate**: 2 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Gate runner ho tro chen `finance:reconcile-branch-attribution` co range date.
+  - Tu dong tao export path report doi soat khi chay tu gate runner.
+- **Acceptance Criteria (QA)**:
+  1. Khi bat `--with-finance`, gate runner goi dung command reconciliation + args.
+  2. Dry-run hien duoc args from/to/export de de audit.
+
+### TICKET PM-46 (P2)
+- **Title**: Backlog-go-live alignment cho wave PM-41..PM-45
+- **Type**: Task (PM + QA)
+- **Estimate**: 1 SP
+- **Status**: Done (`2026-02-27`)
+- **Scope**:
+  - Cap nhat backlog status theo code da trien khai.
+  - Dong bo thu tu gate de doi release co checklist ro rang va co test canh bao regression.
+- **Acceptance Criteria (QA)**:
+  1. Backlog co du ticket PM-41..PM-45 voi scope va acceptance ro rang.
+  2. Khong con ticket "lam roi nhung chua ghi backlog" trong wave nay.

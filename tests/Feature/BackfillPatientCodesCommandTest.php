@@ -27,7 +27,7 @@ it('backfills invalid patient codes when apply option is provided', function () 
     ]);
 
     $invalidPatientTwo = Patient::factory()->create([
-        'patient_code' => null,
+        'patient_code' => 'legacy-two',
     ]);
 
     $validPatient = Patient::factory()->create([

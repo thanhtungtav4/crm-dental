@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Models\VisitEpisode;
 
 it('builds doctor benchmark and triggers kpi alerts with owner and new status', function () {
+    $snapshotDate = now()->startOfDay()->addHours(10);
+
     $branch = Branch::factory()->create();
 
     $manager = User::factory()->create(['branch_id' => $branch->id]);
@@ -36,7 +38,7 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'branch_id' => $branch->id,
-        'date' => now()->subHour(),
+        'date' => $snapshotDate->copy()->addMinutes(30),
         'status' => Appointment::STATUS_NO_SHOW,
     ]);
 
@@ -46,7 +48,7 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'branch_id' => $branch->id,
-            'scheduled_at' => now()->subHour(),
+            'scheduled_at' => $snapshotDate->copy()->addMinutes(45),
             'planned_duration_minutes' => 120,
             'chair_minutes' => 30,
             'status' => VisitEpisode::STATUS_COMPLETED,
@@ -56,13 +58,13 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
     $this->actingAs($manager);
 
     $this->artisan('reports:snapshot-operational-kpis', [
-        '--date' => now()->toDateString(),
+        '--date' => $snapshotDate->toDateString(),
         '--branch_id' => $branch->id,
     ])->assertSuccessful();
 
     $snapshot = ReportSnapshot::query()
         ->where('snapshot_key', 'operational_kpi_pack')
-        ->whereDate('snapshot_date', now()->toDateString())
+        ->whereDate('snapshot_date', $snapshotDate->toDateString())
         ->where('branch_id', $branch->id)
         ->first();
 
@@ -80,6 +82,8 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
 });
 
 it('auto resolves kpi alerts when metrics are back in threshold', function () {
+    $snapshotDate = now()->startOfDay()->addHours(10);
+
     $branch = Branch::factory()->create();
 
     $manager = User::factory()->create(['branch_id' => $branch->id]);
@@ -103,7 +107,7 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'branch_id' => $branch->id,
-        'date' => now()->subMinutes(30),
+        'date' => $snapshotDate->copy()->addMinutes(20),
         'status' => Appointment::STATUS_NO_SHOW,
     ]);
 
@@ -113,7 +117,7 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'branch_id' => $branch->id,
-            'scheduled_at' => now()->subMinutes(30),
+            'scheduled_at' => $snapshotDate->copy()->addMinutes(30),
             'planned_duration_minutes' => 100,
             'chair_minutes' => 20,
             'status' => VisitEpisode::STATUS_COMPLETED,
@@ -123,13 +127,13 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
     $this->actingAs($manager);
 
     $this->artisan('reports:snapshot-operational-kpis', [
-        '--date' => now()->toDateString(),
+        '--date' => $snapshotDate->toDateString(),
         '--branch_id' => $branch->id,
     ])->assertSuccessful();
 
     $snapshot = ReportSnapshot::query()
         ->where('snapshot_key', 'operational_kpi_pack')
-        ->whereDate('snapshot_date', now()->toDateString())
+        ->whereDate('snapshot_date', $snapshotDate->toDateString())
         ->where('branch_id', $branch->id)
         ->firstOrFail();
 
@@ -149,7 +153,7 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
 
     expect(Appointment::query()
         ->where('branch_id', $branch->id)
-        ->whereBetween('date', [now()->startOfDay(), now()->endOfDay()])
+        ->whereBetween('date', [$snapshotDate->copy()->startOfDay(), $snapshotDate->copy()->endOfDay()])
         ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
         ->count())->toBe(0);
 
@@ -190,13 +194,13 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
     ]);
 
     $this->artisan('reports:snapshot-operational-kpis', [
-        '--date' => now()->toDateString(),
+        '--date' => $snapshotDate->toDateString(),
         '--branch_id' => $branch->id,
     ])->assertSuccessful();
 
     $matchedSnapshots = ReportSnapshot::query()
         ->where('snapshot_key', 'operational_kpi_pack')
-        ->whereDate('snapshot_date', now()->toDateString())
+        ->whereDate('snapshot_date', $snapshotDate->toDateString())
         ->where('branch_id', $branch->id)
         ->latest('id')
         ->get();

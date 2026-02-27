@@ -40,11 +40,8 @@ jobs:
       - name: Migrate
         run: php artisan migrate --force --no-interaction
 
-      - name: Schema drift gate
-        run: php artisan schema:assert-no-pending-migrations --no-interaction
-
-      - name: Action permission baseline gate
-        run: php artisan security:assert-action-permission-baseline --sync --no-interaction
+      - name: Release gates (CI profile)
+        run: php artisan ops:run-release-gates --profile=ci --no-interaction
 
       - name: Run test suite
         run: php artisan test --no-interaction
