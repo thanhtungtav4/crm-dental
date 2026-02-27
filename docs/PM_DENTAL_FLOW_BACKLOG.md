@@ -289,7 +289,7 @@ Ghi chu:
 - **Title**: Security gate hardening cho Admin panel + automation command
 - **Type**: Story (BE + Security)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Bo `canAccessPanel(): true` vo dieu kien, enforce theo role + status user.
   - Khong cho bypass `ActionGate` o console khi khong co actor hop le.
@@ -303,7 +303,7 @@ Ghi chu:
 - **Title**: Branch isolation enforcement backend (tenancy by policy + query)
 - **Type**: Story (BE + Architecture)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Enforce branch-scope o policy/query cho Patient, Appointment, Invoice, Payment, Prescription, Note, print endpoints.
   - Chan truy cap cheo chi nhanh khi chi co role van hanh tai 1 chi nhanh.
@@ -317,11 +317,14 @@ Ghi chu:
 - **Title**: Finance branch attribution model (invoice/payment branch_id) + KPI dong bo
 - **Type**: Story (BE + Data)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Bo sung/hoan tat `branch_id` tren finance entities can thiet.
   - Backfill du lieu lich su theo quy tac nghiep vu.
   - Sua KPI doanh thu/collection khong con phu thuoc `patient.first_branch_id`.
+- **Status Note**:
+  - Da xong schema + backfill + model/service/test cho branch attribution.
+  - Con thieu bao cao reconciliation truoc/sau migration de chot nghiep vu.
 - **Acceptance Criteria (QA)**:
   1. Revenue theo chi nhanh khop so lieu van hanh va ledger.
   2. Chuyen chi nhanh benh nhan khong lam sai lich su doanh thu.
@@ -331,11 +334,14 @@ Ghi chu:
 - **Title**: Migration drift gate truoc go-live
 - **Type**: Task (DevEx + BE)
 - **Estimate**: 3 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Dong bo schema voi code (xu ly toan bo migration pending tren env deploy).
   - Them pre-deploy check fail neu con migration pending.
   - Khoa quy trinh release: khong cho push release neu schema drift.
+- **Status Note**:
+  - Da co test guard migration drift trong test suite.
+  - Con thieu gate chinh thuc trong CI/CD deploy pipeline.
 - **Acceptance Criteria (QA)**:
   1. `migrate:status` tren staging/prod = khong pending.
   2. CI/CD fail neu phat hien schema drift.
@@ -345,11 +351,14 @@ Ghi chu:
 - **Title**: Concurrency hardening (invoice no, plan code, claim no, overbooking/overpay)
 - **Type**: Story (BE + DB)
 - **Estimate**: 8 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Chuyen sinh so chung tu sang co che an toan concurrency (lock/sequence).
   - Hardening transaction cho overbooking check va overpay gate.
   - Bo sung test race condition cho cac luong tai chinh/lich hen.
+- **Status Note**:
+  - Da xong lock/transaction cho luong chinh (`invoice/installment/claim/overbooking/overpay`).
+  - Con thieu bo test race/stress song song de chot acceptance concurrency.
 - **Acceptance Criteria (QA)**:
   1. Khong tao trung ma hoa don/claim/installment khi request dong thoi.
   2. Khong vuot policy overpay/overbooking duoi tai cao.
@@ -359,11 +368,14 @@ Ghi chu:
 - **Title**: Print/export authorization + side-effect separation
 - **Type**: Story (BE + Security)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Them authorize day du cho invoice/payment/prescription print.
   - Tach side-effect `invoice_exported` khoi GET route (chuyen sang explicit action).
   - Log audit ro actor + branch + loai export.
+- **Status Note**:
+  - Da xong authorize print route + tach side-effect GET sang POST export.
+  - Con thieu audit log rieng cho hanh dong export (actor/branch/type).
 - **Acceptance Criteria (QA)**:
   1. Print route cheo chi nhanh bi chan dung policy.
   2. GET print khong mutating data.
@@ -373,7 +385,7 @@ Ghi chu:
 - **Title**: KPI formula hardening cho multi-branch operations
 - **Type**: Story (Data + Product)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Rasoat lai cong thuc booking->visit, chair utilization, recall, no-show.
   - Chot definition event-level (booked, arrived, in-chair, completed).
@@ -387,11 +399,14 @@ Ghi chu:
 - **Title**: DB index pack cho scale (care/appointment/finance)
 - **Type**: Task (DB + BE)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Bo sung composite index theo query thuc te cho notes care queue, appointment capacity, finance aging.
   - Do EXPLAIN truoc/sau.
   - Chot playbook index rollout an toan.
+- **Status Note**:
+  - Da bo sung index cho notes/appointments/finance branch hot-path.
+  - Con thieu baseline EXPLAIN truoc/sau va tai lieu ket qua.
 - **Acceptance Criteria (QA)**:
   1. Query dashboard/list chinh dat SLA de ra.
   2. Khong full scan tren table lon o filter pho bien.
@@ -401,11 +416,14 @@ Ghi chu:
 - **Title**: Scheduler hardening cho environment nhieu node
 - **Type**: Task (BE + Ops)
 - **Estimate**: 3 SP
-- **Status**: Todo
+- **Status**: In Progress (`2026-02-27`)
 - **Scope**:
   - Them lock `withoutOverlapping`/`onOneServer` cho command quan trong.
   - Chot timeout/retry/alert khi command fail.
   - Tranh duplicate run gay duplicate ticket/snapshot.
+- **Status Note**:
+  - Da xong `withoutOverlapping` + `onOneServer` cho command chinh.
+  - Con thieu timeout/retry policy va alerting khi command qua SLA.
 - **Acceptance Criteria (QA)**:
   1. Command khong bi chay trung khi scale app nodes.
   2. Co canh bao khi job qua SLA.
@@ -415,7 +433,7 @@ Ghi chu:
 - **Title**: Tech debt cleanup (legacy Doctor artifact + dead code path)
 - **Type**: Task (BE Refactor)
 - **Estimate**: 3 SP
-- **Status**: Todo
+- **Status**: Done (`2026-02-27`)
 - **Scope**:
   - Xoa/phan tach ro cac artifact legacy `Doctor` khong con dung.
   - Dung factory/policy/resource khong con schema backing.
