@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Payment;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\Response;
 
 class PaymentReceiptController extends Controller
@@ -14,6 +15,7 @@ class PaymentReceiptController extends Controller
             'invoice.patient',
             'receiver',
         ]);
+        $clinicBranding = ClinicRuntimeSettings::brandingProfile();
 
         $isPdf = request()->boolean('pdf', true);
 
@@ -34,6 +36,7 @@ class PaymentReceiptController extends Controller
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && $isPdf) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.receipt', [
                 'payment' => $payment,
+                'clinicBranding' => $clinicBranding,
                 'isPdf' => true,
             ]);
 
@@ -45,6 +48,7 @@ class PaymentReceiptController extends Controller
 
         return response()->view('payments.receipt', [
             'payment' => $payment,
+            'clinicBranding' => $clinicBranding,
             'isPdf' => false,
         ]);
     }

@@ -148,10 +148,37 @@
 </head>
 
 <body>
+    @php
+        $clinicBranding = $clinicBranding ?? [];
+        $clinicName = (string) ($clinicBranding['clinic_name'] ?? 'PHÒNG KHÁM NHA KHOA');
+        $clinicLogoUrl = (string) ($clinicBranding['logo_url'] ?? '');
+        $clinicAddress = (string) ($clinicBranding['address'] ?? '');
+        $clinicPhone = (string) ($clinicBranding['phone'] ?? '');
+        $clinicEmail = (string) ($clinicBranding['email'] ?? '');
+    @endphp
     <div class="header">
-        <h1>PHÒNG KHÁM NHA KHOA</h1>
-        <p>Địa chỉ: ...........................................</p>
-        <p>Điện thoại: ................. | Email: .................</p>
+        @if($clinicLogoUrl !== '')
+            <div style="margin-bottom: 6px;">
+                <img src="{{ $clinicLogoUrl }}" alt="{{ $clinicName }}" style="max-height: 44px; width: auto; margin: 0 auto;">
+            </div>
+        @endif
+        <h1>{{ mb_strtoupper($clinicName) }}</h1>
+        @if($clinicAddress !== '')
+            <p>Địa chỉ: {{ $clinicAddress }}</p>
+        @endif
+        @if($clinicPhone !== '' || $clinicEmail !== '')
+            <p>
+                @if($clinicPhone !== '')
+                    Điện thoại: {{ $clinicPhone }}
+                @endif
+                @if($clinicPhone !== '' && $clinicEmail !== '')
+                    &nbsp;|&nbsp;
+                @endif
+                @if($clinicEmail !== '')
+                    Email: {{ $clinicEmail }}
+                @endif
+            </p>
+        @endif
     </div>
 
     <div class="prescription-title">ĐƠN THUỐC</div>

@@ -108,7 +108,7 @@
                             <td class="is-center">
                                 <a href="{{ route('filament.admin.resources.plan-items.edit', [
                                     'record' => $item->id,
-                                    'return_url' => request()->fullUrl(),
+                                    'return_url' => $returnUrl,
                                 ]) }}"
                                    class="crm-table-icon-btn"
                                 >

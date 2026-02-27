@@ -4,10 +4,10 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -15,8 +15,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -38,12 +38,13 @@ class PrescriptionsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->schema([
                 Section::make('Thông tin đơn thuốc')
                     ->schema([
                         TextInput::make('prescription_code')
                             ->label('Mã đơn thuốc')
-                            ->default(fn() => Prescription::generatePrescriptionCode())
+                            ->default(fn () => Prescription::generatePrescriptionCode())
                             ->disabled()
                             ->dehydrated(true)
                             ->required(),
@@ -72,6 +73,7 @@ class PrescriptionsRelationManager extends RelationManager
                     ])->columns(2),
 
                 Section::make('Chi tiết thuốc')
+                    ->columnSpanFull()
                     ->schema([
                         Repeater::make('items')
                             ->label('')
@@ -80,24 +82,27 @@ class PrescriptionsRelationManager extends RelationManager
                                 TextInput::make('medication_name')
                                     ->label('Tên thuốc')
                                     ->required()
-                                    ->columnSpan(2),
+                                    ->columnSpan(4),
 
                                 TextInput::make('dosage')
                                     ->label('Liều dùng')
-                                    ->placeholder('VD: 500mg'),
+                                    ->placeholder('VD: 500mg')
+                                    ->columnSpan(2),
 
                                 TextInput::make('quantity')
                                     ->label('Số lượng')
                                     ->numeric()
                                     ->default(1)
                                     ->minValue(1)
-                                    ->required(),
+                                    ->required()
+                                    ->columnSpan(2),
 
                                 Select::make('unit')
                                     ->label('Đơn vị')
                                     ->options(PrescriptionItem::getUnits())
                                     ->default('viên')
-                                    ->searchable(),
+                                    ->searchable()
+                                    ->columnSpan(2),
 
                                 Select::make('instructions')
                                     ->label('Cách dùng')
@@ -106,17 +111,19 @@ class PrescriptionsRelationManager extends RelationManager
                                         PrescriptionItem::getCommonInstructions()
                                     ))
                                     ->searchable()
-                                    ->allowHtml(),
+                                    ->allowHtml()
+                                    ->columnSpan(2),
 
                                 TextInput::make('duration')
                                     ->label('Thời gian')
-                                    ->placeholder('VD: 7 ngày'),
+                                    ->placeholder('VD: 7 ngày')
+                                    ->columnSpan(2),
 
                                 TextInput::make('notes')
                                     ->label('Ghi chú')
-                                    ->columnSpan(2),
+                                    ->columnSpanFull(),
                             ])
-                            ->columns(4)
+                            ->columns(12)
                             ->defaultItems(1)
                             ->addActionLabel('Thêm thuốc')
                             ->reorderableWithButtons()
@@ -170,14 +177,17 @@ class PrescriptionsRelationManager extends RelationManager
                     ->label('Thêm đơn thuốc')
                     ->icon('heroicon-o-plus')
                     ->modalHeading('Tạo đơn thuốc')
+                    ->modalWidth('7xl')
                     ->modalSubmitActionLabel('Lưu đơn thuốc'),
             ])
             ->actions([
                 ViewAction::make()
                     ->label('')
+                    ->modalWidth('7xl')
                     ->tooltip('Xem chi tiết'),
                 EditAction::make()
                     ->label('')
+                    ->modalWidth('7xl')
                     ->tooltip('Sửa'),
                 DeleteAction::make()
                     ->label('')
@@ -187,7 +197,7 @@ class PrescriptionsRelationManager extends RelationManager
                     ->tooltip('In đơn thuốc')
                     ->icon('heroicon-o-printer')
                     ->color('info')
-                    ->url(fn(Prescription $record): string => route('prescriptions.print', $record))
+                    ->url(fn (Prescription $record): string => route('prescriptions.print', $record))
                     ->openUrlInNewTab(),
             ])
             ->emptyStateHeading('Chưa có đơn thuốc')

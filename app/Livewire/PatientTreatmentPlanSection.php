@@ -20,6 +20,8 @@ class PatientTreatmentPlanSection extends Component
 {
     public int $patientId;
 
+    public string $returnUrl = '';
+
     public bool $showPlanModal = false;
 
     public bool $showProcedureModal = false;
@@ -35,6 +37,7 @@ class PatientTreatmentPlanSection extends Component
     public function mount(int $patientId): void
     {
         $this->patientId = $patientId;
+        $this->returnUrl = request()->fullUrl();
     }
 
     public function openPlanModal(): void

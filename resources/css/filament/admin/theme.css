@@ -120,6 +120,9 @@
   --crm-payment-metric-positive: #22a45c;
   --crm-payment-metric-negative: #e15e66;
   --crm-payment-block-title-text: #3a3f4f;
+  --crm-brand-button-bg: #2f66f6;
+  --crm-brand-button-bg-hover: #2456dc;
+  --crm-brand-button-text: #ffffff;
   --crm-radius: 10px;
   --crm-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   --crm-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.04);
@@ -186,12 +189,30 @@ h4 {
   padding: 8px 14px;
 }
 
-.fi-btn.fi-btn-color-primary {
-  background: var(--crm-primary);
+.fi-btn:not(.fi-outlined).fi-color.fi-color-primary,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-info,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-success,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-warning {
+  --bg: var(--crm-brand-button-bg);
+  --hover-bg: var(--crm-brand-button-bg-hover);
+  --dark-bg: var(--crm-brand-button-bg);
+  --dark-hover-bg: var(--crm-brand-button-bg-hover);
+  --text: var(--crm-brand-button-text);
+  --hover-text: var(--crm-brand-button-text);
+  --dark-text: var(--crm-brand-button-text);
+  --dark-hover-text: var(--crm-brand-button-text);
+  color: var(--crm-brand-button-text) !important;
 }
 
-.fi-btn.fi-btn-color-primary:hover {
-  background: var(--crm-primary-600);
+.fi-btn:not(.fi-outlined).fi-color.fi-color-primary .fi-icon,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-info .fi-icon,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-success .fi-icon,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-warning .fi-icon,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-primary > span,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-info > span,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-success > span,
+.fi-btn:not(.fi-outlined).fi-color.fi-color-warning > span {
+  color: var(--crm-brand-button-text) !important;
 }
 
 .fi-input,
@@ -257,7 +278,7 @@ select {
   color: var(--crm-muted);
 }
 
-a {
+a:not(.fi-btn):not(.fi-icon-btn) {
   color: var(--crm-primary);
 }
 
@@ -1034,39 +1055,39 @@ a {
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-success.fi-btn {
-  background: #14d970;
-  color: #035c34;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-success.fi-btn:hover {
-  background: #06c863;
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-warning.fi-btn {
-  background: #f8bd00;
-  color: #7a4c00;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-warning.fi-btn:hover {
-  background: #ebaf00;
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-info.fi-btn {
-  background: #2f66f6;
-  color: #e9efff;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-info.fi-btn:hover {
-  background: #2456dc;
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-primary.fi-btn {
-  background: #7c3ef0;
-  color: #f7f1ff;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-primary.fi-btn:hover {
-  background: #6f33df;
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .fi-page.fi-resource-patients.fi-resource-view-record-page .fi-header-actions-ctn .fi-color-danger.fi-btn {
@@ -1372,12 +1393,12 @@ a {
 }
 
 .crm-rel-tab .fi-ta-header .fi-ta-actions .fi-color-primary.fi-btn {
-  background: var(--crm-primary);
-  color: var(--crm-text-inverse);
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .crm-rel-tab .fi-ta-header .fi-ta-actions .fi-color-primary.fi-btn:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-rel-tab .fi-ta-empty-state {
@@ -1512,12 +1533,12 @@ a {
 }
 
 .crm-btn-primary {
-  background: var(--crm-primary);
-  color: #fff;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .crm-btn-primary:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-btn-outline {
@@ -1593,13 +1614,13 @@ a {
 }
 
 .crm-dentition-option.is-active {
-  background: var(--crm-primary);
-  color: #fff;
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
   box-shadow: 0 1px 2px rgba(124, 108, 246, 0.3);
 }
 
 .crm-dentition-option.is-active:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-tooth-toolbar-actions {
@@ -2100,12 +2121,12 @@ a {
 }
 
 .crm-care-tab .fi-ta-header .fi-color-primary.fi-btn {
-  background: var(--crm-primary);
-  color: var(--crm-text-inverse);
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .crm-care-tab .fi-ta-header .fi-color-primary.fi-btn:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-care-tab .fi-ta-header .fi-color-warning.fi-btn {
@@ -2653,12 +2674,12 @@ a {
 }
 
 .crm-payment-summary-actions .crm-btn.crm-btn-primary {
-  background: var(--crm-primary);
-  color: var(--crm-text-inverse);
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .crm-payment-summary-actions .crm-btn.crm-btn-primary:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-payment-summary-actions .crm-btn.crm-btn-outline {
@@ -2804,12 +2825,12 @@ a {
 }
 
 .crm-payment-tab .fi-ta-header .fi-color-primary.fi-btn {
-  background: var(--crm-primary);
-  color: var(--crm-text-inverse);
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text);
 }
 
 .crm-payment-tab .fi-ta-header .fi-color-primary.fi-btn:hover {
-  background: var(--crm-primary-600);
+  background: var(--crm-brand-button-bg-hover);
 }
 
 .crm-payment-tab .fi-ta-header .fi-color-warning.fi-btn {

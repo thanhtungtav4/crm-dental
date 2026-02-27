@@ -2,6 +2,7 @@
 
 use App\Models\AuditLog;
 use App\Models\Branch;
+use App\Models\ClinicSetting;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Patient;
@@ -195,4 +196,35 @@ it('keeps prescription print branch isolation stable after patient transfer', fu
     $this->actingAs($fixture['manager_a']);
     $this->get(route('prescriptions.print', ['prescription' => $prescription, 'pdf' => 0]))
         ->assertSuccessful();
+});
+
+it('renders clinic branding metadata in printable templates', function () {
+    $fixture = makePrintFixture();
+
+    ClinicSetting::setValue('branding.clinic_name', 'Nha Khoa Production', ['value_type' => 'text']);
+    ClinicSetting::setValue('branding.logo_url', 'https://example.com/clinic-logo.png', ['value_type' => 'text']);
+    ClinicSetting::setValue('branding.address', '123 Tran Hung Dao, HCM', ['value_type' => 'text']);
+    ClinicSetting::setValue('branding.phone', '0909000999', ['value_type' => 'text']);
+    ClinicSetting::setValue('branding.email', 'clinic@example.com', ['value_type' => 'text']);
+
+    $this->actingAs($fixture['manager_a']);
+
+    $this->get(route('invoices.print', ['invoice' => $fixture['invoice'], 'pdf' => 0]))
+        ->assertSuccessful()
+        ->assertSee('NHA KHOA PRODUCTION')
+        ->assertSee('123 Tran Hung Dao, HCM')
+        ->assertSee('0909000999')
+        ->assertSee('clinic@example.com')
+        ->assertSee('https://example.com/clinic-logo.png', false);
+
+    $this->get(route('payments.print', ['payment' => $fixture['payment'], 'pdf' => 0]))
+        ->assertSuccessful()
+        ->assertSee('NHA KHOA PRODUCTION')
+        ->assertSee('https://example.com/clinic-logo.png', false);
+
+    $this->get(route('prescriptions.print', ['prescription' => $fixture['prescription'], 'pdf' => 0]))
+        ->assertSuccessful()
+        ->assertSee('NHA KHOA PRODUCTION')
+        ->assertSee('123 Tran Hung Dao, HCM')
+        ->assertSee('https://example.com/clinic-logo.png', false);
 });

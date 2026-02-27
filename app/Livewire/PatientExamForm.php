@@ -707,14 +707,6 @@ class PatientExamForm extends Component
 
     protected function normalizeIndicationKey(string $key): string
     {
-        $normalized = strtolower(trim($key));
-
-        return match ($normalized) {
-            'anh_ext', 'image_ext', 'image-ext' => 'ext',
-            'anh_int', 'image_int', 'image-int' => 'int',
-            '3d_5x5', '3d-5x5' => '3d5x5',
-            'can_chop', 'canchop' => 'canchiep',
-            default => $normalized,
-        };
+        return ClinicRuntimeSettings::normalizeExamIndicationKey($key);
     }
 }

@@ -18,9 +18,38 @@
     </style>
 </head>
 <body>
+    @php
+        $clinicBranding = $clinicBranding ?? [];
+        $clinicName = (string) ($clinicBranding['clinic_name'] ?? 'PHÒNG KHÁM NHA KHOA');
+        $clinicLogoUrl = (string) ($clinicBranding['logo_url'] ?? '');
+        $clinicAddress = (string) ($clinicBranding['address'] ?? '');
+        $clinicPhone = (string) ($clinicBranding['phone'] ?? '');
+        $clinicEmail = (string) ($clinicBranding['email'] ?? '');
+    @endphp
     <div class="header">
         <div>
-            <h1>PHÒNG KHÁM NHA KHOA</h1>
+            @if($clinicLogoUrl !== '')
+                <div style="margin-bottom: 6px;">
+                    <img src="{{ $clinicLogoUrl }}" alt="{{ $clinicName }}" style="max-height: 44px; width: auto;">
+                </div>
+            @endif
+            <h1>{{ mb_strtoupper($clinicName) }}</h1>
+            @if($clinicAddress !== '')
+                <p class="muted">{{ $clinicAddress }}</p>
+            @endif
+            @if($clinicPhone !== '' || $clinicEmail !== '')
+                <p class="muted">
+                    @if($clinicPhone !== '')
+                        {{ $clinicPhone }}
+                    @endif
+                    @if($clinicPhone !== '' && $clinicEmail !== '')
+                        &nbsp;|&nbsp;
+                    @endif
+                    @if($clinicEmail !== '')
+                        {{ $clinicEmail }}
+                    @endif
+                </p>
+            @endif
             <p class="muted">Hóa đơn điều trị</p>
         </div>
         <div class="right">

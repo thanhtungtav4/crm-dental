@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Prescription;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\Response;
 
 class PrescriptionController extends Controller
@@ -11,6 +12,7 @@ class PrescriptionController extends Controller
     public function print(Prescription $prescription): Response
     {
         $prescription->load(['patient', 'doctor', 'items']);
+        $clinicBranding = ClinicRuntimeSettings::brandingProfile();
 
         $isPdf = request()->boolean('pdf', true);
 
@@ -31,6 +33,7 @@ class PrescriptionController extends Controller
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && $isPdf) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('prescriptions.print', [
                 'prescription' => $prescription,
+                'clinicBranding' => $clinicBranding,
                 'isPdf' => true,
             ]);
 
@@ -43,6 +46,7 @@ class PrescriptionController extends Controller
         return response()
             ->view('prescriptions.print', [
                 'prescription' => $prescription,
+                'clinicBranding' => $clinicBranding,
                 'isPdf' => false,
             ]);
     }

@@ -7,6 +7,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EditPlanItem extends EditRecord
 {
@@ -49,18 +52,49 @@ class EditPlanItem extends EditRecord
             return null;
         }
 
-        $returnUrl = trim($returnUrl);
+        $candidateUrl = trim($returnUrl);
 
-        if (str_starts_with($returnUrl, '/')) {
-            return url($returnUrl);
+        if (str_starts_with($candidateUrl, '/')) {
+            $candidateUrl = url($candidateUrl);
+        } else {
+            $appBaseUrl = rtrim(url('/'), '/');
+
+            if (! ($candidateUrl === $appBaseUrl || str_starts_with($candidateUrl, $appBaseUrl.'/'))) {
+                return null;
+            }
         }
 
-        $appBaseUrl = rtrim(url('/'), '/');
-
-        if ($returnUrl === $appBaseUrl || str_starts_with($returnUrl, $appBaseUrl.'/')) {
-            return $returnUrl;
+        $parsedUrl = parse_url($candidateUrl);
+        if ($parsedUrl === false) {
+            return null;
         }
 
-        return null;
+        $path = '/'.ltrim((string) ($parsedUrl['path'] ?? '/'), '/');
+        if ($this->isDisallowedReturnPath($path)) {
+            return null;
+        }
+
+        $pathWithQuery = $path.(isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '');
+        if (! $this->isGetAccessiblePath($pathWithQuery)) {
+            return null;
+        }
+
+        return $candidateUrl;
+    }
+
+    private function isDisallowedReturnPath(string $path): bool
+    {
+        return $path === '/livewire/update' || str_starts_with($path, '/livewire/');
+    }
+
+    private function isGetAccessiblePath(string $pathWithQuery): bool
+    {
+        try {
+            app('router')->getRoutes()->match(Request::create($pathWithQuery, Request::METHOD_GET));
+
+            return true;
+        } catch (MethodNotAllowedHttpException|NotFoundHttpException) {
+            return false;
+        }
     }
 }

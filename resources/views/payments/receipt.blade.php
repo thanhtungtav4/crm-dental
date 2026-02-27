@@ -15,7 +15,37 @@
     </style>
 </head>
 <body>
+    @php
+        $clinicBranding = $clinicBranding ?? [];
+        $clinicName = (string) ($clinicBranding['clinic_name'] ?? 'PHÒNG KHÁM NHA KHOA');
+        $clinicLogoUrl = (string) ($clinicBranding['logo_url'] ?? '');
+        $clinicAddress = (string) ($clinicBranding['address'] ?? '');
+        $clinicPhone = (string) ($clinicBranding['phone'] ?? '');
+        $clinicEmail = (string) ($clinicBranding['email'] ?? '');
+    @endphp
     <div class="header">
+        @if($clinicLogoUrl !== '')
+            <div style="margin-bottom: 8px;">
+                <img src="{{ $clinicLogoUrl }}" alt="{{ $clinicName }}" style="max-height: 44px; width: auto; margin: 0 auto;">
+            </div>
+        @endif
+        <h2 style="margin-bottom: 4px;">{{ mb_strtoupper($clinicName) }}</h2>
+        @if($clinicAddress !== '')
+            <p class="label" style="margin-bottom: 2px;">{{ $clinicAddress }}</p>
+        @endif
+        @if($clinicPhone !== '' || $clinicEmail !== '')
+            <p class="label" style="margin-bottom: 4px;">
+                @if($clinicPhone !== '')
+                    {{ $clinicPhone }}
+                @endif
+                @if($clinicPhone !== '' && $clinicEmail !== '')
+                    &nbsp;|&nbsp;
+                @endif
+                @if($clinicEmail !== '')
+                    {{ $clinicEmail }}
+                @endif
+            </p>
+        @endif
         <h1>{{ $payment->direction === 'refund' ? 'PHIẾU HOÀN TIỀN' : 'PHIẾU THU TIỀN' }}</h1>
         <p>{{ now()->format('d/m/Y H:i') }}</p>
     </div>

@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
-use Filament\Actions\CreateAction;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAppointments extends ListRecords
@@ -14,10 +14,12 @@ class ListAppointments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->color('info'),
             Action::make('calendar')
                 ->label('Xem lịch')
                 ->icon('heroicon-o-calendar')
+                ->color('info')
                 ->url(AppointmentResource::getUrl('calendar')),
         ];
     }
