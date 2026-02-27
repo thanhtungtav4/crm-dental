@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Branch extends Model
 {
@@ -71,22 +72,24 @@ class Branch extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (self $branch) {
-            if (! empty($branch->code)) {
+        static::saving(function (self $branch): void {
+            if (filled($branch->code)) {
                 return;
             }
 
-            // Generate unique code: BR-YYYYMMDD-XXXXXX
-            $date = now()->format('Ymd');
-            $attempts = 0;
-            do {
-                $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
-                $code = "BR-{$date}-{$suffix}";
-                $exists = self::where('code', $code)->withTrashed()->exists();
-                $attempts++;
-            } while ($exists && $attempts < 5);
-
-            $branch->code = $code;
+            $branch->code = self::generateUniqueCode();
         });
+    }
+
+    protected static function generateUniqueCode(): string
+    {
+        $date = now()->format('Ymd');
+
+        do {
+            $suffix = Str::upper(Str::random(6));
+            $code = "BR-{$date}-{$suffix}";
+        } while (self::query()->withTrashed()->where('code', $code)->exists());
+
+        return $code;
     }
 }

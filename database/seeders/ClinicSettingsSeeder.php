@@ -49,7 +49,7 @@ class ClinicSettingsSeeder extends Seeder
             // Web lead API
             ['group' => 'web_lead', 'key' => 'web_lead.enabled', 'label' => 'Bật API nhận lead từ web', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 460],
             ['group' => 'web_lead', 'key' => 'web_lead.api_token', 'label' => 'Web lead API token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 470],
-            ['group' => 'web_lead', 'key' => 'web_lead.default_branch_id', 'label' => 'Chi nhánh mặc định cho web lead', 'value' => 0, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 480],
+            ['group' => 'web_lead', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định cho web lead', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 480],
             ['group' => 'web_lead', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request web lead / phút', 'value' => 60, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 490],
 
             // Care runtime settings

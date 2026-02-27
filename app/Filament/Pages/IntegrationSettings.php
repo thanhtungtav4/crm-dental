@@ -116,7 +116,7 @@ class IntegrationSettings extends Page
                 'fields' => [
                     ['state' => 'web_lead_enabled', 'key' => 'web_lead.enabled', 'label' => 'Bật API nhận lead từ web', 'type' => 'boolean', 'default' => config('services.web_lead.enabled', false), 'sort_order' => 460],
                     ['state' => 'web_lead_api_token', 'key' => 'web_lead.api_token', 'label' => 'API Token', 'type' => 'text', 'default' => config('services.web_lead.token', ''), 'is_secret' => true, 'sort_order' => 470],
-                    ['state' => 'web_lead_default_branch_id', 'key' => 'web_lead.default_branch_id', 'label' => 'Chi nhánh mặc định khi web không gửi branch_code', 'type' => 'integer', 'default' => null, 'sort_order' => 480],
+                    ['state' => 'web_lead_default_branch_code', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định khi web không gửi branch_code', 'type' => 'text', 'default' => '', 'sort_order' => 480],
                     ['state' => 'web_lead_rate_limit_per_minute', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request/phút', 'type' => 'integer', 'default' => config('services.web_lead.rate_limit_per_minute', 60), 'sort_order' => 490],
                 ],
             ],
@@ -345,8 +345,14 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
-                if (($field['key'] ?? null) === 'web_lead.default_branch_id') {
-                    $rules[$attribute] = ['nullable', 'integer', 'exists:branches,id'];
+                if (($field['key'] ?? null) === 'web_lead.default_branch_code') {
+                    $rules[$attribute] = [
+                        'nullable',
+                        'string',
+                        'max:64',
+                        Rule::exists('branches', 'code')
+                            ->where(fn ($query) => $query->where('active', true)->whereNull('deleted_at')),
+                    ];
 
                     continue;
                 }

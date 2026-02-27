@@ -31,7 +31,7 @@ it('creates a new lead from web payload and stores ingestion log', function (): 
     configureWebLeadApi(
         enabled: true,
         token: 'web-token',
-        defaultBranchId: $branch->id,
+        defaultBranchCode: $branch->code,
         rateLimit: 120,
     );
 
@@ -134,8 +134,75 @@ it('merges lead by normalized phone when request id changes', function (): void 
         ->toBe(1);
 });
 
-function configureWebLeadApi(bool $enabled, string $token, ?int $defaultBranchId = null, int $rateLimit = 60): void
-{
+it('uses default branch code when payload does not include branch_code', function (): void {
+    $branch = Branch::factory()->create([
+        'code' => 'BR-20260119-1DCADA',
+        'active' => true,
+    ]);
+
+    configureWebLeadApi(
+        enabled: true,
+        token: 'web-token',
+        defaultBranchCode: $branch->code,
+        rateLimit: 120,
+    );
+
+    $response = $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'No Branch Payload',
+        'phone' => '0934567890',
+    ], [
+        'Authorization' => 'Bearer web-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.branch_id', $branch->id);
+
+    $customer = Customer::query()->latest('id')->firstOrFail();
+
+    expect((int) $customer->branch_id)->toBe($branch->id);
+});
+
+it('does not fallback to legacy default_branch_id when default_branch_code is empty', function (): void {
+    $branch = Branch::factory()->create([
+        'code' => 'BR-LEGACY-ID',
+        'active' => true,
+    ]);
+
+    configureWebLeadApi(
+        enabled: true,
+        token: 'web-token',
+        defaultBranchCode: '',
+        rateLimit: 120,
+    );
+
+    ClinicSetting::setValue('web_lead.default_branch_id', $branch->id, [
+        'group' => 'web_lead',
+        'value_type' => 'integer',
+    ]);
+
+    $response = $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Legacy Fallback Disabled',
+        'phone' => '0934567891',
+    ], [
+        'Authorization' => 'Bearer web-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.branch_id', null);
+
+    $customer = Customer::query()->latest('id')->firstOrFail();
+
+    expect($customer->branch_id)->toBeNull();
+});
+
+function configureWebLeadApi(
+    bool $enabled,
+    string $token,
+    ?string $defaultBranchCode = null,
+    int $rateLimit = 60,
+): void {
     ClinicSetting::setValue('web_lead.enabled', $enabled, [
         'group' => 'web_lead',
         'value_type' => 'boolean',
@@ -147,9 +214,9 @@ function configureWebLeadApi(bool $enabled, string $token, ?int $defaultBranchId
         'is_secret' => true,
     ]);
 
-    ClinicSetting::setValue('web_lead.default_branch_id', $defaultBranchId ?? 0, [
+    ClinicSetting::setValue('web_lead.default_branch_code', $defaultBranchCode ?? '', [
         'group' => 'web_lead',
-        'value_type' => 'integer',
+        'value_type' => 'text',
     ]);
 
     ClinicSetting::setValue('web_lead.rate_limit_per_minute', $rateLimit, [

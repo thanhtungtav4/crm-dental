@@ -181,13 +181,13 @@ class WebLeadIngestionService
                 ->first();
         }
 
-        $defaultBranchId = (int) ClinicSetting::getValue('web_lead.default_branch_id', 0);
-        if ($defaultBranchId <= 0) {
+        $defaultBranchCode = trim((string) ClinicSetting::getValue('web_lead.default_branch_code', ''));
+        if ($defaultBranchCode === '') {
             return null;
         }
 
         return Branch::query()
-            ->whereKey($defaultBranchId)
+            ->where('code', $defaultBranchCode)
             ->where('active', true)
             ->first();
     }

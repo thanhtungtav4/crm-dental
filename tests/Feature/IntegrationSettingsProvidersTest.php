@@ -41,6 +41,10 @@ it('shows web lead api integration guide in settings page', function () {
         ->toContain('Payload tối thiểu')
         ->toContain('curl -X POST')
         ->toContain('<x-filament::input.wrapper>')
+        ->toContain('showWebLeadToken')
+        ->toContain('x-ref="webLeadApiTokenInput"')
+        ->toContain("x-bind:type=\"showWebLeadToken ? 'text' : 'password'\"")
+        ->toContain('x-on:click="navigator.clipboard?.writeText($refs.webLeadApiTokenInput?.value ?? \'\')"')
         ->toContain('<x-filament::input.select wire:model.blur="{{ $statePath }}">');
 });
 
