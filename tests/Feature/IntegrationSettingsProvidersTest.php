@@ -1,6 +1,8 @@
 <?php
 
 use App\Filament\Pages\IntegrationSettings;
+use Illuminate\Support\Facades\File;
+use Livewire\Livewire;
 
 it('does not expose vnpay provider or fields in integration settings', function () {
     $page = app(IntegrationSettings::class);
@@ -25,4 +27,42 @@ it('loads integration settings state without colliding with livewire hydrate hoo
     expect(method_exists($page, 'hydrateSettings'))->toBeFalse()
         ->and($page->settings)->toBeArray()
         ->and($page->settings)->not->toBeEmpty();
+});
+
+it('shows web lead api integration guide in settings page', function () {
+    $blade = File::get(resource_path('views/filament/pages/integration-settings.blade.php'));
+
+    expect($blade)
+        ->toContain('Hướng dẫn tích hợp Web Lead API')
+        ->toContain('wire:click="generateWebLeadApiToken"')
+        ->toContain('Tạo API Token')
+        ->toContain("route('api.v1.web-leads.store')")
+        ->toContain('X-Idempotency-Key')
+        ->toContain('Payload tối thiểu')
+        ->toContain('curl -X POST')
+        ->toContain('<x-filament::input.wrapper>')
+        ->toContain('<x-filament::input.select wire:model.blur="{{ $statePath }}">');
+});
+
+it('renders concrete input html for integration text fields', function () {
+    $html = Livewire::test(IntegrationSettings::class)->html();
+
+    expect($html)
+        ->not->toContain('<x-filament::input')
+        ->toContain('class="fi-input"')
+        ->toContain('wire:model.blur="settings.google_calendar_client_id"')
+        ->toContain('wire:model.blur="settings.emr_provider"');
+});
+
+it('can autogenerate web lead api token in form state', function () {
+    $component = Livewire::test(IntegrationSettings::class)
+        ->set('settings.web_lead_api_token', '')
+        ->call('generateWebLeadApiToken');
+
+    $token = (string) $component->get('settings.web_lead_api_token');
+
+    expect($token)
+        ->toStartWith('wla_')
+        ->and(strlen($token))
+        ->toBe(52);
 });

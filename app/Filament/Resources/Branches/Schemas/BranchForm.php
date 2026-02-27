@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Branches\Schemas;
 
 use Filament\Forms;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class BranchForm
@@ -52,7 +53,7 @@ class BranchForm
                     ->inline(false)
                     ->columnSpanFull(),
 
-                Forms\Components\Section::make('Chính sách overbooking')
+                Section::make('Chính sách overbooking')
                     ->relationship('overbookingPolicy')
                     ->schema([
                         Forms\Components\Toggle::make('is_enabled')

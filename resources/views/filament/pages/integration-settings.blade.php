@@ -30,14 +30,13 @@
                                 <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                                     {{ $field['label'] }}
                                 </label>
-                                <select
-                                    wire:model.blur="{{ $statePath }}"
-                                    class="block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900"
-                                >
-                                    @foreach(($field['options'] ?? []) as $optionValue => $optionLabel)
-                                        <option value="{{ $optionValue }}">{{ $optionLabel }}</option>
-                                    @endforeach
-                                </select>
+                                <x-filament::input.wrapper>
+                                    <x-filament::input.select wire:model.blur="{{ $statePath }}">
+                                        @foreach(($field['options'] ?? []) as $optionValue => $optionLabel)
+                                            <option value="{{ $optionValue }}">{{ $optionLabel }}</option>
+                                        @endforeach
+                                    </x-filament::input.select>
+                                </x-filament::input.wrapper>
                                 @error($statePath)
                                     <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                                 @enderror
@@ -47,12 +46,14 @@
                                 <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                                     {{ $field['label'] }}
                                 </label>
-                                <input
-                                    type="{{ $inputType }}"
-                                    wire:model.blur="{{ $statePath }}"
-                                    @if(($field['type'] ?? null) === 'integer') min="0" step="1" @endif
-                                    class="block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900"
-                                />
+                                <x-filament::input.wrapper>
+                                    <input
+                                        type="{{ $inputType }}"
+                                        wire:model.blur="{{ $statePath }}"
+                                        class="fi-input"
+                                        @if(($field['type'] ?? null) === 'integer') min="0" step="1" @endif
+                                    />
+                                </x-filament::input.wrapper>
                                 @error($statePath)
                                     <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                                 @enderror
@@ -69,6 +70,37 @@
                         <x-filament::button type="button" color="info" icon="heroicon-o-arrow-top-right-on-square" wire:click="openEmrConfigUrl">
                             Mở config EMR
                         </x-filament::button>
+                    </div>
+                @endif
+
+                @if(($provider['group'] ?? null) === 'web_lead')
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-key" wire:click="generateWebLeadApiToken">
+                            Tạo API Token
+                        </x-filament::button>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                        <div class="mb-2 text-sm font-semibold">Hướng dẫn tích hợp Web Lead API</div>
+                        <ul class="list-disc space-y-1 pl-5 text-xs md:text-sm">
+                            <li>Endpoint: <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">{{ route('api.v1.web-leads.store') }}</code></li>
+                            <li>Method: <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">POST</code></li>
+                            <li>Headers bắt buộc: <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">Authorization: Bearer &lt;TOKEN&gt;</code>, <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">X-Idempotency-Key: &lt;UNIQUE_KEY&gt;</code></li>
+                            <li>Payload tối thiểu: <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">full_name</code>, <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">phone</code>. Tùy chọn: <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">branch_code</code>, <code class="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-gray-800">note</code>.</li>
+                        </ul>
+
+                        <div class="mt-3 overflow-x-auto rounded-md border border-gray-200 bg-white p-3 text-[11px] leading-5 text-gray-800 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200">
+                            <pre class="min-w-[620px]"><code>curl -X POST '{{ route('api.v1.web-leads.store') }}' \
+  -H 'Authorization: Bearer &lt;TOKEN&gt;' \
+  -H 'X-Idempotency-Key: web-{{ now()->format('YmdHis') }}-001' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "full_name": "Nguyen Van A",
+    "phone": "0901234567",
+    "branch_code": "BR-WEB-HCM",
+    "note": "Form tu website landing page"
+  }'</code></pre>
+                        </div>
                     </div>
                 @endif
             </x-filament::section>

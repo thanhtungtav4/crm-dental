@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use UnitEnum;
 
@@ -445,6 +446,17 @@ class IntegrationSettings extends Page
         }
 
         $this->redirect((string) $result['url'], navigate: false);
+    }
+
+    public function generateWebLeadApiToken(): void
+    {
+        $this->settings['web_lead_api_token'] = 'wla_'.Str::random(48);
+
+        Notification::make()
+            ->title('Đã tạo API token mới')
+            ->body('Token mới đã được điền vào form. Nhấn "Lưu cài đặt tích hợp" để áp dụng.')
+            ->success()
+            ->send();
     }
 
     protected function loadSettingsState(): void
