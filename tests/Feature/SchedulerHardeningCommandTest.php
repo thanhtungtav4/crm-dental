@@ -131,6 +131,7 @@ it('schedules critical automations via hardened wrapper with single-node lock', 
         'growth:run-reactivation-flow',
         'reports:check-snapshot-sla',
         'emr:sync-events',
+        'emr:reconcile-integrity',
         'appointments:run-no-show-recovery',
         'invoices:sync-overdue-status',
     ];
