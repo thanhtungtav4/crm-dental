@@ -15,8 +15,8 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 
 | Ticket | Priority | Status | Scope | Acceptance (short) | Git Ref |
 |---|---|---|---|---|---|
-| EMR-00 | P0 | Done | Backlog and execution governance | Có backlog riêng, có status theo ticket, có mapping commit | pending |
-| EMR-01 | P0 | Todo | Branch isolation for PlanItem/TreatmentSession | Policy + resource query chặn cross-branch, có test pass | pending |
+| EMR-00 | P0 | Done | Backlog and execution governance | Có backlog riêng, có status theo ticket, có mapping commit | 2b41a09 |
+| EMR-01 | P0 | Done | Branch isolation for PlanItem/TreatmentSession | Policy + resource query chặn cross-branch, test `EmrBranchIsolationPlanItemTreatmentSessionTest` pass | pending |
 | EMR-02 | P0 | Todo | Schedule `emr:sync-events` via hardened wrapper | Có event schedule lock-safe, test scheduler pass | pending |
 | EMR-03 | P0 | Todo | EMR action-level permission matrix | Có permission constants + seeder + authorize points chính | pending |
 | EMR-04 | P1 | Todo | Encounter aggregate model | Clinical records gắn encounter, lifecycle chuẩn | pending |

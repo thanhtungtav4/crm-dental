@@ -12,11 +12,11 @@ class TreatmentSession extends Model
 
     protected $fillable = [
         'treatment_plan_id',
-    'plan_item_id',
+        'plan_item_id',
         'doctor_id',
         'assistant_id',
-    'start_at',
-    'end_at',
+        'start_at',
+        'end_at',
         'performed_at',
         'diagnosis',
         'procedure',
@@ -28,10 +28,10 @@ class TreatmentSession extends Model
     ];
 
     protected $casts = [
-    'images' => 'array',
-    'start_at' => 'datetime',
-    'end_at' => 'datetime',
-    'performed_at' => 'datetime',
+        'images' => 'array',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'performed_at' => 'datetime',
     ];
 
     public function treatmentPlan()
@@ -62,5 +62,13 @@ class TreatmentSession extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->treatmentPlan?->branch_id
+            ?? $this->planItem?->resolveBranchId();
+
+        return $branchId !== null ? (int) $branchId : null;
     }
 }

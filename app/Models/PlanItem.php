@@ -233,6 +233,14 @@ class PlanItem extends Model
         return $this->hasMany(Consent::class);
     }
 
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->treatmentPlan?->branch_id
+            ?? $this->treatmentPlan?->patient?->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
+    }
+
     // Helper Methods
 
     /**

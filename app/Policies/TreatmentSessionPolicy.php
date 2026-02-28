@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\TreatmentSession;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentSessionPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:TreatmentSession');
+        return $authUser->can('ViewAny:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function view(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('View:TreatmentSession');
+        return $authUser->can('View:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:TreatmentSession');
+        return $authUser->can('Create:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function update(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Update:TreatmentSession');
+        return $authUser->can('Update:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function delete(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function delete(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Delete:TreatmentSession');
+        return $authUser->can('Delete:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function restore(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function restore(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Restore:TreatmentSession');
+        return $authUser->can('Restore:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function forceDelete(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function forceDelete(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('ForceDelete:TreatmentSession');
+        return $authUser->can('ForceDelete:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentSession');
+        return $authUser->can('ForceDeleteAny:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentSession');
+        return $authUser->can('RestoreAny:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, TreatmentSession $treatmentSession): bool
+    public function replicate(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Replicate:TreatmentSession');
+        return $authUser->can('Replicate:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:TreatmentSession');
+        return $authUser->can('Reorder:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessSession(User $authUser, TreatmentSession $treatmentSession): bool
+    {
+        return $authUser->canAccessBranch($treatmentSession->resolveBranchId());
+    }
 }

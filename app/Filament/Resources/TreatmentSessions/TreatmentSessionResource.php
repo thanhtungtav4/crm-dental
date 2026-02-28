@@ -8,11 +8,13 @@ use App\Filament\Resources\TreatmentSessions\Pages\ListTreatmentSessions;
 use App\Filament\Resources\TreatmentSessions\Schemas\TreatmentSessionForm;
 use App\Filament\Resources\TreatmentSessions\Tables\TreatmentSessionsTable;
 use App\Models\TreatmentSession;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TreatmentSessionResource extends Resource
 {
@@ -29,7 +31,7 @@ class TreatmentSessionResource extends Resource
     {
         return 'Hoạt động hàng ngày';
     }
-    
+
     protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema
@@ -40,6 +42,26 @@ class TreatmentSessionResource extends Resource
     public static function table(Table $table): Table
     {
         return TreatmentSessionsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('treatmentPlan', function (Builder $treatmentPlanQuery) use ($branchIds): void {
+            $treatmentPlanQuery->whereIn('branch_id', $branchIds);
+        });
     }
 
     public static function getRelations(): array
@@ -56,5 +78,10 @@ class TreatmentSessionResource extends Resource
             'create' => CreateTreatmentSession::route('/create'),
             'edit' => EditTreatmentSession::route('/{record}/edit'),
         ];
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 }
