@@ -24,7 +24,7 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-06 | P1 | Done | EMR dedicated audit log | `emr_audit_logs` immutable + query được theo patient/encounter + hook sync/order/result | 9efc44d |
 | EMR-07 | P1 | Done | PHI encryption rollout | Cast encrypted + migration/backfill an toàn cho PHI text fields EMR | 43f6855 |
 | EMR-08 | P1 | Done | Clinical versioning | Revision history + optimistic lock + amend flow cho clinical note | 3dc4b31 |
-| EMR-09 | P2 | Todo | Internal EMR API v1 | Idempotent mutation endpoints + authz + tests | pending |
+| EMR-09 | P2 | Done | Internal EMR API v1 | Idempotent mutation endpoint amend clinical note + authz + tests | a52c936 |
 | EMR-10 | P2 | Todo | Reconciliation & observability | Report reconcile + alerts + runbook | pending |
 
 ## Execution Rules
