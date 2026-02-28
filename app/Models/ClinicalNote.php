@@ -31,6 +31,11 @@ class ClinicalNote extends Model
     protected $casts = [
         'visit_episode_id' => 'integer',
         'date' => 'date',
+        'examination_note' => 'encrypted',
+        'general_exam_notes' => 'encrypted',
+        'recommendation_notes' => 'encrypted',
+        'treatment_plan_note' => 'encrypted',
+        'other_diagnosis' => 'encrypted',
         'indications' => 'array',
         'indication_images' => 'array',
         'diagnoses' => 'array',

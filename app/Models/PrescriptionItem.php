@@ -23,6 +23,7 @@ class PrescriptionItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
+        'notes' => 'encrypted',
     ];
 
     // Relationships
@@ -73,7 +74,7 @@ class PrescriptionItem extends Model
         }
 
         if ($this->quantity && $this->unit) {
-            $parts[] = $this->quantity . ' ' . $this->unit;
+            $parts[] = $this->quantity.' '.$this->unit;
         }
 
         if ($this->instructions) {
@@ -81,7 +82,7 @@ class PrescriptionItem extends Model
         }
 
         if ($this->duration) {
-            $parts[] = '(' . $this->duration . ')';
+            $parts[] = '('.$this->duration.')';
         }
 
         return implode(' - ', $parts);

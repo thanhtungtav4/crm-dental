@@ -30,6 +30,7 @@ class PatientMedicalRecord extends Model
         'chronic_diseases' => 'array',
         'current_medications' => 'array',
         'insurance_expiry_date' => 'date',
+        'additional_notes' => 'encrypted',
     ];
 
     protected static function booted(): void

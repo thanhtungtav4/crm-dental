@@ -50,6 +50,7 @@ class ClinicalOrder extends Model
             'requested_at' => 'datetime',
             'completed_at' => 'datetime',
             'payload' => 'array',
+            'notes' => 'encrypted',
         ];
     }
 

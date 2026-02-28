@@ -50,6 +50,8 @@ class ClinicalResult extends Model
             'resulted_at' => 'datetime',
             'verified_at' => 'datetime',
             'payload' => 'array',
+            'interpretation' => 'encrypted',
+            'notes' => 'encrypted',
         ];
     }
 

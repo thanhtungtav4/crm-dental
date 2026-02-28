@@ -45,6 +45,7 @@ class Patient extends Model
     protected $casts = [
         'birthday' => 'date',
         'last_verified_at' => 'datetime',
+        'medical_history' => 'encrypted',
     ];
 
     public function customer()

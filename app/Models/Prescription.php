@@ -29,6 +29,7 @@ class Prescription extends Model
         'branch_id' => 'integer',
         'visit_episode_id' => 'integer',
         'treatment_date' => 'date',
+        'notes' => 'encrypted',
     ];
 
     // Relationships

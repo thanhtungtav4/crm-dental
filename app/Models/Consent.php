@@ -42,6 +42,7 @@ class Consent extends Model
             'signed_at' => 'datetime',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'note' => 'encrypted',
         ];
     }
 
