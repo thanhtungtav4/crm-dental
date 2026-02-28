@@ -16,6 +16,9 @@ it('keeps sensitive action registry in sync with action permissions', function (
         ActionPermission::INSURANCE_CLAIM_DECISION,
         ActionPermission::MPI_DEDUPE_REVIEW,
         ActionPermission::PATIENT_BRANCH_TRANSFER,
+        ActionPermission::EMR_CLINICAL_WRITE,
+        ActionPermission::EMR_RECORD_EXPORT,
+        ActionPermission::EMR_SYNC_PUSH,
     ];
 
     expect($matrixAnchors)->toEqualCanonicalizing(ActionPermission::all())
@@ -76,5 +79,8 @@ it('passes strict security checklist review command', function () {
         ->expectsOutputToContain('Action:PaymentReversal')
         ->expectsOutputToContain('Action:MpiDedupeReview')
         ->expectsOutputToContain('Action:PatientBranchTransfer')
+        ->expectsOutputToContain('Action:EmrClinicalWrite')
+        ->expectsOutputToContain('Action:EmrRecordExport')
+        ->expectsOutputToContain('Action:EmrSyncPush')
         ->assertSuccessful();
 });

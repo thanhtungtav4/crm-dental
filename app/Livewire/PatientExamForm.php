@@ -7,6 +7,8 @@ use App\Models\Disease;
 use App\Models\Patient;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
@@ -86,6 +88,8 @@ class PatientExamForm extends Component
 
     public function createSession(): void
     {
+        $this->authorizeClinicalWrite();
+
         $validated = $this->validate([
             'newSessionDate' => ['required', 'date'],
         ]);
@@ -176,6 +180,8 @@ class PatientExamForm extends Component
             return;
         }
 
+        $this->authorizeClinicalWrite();
+
         $this->validate([
             'editingSessionDate' => ['required', 'date'],
         ]);
@@ -228,6 +234,8 @@ class PatientExamForm extends Component
 
     public function deleteSession(int $sessionId): void
     {
+        $this->authorizeClinicalWrite();
+
         $session = $this->patient->clinicalNotes()->find($sessionId);
 
         if (! $session) {
@@ -385,6 +393,8 @@ class PatientExamForm extends Component
         if (! $this->clinicalNote) {
             return;
         }
+
+        $this->authorizeClinicalWrite();
 
         $normalizedIndications = $this->normalizeIndications($this->indications);
 
@@ -708,5 +718,13 @@ class PatientExamForm extends Component
     protected function normalizeIndicationKey(string $key): string
     {
         return ClinicRuntimeSettings::normalizeExamIndicationKey($key);
+    }
+
+    protected function authorizeClinicalWrite(): void
+    {
+        ActionGate::authorize(
+            ActionPermission::EMR_CLINICAL_WRITE,
+            'Bạn không có quyền cập nhật dữ liệu lâm sàng EMR.',
+        );
     }
 }

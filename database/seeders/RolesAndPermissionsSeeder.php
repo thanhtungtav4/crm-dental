@@ -112,6 +112,9 @@ class RolesAndPermissionsSeeder extends Seeder
             ActionPermission::INSURANCE_CLAIM_DECISION,
             ActionPermission::MPI_DEDUPE_REVIEW,
             ActionPermission::PATIENT_BRANCH_TRANSFER,
+            ActionPermission::EMR_CLINICAL_WRITE,
+            ActionPermission::EMR_RECORD_EXPORT,
+            ActionPermission::EMR_SYNC_PUSH,
         ]);
         $manager->syncPermissions($managerPerms);
 
@@ -138,6 +141,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $doctorPerms = array_merge($doctorPerms, [
             ActionPermission::APPOINTMENT_OVERRIDE,
             ActionPermission::PLAN_APPROVAL,
+            ActionPermission::EMR_CLINICAL_WRITE,
+            ActionPermission::EMR_RECORD_EXPORT,
         ]);
         $doctor->syncPermissions($doctorPerms);
 
@@ -159,6 +164,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $automationService->syncPermissions([
             ActionPermission::AUTOMATION_RUN,
+            ActionPermission::EMR_SYNC_PUSH,
         ]);
     }
 }

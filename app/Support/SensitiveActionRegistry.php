@@ -90,6 +90,33 @@ class SensitiveActionRegistry
                     ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::PATIENT_BRANCH_TRANSFER'],
                 ],
             ],
+            ActionPermission::EMR_CLINICAL_WRITE => [
+                'allowed_roles' => ['Admin', 'Manager', 'Doctor'],
+                'guard_markers' => [
+                    ['path' => 'app/Livewire/PatientExamForm.php', 'contains' => 'ActionPermission::EMR_CLINICAL_WRITE'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::EMR_CLINICAL_WRITE'],
+                ],
+            ],
+            ActionPermission::EMR_RECORD_EXPORT => [
+                'allowed_roles' => ['Admin', 'Manager', 'Doctor'],
+                'guard_markers' => [
+                    ['path' => 'app/Http/Controllers/PrescriptionController.php', 'contains' => 'ActionPermission::EMR_RECORD_EXPORT'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::EMR_RECORD_EXPORT'],
+                ],
+            ],
+            ActionPermission::EMR_SYNC_PUSH => [
+                'allowed_roles' => ['Admin', 'Manager', 'AutomationService'],
+                'guard_markers' => [
+                    ['path' => 'app/Console/Commands/SyncEmrEvents.php', 'contains' => 'ActionPermission::EMR_SYNC_PUSH'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::EMR_SYNC_PUSH'],
+                ],
+            ],
         ];
     }
 

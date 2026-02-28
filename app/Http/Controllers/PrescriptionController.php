@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Prescription;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\Response;
 
@@ -11,6 +13,11 @@ class PrescriptionController extends Controller
 {
     public function print(Prescription $prescription): Response
     {
+        ActionGate::authorize(
+            ActionPermission::EMR_RECORD_EXPORT,
+            'Bạn không có quyền xuất hồ sơ lâm sàng.',
+        );
+
         $prescription->load(['patient', 'doctor', 'items']);
         $clinicBranding = ClinicRuntimeSettings::brandingProfile();
 

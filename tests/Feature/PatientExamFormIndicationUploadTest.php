@@ -12,6 +12,7 @@ it('stores uploaded indication images per selected indication type', function ()
     Storage::fake('public');
 
     $user = User::factory()->create();
+    $user->assignRole('Doctor');
     $patient = Patient::factory()->create();
 
     $this->actingAs($user);

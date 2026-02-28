@@ -20,6 +20,12 @@ class ActionPermission
 
     public const PATIENT_BRANCH_TRANSFER = 'Action:PatientBranchTransfer';
 
+    public const EMR_CLINICAL_WRITE = 'Action:EmrClinicalWrite';
+
+    public const EMR_RECORD_EXPORT = 'Action:EmrRecordExport';
+
+    public const EMR_SYNC_PUSH = 'Action:EmrSyncPush';
+
     /**
      * @return array<int, string>
      */
@@ -34,6 +40,9 @@ class ActionPermission
             self::INSURANCE_CLAIM_DECISION,
             self::MPI_DEDUPE_REVIEW,
             self::PATIENT_BRANCH_TRANSFER,
+            self::EMR_CLINICAL_WRITE,
+            self::EMR_RECORD_EXPORT,
+            self::EMR_SYNC_PUSH,
         ];
     }
 }

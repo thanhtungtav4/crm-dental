@@ -17,8 +17,8 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 |---|---|---|---|---|---|
 | EMR-00 | P0 | Done | Backlog and execution governance | Có backlog riêng, có status theo ticket, có mapping commit | 2b41a09 |
 | EMR-01 | P0 | Done | Branch isolation for PlanItem/TreatmentSession | Policy + resource query chặn cross-branch, test `EmrBranchIsolationPlanItemTreatmentSessionTest` pass | b3fa932 |
-| EMR-02 | P0 | Done | Schedule `emr:sync-events` via hardened wrapper | Có event schedule lock-safe, test scheduler pass | pending |
-| EMR-03 | P0 | Todo | EMR action-level permission matrix | Có permission constants + seeder + authorize points chính | pending |
+| EMR-02 | P0 | Done | Schedule `emr:sync-events` via hardened wrapper | Có event schedule lock-safe, test scheduler pass | 67a81ad |
+| EMR-03 | P0 | Done | EMR action-level permission matrix | Có permission constants + seeder + authorize points cho clinical write/export/sync push | pending |
 | EMR-04 | P1 | Todo | Encounter aggregate model | Clinical records gắn encounter, lifecycle chuẩn | pending |
 | EMR-05 | P1 | Todo | Clinical Orders/Results domain | Order -> Result flow với trạng thái rõ ràng | pending |
 | EMR-06 | P1 | Todo | EMR dedicated audit log | `emr_audit_logs` immutable + query được theo patient/encounter | pending |

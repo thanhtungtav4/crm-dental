@@ -31,6 +31,10 @@ class SyncEmrEvents extends Command
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy automation EMR sync.',
         );
+        ActionGate::authorize(
+            ActionPermission::EMR_SYNC_PUSH,
+            'Bạn không có quyền đẩy dữ liệu đồng bộ EMR.',
+        );
 
         if (! ClinicRuntimeSettings::isEmrEnabled()) {
             $this->warn('EMR integration đang tắt. Không có dữ liệu cần sync.');
