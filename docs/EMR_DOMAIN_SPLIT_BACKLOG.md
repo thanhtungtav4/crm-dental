@@ -22,7 +22,7 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-04 | P1 | Done | Encounter aggregate model | Dùng `visit_episodes` làm encounter aggregate; clinical notes/prescriptions đã link `visit_episode_id`; có test pass | cedbd07 |
 | EMR-05 | P1 | Done | Clinical Orders/Results domain | Order -> Result flow với trạng thái rõ ràng, aggregate payload đầy đủ | a083478 |
 | EMR-06 | P1 | Done | EMR dedicated audit log | `emr_audit_logs` immutable + query được theo patient/encounter + hook sync/order/result | 9efc44d |
-| EMR-07 | P1 | Todo | PHI encryption rollout | Cast encrypted + migration/backfill an toàn | pending |
+| EMR-07 | P1 | Done | PHI encryption rollout | Cast encrypted + migration/backfill an toàn cho PHI text fields EMR | 43f6855 |
 | EMR-08 | P1 | Todo | Clinical versioning | Revision history + optimistic lock + amend flow | pending |
 | EMR-09 | P2 | Todo | Internal EMR API v1 | Idempotent mutation endpoints + authz + tests | pending |
 | EMR-10 | P2 | Todo | Reconciliation & observability | Report reconcile + alerts + runbook | pending |
