@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\IdempotencyConflictException;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
@@ -36,6 +37,10 @@ class WebLeadIngestionService
                 ->first();
 
             if ($ingestion && in_array($ingestion->status, [WebLeadIngestion::STATUS_CREATED, WebLeadIngestion::STATUS_MERGED], true)) {
+                if (! $this->isIdempotentPayloadMatch($ingestion->payload ?? [], $payload)) {
+                    throw new IdempotencyConflictException('X-Idempotency-Key đã được dùng với payload khác.');
+                }
+
                 $customer = Customer::query()->findOrFail($ingestion->customer_id);
 
                 return [
@@ -83,6 +88,10 @@ class WebLeadIngestionService
                     ->firstOrFail();
 
                 if (in_array($lockedIngestion->status, [WebLeadIngestion::STATUS_CREATED, WebLeadIngestion::STATUS_MERGED], true)) {
+                    if (! $this->isIdempotentPayloadMatch($lockedIngestion->payload ?? [], $payload)) {
+                        throw new IdempotencyConflictException('X-Idempotency-Key đã được dùng với payload khác.');
+                    }
+
                     $customer = Customer::query()->findOrFail($lockedIngestion->customer_id);
 
                     return [
@@ -247,5 +256,23 @@ class WebLeadIngestionService
         return str_contains($message, 'duplicate')
             || str_contains($message, 'unique constraint')
             || str_contains($message, '23000');
+    }
+
+    /**
+     * @param  array<string, mixed>  $storedPayload
+     * @param  array<string, mixed>  $incomingPayload
+     */
+    protected function isIdempotentPayloadMatch(array $storedPayload, array $incomingPayload): bool
+    {
+        return $this->normalizePayload($storedPayload) === $this->normalizePayload($incomingPayload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    protected function normalizePayload(array $payload): array
+    {
+        return Arr::sortRecursive($payload);
     }
 }

@@ -75,6 +75,34 @@ it('creates a new lead from web payload and stores ingestion log', function (): 
         ->exists())->toBeTrue();
 });
 
+it('returns conflict when idempotency key is replayed with different payload', function (): void {
+    configureWebLeadApi(enabled: true, token: 'web-token');
+
+    $requestId = (string) Str::uuid();
+    $headers = [
+        'Authorization' => 'Bearer web-token',
+        'X-Idempotency-Key' => $requestId,
+    ];
+
+    $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Le Van C',
+        'phone' => '0912345678',
+        'note' => 'Nguồn landing page A',
+    ], $headers)
+        ->assertCreated();
+
+    $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Le Van C',
+        'phone' => '0912345678',
+        'note' => 'Nguồn landing page B',
+    ], $headers)
+        ->assertConflict()
+        ->assertJsonPath('message', 'X-Idempotency-Key đã được dùng với payload khác.');
+
+    expect(Customer::query()->count())->toBe(1)
+        ->and(WebLeadIngestion::query()->count())->toBe(1);
+});
+
 it('replays the same idempotency key without creating duplicate customers', function (): void {
     configureWebLeadApi(enabled: true, token: 'web-token');
 
