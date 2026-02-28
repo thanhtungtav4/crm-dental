@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ClinicalOrder;
+use App\Models\ClinicalResult;
 use App\Models\Patient;
 use App\Models\PlanItem;
 use App\Models\Prescription;
@@ -20,6 +22,9 @@ class EmrPatientPayloadBuilder
             'visitEpisodes' => fn ($query) => $query->latest('scheduled_at')->limit(20),
             'treatmentPlans' => fn ($query) => $query->latest('updated_at')->limit(20),
             'treatmentPlans.planItems',
+            'clinicalOrders' => fn ($query) => $query->latest('updated_at')->limit(20),
+            'clinicalOrders.results',
+            'clinicalResults' => fn ($query) => $query->latest('updated_at')->limit(20),
             'prescriptions' => fn ($query) => $query->latest('updated_at')->limit(20),
             'prescriptions.items',
         ]);
@@ -51,6 +56,18 @@ class EmrPatientPayloadBuilder
             'treatment' => [
                 'plans' => $patient->treatmentPlans
                     ->map(fn (TreatmentPlan $plan): array => $this->mapTreatmentPlan($plan))
+                    ->values()
+                    ->all(),
+            ],
+            'order' => [
+                'records' => $patient->clinicalOrders
+                    ->map(fn (ClinicalOrder $order): array => $this->mapClinicalOrder($order))
+                    ->values()
+                    ->all(),
+            ],
+            'result' => [
+                'records' => $patient->clinicalResults
+                    ->map(fn (ClinicalResult $result): array => $this->mapClinicalResult($result))
                     ->values()
                     ->all(),
             ],
@@ -177,6 +194,53 @@ class EmrPatientPayloadBuilder
                 ->values()
                 ->all(),
             'updated_at' => $prescription->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapClinicalOrder(ClinicalOrder $order): array
+    {
+        return [
+            'id' => (int) $order->id,
+            'order_code' => (string) $order->order_code,
+            'order_type' => (string) $order->order_type,
+            'status' => (string) $order->status,
+            'patient_id' => $order->patient_id ? (int) $order->patient_id : null,
+            'visit_episode_id' => $order->visit_episode_id ? (int) $order->visit_episode_id : null,
+            'clinical_note_id' => $order->clinical_note_id ? (int) $order->clinical_note_id : null,
+            'branch_id' => $order->branch_id ? (int) $order->branch_id : null,
+            'ordered_by' => $order->ordered_by ? (int) $order->ordered_by : null,
+            'requested_at' => $order->requested_at?->toISOString(),
+            'completed_at' => $order->completed_at?->toISOString(),
+            'payload' => $order->payload,
+            'notes' => $order->notes,
+            'result_ids' => $order->results->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            'updated_at' => $order->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapClinicalResult(ClinicalResult $result): array
+    {
+        return [
+            'id' => (int) $result->id,
+            'clinical_order_id' => $result->clinical_order_id ? (int) $result->clinical_order_id : null,
+            'result_code' => (string) $result->result_code,
+            'status' => (string) $result->status,
+            'patient_id' => $result->patient_id ? (int) $result->patient_id : null,
+            'visit_episode_id' => $result->visit_episode_id ? (int) $result->visit_episode_id : null,
+            'branch_id' => $result->branch_id ? (int) $result->branch_id : null,
+            'verified_by' => $result->verified_by ? (int) $result->verified_by : null,
+            'resulted_at' => $result->resulted_at?->toISOString(),
+            'verified_at' => $result->verified_at?->toISOString(),
+            'payload' => $result->payload,
+            'interpretation' => $result->interpretation,
+            'notes' => $result->notes,
+            'updated_at' => $result->updated_at?->toISOString(),
         ];
     }
 

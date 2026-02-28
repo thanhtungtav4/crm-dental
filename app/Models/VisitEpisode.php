@@ -86,4 +86,14 @@ class VisitEpisode extends Model
     {
         return $this->hasMany(Prescription::class, 'visit_episode_id');
     }
+
+    public function clinicalOrders()
+    {
+        return $this->hasMany(ClinicalOrder::class, 'visit_episode_id');
+    }
+
+    public function clinicalResults()
+    {
+        return $this->hasMany(ClinicalResult::class, 'visit_episode_id');
+    }
 }

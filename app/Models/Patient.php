@@ -132,6 +132,16 @@ class Patient extends Model
         return $this->hasMany(Prescription::class);
     }
 
+    public function clinicalOrders()
+    {
+        return $this->hasMany(ClinicalOrder::class);
+    }
+
+    public function clinicalResults()
+    {
+        return $this->hasMany(ClinicalResult::class);
+    }
+
     public function medicalRecord()
     {
         return $this->hasOne(PatientMedicalRecord::class);

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClinicalNote extends Model
 {
@@ -69,5 +70,10 @@ class ClinicalNote extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function clinicalOrders(): HasMany
+    {
+        return $this->hasMany(ClinicalOrder::class);
     }
 }
