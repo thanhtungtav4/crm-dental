@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class WebLeadIngestionService
 {
+    public function __construct(
+        protected WebLeadRealtimeNotificationService $webLeadRealtimeNotificationService,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $payload
      * @return array{
@@ -162,6 +166,12 @@ class WebLeadIngestionService
                     'status' => $status,
                     'ip_address' => $ipAddress,
                 ],
+            );
+
+            $this->webLeadRealtimeNotificationService->notify(
+                ingestion: $ingestion,
+                customer: $customer,
+                created: $created,
             );
 
             return [

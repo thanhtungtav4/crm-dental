@@ -155,6 +155,29 @@ class ClinicRuntimeSettings
         return static::defaultCustomerSource();
     }
 
+    public static function webLeadRealtimeNotificationEnabled(): bool
+    {
+        return filter_var(
+            ClinicSetting::getValue('web_lead.realtime_notification_enabled', false),
+            FILTER_VALIDATE_BOOLEAN,
+        );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function webLeadRealtimeNotificationRoles(): array
+    {
+        $value = ClinicSetting::getValue('web_lead.realtime_notification_roles', ['CSKH']);
+
+        return collect(is_array($value) ? $value : [])
+            ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+            ->map(static fn (string $item): string => trim($item))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public static function defaultCareTypeOptions(): array
     {
         return [

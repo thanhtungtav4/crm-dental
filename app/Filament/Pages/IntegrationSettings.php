@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 use UnitEnum;
 
 class IntegrationSettings extends Page
@@ -127,6 +128,8 @@ class IntegrationSettings extends Page
                     ['state' => 'web_lead_api_token', 'key' => 'web_lead.api_token', 'label' => 'API Token', 'type' => 'text', 'default' => config('services.web_lead.token', ''), 'is_secret' => true, 'sort_order' => 470],
                     ['state' => 'web_lead_default_branch_code', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định khi web không gửi branch_code', 'type' => 'text', 'default' => '', 'sort_order' => 480],
                     ['state' => 'web_lead_rate_limit_per_minute', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request/phút', 'type' => 'integer', 'default' => config('services.web_lead.rate_limit_per_minute', 60), 'sort_order' => 490],
+                    ['state' => 'web_lead_realtime_notification_enabled', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime khi có web lead mới', 'type' => 'boolean', 'default' => false, 'sort_order' => 492],
+                    ['state' => 'web_lead_realtime_notification_roles', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime', 'type' => 'roles', 'default' => ['CSKH'], 'options' => $this->roleOptions(), 'sort_order' => 493],
                 ],
             ],
             [
@@ -450,6 +453,13 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
+                if (($field['type'] ?? null) === 'roles') {
+                    $rules[$attribute] = ['array'];
+                    $rules["{$attribute}.*"] = ['string', Rule::exists('roles', 'name')];
+
+                    continue;
+                }
+
                 $rules[$attribute] = match ($field['type']) {
                     'boolean' => ['boolean'],
                     'url' => ['nullable', 'url', 'max:500'],
@@ -470,12 +480,22 @@ class IntegrationSettings extends Page
                 $statePath = "settings.{$field['state']}";
                 $valueType = match ($field['type']) {
                     'url', 'email', 'select', 'color' => 'text',
+                    'roles' => 'json',
                     default => $field['type'],
                 };
                 $value = data_get($validated, $statePath, $field['default'] ?? null);
 
                 if (($field['type'] ?? null) === 'json') {
                     $value = $this->decodeJsonFieldValue($value);
+                }
+
+                if (($field['type'] ?? null) === 'roles') {
+                    $value = collect(is_array($value) ? $value : [])
+                        ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+                        ->map(static fn (string $item): string => trim($item))
+                        ->unique()
+                        ->values()
+                        ->all();
                 }
 
                 $normalizedNewValue = $this->normalizeValueForCompare($value, $valueType);
@@ -769,6 +789,14 @@ class IntegrationSettings extends Page
 
     protected function formatFieldStateValue(array $field, mixed $value): mixed
     {
+        if (($field['type'] ?? null) === 'roles') {
+            return collect(is_array($value) ? $value : [])
+                ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+                ->map(static fn (string $item): string => trim($item))
+                ->values()
+                ->all();
+        }
+
         return $value;
     }
 
@@ -1011,5 +1039,16 @@ class IntegrationSettings extends Page
         }
 
         return $baseKey.'_'.$suffix;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function roleOptions(): array
+    {
+        return Role::query()
+            ->orderBy('name')
+            ->pluck('name', 'name')
+            ->all();
     }
 }

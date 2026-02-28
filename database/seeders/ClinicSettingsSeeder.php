@@ -51,6 +51,8 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'web_lead', 'key' => 'web_lead.api_token', 'label' => 'Web lead API token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 470],
             ['group' => 'web_lead', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định cho web lead', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 480],
             ['group' => 'web_lead', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request web lead / phút', 'value' => 60, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 490],
+            ['group' => 'web_lead', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime web lead', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 492],
+            ['group' => 'web_lead', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime web lead', 'value' => ['CSKH'], 'value_type' => 'json', 'is_secret' => false, 'sort_order' => 493],
 
             // Care runtime settings
             ['group' => 'care', 'key' => 'care.medication_reminder_offset_days', 'label' => 'Số ngày nhắc uống thuốc', 'value' => 0, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 510],

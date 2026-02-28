@@ -61,6 +61,28 @@ it('renders concrete input html for integration text fields', function () {
         ->toContain('wire:model.blur="settings.branding_logo_url"');
 });
 
+it('exposes web lead realtime notification toggle and role selector fields', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+    $webLeadProvider = $providers->firstWhere('group', 'web_lead');
+
+    expect($webLeadProvider)->not->toBeNull();
+
+    $webLeadFields = collect($webLeadProvider['fields'] ?? [])
+        ->keyBy('key');
+
+    expect($webLeadFields->has('web_lead.realtime_notification_enabled'))->toBeTrue()
+        ->and($webLeadFields->has('web_lead.realtime_notification_roles'))->toBeTrue()
+        ->and($webLeadFields->get('web_lead.realtime_notification_roles')['type'] ?? null)->toBe('roles');
+
+    $html = Livewire::test(IntegrationSettings::class)->html();
+
+    expect($html)
+        ->toContain('wire:model.live="settings.web_lead_realtime_notification_roles"')
+        ->toContain('Nhóm quyền nhận thông báo realtime')
+        ->toContain('Bật thông báo realtime khi có web lead mới');
+});
+
 it('can autogenerate web lead api token in form state', function () {
     $component = Livewire::test(IntegrationSettings::class)
         ->set('settings.web_lead_api_token', '')

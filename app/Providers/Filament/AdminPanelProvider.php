@@ -60,6 +60,8 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Violet,
             ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('10s')
             ->navigationGroups([
                 'Hoạt động hàng ngày',
                 'Quản lý khách hàng',
