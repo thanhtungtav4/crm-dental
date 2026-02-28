@@ -276,6 +276,11 @@ class Appointment extends Model
         return $this->hasOne(VisitEpisode::class);
     }
 
+    public function encounter()
+    {
+        return $this->hasOne(Encounter::class, 'appointment_id');
+    }
+
     public function overrideLogs()
     {
         return $this->hasMany(AppointmentOverrideLog::class);

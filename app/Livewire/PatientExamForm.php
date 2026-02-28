@@ -7,6 +7,7 @@ use App\Models\Disease;
 use App\Models\Patient;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Services\EncounterService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -112,6 +113,7 @@ class PatientExamForm extends Component
 
         $session = $this->patient->clinicalNotes()->create([
             'patient_id' => $this->patient->id,
+            'visit_episode_id' => $this->resolveEncounterIdForDate((string) $validated['newSessionDate']),
             'doctor_id' => Auth::id(),
             'branch_id' => $this->patient->first_branch_id,
             'date' => $validated['newSessionDate'],
@@ -223,6 +225,14 @@ class PatientExamForm extends Component
             'date' => $newDate,
             'updated_by' => Auth::id(),
         ]);
+
+        if ($session->visit_episode_id) {
+            $this->encounterService()->syncStandaloneEncounterDate((int) $session->visit_episode_id, $newDate);
+        } else {
+            $session->update([
+                'visit_episode_id' => $this->resolveEncounterIdForDate($newDate),
+            ]);
+        }
 
         $this->setActiveSession($session->id);
 
@@ -409,6 +419,12 @@ class PatientExamForm extends Component
             'other_diagnosis' => $this->other_diagnosis,
             'updated_by' => Auth::id(),
         ];
+
+        if (! $this->clinicalNote->visit_episode_id) {
+            $data['visit_episode_id'] = $this->resolveEncounterIdForDate(
+                $this->clinicalNote->date?->toDateString() ?? now()->toDateString(),
+            );
+        }
 
         $this->clinicalNote->update($data);
         $this->clinicalNote->refresh();
@@ -718,6 +734,24 @@ class PatientExamForm extends Component
     protected function normalizeIndicationKey(string $key): string
     {
         return ClinicRuntimeSettings::normalizeExamIndicationKey($key);
+    }
+
+    protected function resolveEncounterIdForDate(string $date): ?int
+    {
+        $encounter = $this->encounterService()->resolveForPatientOnDate(
+            patientId: (int) $this->patient->id,
+            branchId: $this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null,
+            date: $date,
+            doctorId: $this->examining_doctor_id ?: (Auth::id() ?: null),
+            createIfMissing: true,
+        );
+
+        return $encounter?->id ? (int) $encounter->id : null;
+    }
+
+    protected function encounterService(): EncounterService
+    {
+        return app(EncounterService::class);
     }
 
     protected function authorizeClinicalWrite(): void

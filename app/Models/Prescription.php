@@ -15,6 +15,7 @@ class Prescription extends Model
     protected $fillable = [
         'patient_id',
         'branch_id',
+        'visit_episode_id',
         'treatment_session_id',
         'prescription_code',
         'prescription_name',
@@ -26,6 +27,7 @@ class Prescription extends Model
 
     protected $casts = [
         'branch_id' => 'integer',
+        'visit_episode_id' => 'integer',
         'treatment_date' => 'date',
     ];
 
@@ -48,6 +50,16 @@ class Prescription extends Model
     public function treatmentSession(): BelongsTo
     {
         return $this->belongsTo(TreatmentSession::class);
+    }
+
+    public function visitEpisode(): BelongsTo
+    {
+        return $this->belongsTo(VisitEpisode::class, 'visit_episode_id');
+    }
+
+    public function encounter(): BelongsTo
+    {
+        return $this->belongsTo(Encounter::class, 'visit_episode_id');
     }
 
     public function items(): HasMany
@@ -89,6 +101,10 @@ class Prescription extends Model
                 $prescription->branch_id = static::inferBranchId($prescription);
             }
 
+            if (blank($prescription->visit_episode_id)) {
+                $prescription->visit_episode_id = static::inferVisitEpisodeId($prescription);
+            }
+
             if (empty($prescription->prescription_code)) {
                 $prescription->prescription_code = static::generatePrescriptionCode();
             }
@@ -102,6 +118,7 @@ class Prescription extends Model
     public function resolveBranchId(): ?int
     {
         $branchId = $this->branch_id
+            ?? $this->visitEpisode?->branch_id
             ?? $this->patient?->first_branch_id
             ?? $this->treatmentSession?->treatmentPlan?->branch_id;
 
@@ -132,6 +149,16 @@ class Prescription extends Model
 
     protected static function inferBranchId(self $prescription): ?int
     {
+        if ($prescription->visit_episode_id) {
+            $episodeBranchId = VisitEpisode::query()
+                ->whereKey((int) $prescription->visit_episode_id)
+                ->value('branch_id');
+
+            if ($episodeBranchId !== null) {
+                return (int) $episodeBranchId;
+            }
+        }
+
         if ($prescription->patient_id) {
             $patientBranchId = Patient::query()
                 ->whereKey((int) $prescription->patient_id)
@@ -152,5 +179,35 @@ class Prescription extends Model
             ->value('treatment_plans.branch_id');
 
         return $sessionBranchId !== null ? (int) $sessionBranchId : null;
+    }
+
+    protected static function inferVisitEpisodeId(self $prescription): ?int
+    {
+        if (! $prescription->patient_id) {
+            return null;
+        }
+
+        $branchId = $prescription->branch_id
+            ?? static::inferBranchId($prescription);
+
+        $encounterDate = $prescription->treatment_date?->toDateString();
+        if ($encounterDate === null) {
+            $encounterDate = now()->toDateString();
+        }
+
+        $query = VisitEpisode::query()
+            ->where('patient_id', (int) $prescription->patient_id)
+            ->whereDate('scheduled_at', $encounterDate);
+
+        if ($branchId !== null) {
+            $query->where('branch_id', (int) $branchId);
+        }
+
+        $episodeId = $query
+            ->orderByRaw('appointment_id IS NULL')
+            ->orderByDesc('scheduled_at')
+            ->value('id');
+
+        return $episodeId !== null ? (int) $episodeId : null;
     }
 }

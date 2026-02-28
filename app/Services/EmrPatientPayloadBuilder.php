@@ -6,6 +6,7 @@ use App\Models\Patient;
 use App\Models\PlanItem;
 use App\Models\Prescription;
 use App\Models\TreatmentPlan;
+use App\Models\VisitEpisode;
 
 class EmrPatientPayloadBuilder
 {
@@ -16,6 +17,7 @@ class EmrPatientPayloadBuilder
     {
         $patient->loadMissing([
             'medicalRecord',
+            'visitEpisodes' => fn ($query) => $query->latest('scheduled_at')->limit(20),
             'treatmentPlans' => fn ($query) => $query->latest('updated_at')->limit(20),
             'treatmentPlans.planItems',
             'prescriptions' => fn ($query) => $query->latest('updated_at')->limit(20),
@@ -40,6 +42,12 @@ class EmrPatientPayloadBuilder
                 'updated_at' => $patient->updated_at?->toISOString(),
             ],
             'medical_record' => $this->mapMedicalRecord($patient),
+            'encounter' => [
+                'records' => $patient->visitEpisodes
+                    ->map(fn (VisitEpisode $episode): array => $this->mapEncounter($episode))
+                    ->values()
+                    ->all(),
+            ],
             'treatment' => [
                 'plans' => $patient->treatmentPlans
                     ->map(fn (TreatmentPlan $plan): array => $this->mapTreatmentPlan($plan))
@@ -148,6 +156,7 @@ class EmrPatientPayloadBuilder
     {
         return [
             'id' => (int) $prescription->id,
+            'visit_episode_id' => $prescription->visit_episode_id ? (int) $prescription->visit_episode_id : null,
             'prescription_code' => (string) $prescription->prescription_code,
             'prescription_name' => $prescription->prescription_name,
             'doctor_id' => $prescription->doctor_id ? (int) $prescription->doctor_id : null,
@@ -168,6 +177,38 @@ class EmrPatientPayloadBuilder
                 ->values()
                 ->all(),
             'updated_at' => $prescription->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapEncounter(VisitEpisode $episode): array
+    {
+        return [
+            'id' => (int) $episode->id,
+            'appointment_id' => $episode->appointment_id ? (int) $episode->appointment_id : null,
+            'branch_id' => $episode->branch_id ? (int) $episode->branch_id : null,
+            'doctor_id' => $episode->doctor_id ? (int) $episode->doctor_id : null,
+            'status' => $episode->status,
+            'scheduled_at' => $episode->scheduled_at?->toISOString(),
+            'check_in_at' => $episode->check_in_at?->toISOString(),
+            'arrived_at' => $episode->arrived_at?->toISOString(),
+            'in_chair_at' => $episode->in_chair_at?->toISOString(),
+            'check_out_at' => $episode->check_out_at?->toISOString(),
+            'planned_duration_minutes' => $episode->planned_duration_minutes !== null
+                ? (int) $episode->planned_duration_minutes
+                : null,
+            'actual_duration_minutes' => $episode->actual_duration_minutes !== null
+                ? (int) $episode->actual_duration_minutes
+                : null,
+            'chair_minutes' => $episode->chair_minutes !== null
+                ? (int) $episode->chair_minutes
+                : null,
+            'waiting_minutes' => $episode->waiting_minutes !== null
+                ? (int) $episode->waiting_minutes
+                : null,
+            'updated_at' => $episode->updated_at?->toISOString(),
         ];
     }
 }

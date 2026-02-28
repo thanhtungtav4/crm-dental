@@ -11,10 +11,15 @@ class VisitEpisode extends Model
     use HasFactory, SoftDeletes;
 
     public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_NO_SHOW = 'no_show';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_RESCHEDULED = 'rescheduled';
 
     public const DEFAULT_STATUS = self::STATUS_SCHEDULED;
@@ -70,5 +75,15 @@ class VisitEpisode extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function clinicalNotes()
+    {
+        return $this->hasMany(ClinicalNote::class, 'visit_episode_id');
+    }
+
+    public function prescriptions()
+    {
+        return $this->hasMany(Prescription::class, 'visit_episode_id');
     }
 }

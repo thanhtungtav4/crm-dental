@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Patient;
-use App\Models\User;
-use App\Models\Branch;
 
 class ClinicalNote extends Model
 {
     protected $fillable = [
         'patient_id',
+        'visit_episode_id',
         'doctor_id',
         'examining_doctor_id',
         'treating_doctor_id',
@@ -30,6 +28,7 @@ class ClinicalNote extends Model
     ];
 
     protected $casts = [
+        'visit_episode_id' => 'integer',
         'date' => 'date',
         'indications' => 'array',
         'indication_images' => 'array',
@@ -40,6 +39,16 @@ class ClinicalNote extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function visitEpisode()
+    {
+        return $this->belongsTo(VisitEpisode::class, 'visit_episode_id');
+    }
+
+    public function encounter()
+    {
+        return $this->belongsTo(Encounter::class, 'visit_episode_id');
     }
 
     public function doctor()

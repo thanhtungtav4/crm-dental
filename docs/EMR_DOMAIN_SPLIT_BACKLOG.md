@@ -19,7 +19,7 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-01 | P0 | Done | Branch isolation for PlanItem/TreatmentSession | Policy + resource query chặn cross-branch, test `EmrBranchIsolationPlanItemTreatmentSessionTest` pass | b3fa932 |
 | EMR-02 | P0 | Done | Schedule `emr:sync-events` via hardened wrapper | Có event schedule lock-safe, test scheduler pass | 67a81ad |
 | EMR-03 | P0 | Done | EMR action-level permission matrix | Có permission constants + seeder + authorize points cho clinical write/export/sync push | 02802fa |
-| EMR-04 | P1 | Todo | Encounter aggregate model | Clinical records gắn encounter, lifecycle chuẩn | pending |
+| EMR-04 | P1 | Done | Encounter aggregate model | Dùng `visit_episodes` làm encounter aggregate; clinical notes/prescriptions đã link `visit_episode_id`; có test pass | pending |
 | EMR-05 | P1 | Todo | Clinical Orders/Results domain | Order -> Result flow với trạng thái rõ ràng | pending |
 | EMR-06 | P1 | Todo | EMR dedicated audit log | `emr_audit_logs` immutable + query được theo patient/encounter | pending |
 | EMR-07 | P1 | Todo | PHI encryption rollout | Cast encrypted + migration/backfill an toàn | pending |
