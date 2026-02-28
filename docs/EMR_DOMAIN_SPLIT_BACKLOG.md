@@ -25,7 +25,7 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-07 | P1 | Done | PHI encryption rollout | Cast encrypted + migration/backfill an toàn cho PHI text fields EMR | 43f6855 |
 | EMR-08 | P1 | Done | Clinical versioning | Revision history + optimistic lock + amend flow cho clinical note | 3dc4b31 |
 | EMR-09 | P2 | Done | Internal EMR API v1 | Idempotent mutation endpoint amend clinical note + authz + tests | a52c936 |
-| EMR-10 | P2 | Todo | Reconciliation & observability | Report reconcile + alerts + runbook | pending |
+| EMR-10 | P2 | Done | Reconciliation & observability | Command `emr:reconcile-integrity` + alert audit log + schedule + test | 88e5788 |
 
 ## Execution Rules
 
@@ -38,6 +38,19 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
    - `php artisan migrate:status`
    - `php artisan schema:assert-no-pending-migrations`
    - full `php artisan test`
+
+## EMR Reconcile Runbook (v1)
+
+1. Dry check integrity:
+   - `php artisan emr:reconcile-integrity`
+2. Gate mode (CI/release):
+   - `php artisan emr:reconcile-integrity --strict`
+3. Nếu có mismatch:
+   - `missing_initial_revision` hoặc `note_revision_version_mismatch`: đối soát `clinical_notes.lock_version` và `clinical_note_revisions`.
+   - `stale_pending_mutation`: kiểm tra `emr_api_mutations` chưa `processed_at`, re-run mutation hoặc clean request treo.
+   - `order_result_state_mismatch`: kiểm tra trạng thái `clinical_results` final/amended có order completed tương ứng.
+4. Audit trail:
+   - Command luôn ghi `audit_logs` với `entity_type=automation`, `metadata.command=emr:reconcile-integrity`.
 
 ## Notes
 
