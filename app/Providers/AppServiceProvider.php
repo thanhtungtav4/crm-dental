@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\ClinicalOrder;
+use App\Models\ClinicalResult;
 use App\Models\ClinicSetting;
 use App\Models\Consent;
 use App\Models\InsuranceClaim;
@@ -15,6 +17,8 @@ use App\Models\Prescription;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Observers\AppointmentObserver;
+use App\Observers\ClinicalOrderObserver;
+use App\Observers\ClinicalResultObserver;
 use App\Observers\ConsentObserver;
 use App\Observers\InsuranceClaimObserver;
 use App\Observers\NoteObserver;
@@ -61,6 +65,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Appointment Observer
         Appointment::observe(AppointmentObserver::class);
+        ClinicalOrder::observe(ClinicalOrderObserver::class);
+        ClinicalResult::observe(ClinicalResultObserver::class);
         Note::observe(NoteObserver::class);
         PlanItem::observe(PlanItemObserver::class);
         Patient::observe(PatientObserver::class);

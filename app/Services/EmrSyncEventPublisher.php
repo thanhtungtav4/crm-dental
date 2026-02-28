@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EmrAuditLog;
 use App\Models\EmrSyncEvent;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
@@ -10,6 +11,7 @@ class EmrSyncEventPublisher
 {
     public function __construct(
         protected EmrPatientPayloadBuilder $payloadBuilder,
+        protected EmrAuditLogger $emrAuditLogger,
     ) {}
 
     public function publishForPatientId(?int $patientId, string $eventType): ?EmrSyncEvent
@@ -37,7 +39,7 @@ class EmrSyncEventPublisher
         $checksum = $this->payloadBuilder->checksum($payload);
         $eventKey = $this->eventKey($patient->id, $eventType, $checksum);
 
-        return EmrSyncEvent::query()->firstOrCreate(
+        $event = EmrSyncEvent::query()->firstOrCreate(
             ['event_key' => $eventKey],
             [
                 'patient_id' => $patient->id,
@@ -49,6 +51,19 @@ class EmrSyncEventPublisher
                 'next_retry_at' => now(),
             ],
         );
+
+        $this->emrAuditLogger->recordSyncEvent(
+            event: $event,
+            action: $event->wasRecentlyCreated ? EmrAuditLog::ACTION_PUBLISH : EmrAuditLog::ACTION_DEDUPE,
+            context: [
+                'event_key' => $event->event_key,
+                'event_type' => $event->event_type,
+                'payload_checksum' => $event->payload_checksum,
+            ],
+            actorId: auth()->id(),
+        );
+
+        return $event;
     }
 
     protected function eventKey(int $patientId, string $eventType, string $checksum): string

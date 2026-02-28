@@ -3,9 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Models\EmrAuditLog;
 use App\Models\EmrPatientMap;
 use App\Models\EmrSyncEvent;
 use App\Models\EmrSyncLog;
+use App\Services\EmrAuditLogger;
 use App\Services\EmrIntegrationService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -21,6 +23,7 @@ class SyncEmrEvents extends Command
 
     public function __construct(
         protected EmrIntegrationService $emrIntegrationService,
+        protected EmrAuditLogger $emrAuditLogger,
     ) {
         parent::__construct();
     }
@@ -169,6 +172,19 @@ class SyncEmrEvents extends Command
                     ],
                 );
 
+                $this->emrAuditLogger->recordSyncEvent(
+                    event: $event,
+                    action: EmrAuditLog::ACTION_SYNC,
+                    actorId: auth()->id(),
+                    context: [
+                        'command' => 'emr:sync-events',
+                        'event_type' => $event->event_type,
+                        'status' => EmrSyncEvent::STATUS_SYNCED,
+                        'http_status' => $httpStatus,
+                        'external_patient_id' => $externalPatientId,
+                    ],
+                );
+
                 return EmrSyncEvent::STATUS_SYNCED;
             }
 
@@ -186,6 +202,19 @@ class SyncEmrEvents extends Command
                     'command' => 'emr:sync-events',
                     'event_id' => $event->id,
                     'patient_id' => $event->patient_id,
+                    'event_type' => $event->event_type,
+                    'status' => $event->fresh()?->status,
+                    'http_status' => $httpStatus,
+                    'message' => $integrationResult['message'] ?? null,
+                ],
+            );
+
+            $this->emrAuditLogger->recordSyncEvent(
+                event: $event,
+                action: EmrAuditLog::ACTION_FAIL,
+                actorId: auth()->id(),
+                context: [
+                    'command' => 'emr:sync-events',
                     'event_type' => $event->event_type,
                     'status' => $event->fresh()?->status,
                     'http_status' => $httpStatus,
