@@ -7,6 +7,7 @@ use App\Models\Disease;
 use App\Models\Patient;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Services\ClinicalNoteVersioningService;
 use App\Services\EncounterService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -16,6 +17,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -34,6 +36,8 @@ class PatientExamForm extends Component
     public ?int $editingSessionId = null;
 
     public ?string $editingSessionDate = null;
+
+    public int $clinicalNoteVersion = 1;
 
     // Form fields
     public ?int $examining_doctor_id = null;
@@ -221,20 +225,43 @@ class PatientExamForm extends Component
             return;
         }
 
-        $session->update([
+        $payload = [
             'date' => $newDate,
             'updated_by' => Auth::id(),
-        ]);
+        ];
 
-        if ($session->visit_episode_id) {
-            $this->encounterService()->syncStandaloneEncounterDate((int) $session->visit_episode_id, $newDate);
-        } else {
-            $session->update([
-                'visit_episode_id' => $this->resolveEncounterIdForDate($newDate),
-            ]);
+        if (! $session->visit_episode_id) {
+            $payload['visit_episode_id'] = $this->resolveEncounterIdForDate($newDate);
         }
 
-        $this->setActiveSession($session->id);
+        try {
+            $updatedSession = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
+                clinicalNote: $session,
+                attributes: $payload,
+                expectedVersion: $this->clinicalNoteVersion,
+                actorId: Auth::id(),
+                operation: 'amend',
+                reason: 'session_date_update',
+            );
+        } catch (ValidationException $exception) {
+            $errorMessage = (string) (collect($exception->errors())->flatten()->first()
+                ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
+
+            Notification::make()
+                ->title($errorMessage)
+                ->danger()
+                ->send();
+
+            $this->setActiveSession($session->id);
+
+            return;
+        }
+
+        if ($updatedSession->visit_episode_id) {
+            $this->encounterService()->syncStandaloneEncounterDate((int) $updatedSession->visit_episode_id, $newDate);
+        }
+
+        $this->setActiveSession($updatedSession->id);
 
         Notification::make()
             ->title('Đã cập nhật ngày khám')
@@ -426,8 +453,29 @@ class PatientExamForm extends Component
             );
         }
 
-        $this->clinicalNote->update($data);
-        $this->clinicalNote->refresh();
+        try {
+            $this->clinicalNote = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
+                clinicalNote: $this->clinicalNote,
+                attributes: $data,
+                expectedVersion: $this->clinicalNoteVersion,
+                actorId: Auth::id(),
+                operation: 'update',
+            );
+        } catch (ValidationException $exception) {
+            $errorMessage = (string) (collect($exception->errors())->flatten()->first()
+                ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
+
+            Notification::make()
+                ->title($errorMessage)
+                ->danger()
+                ->send();
+
+            $this->setActiveSession((int) $this->clinicalNote->id);
+
+            return;
+        }
+
+        $this->clinicalNoteVersion = (int) ($this->clinicalNote->lock_version ?: 1);
 
         $this->dispatch('saved');
     }
@@ -564,6 +612,7 @@ class PatientExamForm extends Component
         $this->dentition_mode = DentitionModeResolver::MODE_AUTO;
         $this->examiningDoctorSearch = '';
         $this->treatingDoctorSearch = '';
+        $this->clinicalNoteVersion = 1;
     }
 
     protected function hydrateFormFromSession(ClinicalNote $session): void
@@ -577,6 +626,7 @@ class PatientExamForm extends Component
         $this->tooth_diagnosis_data = $session->tooth_diagnosis_data ?? [];
         $this->other_diagnosis = $session->other_diagnosis ?? '';
         $this->dentition_mode = DentitionModeResolver::MODE_AUTO;
+        $this->clinicalNoteVersion = (int) ($session->lock_version ?: 1);
 
         $this->tempUploads = [];
 
@@ -752,6 +802,11 @@ class PatientExamForm extends Component
     protected function encounterService(): EncounterService
     {
         return app(EncounterService::class);
+    }
+
+    protected function clinicalNoteVersioningService(): ClinicalNoteVersioningService
+    {
+        return app(ClinicalNoteVersioningService::class);
     }
 
     protected function authorizeClinicalWrite(): void
