@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ValidateInternalEmrToken;
 use App\Http\Middleware\ValidateWebLeadToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'web-lead.token' => ValidateWebLeadToken::class,
+            'emr.internal.token' => ValidateInternalEmrToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

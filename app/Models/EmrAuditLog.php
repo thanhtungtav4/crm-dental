@@ -19,6 +19,8 @@ class EmrAuditLog extends Model
 
     public const ENTITY_CLINICAL_RESULT = 'clinical_result';
 
+    public const ENTITY_CLINICAL_NOTE = 'clinical_note';
+
     public const ACTION_CREATE = 'create';
 
     public const ACTION_UPDATE = 'update';
