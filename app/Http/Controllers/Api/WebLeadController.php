@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\IdempotencyConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreWebLeadRequest;
 use App\Services\WebLeadIngestionService;
@@ -18,12 +19,18 @@ class WebLeadController extends Controller
     {
         $validated = $request->validated();
 
-        $result = $this->webLeadIngestionService->ingest(
-            payload: Arr::except($validated, ['idempotency_key']),
-            requestId: (string) $validated['idempotency_key'],
-            ipAddress: $request->ip(),
-            userAgent: $request->userAgent(),
-        );
+        try {
+            $result = $this->webLeadIngestionService->ingest(
+                payload: Arr::except($validated, ['idempotency_key']),
+                requestId: (string) $validated['idempotency_key'],
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+            );
+        } catch (IdempotencyConflictException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 409);
+        }
 
         $customer = $result['customer'];
         $statusCode = ($result['created'] && ! $result['replayed']) ? 201 : 200;
