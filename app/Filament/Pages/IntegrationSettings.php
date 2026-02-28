@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Services\EmrIntegrationService;
+use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
@@ -474,6 +475,7 @@ class IntegrationSettings extends Page
         }
 
         $validated = $this->validate($rules);
+        $this->validateZaloAndZnsDependencies($validated);
 
         foreach ($this->getProviders() as $provider) {
             foreach ($provider['fields'] as $field) {
@@ -556,6 +558,41 @@ class IntegrationSettings extends Page
             ->body((string) ($result['message'] ?? 'Không thể kết nối tới EMR.'))
             ->danger()
             ->send();
+    }
+
+    public function testZaloReadiness(): void
+    {
+        $report = app(ZaloIntegrationService::class)->auditOaReadiness();
+
+        $body = collect([
+            'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
+            ...array_map(static fn (string $item): string => '• '.$item, $report['issues'] ?? []),
+            ...array_map(static fn (string $item): string => '→ '.$item, $report['recommendations'] ?? []),
+            'Webhook URL: '.($report['webhook_url'] ?? ''),
+        ])->filter()->implode("\n");
+
+        $notification = Notification::make()
+            ->title(($report['score'] ?? 0) >= 80 ? 'Zalo OA sẵn sàng tốt' : 'Zalo OA cần bổ sung cấu hình')
+            ->body($body);
+
+        (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
+    }
+
+    public function testZnsReadiness(): void
+    {
+        $report = app(ZaloIntegrationService::class)->auditZnsReadiness();
+
+        $body = collect([
+            'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
+            ...array_map(static fn (string $item): string => '• '.$item, $report['issues'] ?? []),
+            ...array_map(static fn (string $item): string => '→ '.$item, $report['recommendations'] ?? []),
+        ])->filter()->implode("\n");
+
+        $notification = Notification::make()
+            ->title(($report['score'] ?? 0) >= 80 ? 'ZNS sẵn sàng tốt' : 'ZNS cần bổ sung cấu hình')
+            ->body($body);
+
+        (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
     }
 
     public function openEmrConfigUrl(): void
@@ -917,6 +954,61 @@ class IntegrationSettings extends Page
         }
 
         return $payloads;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    protected function validateZaloAndZnsDependencies(array $validated): void
+    {
+        $errors = [];
+
+        $zaloEnabled = filter_var(data_get($validated, 'settings.zalo_enabled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($zaloEnabled) {
+            if (trim((string) data_get($validated, 'settings.zalo_oa_id', '')) === '') {
+                $errors['settings.zalo_oa_id'] = 'OA ID là bắt buộc khi bật Zalo OA.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.zalo_app_id', '')) === '') {
+                $errors['settings.zalo_app_id'] = 'App ID là bắt buộc khi bật Zalo OA.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.zalo_app_secret', '')) === '') {
+                $errors['settings.zalo_app_secret'] = 'App Secret là bắt buộc khi bật Zalo OA.';
+            }
+
+            $webhookToken = trim((string) data_get($validated, 'settings.zalo_webhook_token', ''));
+
+            if ($webhookToken === '') {
+                $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token là bắt buộc khi bật Zalo OA.';
+            } elseif (mb_strlen($webhookToken) < 24) {
+                $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token cần tối thiểu 24 ký tự.';
+            }
+        }
+
+        $znsEnabled = filter_var(data_get($validated, 'settings.zns_enabled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($znsEnabled) {
+            if (trim((string) data_get($validated, 'settings.zns_access_token', '')) === '') {
+                $errors['settings.zns_access_token'] = 'Access Token là bắt buộc khi bật ZNS.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.zns_refresh_token', '')) === '') {
+                $errors['settings.zns_refresh_token'] = 'Refresh Token là bắt buộc khi bật ZNS.';
+            }
+
+            $templateAppointment = trim((string) data_get($validated, 'settings.zns_template_appointment', ''));
+            $templatePayment = trim((string) data_get($validated, 'settings.zns_template_payment', ''));
+
+            if ($templateAppointment === '' && $templatePayment === '') {
+                $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     protected function normalizeCatalogKeyForState(string $state, string $value): string
