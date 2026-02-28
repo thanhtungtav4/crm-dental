@@ -22,6 +22,7 @@ class TreatmentMaterialForm
                     ->required(),
                 Forms\Components\TextInput::make('quantity')
                     ->numeric()
+                    ->minValue(1)
                     ->label('Số lượng')
                     ->required(),
                 Forms\Components\TextInput::make('cost')

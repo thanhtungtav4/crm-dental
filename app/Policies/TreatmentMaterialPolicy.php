@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\TreatmentMaterial;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentMaterialPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser): bool
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:TreatmentMaterial');
+        return $authUser->can('ViewAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function view(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('View:TreatmentMaterial');
+        return $authUser->can('View:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:TreatmentMaterial');
+        return $authUser->can('Create:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function update(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Update:TreatmentMaterial');
+        return $authUser->can('Update:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function delete(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function delete(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Delete:TreatmentMaterial');
+        return $authUser->can('Delete:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function restore(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function restore(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Restore:TreatmentMaterial');
+        return $authUser->can('Restore:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function forceDelete(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function forceDelete(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('ForceDelete:TreatmentMaterial');
+        return $authUser->can('ForceDelete:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentMaterial');
+        return $authUser->can('ForceDeleteAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentMaterial');
+        return $authUser->can('RestoreAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, TreatmentMaterial $treatmentMaterial): bool
+    public function replicate(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Replicate:TreatmentMaterial');
+        return $authUser->can('Replicate:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:TreatmentMaterial');
+        return $authUser->can('Reorder:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessTreatmentMaterial(User $authUser, TreatmentMaterial $treatmentMaterial): bool
+    {
+        return $authUser->canAccessBranch($treatmentMaterial->resolveBranchId());
+    }
 }
