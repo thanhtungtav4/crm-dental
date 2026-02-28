@@ -18,6 +18,7 @@ use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -25,20 +26,40 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
             SystemSettingsSeeder::class,
+            CustomerAndPromotionGroupsSeeder::class,
+            ServiceCategoriesAndServicesSeeder::class,
+            ClinicSettingsSeeder::class,
         ]);
 
-        // Branches
         $branches = Branch::factory()->count(2)->create();
 
-        // Super Admin
+        $this->call([
+            InventorySeeder::class,
+        ]);
+        $admin = $this->seedUsers($branches);
+
+        $this->seedMaterialsByBranch($branches);
+
+        $doctorIds = User::role('Doctor')->pluck('id');
+        $ownerStaffIds = User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['CSKH', 'Manager']))
+            ->pluck('id');
+
+        $customerGroupIds = CustomerGroup::query()->where('is_active', true)->pluck('id');
+        $promotionGroupIds = PromotionGroup::query()->where('is_active', true)->pluck('id');
+
+        $this->seedCustomers($admin->id, $customerGroupIds, $promotionGroupIds, $ownerStaffIds);
+        $this->seedPatients($admin->id, $customerGroupIds, $promotionGroupIds, $doctorIds, $ownerStaffIds);
+        $this->seedTreatmentJourney($branches);
+    }
+
+    protected function seedUsers(Collection $branches): User
+    {
         $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
@@ -47,134 +68,117 @@ class DatabaseSeeder extends Seeder
                 'branch_id' => $branches->first()->id,
             ],
         );
+
         $admin->syncRoles(['Admin']);
 
-        // Manager, Doctor, CSKH
-        $roles = ['Manager', 'Doctor', 'CSKH'];
-        foreach ($roles as $i => $roleName) {
+        foreach (['Manager', 'Doctor', 'CSKH'] as $index => $roleName) {
             $user = User::updateOrCreate(
                 ['email' => strtolower($roleName) . '@example.com'],
                 [
                     'name' => $roleName . ' User',
                     'password' => Hash::make('password'),
-                    'branch_id' => $branches[$i % $branches->count()]->id,
+                    'branch_id' => $branches[$index % $branches->count()]->id,
                 ],
             );
+
             $user->syncRoles([$roleName]);
         }
 
-        // Domain seeds (VI): Vật tư cơ bản theo chi nhánh
+        if (User::role('Doctor')->count() < 3) {
+            for ($index = 0; $index < 3; $index++) {
+                $doctor = User::factory()->create([
+                    'branch_id' => $branches[$index % $branches->count()]->id,
+                ]);
+
+                $doctor->assignRole('Doctor');
+            }
+        }
+
+        return $admin;
+    }
+
+    protected function seedMaterialsByBranch(Collection $branches): void
+    {
         $baseMaterials = [
-            ['name' => 'Găng tay y tế', 'unit' => 'hộp', 'unit_price' => 75000, 'min_stock' => 5],
-            ['name' => 'Khẩu trang', 'unit' => 'hộp', 'unit_price' => 45000, 'min_stock' => 5],
-            ['name' => 'Chỉ nha khoa', 'unit' => 'cuộn', 'unit_price' => 30000, 'min_stock' => 10],
-            ['name' => 'Composite', 'unit' => 'ống', 'unit_price' => 120000, 'min_stock' => 3],
-            ['name' => 'Cement', 'unit' => 'gói', 'unit_price' => 85000, 'min_stock' => 2],
-            ['name' => 'Kim tiêm', 'unit' => 'cái', 'unit_price' => 4000, 'min_stock' => 50],
-            ['name' => 'Thuốc tê', 'unit' => 'ống', 'unit_price' => 30000, 'min_stock' => 10],
-            ['name' => 'Bông gạc', 'unit' => 'túi', 'unit_price' => 20000, 'min_stock' => 10],
+            ['name' => 'Găng tay nitrile', 'unit' => 'hộp', 'sale_price' => 195000, 'min_stock' => 20, 'stock_range' => [25, 80]],
+            ['name' => 'Khẩu trang y tế 4 lớp', 'unit' => 'hộp', 'sale_price' => 125000, 'min_stock' => 20, 'stock_range' => [30, 100]],
+            ['name' => 'Chỉ nha khoa', 'unit' => 'cuộn', 'sale_price' => 42000, 'min_stock' => 15, 'stock_range' => [20, 60]],
+            ['name' => 'Composite trám răng', 'unit' => 'ống', 'sale_price' => 340000, 'min_stock' => 6, 'stock_range' => [8, 28]],
+            ['name' => 'Xi măng gắn răng', 'unit' => 'gói', 'sale_price' => 98000, 'min_stock' => 8, 'stock_range' => [12, 45]],
+            ['name' => 'Kim tiêm 27G', 'unit' => 'hộp', 'sale_price' => 265000, 'min_stock' => 12, 'stock_range' => [15, 50]],
+            ['name' => 'Thuốc tê Articaine 4%', 'unit' => 'hộp', 'sale_price' => 780000, 'min_stock' => 4, 'stock_range' => [5, 22]],
+            ['name' => 'Gạc vô trùng', 'unit' => 'gói', 'sale_price' => 62000, 'min_stock' => 15, 'stock_range' => [18, 75]],
         ];
+
         foreach ($branches as $branch) {
-            foreach ($baseMaterials as $i => $m) {
+            foreach ($baseMaterials as $index => $material) {
                 Material::updateOrCreate(
-                    ['branch_id' => $branch->id, 'name' => $m['name']],
+                    ['branch_id' => $branch->id, 'name' => $material['name']],
                     [
-                        'sku' => 'VT-' . $branch->id . '-' . Str::padLeft((string) ($i + 1), 3, '0'),
-                        'unit' => $m['unit'],
-                        'stock_qty' => rand(20, 100),
-                        'sale_price' => $m['unit_price'],
-                        'min_stock' => $m['min_stock'],
-                    ]
+                        'sku' => 'VT-' . $branch->id . '-' . Str::padLeft((string) ($index + 1), 3, '0'),
+                        'unit' => $material['unit'],
+                        'stock_qty' => random_int($material['stock_range'][0], $material['stock_range'][1]),
+                        'sale_price' => $material['sale_price'],
+                        'min_stock' => $material['min_stock'],
+                    ],
                 );
             }
         }
+    }
 
-        // Create additional doctors as Users with Doctor role if needed
-        if (\App\Models\User::role('Doctor')->count() < 3) {
-            for ($i = 0; $i < 3; $i++) {
-                $doc = \App\Models\User::factory()->create([
-                    'branch_id' => $branches[$i % $branches->count()]->id,
-                ]);
-                $doc->assignRole('Doctor');
-            }
-        }
+    protected function seedCustomers(
+        int $adminId,
+        Collection $customerGroupIds,
+        Collection $promotionGroupIds,
+        Collection $ownerStaffIds,
+    ): void {
+        $customerStatuses = ['lead', 'lead', 'contacted', 'contacted', 'confirmed'];
 
-        $doctorIds = User::role('Doctor')->pluck('id');
-        $ownerStaffIds = User::query()
-            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['CSKH', 'Manager']))
-            ->pluck('id');
-        $customerGroupIds = CustomerGroup::query()
-            ->where('is_active', true)
-            ->pluck('id');
-        $promotionGroupIds = PromotionGroup::query()
-            ->where('is_active', true)
-            ->pluck('id');
-
-        // Leads
-        $customers = Customer::factory()->count(24)->create();
-        $customers->each(function (Customer $customer) use ($customerGroupIds, $promotionGroupIds, $ownerStaffIds, $admin): void {
-            $customerGroupId = $customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null;
-            $promotionGroupId = $promotionGroupIds->isNotEmpty() && fake()->boolean(45)
-                ? $promotionGroupIds->random()
-                : null;
-
+        Customer::factory()->count(24)->create()->each(function (Customer $customer) use ($adminId, $customerGroupIds, $promotionGroupIds, $ownerStaffIds, $customerStatuses): void {
             $customer->update([
-                'birthday' => fake()->optional(0.75)->dateTimeBetween('-60 years', '-18 years')?->format('Y-m-d'),
-                'gender' => fake()->randomElement(['male', 'female', 'other']),
-                'address' => fake()->address(),
-                'customer_group_id' => $customerGroupId,
-                'promotion_group_id' => $promotionGroupId,
+                'birthday' => fake()->optional(0.8)->dateTimeBetween('-60 years', '-18 years')?->format('Y-m-d'),
+                'gender' => fake()->randomElement(['male', 'female']),
+                'address' => fake('vi_VN')->address(),
+                'customer_group_id' => $customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null,
+                'promotion_group_id' => $promotionGroupIds->isNotEmpty() && fake()->boolean(50) ? $promotionGroupIds->random() : null,
                 'assigned_to' => $ownerStaffIds->isNotEmpty() ? $ownerStaffIds->random() : null,
-                'next_follow_up_at' => fake()->optional(0.6)->dateTimeBetween('now', '+21 days')?->format('Y-m-d'),
-                'status' => fake()->randomElement(['lead', 'contacted', 'confirmed']),
-                'created_by' => $admin->id,
-                'updated_by' => $admin->id,
+                'next_follow_up_at' => fake()->optional(0.65)->dateTimeBetween('now', '+21 days')?->format('Y-m-d'),
+                'status' => fake()->randomElement($customerStatuses),
+                'created_by' => $adminId,
+                'updated_by' => $adminId,
             ]);
         });
+    }
 
-        // Patients
-        $patients = Patient::factory()->count(14)->create();
-        $occupations = [
-            'Nhân viên văn phòng',
-            'Kinh doanh tự do',
-            'Giáo viên',
-            'Kỹ sư',
-            'Sinh viên',
-            'Nội trợ',
-            'Bác sĩ',
-            'Tài xế',
-        ];
-        $firstVisitReasons = [
-            'Đau răng kéo dài',
-            'Tư vấn trồng Implant',
-            'Niềng răng thẩm mỹ',
-            'Khám tổng quát định kỳ',
-            'Tẩy trắng răng',
-            'Nhổ răng khôn',
-        ];
+    protected function seedPatients(
+        int $adminId,
+        Collection $customerGroupIds,
+        Collection $promotionGroupIds,
+        Collection $doctorIds,
+        Collection $ownerStaffIds,
+    ): void {
+        $occupations = ['Nhân viên văn phòng', 'Kinh doanh tự do', 'Giáo viên', 'Kỹ sư', 'Sinh viên', 'Bác sĩ', 'Điều dưỡng', 'Tài xế'];
+        $firstVisitReasons = ['Đau răng kéo dài', 'Tư vấn trồng Implant', 'Niềng răng thẩm mỹ', 'Khám tổng quát định kỳ', 'Tẩy trắng răng', 'Nhổ răng khôn'];
 
-        $patients->each(function (Patient $patient) use ($customerGroupIds, $promotionGroupIds, $doctorIds, $ownerStaffIds, $firstVisitReasons, $occupations, $admin): void {
+        Patient::factory()->count(14)->create()->each(function (Patient $patient) use ($adminId, $customerGroupIds, $promotionGroupIds, $doctorIds, $ownerStaffIds, $occupations, $firstVisitReasons): void {
             $linkedCustomer = $patient->customer;
-
-            $customerGroupId = $linkedCustomer?->customer_group_id
-                ?: ($customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null);
-            $promotionGroupId = $linkedCustomer?->promotion_group_id
-                ?: ($promotionGroupIds->isNotEmpty() && fake()->boolean(40) ? $promotionGroupIds->random() : null);
+            $customerGroupId = $linkedCustomer?->customer_group_id ?? ($customerGroupIds->isNotEmpty() ? $customerGroupIds->random() : null);
+            $promotionGroupId = $linkedCustomer?->promotion_group_id ?? ($promotionGroupIds->isNotEmpty() && fake()->boolean(40) ? $promotionGroupIds->random() : null);
 
             $patient->update([
                 'birthday' => $patient->birthday ?? fake()->dateTimeBetween('-70 years', '-6 years')?->format('Y-m-d'),
                 'cccd' => fake()->numerify('############'),
-                'phone_secondary' => fake()->optional(0.45)->numerify('09########'),
+                'phone_secondary' => fake()->optional(0.4)->numerify('09########'),
                 'occupation' => fake()->randomElement($occupations),
                 'customer_group_id' => $customerGroupId,
                 'promotion_group_id' => $promotionGroupId,
                 'primary_doctor_id' => $doctorIds->isNotEmpty() ? $doctorIds->random() : null,
                 'owner_staff_id' => $ownerStaffIds->isNotEmpty() ? $ownerStaffIds->random() : null,
                 'first_visit_reason' => fake()->randomElement($firstVisitReasons),
-                'note' => fake()->optional(0.7)->sentence(),
+                'note' => fake()->optional(0.65)->sentence(),
                 'status' => fake()->randomElement(['active', 'active', 'active', 'inactive']),
-                'created_by' => $admin->id,
-                'updated_by' => $admin->id,
+                'created_by' => $adminId,
+                'updated_by' => $adminId,
             ]);
 
             if ($linkedCustomer) {
@@ -183,40 +187,22 @@ class DatabaseSeeder extends Seeder
                     'customer_group_id' => $customerGroupId,
                     'promotion_group_id' => $promotionGroupId,
                     'assigned_to' => $patient->owner_staff_id,
-                    'updated_by' => $admin->id,
+                    'updated_by' => $adminId,
                 ]);
             }
         });
+    }
 
-        // Appointments
+    protected function seedTreatmentJourney(Collection $branches): void
+    {
         Appointment::factory()->count(15)->create();
 
-        $availableServices = Service::query()
-            ->where('active', true)
-            ->get(['id', 'name', 'default_price']);
-
+        $availableServices = Service::query()->where('active', true)->get(['id', 'name', 'default_price']);
         if ($availableServices->isEmpty()) {
-            $fallbackServices = [
-                ['name' => 'Nhổ răng khôn', 'code' => 'NHO-RANG-KHON', 'unit' => 'lần', 'default_price' => 1500000],
-                ['name' => 'Trám răng', 'code' => 'TRAM-RANG', 'unit' => 'răng', 'default_price' => 500000],
-                ['name' => 'Điều trị tủy', 'code' => 'DIEU-TRI-TUY', 'unit' => 'răng', 'default_price' => 1200000],
-            ];
-
-            foreach ($fallbackServices as $service) {
-                Service::updateOrCreate(
-                    ['code' => $service['code']],
-                    $service + ['active' => true],
-                );
-            }
-
-            $availableServices = Service::query()
-                ->where('active', true)
-                ->get(['id', 'name', 'default_price']);
+            return;
         }
 
-        // Treatment Plans (VI): Kế hoạch + hạng mục + buổi điều trị với dữ liệu gần thực tế
-        $patientsForPlans = Patient::query()->inRandomOrder()->take(6)->get();
-        foreach ($patientsForPlans as $patient) {
+        Patient::query()->inRandomOrder()->take(6)->get()->each(function (Patient $patient) use ($branches, $availableServices): void {
             $plan = TreatmentPlan::factory()->create([
                 'patient_id' => $patient->id,
                 'doctor_id' => User::role('Doctor')->inRandomOrder()->value('id'),
@@ -225,10 +211,9 @@ class DatabaseSeeder extends Seeder
                 'total_estimated_cost' => 0,
             ]);
 
-            $itemCount = min($availableServices->count(), random_int(2, 4));
-            $selectedServices = $availableServices->shuffle()->take(max($itemCount, 1));
-
+            $selectedServices = $availableServices->shuffle()->take(random_int(2, min(4, $availableServices->count())));
             $estimatedTotal = 0.0;
+
             foreach ($selectedServices as $service) {
                 $item = PlanItem::create([
                     'treatment_plan_id' => $plan->id,
@@ -241,20 +226,17 @@ class DatabaseSeeder extends Seeder
 
                 $estimatedTotal += (float) $item->price;
 
-                // One scheduled session per item (no inventory yet)
                 TreatmentSession::factory()->create([
                     'treatment_plan_id' => $plan->id,
                     'plan_item_id' => $item->id,
                     'status' => 'scheduled',
                 ]);
             }
+
             $plan->update(['total_estimated_cost' => $estimatedTotal]);
-        }
+        });
 
-        // Notes
         Note::factory()->count(20)->create();
-
-        // Branch movement logs
         BranchLog::factory()->count(5)->create();
     }
 }
