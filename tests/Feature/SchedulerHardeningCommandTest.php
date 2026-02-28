@@ -130,6 +130,7 @@ it('schedules critical automations via hardened wrapper with single-node lock', 
         'care:run-plan-follow-up',
         'growth:run-reactivation-flow',
         'reports:check-snapshot-sla',
+        'emr:sync-events',
         'appointments:run-no-show-recovery',
         'invoices:sync-overdue-status',
     ];

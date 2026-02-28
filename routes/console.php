@@ -35,5 +35,6 @@ $scheduleAutomation('finance:run-invoice-aging-reminders')->dailyAt('08:00');
 $scheduleAutomation('care:run-plan-follow-up')->dailyAt('09:00');
 $scheduleAutomation('growth:run-reactivation-flow')->dailyAt('09:30');
 $scheduleAutomation('reports:check-snapshot-sla')->dailyAt('10:00');
+$scheduleAutomation('emr:sync-events')->hourlyAt(15);
 $scheduleAutomation('appointments:run-no-show-recovery')->hourlyAt(5);
 $scheduleAutomation('invoices:sync-overdue-status')->hourly();
