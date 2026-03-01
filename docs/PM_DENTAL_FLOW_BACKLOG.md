@@ -653,7 +653,7 @@ Ghi chu:
 - **Title**: Performance baseline + pre-aggregation cho report hot paths
 - **Type**: Story (BE + Data)
 - **Estimate**: 8 SP
-- **Status**: In Progress (`2026-03-01`)
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Pre-aggregate 3 report nong nhat (ops dashboard, revenue branch, care queue).
@@ -662,7 +662,10 @@ Ghi chu:
 - **Status Note**:
   - Da mo rong `reports:explain-ops-hotpaths` voi benchmark p95/avg/max latency theo query + threshold SLA.
   - Strict mode da fail-fast neu vuot SLA p95 hoac co full scan; artifact baseline ghi du execution metrics.
-  - Con lai: chot pre-aggregation layer cho revenue/care reports de dong PM-49.
+  - Da them pre-aggregation layer cho `revenue` + `care queue` (`report_revenue_daily_aggregates`, `report_care_queue_daily_aggregates`).
+  - Da bo sung command `reports:snapshot-hot-aggregates` + scheduler daily de cap nhat aggregate.
+  - Da noi `RevenueStatistical` va `CustomsCareStatistical` sang aggregate query path (co fallback du lieu raw khi chua co snapshot).
+  - Da cap nhat hot-path explain baseline de theo doi them aggregate queries.
 - **Acceptance Criteria (QA)**:
   1. Report hot path dat SLA da chot.
   2. Khong full-scan tren strict explain gate.
@@ -672,7 +675,7 @@ Ghi chu:
 - **Title**: Security ops hardening (MFA + session policy + PHI read log)
 - **Type**: Story (Security + BE)
 - **Estimate**: 8 SP
-- **Status**: In Progress (`2026-03-01`)
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - MFA bat buoc cho role `Admin/Manager`.
@@ -682,7 +685,8 @@ Ghi chu:
   - Da them middleware enforce MFA cho role nhay cam (Admin/Manager) tren panel admin.
   - Da them session idle-timeout middleware + audit security khi timeout.
   - Da them PHI read audit log (`emr_audit_logs`) khi mo tab `exam-treatment` va ho so y te.
-  - Con lai: bo sung lockout policy theo login attempt threshold de dong PM-50.
+  - Da bo sung custom Filament login page enforce lockout theo threshold runtime (`security.login_max_attempts`, `security.login_lockout_minutes`) + audit log `login_lockout`.
+  - Da bo sung runtime settings UI cho security policy (MFA roles / session timeout / login lockout).
 - **Acceptance Criteria (QA)**:
   1. Role nhay cam khong MFA thi khong vao panel.
   2. Co lockout + timeout policy truy vet duoc.
@@ -692,7 +696,7 @@ Ghi chu:
 - **Title**: Go-live reliability pack (backup/restore + monitoring + production gate)
 - **Type**: Task (Ops + BE)
 - **Estimate**: 5 SP
-- **Status**: In Progress (`2026-03-01`)
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Backup automation DB/file + restore drill.
@@ -701,7 +705,9 @@ Ghi chu:
 - **Status Note**:
   - Da bo sung gate `ops:check-backup-health` (strict mode) va noi vao profile `production` cua `ops:run-release-gates`.
   - Da bo sung test strict pass/fail cho backup health gate.
-  - Con lai: restore drill command + runbook map owner/threshold theo alert category de dong PM-51.
+  - Da them `ops:run-restore-drill` (verify artifact + checksum) va gate strict trong production release profile.
+  - Da them `ops:check-alert-runbook-map` de validate owner/threshold/runbook theo alert category.
+  - Da bo sung scheduler daily cho restore drill + runbook map check va cap nhat test release gate/scheduler.
 - **Acceptance Criteria (QA)**:
   1. Restore drill pass tren staging.
   2. Monitoring alert map ro owner va threshold.

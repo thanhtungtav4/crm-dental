@@ -145,6 +145,18 @@ class RunReleaseGates extends Command
                 'command' => 'ops:check-backup-health',
                 'arguments' => ['--strict' => true],
             ];
+
+            $steps[] = [
+                'name' => 'Restore drill gate',
+                'command' => 'ops:run-restore-drill',
+                'arguments' => ['--strict' => true],
+            ];
+
+            $steps[] = [
+                'name' => 'Alert runbook map gate',
+                'command' => 'ops:check-alert-runbook-map',
+                'arguments' => ['--strict' => true],
+            ];
         }
 
         if ($withFinance) {
