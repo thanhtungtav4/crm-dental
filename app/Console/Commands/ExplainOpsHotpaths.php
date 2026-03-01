@@ -153,6 +153,11 @@ class ExplainOpsHotpaths extends Command
                 'bindings' => ['payment_reminder', 'not_started', $from, $to],
             ],
             [
+                'key' => 'care_queue_daily_aggregate',
+                'sql' => 'SELECT id FROM report_care_queue_daily_aggregates WHERE branch_scope_id = ? AND snapshot_date BETWEEN ? AND ? LIMIT 50',
+                'bindings' => [$branchId, substr($from, 0, 10), substr($to, 0, 10)],
+            ],
+            [
                 'key' => 'appointments_capacity',
                 'sql' => 'SELECT id FROM appointments WHERE branch_id = ? AND doctor_id = ? AND status IN '.$this->inClause($appointmentStatuses).' AND date BETWEEN ? AND ? LIMIT 50',
                 'bindings' => [$branchId, $doctorId, ...$appointmentStatuses, $from, $to],
@@ -166,6 +171,11 @@ class ExplainOpsHotpaths extends Command
                 'key' => 'invoices_branch_status',
                 'sql' => 'SELECT id FROM invoices WHERE branch_id = ? AND status IN '.$this->inClause($invoiceStatuses).' AND issued_at BETWEEN ? AND ? LIMIT 50',
                 'bindings' => [$branchId, ...$invoiceStatuses, $from, $to],
+            ],
+            [
+                'key' => 'revenue_daily_aggregate',
+                'sql' => 'SELECT id FROM report_revenue_daily_aggregates WHERE branch_scope_id = ? AND snapshot_date BETWEEN ? AND ? LIMIT 50',
+                'bindings' => [$branchId, substr($from, 0, 10), substr($to, 0, 10)],
             ],
         ];
     }

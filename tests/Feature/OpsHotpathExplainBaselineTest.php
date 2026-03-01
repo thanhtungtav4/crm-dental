@@ -29,12 +29,14 @@ it('generates explain baseline artifact for operational hotpaths', function () {
     $payload = json_decode((string) File::get($outputPath), true, flags: JSON_THROW_ON_ERROR);
     $queries = collect((array) data_get($payload, 'queries', []));
 
-    expect($queries->count())->toBe(4)
+    expect($queries->count())->toBe(6)
         ->and($queries->pluck('key')->all())->toEqualCanonicalizing([
             'notes_care_queue',
+            'care_queue_daily_aggregate',
             'appointments_capacity',
             'payments_branch_aging',
             'invoices_branch_status',
+            'revenue_daily_aggregate',
         ])
         ->and($queries->every(fn (array $query): bool => array_key_exists('plan_rows', $query)))->toBeTrue()
         ->and($queries->every(fn (array $query): bool => array_key_exists('full_scan_detected', $query)))->toBeTrue()
