@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\ClinicalNote;
 use App\Models\Disease;
 use App\Models\Patient;
+use App\Models\PatientMedicalRecord;
 use App\Models\ToothCondition;
 use App\Models\User;
 use App\Services\ClinicalNoteVersioningService;
@@ -538,16 +539,24 @@ class PatientExamForm extends Component
             $session->setAttribute('is_locked', $sessionDate !== null && isset($lockedDates[$sessionDate]));
         }
 
-        $medicalRecordId = $this->patient->medicalRecord()
-            ->value('id');
+        $authUser = Auth::user();
+        $medicalRecord = $this->patient->medicalRecord()
+            ->first(['id', 'patient_id']);
 
-        $medicalRecordActionUrl = $medicalRecordId
-            ? route('filament.admin.resources.patient-medical-records.edit', ['record' => $medicalRecordId])
-            : route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $this->patient->id]);
+        $medicalRecordActionUrl = null;
+        $medicalRecordActionLabel = null;
 
-        $medicalRecordActionLabel = $medicalRecordId
-            ? 'Mở bệnh án điện tử'
-            : 'Tạo bệnh án điện tử';
+        if ($authUser instanceof User) {
+            if ($medicalRecord instanceof PatientMedicalRecord) {
+                if ($authUser->can('update', $medicalRecord) || $authUser->can('view', $medicalRecord)) {
+                    $medicalRecordActionUrl = route('filament.admin.resources.patient-medical-records.edit', ['record' => $medicalRecord->id]);
+                    $medicalRecordActionLabel = 'Mở bệnh án điện tử';
+                }
+            } elseif ($authUser->can('create', PatientMedicalRecord::class)) {
+                $medicalRecordActionUrl = route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $this->patient->id]);
+                $medicalRecordActionLabel = 'Tạo bệnh án điện tử';
+            }
+        }
 
         return view('livewire.patient-exam-form', [
             'sessions' => $sessions,

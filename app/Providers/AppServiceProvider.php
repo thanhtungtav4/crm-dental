@@ -32,6 +32,7 @@ use App\Observers\PrescriptionObserver;
 use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
+use Filament\Actions\Action as FilamentAction;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -52,6 +53,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureFilamentActionNotifications();
+
         RateLimiter::for('web-leads', function (Request $request): Limit {
             $configuredRate = (int) ClinicSetting::getValue(
                 'web_lead.rate_limit_per_minute',
@@ -81,5 +84,27 @@ class AppServiceProvider extends ServiceProvider
         TreatmentSession::observe(TreatmentSessionAuditObserver::class);
         Consent::observe(ConsentObserver::class);
         InsuranceClaim::observe(InsuranceClaimObserver::class);
+    }
+
+    private function configureFilamentActionNotifications(): void
+    {
+        FilamentAction::configureUsing(function (FilamentAction $action): void {
+            $action
+                ->failureNotificationTitle(fn (FilamentAction $action): string => self::resolveActionFailureNotificationTitle($action))
+                ->unauthorizedNotificationTitle('Bạn không có quyền thực hiện thao tác này.')
+                ->rateLimitedNotificationTitle('Bạn thao tác quá nhanh, vui lòng thử lại sau.');
+        });
+    }
+
+    private static function resolveActionFailureNotificationTitle(FilamentAction $action): string
+    {
+        return 'Không thể xử lý: '.self::resolveActionLabel($action);
+    }
+
+    private static function resolveActionLabel(FilamentAction $action): string
+    {
+        $label = trim(strip_tags((string) $action->getLabel()));
+
+        return $label !== '' ? $label : 'thao tác';
     }
 }

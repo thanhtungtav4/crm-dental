@@ -12,8 +12,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
@@ -264,8 +264,13 @@ class PlanItemsRelationManager extends RelationManager
                     ->alignEnd()
                     ->color(function ($record) {
                         $variance = $record->getCostVariance();
-                        if ($variance > 0) return 'danger';
-                        if ($variance < 0) return 'success';
+                        if ($variance > 0) {
+                            return 'danger';
+                        }
+                        if ($variance < 0) {
+                            return 'success';
+                        }
+
                         return 'gray';
                     })
                     ->toggleable(),
@@ -319,6 +324,7 @@ class PlanItemsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Thêm hạng mục')
+                    ->successNotificationTitle('Đã thêm hạng mục điều trị')
                     ->mutateFormDataUsing(function (array $data): array {
                         return $this->sanitizePlanItemPayload($data);
                     })
@@ -332,6 +338,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('Gửi đề xuất')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('info')
+                    ->successNotificationTitle('Đã gửi đề xuất cho bệnh nhân')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
@@ -354,6 +361,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('KH đồng ý')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
+                    ->successNotificationTitle('Đã xác nhận bệnh nhân đồng ý')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
@@ -370,6 +378,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('KH từ chối')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
+                    ->successNotificationTitle('Đã ghi nhận bệnh nhân từ chối')
                     ->form([
                         Textarea::make('approval_decline_reason')
                             ->label('Lý do từ chối')
@@ -397,6 +406,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('Hoàn thành 1 lần')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
+                    ->successNotificationTitle('Đã hoàn thành một lần điều trị')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->completeVisit();
@@ -409,6 +419,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('Bắt đầu')
                     ->icon('heroicon-o-play')
                     ->color('warning')
+                    ->successNotificationTitle('Đã bắt đầu hạng mục điều trị')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
@@ -423,6 +434,7 @@ class PlanItemsRelationManager extends RelationManager
                     ->label('Hoàn thành')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
+                    ->successNotificationTitle('Đã hoàn thành hạng mục điều trị')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
@@ -438,6 +450,7 @@ class PlanItemsRelationManager extends RelationManager
                         && $record->status !== PlanItem::STATUS_CANCELLED),
                 EditAction::make()
                     ->label('Sửa')
+                    ->successNotificationTitle('Đã cập nhật hạng mục điều trị')
                     ->mutateFormDataUsing(function (array $data): array {
                         return $this->sanitizePlanItemPayload($data);
                     })
@@ -446,6 +459,7 @@ class PlanItemsRelationManager extends RelationManager
                     }),
                 DeleteAction::make()
                     ->label('Xóa')
+                    ->successNotificationTitle('Đã xóa hạng mục điều trị')
                     ->after(function ($record) {
                         // Update parent treatment plan after deletion
                         $record->treatmentPlan->updateProgress();
@@ -457,6 +471,7 @@ class PlanItemsRelationManager extends RelationManager
                         ->label('Đánh dấu Đang thực hiện')
                         ->icon('heroicon-o-play')
                         ->color('warning')
+                        ->successNotificationTitle('Đã cập nhật hạng mục sang đang thực hiện')
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $skipped = 0;
@@ -464,6 +479,7 @@ class PlanItemsRelationManager extends RelationManager
                             foreach ($records as $record) {
                                 if (! $record->canStartTreatment()) {
                                     $skipped++;
+
                                     continue;
                                 }
 
@@ -483,6 +499,7 @@ class PlanItemsRelationManager extends RelationManager
                         ->label('Đánh dấu Hoàn thành')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
+                        ->successNotificationTitle('Đã cập nhật hạng mục sang hoàn thành')
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $skipped = 0;
@@ -490,6 +507,7 @@ class PlanItemsRelationManager extends RelationManager
                             foreach ($records as $record) {
                                 if (! $record->canStartTreatment()) {
                                     $skipped++;
+
                                     continue;
                                 }
 
@@ -514,6 +532,7 @@ class PlanItemsRelationManager extends RelationManager
                         ->label('Hủy bỏ')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
+                        ->successNotificationTitle('Đã hủy các hạng mục đã chọn')
                         ->requiresConfirmation()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             foreach ($records as $record) {

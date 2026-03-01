@@ -2,14 +2,18 @@
 
 namespace App\Support;
 
+use App\Services\ActionPermissionBaselineService;
 use App\Services\AutomationActorResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
 
 class ActionGate
 {
     public static function authorize(string $permission, string $message): void
     {
+        self::ensureActionPermissionBaseline($permission);
+
         $user = auth()->user();
 
         if (! $user && app()->runningInConsole()) {
@@ -39,6 +43,26 @@ class ActionGate
                 'authorization' => $message,
             ]);
         }
+    }
+
+    protected static function ensureActionPermissionBaseline(string $permission): void
+    {
+        if (! str_starts_with($permission, 'Action:')) {
+            return;
+        }
+
+        $guard = (string) config('auth.defaults.guard', 'web');
+
+        $exists = Permission::query()
+            ->where('name', $permission)
+            ->where('guard_name', $guard)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        app(ActionPermissionBaselineService::class)->sync();
     }
 
     protected static function resolveConsoleActor(string $permission): ?Authenticatable

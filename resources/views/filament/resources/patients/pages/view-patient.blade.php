@@ -94,7 +94,7 @@
                                         <path
                                             d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                     </svg>
-                                    {{ $this->record->phone }}
+                                    <span class="crm-patient-phone-chip-text">{{ $this->record->phone }}</span>
                                 </a>
                             @endif
                         </div>
@@ -270,6 +270,7 @@
                                         <span class="crm-treatment-subhead-count">Hiển thị {{ $this->treatmentProgressCount }}/{{ $this->treatmentProgressCount }}</span>
                                         <a href="{{ route('filament.admin.resources.treatment-sessions.create', ['patient_id' => $this->record->id]) }}"
                                            class="crm-btn crm-btn-primary crm-btn-md"
+                                           style="color: #ffffff;"
                                         >
                                             Thêm ngày điều trị
                                         </a>
@@ -289,6 +290,7 @@
                                                 <th class="is-center">S.L</th>
                                                 <th class="is-right">Đơn giá</th>
                                                 <th>Tình trạng</th>
+                                                <th class="is-center">Thao tác</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -307,10 +309,17 @@
                                                             {{ $session['status_label'] }}
                                                         </span>
                                                     </td>
+                                                    <td class="is-center">
+                                                        <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                                            </svg>
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="9" class="crm-treatment-empty">
+                                                    <td colspan="10" class="crm-treatment-empty">
                                                         Chưa có tiến trình điều trị cho bệnh nhân này.
                                                     </td>
                                                 </tr>

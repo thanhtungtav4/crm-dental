@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Payment;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -31,6 +32,13 @@ class PatientPaymentsRelationManager extends RelationManager
                     ->label('Ngày tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('invoice.invoice_no')
+                    ->label('Hóa đơn')
+                    ->searchable()
+                    ->placeholder('Không có')
+                    ->url(fn (Payment $record): ?string => $record->invoice
+                        ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
+                        : null),
 
                 Tables\Columns\TextColumn::make('paid_at')
                     ->label('Ngày lập phiếu')
@@ -91,6 +99,7 @@ class PatientPaymentsRelationManager extends RelationManager
                     ->tooltip('Hoàn tiền')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
+                    ->successNotificationTitle('Đã tạo phiếu hoàn tiền')
                     ->visible(fn (Payment $record): bool => $record->canReverse() && $record->invoice !== null)
                     ->form([
                         TextInput::make('amount')
@@ -146,6 +155,16 @@ class PatientPaymentsRelationManager extends RelationManager
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn (Payment $record): string => route('payments.print', $record))
+                    ->openUrlInNewTab(),
+                Action::make('openInvoice')
+                    ->label('')
+                    ->tooltip('Mở hóa đơn')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->url(fn (Payment $record): ?string => $record->invoice
+                        ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
+                        : null)
+                    ->visible(fn (Payment $record): bool => $record->invoice !== null)
                     ->openUrlInNewTab(),
             ])
             ->defaultSort('paid_at', 'desc')

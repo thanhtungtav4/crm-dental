@@ -60,3 +60,13 @@ it('renders indication upload areas dynamically per selected indication type', f
         ->and($blade)->not->toContain('wire:model="tempUploads.ext"')
         ->and($blade)->not->toContain('wire:model="tempUploads.int"');
 });
+
+it('escapes diagnosis condition codes safely in alpine expressions', function (): void {
+    $bladePath = resource_path('views/livewire/patient-exam-form.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50\' : \'\'"')
+        ->and($blade)->toContain('@click="toggleCondition(@js((string) $condition->code))"')
+        ->and($blade)->toContain(':checked="hasCondition(@js((string) $condition->code))"')
+        ->and($blade)->not->toContain("@click=\"toggleCondition('{{ \$condition->code }}')\"");
+});

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,7 +43,7 @@ class Consent extends Model
             'signed_at' => 'datetime',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
-            'note' => 'encrypted',
+            'note' => NullableEncrypted::class,
         ];
     }
 

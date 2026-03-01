@@ -28,7 +28,8 @@ class InvoicesRelationManager extends RelationManager
                     ->copyable()
                     ->badge()
                     ->color('primary')
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->url(fn (Invoice $record): string => route('filament.admin.resources.invoices.edit', ['record' => $record->id])),
 
                 Tables\Columns\TextColumn::make('plan.title')
                     ->label('Kế hoạch')
@@ -78,7 +79,7 @@ class InvoicesRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Còn lại')
-                    ->formatStateUsing(fn (Invoice $record) => number_format($record->calculateBalance(), 0, ',', '.') . 'đ')
+                    ->formatStateUsing(fn (Invoice $record) => number_format($record->calculateBalance(), 0, ',', '.').'đ')
                     ->color('warning')
                     ->weight('bold'),
 
@@ -91,9 +92,8 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Hạn thanh toán')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->color(fn (Invoice $record) => 
-                        $record->due_date && $record->due_date->isPast() && $record->status !== 'paid' 
-                            ? 'danger' 
+                    ->color(fn (Invoice $record) => $record->due_date && $record->due_date->isPast() && $record->status !== 'paid'
+                            ? 'danger'
                             : null
                     ),
             ])
@@ -126,8 +126,7 @@ class InvoicesRelationManager extends RelationManager
                 EditAction::make()
                     ->label('')
                     ->tooltip('Sửa')
-                    ->url(fn (Invoice $record): string => 
-                        route('filament.admin.resources.invoices.edit', ['record' => $record->id])),
+                    ->url(fn (Invoice $record): string => route('filament.admin.resources.invoices.edit', ['record' => $record->id])),
                 Action::make('print')
                     ->label('')
                     ->tooltip('In')
@@ -135,17 +134,16 @@ class InvoicesRelationManager extends RelationManager
                     ->color('gray')
                     ->url(fn (Invoice $record): string => route('invoices.print', $record))
                     ->openUrlInNewTab(),
-                
+
                 Action::make('recordPayment')
                     ->label('')
                     ->tooltip('Ghi thanh toán')
                     ->icon('heroicon-o-banknotes')
                     ->color('primary')
                     ->visible(fn (Invoice $record) => $record->status !== 'paid' && $record->status !== 'cancelled')
-                    ->url(fn (Invoice $record): string => 
-                        route('filament.admin.resources.payments.create', [
-                            'invoice_id' => $record->id,
-                        ])),
+                    ->url(fn (Invoice $record): string => route('filament.admin.resources.payments.create', [
+                        'invoice_id' => $record->id,
+                    ])),
             ])
             ->emptyStateHeading('Chưa có hóa đơn')
             ->emptyStateDescription('Tạo hóa đơn đầu tiên cho bệnh nhân này')

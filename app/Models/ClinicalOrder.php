@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,7 +51,7 @@ class ClinicalOrder extends Model
             'requested_at' => 'datetime',
             'completed_at' => 'datetime',
             'payload' => 'array',
-            'notes' => 'encrypted',
+            'notes' => NullableEncrypted::class,
         ];
     }
 

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use App\Filament\Resources\Customers\CustomerResource;
+use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -56,7 +58,24 @@ class AppointmentsTable
                     ->badge()
                     ->color(fn ($record) => $record->customer_id && ! $record->patient_id ? 'warning' : 'success')
                     ->icon(fn ($record) => $record->customer_id && ! $record->patient_id ? 'heroicon-o-user' : 'heroicon-o-check-circle')
-                    ->description(fn ($record) => $record->customer_id && ! $record->patient_id ? 'Lead' : 'Bệnh nhân'),
+                    ->description(fn ($record) => $record->customer_id && ! $record->patient_id ? 'Lead' : 'Bệnh nhân')
+                    ->url(function ($record): ?string {
+                        if ($record->patient_id && $record->patient) {
+                            return PatientResource::getUrl('view', [
+                                'record' => $record->patient,
+                                'tab' => 'appointments',
+                            ]);
+                        }
+
+                        if ($record->customer_id && $record->customer) {
+                            return CustomerResource::getUrl('edit', [
+                                'record' => $record->customer,
+                            ]);
+                        }
+
+                        return null;
+                    })
+                    ->openUrlInNewTab(),
 
                 TextColumn::make('doctor.name')->label('Bác sĩ')->toggleable(),
                 TextColumn::make('branch.name')->label('Chi nhánh')->toggleable(),
@@ -166,6 +185,7 @@ class AppointmentsTable
                     ->label('Đánh dấu trễ giờ')
                     ->icon('heroicon-o-clock')
                     ->color('warning')
+                    ->successNotificationTitle('Đã ghi nhận trễ giờ')
                     ->visible(fn (Appointment $record) => in_array($record->status, Appointment::activeStatuses(), true))
                     ->form([
                         \Filament\Forms\Components\TextInput::make('late_minutes')
@@ -188,16 +208,12 @@ class AppointmentsTable
                                 'late_minutes' => (int) ($data['late_minutes'] ?? 0),
                             ],
                         );
-
-                        Notification::make()
-                            ->title('Đã ghi nhận trễ giờ')
-                            ->success()
-                            ->send();
                     }),
                 Action::make('mark_emergency')
                     ->label('Đánh dấu khẩn cấp')
                     ->icon('heroicon-o-exclamation-triangle')
                     ->color('danger')
+                    ->successNotificationTitle('Đã ghi nhận ca khẩn cấp')
                     ->visible(fn (Appointment $record) => ! $record->is_emergency)
                     ->form([
                         \Filament\Forms\Components\Textarea::make('reason')
@@ -211,16 +227,12 @@ class AppointmentsTable
                             (string) ($data['reason'] ?? ''),
                             auth()->id(),
                         );
-
-                        Notification::make()
-                            ->title('Đã ghi nhận ca khẩn cấp')
-                            ->success()
-                            ->send();
                     }),
                 Action::make('mark_walk_in')
                     ->label('Đánh dấu walk-in')
                     ->icon('heroicon-o-user-plus')
                     ->color('info')
+                    ->successNotificationTitle('Đã ghi nhận khách walk-in')
                     ->visible(fn (Appointment $record) => ! $record->is_walk_in)
                     ->form([
                         \Filament\Forms\Components\Textarea::make('reason')
@@ -234,11 +246,6 @@ class AppointmentsTable
                             (string) ($data['reason'] ?? ''),
                             auth()->id(),
                         );
-
-                        Notification::make()
-                            ->title('Đã ghi nhận khách walk-in')
-                            ->success()
-                            ->send();
                     }),
 
                 // Action "Chuyển thành bệnh nhân" - chỉ hiện khi có customer_id nhưng chưa có patient_id

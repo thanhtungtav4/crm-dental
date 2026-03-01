@@ -7,8 +7,6 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -50,7 +48,7 @@ class TreatmentPlansRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'draft' => 'Nháp',
                         'approved' => 'Đã duyệt',
                         'in_progress' => 'Đang thực hiện',
@@ -58,7 +56,7 @@ class TreatmentPlansRelationManager extends RelationManager
                         'cancelled' => 'Đã hủy',
                         default => 'Không xác định',
                     })
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'draft' => 'secondary',
                         'approved' => 'info',
                         'in_progress' => 'warning',
@@ -96,8 +94,10 @@ class TreatmentPlansRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
-                    ->url(fn(TreatmentPlan $record): string =>
-                        route('filament.admin.resources.treatment-plans.edit', ['record' => $record->id])),
+                    ->url(fn (TreatmentPlan $record): string => route('filament.admin.resources.treatment-plans.edit', [
+                        'record' => $record->id,
+                        'return_url' => request()->fullUrl(),
+                    ])),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -112,7 +112,7 @@ class TreatmentPlansRelationManager extends RelationManager
                     ->label('Tạo kế hoạch mới')
                     ->icon('heroicon-o-plus')
                     ->color('success')
-                    ->url(fn() => route('filament.admin.resources.treatment-plans.create', [
+                    ->url(fn () => route('filament.admin.resources.treatment-plans.create', [
                         'patient_id' => $this->getOwnerRecord()->id,
                     ])),
             ])

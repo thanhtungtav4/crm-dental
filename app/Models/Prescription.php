@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,7 +30,7 @@ class Prescription extends Model
         'branch_id' => 'integer',
         'visit_episode_id' => 'integer',
         'treatment_date' => 'date',
-        'notes' => 'encrypted',
+        'notes' => NullableEncrypted::class,
     ];
 
     // Relationships

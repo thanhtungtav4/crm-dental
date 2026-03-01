@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Invoices\Tables;
 
+use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Filament\Resources\Patients\PatientResource;
+use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -29,12 +32,17 @@ class InvoicesTable
                     ->searchable()
                     ->sortable()
                     ->description(fn ($record) => $record->patient?->full_name)
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->url(fn ($record): string => InvoiceResource::getUrl('edit', ['record' => $record])),
 
                 TextColumn::make('patient.full_name')
                     ->label('Bệnh nhân')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->description(fn ($record): string => $record->patient?->patient_code ? 'Mã BN: '.$record->patient->patient_code : 'Không có mã')
+                    ->url(fn ($record): ?string => $record->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'payments'])
+                        : null)
+                    ->toggleable(),
 
                 TextColumn::make('plan.title')
                     ->label('Kế hoạch điều trị')
@@ -193,6 +201,32 @@ class InvoicesTable
 
                 EditAction::make()
                     ->label('Sửa'),
+
+                Action::make('open_patient_profile')
+                    ->label('Hồ sơ BN')
+                    ->icon(Heroicon::OutlinedUser)
+                    ->color('primary')
+                    ->url(fn ($record): ?string => $record->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'payments'])
+                        : null)
+                    ->visible(fn ($record): bool => $record->patient !== null)
+                    ->openUrlInNewTab(),
+
+                Action::make('create_receipt_expense_voucher')
+                    ->label('Phiếu thu/chi')
+                    ->icon(Heroicon::OutlinedDocumentPlus)
+                    ->color('gray')
+                    ->url(fn ($record): string => ReceiptsExpenseResource::getUrl('create', [
+                        'patient_id' => $record->patient_id,
+                        'invoice_id' => $record->id,
+                        'clinic_id' => $record->resolveBranchId(),
+                        'voucher_type' => 'receipt',
+                        'amount' => $record->total_amount,
+                        'payment_method' => 'cash',
+                        'payer_or_receiver' => $record->patient?->full_name,
+                        'content' => 'Thu theo hóa đơn '.$record->invoice_no,
+                    ]))
+                    ->openUrlInNewTab(),
 
                 Action::make('record_payment')
                     ->label('Thanh toán')

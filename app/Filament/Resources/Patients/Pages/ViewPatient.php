@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Patients\Pages;
 
+use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
+use App\Models\PatientMedicalRecord;
 use App\Models\TreatmentMaterial;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -26,6 +28,10 @@ class ViewPatient extends ViewRecord
     protected ?Collection $cachedLatestPrescriptions = null;
 
     protected ?Collection $cachedLatestInvoices = null;
+
+    protected bool $hasResolvedMedicalRecord = false;
+
+    protected ?PatientMedicalRecord $resolvedMedicalRecord = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -167,6 +173,7 @@ class ViewPatient extends ViewRecord
             $sessionPrice = (float) ($session->planItem?->price ?? 0);
 
             return [
+                'session_id' => $session->id,
                 'performed_at' => $performedAt?->format('d/m/Y H:i') ?? '-',
                 'tooth_label' => $toothLabel,
                 'plan_item_name' => $session->planItem?->name ?? '-',
@@ -177,6 +184,10 @@ class ViewPatient extends ViewRecord
                 'price_formatted' => $this->formatMoney($sessionPrice),
                 'status_label' => $statusLabel,
                 'status_class' => $statusClass,
+                'edit_url' => route('filament.admin.resources.treatment-sessions.edit', [
+                    'record' => $session->id,
+                    'return_url' => request()->fullUrl(),
+                ]),
             ];
         });
 
@@ -315,6 +326,13 @@ class ViewPatient extends ViewRecord
                 ]))
                 ->openUrlInNewTab(),
 
+            Action::make('medicalRecord')
+                ->label(fn (): string => $this->resolveMedicalRecordActionLabel())
+                ->icon('heroicon-o-clipboard-document-check')
+                ->color('primary')
+                ->url(fn (): ?string => $this->resolveMedicalRecordActionUrl())
+                ->visible(fn (): bool => $this->resolveMedicalRecordActionUrl() !== null),
+
             Actions\EditAction::make()
                 ->label('Chỉnh sửa')
                 ->icon('heroicon-o-pencil'),
@@ -328,5 +346,55 @@ class ViewPatient extends ViewRecord
     protected function formatMoney(float|int|string|null $value): string
     {
         return number_format((float) $value, 0, ',', '.');
+    }
+
+    protected function resolveMedicalRecordActionUrl(): ?string
+    {
+        $authUser = auth()->user();
+        if (! $authUser) {
+            return null;
+        }
+
+        $medicalRecord = $this->resolvePatientMedicalRecord();
+
+        if ($medicalRecord instanceof PatientMedicalRecord) {
+            if (! ($authUser->can('update', $medicalRecord) || $authUser->can('view', $medicalRecord))) {
+                return null;
+            }
+
+            return PatientMedicalRecordResource::getUrl('edit', [
+                'record' => $medicalRecord,
+                'patient_id' => $this->record->id,
+            ]);
+        }
+
+        if (! $authUser->can('create', PatientMedicalRecord::class)) {
+            return null;
+        }
+
+        return PatientMedicalRecordResource::getUrl('create', [
+            'patient_id' => $this->record->id,
+        ]);
+    }
+
+    protected function resolveMedicalRecordActionLabel(): string
+    {
+        return $this->resolvePatientMedicalRecord() instanceof PatientMedicalRecord
+            ? 'Mở bệnh án điện tử'
+            : 'Tạo bệnh án điện tử';
+    }
+
+    protected function resolvePatientMedicalRecord(): ?PatientMedicalRecord
+    {
+        if ($this->hasResolvedMedicalRecord) {
+            return $this->resolvedMedicalRecord;
+        }
+
+        $this->resolvedMedicalRecord = $this->record->medicalRecord()
+            ->first(['id', 'patient_id']);
+
+        $this->hasResolvedMedicalRecord = true;
+
+        return $this->resolvedMedicalRecord;
     }
 }

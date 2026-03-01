@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\PatientCodeGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,7 +46,7 @@ class Patient extends Model
     protected $casts = [
         'birthday' => 'date',
         'last_verified_at' => 'datetime',
-        'medical_history' => 'encrypted',
+        'medical_history' => NullableEncrypted::class,
     ];
 
     public function customer()

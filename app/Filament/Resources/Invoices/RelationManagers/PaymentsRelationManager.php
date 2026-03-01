@@ -265,6 +265,7 @@ class PaymentsRelationManager extends RelationManager
                     ->label('Hoàn')
                     ->icon(Heroicon::OutlinedArrowUturnLeft)
                     ->color('danger')
+                    ->successNotificationTitle('Đã tạo phiếu hoàn tiền')
                     ->visible(fn (Payment $record): bool => $record->canReverse())
                     ->form([
                         TextInput::make('amount')

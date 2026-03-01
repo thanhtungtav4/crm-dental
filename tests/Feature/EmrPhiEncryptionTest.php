@@ -124,3 +124,35 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
         ->and(PrescriptionItem::query()->where('prescription_id', $prescription->id)->first()?->notes)->toBe('Tối đa 4 viên/ngày.')
         ->and(Consent::query()->where('patient_id', $patient->id)->first()?->note)->toBe('Đã giải thích rủi ro điều trị.');
 });
+
+it('treats legacy empty-string encrypted payloads as null instead of crashing', function () {
+    $branch = Branch::factory()->create();
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    DB::table('clinical_notes')->insert([
+        'patient_id' => $patient->id,
+        'doctor_id' => null,
+        'branch_id' => $branch->id,
+        'date' => '2026-03-11',
+        'examination_note' => '',
+        'general_exam_notes' => '',
+        'recommendation_notes' => null,
+        'treatment_plan_note' => '',
+        'indications' => json_encode([]),
+        'diagnoses' => json_encode([]),
+        'other_diagnosis' => '',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $note = ClinicalNote::query()->latest('id')->firstOrFail();
+
+    expect($note->examination_note)->toBeNull()
+        ->and($note->general_exam_notes)->toBeNull()
+        ->and($note->treatment_plan_note)->toBeNull()
+        ->and($note->other_diagnosis)->toBeNull();
+});

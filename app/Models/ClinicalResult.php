@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,8 +51,8 @@ class ClinicalResult extends Model
             'resulted_at' => 'datetime',
             'verified_at' => 'datetime',
             'payload' => 'array',
-            'interpretation' => 'encrypted',
-            'notes' => 'encrypted',
+            'interpretation' => NullableEncrypted::class,
+            'notes' => NullableEncrypted::class,
         ];
     }
 

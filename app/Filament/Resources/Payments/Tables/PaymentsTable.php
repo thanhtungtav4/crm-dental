@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Payments\Tables;
 
+use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Filament\Resources\Patients\PatientResource;
+use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\Payment;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -28,13 +31,19 @@ class PaymentsTable
                     ->label('Số hóa đơn')
                     ->searchable()
                     ->sortable()
-                    ->description(fn ($record) => $record->invoice?->patient?->full_name ?? 'N/A'),
+                    ->description(fn ($record) => $record->invoice?->patient?->full_name ?? 'N/A')
+                    ->url(fn ($record): ?string => $record->invoice
+                        ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
+                        : null),
 
                 // Patient name (toggleable)
                 TextColumn::make('invoice.patient.full_name')
                     ->label('Bệnh nhân')
                     ->searchable()
                     ->sortable()
+                    ->url(fn ($record): ?string => $record->invoice?->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->invoice->patient, 'tab' => 'payments'])
+                        : null)
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 // Amount with color by method
@@ -193,6 +202,7 @@ class PaymentsTable
                     ->label('Hoàn')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
+                    ->successNotificationTitle('Đã tạo phiếu hoàn tiền')
                     ->visible(fn (Payment $record): bool => $record->canReverse() && $record->invoice !== null)
                     ->form([
                         TextInput::make('amount')
@@ -246,9 +256,42 @@ class PaymentsTable
                     ->label('Xem HĐ')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
-                    ->url(fn ($record) => $record->invoice_id
-                        ? route('filament.admin.resources.invoices.edit', ['record' => $record->invoice_id])
+                    ->url(fn ($record) => $record->invoice
+                        ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
                         : null)
+                    ->openUrlInNewTab(),
+                Action::make('view_patient_profile')
+                    ->label('Hồ sơ BN')
+                    ->icon('heroicon-o-user')
+                    ->color('primary')
+                    ->url(fn ($record): ?string => $record->invoice?->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->invoice->patient, 'tab' => 'payments'])
+                        : null)
+                    ->visible(fn ($record): bool => $record->invoice?->patient !== null)
+                    ->openUrlInNewTab(),
+                Action::make('create_receipt_expense_voucher')
+                    ->label('Phiếu thu/chi')
+                    ->icon('heroicon-o-document-plus')
+                    ->color('gray')
+                    ->url(function ($record): string {
+                        $isRefund = $record->direction === 'refund';
+                        $voucherType = $isRefund ? 'expense' : 'receipt';
+                        $invoiceNo = $record->invoice?->invoice_no ?? '-';
+                        $voucherContent = $isRefund
+                            ? 'Hoàn tiền theo phiếu #'.$record->id.' / hóa đơn '.$invoiceNo
+                            : 'Thu tiền theo phiếu #'.$record->id.' / hóa đơn '.$invoiceNo;
+
+                        return ReceiptsExpenseResource::getUrl('create', [
+                            'patient_id' => $record->invoice?->patient_id,
+                            'invoice_id' => $record->invoice_id,
+                            'clinic_id' => $record->invoice?->resolveBranchId(),
+                            'voucher_type' => $voucherType,
+                            'amount' => abs((float) $record->amount),
+                            'payment_method' => $record->method,
+                            'payer_or_receiver' => $record->invoice?->patient?->full_name,
+                            'content' => $voucherContent,
+                        ]);
+                    })
                     ->openUrlInNewTab(),
                 \Filament\Actions\Action::make('print')
                     ->label('In phiếu')

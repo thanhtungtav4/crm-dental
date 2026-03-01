@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Tables;
 
+use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
 use App\Services\DoctorBranchAssignmentService;
 use App\Services\PatientBranchTransferService;
@@ -26,7 +27,10 @@ class PatientsTable
                     ->sortable(),
                 TextColumn::make('full_name')
                     ->label('Họ tên')
-                    ->searchable(),
+                    ->searchable()
+                    ->weight('bold')
+                    ->color('primary')
+                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'basic-info'])),
                 TextColumn::make('gender')
                     ->label('Giới tính')
                     ->badge()
@@ -58,6 +62,24 @@ class PatientsTable
                 TextColumn::make('branch.name')
                     ->label('Chi nhánh')
                     ->toggleable(),
+                TextColumn::make('appointments_count')
+                    ->label('Lịch hẹn')
+                    ->counts('appointments')
+                    ->badge()
+                    ->color('info')
+                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'appointments'])),
+                TextColumn::make('treatment_plans_count')
+                    ->label('KHĐT')
+                    ->counts('treatmentPlans')
+                    ->badge()
+                    ->color('success')
+                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'exam-treatment'])),
+                TextColumn::make('invoices_count')
+                    ->label('Hóa đơn')
+                    ->counts('invoices')
+                    ->badge()
+                    ->color('warning')
+                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'payments'])),
                 TextColumn::make('created_at')
                     ->label('Ngày tạo')
                     ->dateTime()

@@ -26,3 +26,13 @@ it('supports multi-select toggle for mobile and desktop in tooth chart component
     expect($blade)->toContain('Chọn nhiều');
     expect($blade)->toContain('hỗ trợ mobile');
 });
+
+it('escapes diagnosis condition codes safely in tooth chart alpine expressions', function (): void {
+    $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50\' : \'\'"')
+        ->and($blade)->toContain('@click="toggleCondition(@js((string) $condition->code))"')
+        ->and($blade)->toContain(':checked="hasCondition(@js((string) $condition->code))"')
+        ->and($blade)->not->toContain("@click=\"toggleCondition('{{ \$condition->code }}')\"");
+});

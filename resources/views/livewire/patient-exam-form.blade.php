@@ -5,6 +5,7 @@
             type="button"
             wire:click="createSession"
             class="crm-btn crm-btn-primary h-10 px-4 text-sm"
+            style="color: #ffffff;"
         >
             Thêm phiếu khám
         </button>
@@ -57,13 +58,16 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <a
-                                href="{{ $medicalRecordActionUrl }}"
-                                target="_blank"
-                                class="crm-btn crm-btn-primary h-8 px-3 text-xs"
-                            >
-                                {{ $medicalRecordActionLabel }}
-                            </a>
+                            @if(filled($medicalRecordActionUrl) && filled($medicalRecordActionLabel))
+                                <a
+                                    href="{{ $medicalRecordActionUrl }}"
+                                    target="_blank"
+                                    class="crm-btn crm-btn-primary h-8 px-3 text-xs"
+                                    style="color: #ffffff;"
+                                >
+                                    {{ $medicalRecordActionLabel }}
+                                </a>
+                            @endif
 
                             <button
                                 type="button"
@@ -93,6 +97,7 @@
                                     type="button"
                                     wire:click="saveEditingSession"
                                     class="crm-btn crm-btn-primary h-8 px-3 text-xs"
+                                    style="color: #ffffff;"
                                 >
                                     Lưu
                                 </button>
@@ -818,8 +823,8 @@
                                         <h4 class="mb-3 text-sm font-medium text-gray-700">Chọn tình trạng của răng</h4>
                                         <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
                                             @foreach($conditions as $condition)
-                                                <label class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100" :class="hasCondition('{{ $condition->code }}') ? 'bg-primary-50' : ''">
-                                                    <input type="checkbox" @click="toggleCondition('{{ $condition->code }}')" :checked="hasCondition('{{ $condition->code }}')" class="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500">
+                                                <label class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100" :class="hasCondition(@js((string) $condition->code)) ? 'bg-primary-50' : ''">
+                                                    <input type="checkbox" @click="toggleCondition(@js((string) $condition->code))" :checked="hasCondition(@js((string) $condition->code))" class="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500">
                                                     <span class="text-sm text-gray-700">{{ $condition->name }}</span>
                                                 </label>
                                             @endforeach

@@ -1,6 +1,8 @@
 <?php
 
 use App\Filament\Resources\PlanItems\Pages\EditPlanItem;
+use App\Filament\Resources\TreatmentPlans\Pages\EditTreatmentPlan;
+use App\Filament\Resources\TreatmentSessions\Pages\EditTreatmentSession;
 use Illuminate\Support\Facades\File;
 
 it('keeps patient context when opening plan item edit from treatment plan list', function (): void {
@@ -54,4 +56,78 @@ it('rejects livewire internal endpoint as return url', function (): void {
     expect($sanitizeReturnUrl(url('/livewire/update')))->toBeNull()
         ->and($sanitizeReturnUrl(url('/admin')))->toBe(url('/admin'))
         ->and($sanitizeReturnUrl('https://example.org/admin'))->toBeNull();
+});
+
+it('preserves patient tab context when opening treatment plan edit from patient relation manager', function (): void {
+    $relationManagerPath = app_path('Filament/Resources/Patients/RelationManagers/TreatmentPlansRelationManager.php');
+    $relationManager = File::get($relationManagerPath);
+
+    expect($relationManager)
+        ->toContain("'return_url' => request()->fullUrl()");
+});
+
+it('redirects treatment plan edit page back to safe return url after save and destructive actions', function (): void {
+    $pagePath = app_path('Filament/Resources/TreatmentPlans/Pages/EditTreatmentPlan.php');
+    $page = File::get($pagePath);
+
+    expect($page)->toContain('protected function getRedirectUrl(): string')
+        ->and($page)->toContain('DeleteAction::make()')
+        ->and($page)->toContain('ForceDeleteAction::make()')
+        ->and($page)->toContain('RestoreAction::make()')
+        ->and($page)->toContain('->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl(\'index\'))')
+        ->and($page)->toContain("request()->query('return_url')")
+        ->and($page)->toContain('isDisallowedReturnPath')
+        ->and($page)->toContain('isGetAccessiblePath');
+});
+
+it('rejects livewire internal endpoint as return url for treatment plan edit page', function (): void {
+    $page = app(EditTreatmentPlan::class);
+    $sanitizeReturnUrl = function (mixed $returnUrl): ?string {
+        return $this->sanitizeReturnUrl($returnUrl);
+    };
+    $sanitizeReturnUrl = $sanitizeReturnUrl->bindTo($page, EditTreatmentPlan::class);
+
+    expect($sanitizeReturnUrl(url('/livewire/update')))->toBeNull()
+        ->and($sanitizeReturnUrl(url('/admin/treatment-plans')))->toBe(url('/admin/treatment-plans'))
+        ->and($sanitizeReturnUrl('https://example.org/admin'))->toBeNull();
+});
+
+it('redirects treatment session edit page back to safe return url after save and delete', function (): void {
+    $pagePath = app_path('Filament/Resources/TreatmentSessions/Pages/EditTreatmentSession.php');
+    $page = File::get($pagePath);
+
+    expect($page)->toContain('protected function getRedirectUrl(): string')
+        ->and($page)->toContain('DeleteAction::make()')
+        ->and($page)->toContain('->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl(\'index\'))')
+        ->and($page)->toContain("request()->query('return_url')")
+        ->and($page)->toContain('isDisallowedReturnPath')
+        ->and($page)->toContain('isGetAccessiblePath');
+});
+
+it('rejects livewire internal endpoint as return url for treatment session edit page', function (): void {
+    $page = app(EditTreatmentSession::class);
+    $sanitizeReturnUrl = function (mixed $returnUrl): ?string {
+        return $this->sanitizeReturnUrl($returnUrl);
+    };
+    $sanitizeReturnUrl = $sanitizeReturnUrl->bindTo($page, EditTreatmentSession::class);
+
+    expect($sanitizeReturnUrl(url('/livewire/update')))->toBeNull()
+        ->and($sanitizeReturnUrl(url('/admin/treatment-sessions')))->toBe(url('/admin/treatment-sessions'))
+        ->and($sanitizeReturnUrl('https://example.org/admin'))->toBeNull();
+});
+
+it('provides treatment session edit link from patient exam treatment progress table', function (): void {
+    $pageClassPath = app_path('Filament/Resources/Patients/Pages/ViewPatient.php');
+    $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
+
+    $pageClass = File::get($pageClassPath);
+    $blade = File::get($bladePath);
+
+    expect($pageClass)
+        ->toContain("'edit_url' => route('filament.admin.resources.treatment-sessions.edit'")
+        ->toContain("'return_url' => request()->fullUrl()");
+
+    expect($blade)
+        ->toContain("{{ \$session['edit_url'] }}")
+        ->toContain('Chỉnh sửa phiên điều trị');
 });

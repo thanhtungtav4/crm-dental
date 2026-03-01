@@ -94,3 +94,116 @@ it('shows edit medical record link in patient exam when emr already exists', fun
         ->assertSee($editUrl)
         ->assertDontSee($createUrl);
 });
+
+it('allows doctor to open create medical record page from patient context', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctor->id,
+    ]);
+
+    $this->actingAs($doctor);
+
+    $createUrl = route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $patient->id]);
+
+    $this->get($createUrl)
+        ->assertSuccessful();
+});
+
+it('shows patient profile header action to open medical record', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctor->id,
+    ]);
+
+    $this->actingAs($doctor);
+
+    $patientViewUrl = route('filament.admin.resources.patients.view', [
+        'record' => $patient->id,
+        'tab' => 'exam-treatment',
+    ]);
+
+    $createMedicalRecordUrl = route('filament.admin.resources.patient-medical-records.create', [
+        'patient_id' => $patient->id,
+    ]);
+
+    $this->get($patientViewUrl)
+        ->assertSuccessful()
+        ->assertSee('Tạo bệnh án điện tử')
+        ->assertSee($createMedicalRecordUrl);
+
+    $medicalRecord = PatientMedicalRecord::query()->create([
+        'patient_id' => $patient->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $editMedicalRecordUrl = route('filament.admin.resources.patient-medical-records.edit', [
+        'record' => $medicalRecord->id,
+        'patient_id' => $patient->id,
+    ]);
+
+    $this->get($patientViewUrl)
+        ->assertSuccessful()
+        ->assertSee('Mở bệnh án điện tử')
+        ->assertSee($editMedicalRecordUrl);
+});
+
+it('shows back to patient profile action on create and edit medical record pages', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctor->id,
+    ]);
+
+    $this->actingAs($doctor);
+
+    $patientProfileUrl = route('filament.admin.resources.patients.view', [
+        'record' => $patient->id,
+        'tab' => 'exam-treatment',
+    ]);
+
+    $this->get(route('filament.admin.resources.patient-medical-records.create', [
+        'patient_id' => $patient->id,
+    ]))
+        ->assertSuccessful()
+        ->assertSee('Về hồ sơ bệnh nhân')
+        ->assertSee($patientProfileUrl);
+
+    $medicalRecord = PatientMedicalRecord::query()->create([
+        'patient_id' => $patient->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $this->get(route('filament.admin.resources.patient-medical-records.edit', [
+        'record' => $medicalRecord->id,
+        'patient_id' => $patient->id,
+    ]))
+        ->assertSuccessful()
+        ->assertSee('Về hồ sơ bệnh nhân')
+        ->assertSee($patientProfileUrl);
+});

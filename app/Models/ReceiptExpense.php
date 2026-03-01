@@ -14,6 +14,8 @@ class ReceiptExpense extends Model
 
     protected $fillable = [
         'clinic_id',
+        'patient_id',
+        'invoice_id',
         'voucher_code',
         'voucher_type',
         'voucher_date',
@@ -29,6 +31,8 @@ class ReceiptExpense extends Model
     ];
 
     protected $casts = [
+        'patient_id' => 'integer',
+        'invoice_id' => 'integer',
         'voucher_date' => 'date',
         'amount' => 'decimal:2',
         'posted_at' => 'datetime',
@@ -37,6 +41,16 @@ class ReceiptExpense extends Model
     public function clinic(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'clinic_id');
+    }
+
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function poster(): BelongsTo

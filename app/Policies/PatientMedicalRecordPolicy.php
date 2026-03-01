@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\PatientMedicalRecord;
 use App\Models\User;
+use App\Support\ActionPermission;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PatientMedicalRecordPolicy
@@ -14,22 +15,34 @@ class PatientMedicalRecordPolicy
 
     public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
+        return (
+            $authUser->can('ViewAny:PatientMedicalRecord')
+            || $authUser->can(ActionPermission::EMR_CLINICAL_WRITE)
+        ) && $authUser->hasAnyAccessibleBranch();
     }
 
     public function view(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('View:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
+        return (
+            $authUser->can('View:PatientMedicalRecord')
+            || $authUser->can(ActionPermission::EMR_CLINICAL_WRITE)
+        ) && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
     public function create(User $authUser): bool
     {
-        return $authUser->can('Create:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
+        return (
+            $authUser->can('Create:PatientMedicalRecord')
+            || $authUser->can(ActionPermission::EMR_CLINICAL_WRITE)
+        ) && $authUser->hasAnyAccessibleBranch();
     }
 
     public function update(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Update:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
+        return (
+            $authUser->can('Update:PatientMedicalRecord')
+            || $authUser->can(ActionPermission::EMR_CLINICAL_WRITE)
+        ) && $this->canAccessRecord($authUser, $patientMedicalRecord);
     }
 
     public function delete(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool

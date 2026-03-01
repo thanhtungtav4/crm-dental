@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,7 +31,7 @@ class PatientMedicalRecord extends Model
         'chronic_diseases' => 'array',
         'current_medications' => 'array',
         'insurance_expiry_date' => 'date',
-        'additional_notes' => 'encrypted',
+        'additional_notes' => NullableEncrypted::class,
     ];
 
     protected static function booted(): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,11 +44,11 @@ class ClinicalNote extends Model
         'visit_episode_id' => 'integer',
         'lock_version' => 'integer',
         'date' => 'date',
-        'examination_note' => 'encrypted',
-        'general_exam_notes' => 'encrypted',
-        'recommendation_notes' => 'encrypted',
-        'treatment_plan_note' => 'encrypted',
-        'other_diagnosis' => 'encrypted',
+        'examination_note' => NullableEncrypted::class,
+        'general_exam_notes' => NullableEncrypted::class,
+        'recommendation_notes' => NullableEncrypted::class,
+        'treatment_plan_note' => NullableEncrypted::class,
+        'other_diagnosis' => NullableEncrypted::class,
         'indications' => 'array',
         'indication_images' => 'array',
         'diagnoses' => 'array',

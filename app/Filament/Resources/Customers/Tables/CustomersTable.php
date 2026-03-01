@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Customers\Tables;
 
+use App\Filament\Resources\Customers\CustomerResource;
+use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -24,7 +26,20 @@ class CustomersTable
             ->columns([
                 TextColumn::make('full_name')
                     ->label('Họ tên')
-                    ->searchable(),
+                    ->searchable()
+                    ->weight('bold')
+                    ->color(fn ($record) => $record->patient ? 'primary' : null)
+                    ->url(fn ($record): string => $record->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'basic-info'])
+                        : CustomerResource::getUrl('edit', ['record' => $record])),
+                TextColumn::make('patient.patient_code')
+                    ->label('Mã BN')
+                    ->badge()
+                    ->placeholder('Lead')
+                    ->color(fn ($record): string => $record->patient ? 'success' : 'gray')
+                    ->url(fn ($record): ?string => $record->patient
+                        ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'basic-info'])
+                        : null),
                 TextColumn::make('phone')
                     ->label('Điện thoại')
                     ->searchable(),
@@ -155,12 +170,17 @@ class CustomersTable
                             }
 
                         } catch (\Exception $e) {
-                            // Error notification handled in Service
+                            Notification::make()
+                                ->title('Không thể chuyển thành bệnh nhân')
+                                ->body('Vui lòng kiểm tra dữ liệu và thử lại.')
+                                ->danger()
+                                ->send();
                         }
                     }),
                 Action::make('createAppointment')
                     ->label('Tạo lịch hẹn')
                     ->icon('heroicon-o-calendar')
+                    ->successNotificationTitle('Đã tạo lịch hẹn')
                     ->modalHeading('Tạo lịch hẹn')
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
@@ -223,10 +243,6 @@ class CustomersTable
                             'reschedule_reason' => $data['reschedule_reason'] ?? null,
                             'note' => $data['note'] ?? null,
                         ]);
-                        Notification::make()
-                            ->title('Đã tạo lịch hẹn')
-                            ->success()
-                            ->send();
                     }),
             ])
             ->toolbarActions([

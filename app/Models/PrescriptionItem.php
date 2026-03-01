@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncrypted;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,7 +24,7 @@ class PrescriptionItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'notes' => 'encrypted',
+        'notes' => NullableEncrypted::class,
     ];
 
     // Relationships
