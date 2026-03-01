@@ -705,6 +705,7 @@ Ghi chu:
 - **Status Note**:
   - Da bo sung gate `ops:check-backup-health` (strict mode) va noi vao profile `production` cua `ops:run-release-gates`.
   - Da bo sung test strict pass/fail cho backup health gate.
+  - Da bo sung command `ops:create-backup-artifact` (sqlite copy + mysqldump/pg_dump) va scheduler daily de tao backup artifact truoc backup/restore gate.
   - Da them `ops:run-restore-drill` (verify artifact + checksum) va gate strict trong production release profile.
   - Da them `ops:check-alert-runbook-map` de validate owner/threshold/runbook theo alert category.
   - Da bo sung scheduler daily cho restore drill + runbook map check va cap nhat test release gate/scheduler.
