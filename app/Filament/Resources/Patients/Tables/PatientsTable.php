@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Services\DoctorBranchAssignmentService;
 use App\Services\PatientBranchTransferService;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\GenderBadge;
 use Filament\Actions\Action;
@@ -153,10 +154,10 @@ class PatientsTable
                             ->helperText('Chỉ hiển thị bác sĩ đang được phân công ở chi nhánh đã chọn.'),
                         \Filament\Forms\Components\Select::make('branch_id')
                             ->label('Chi nhánh')
-                            ->options(fn () => \App\Models\Branch::query()->pluck('name', 'id'))
+                            ->options(fn (): array => BranchAccess::branchOptionsForCurrentUser())
                             ->searchable()
                             ->preload()
-                            ->default(fn ($record) => $record?->first_branch_id)
+                            ->default(fn ($record): ?int => is_numeric($record?->first_branch_id) ? (int) $record->first_branch_id : BranchAccess::defaultBranchIdForCurrentUser())
                             ->live()
                             ->afterStateUpdated(function (callable $get, callable $set, $state): void {
                                 $doctorId = $get('doctor_id');
@@ -229,10 +230,20 @@ class PatientsTable
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
+                        $resolvedBranchId = is_numeric($data['branch_id'] ?? null)
+                            ? (int) $data['branch_id']
+                            : (is_numeric($record->first_branch_id) ? (int) $record->first_branch_id : null);
+
+                        BranchAccess::assertCanAccessBranch(
+                            branchId: $resolvedBranchId,
+                            field: 'branch_id',
+                            message: 'Bạn không thể tạo lịch hẹn ở chi nhánh ngoài phạm vi được phân quyền.',
+                        );
+
                         Appointment::create([
                             'patient_id' => $record->id,
                             'doctor_id' => $data['doctor_id'] ?? null,
-                            'branch_id' => $data['branch_id'] ?? $record->first_branch_id,
+                            'branch_id' => $resolvedBranchId,
                             'date' => $data['date'],
                             'appointment_kind' => $data['appointment_kind'] ?? 'booking',
                             'status' => $data['status'] ?? Appointment::STATUS_SCHEDULED,
@@ -255,14 +266,14 @@ class PatientsTable
                         \Filament\Forms\Components\Select::make('to_branch_id')
                             ->label('Chi nhánh nhận')
                             ->options(function ($record): array {
-                                return \App\Models\Branch::query()
-                                    ->where('active', true)
-                                    ->when(
-                                        filled($record->first_branch_id),
-                                        fn ($query) => $query->where('id', '!=', (int) $record->first_branch_id)
-                                    )
-                                    ->orderBy('name')
-                                    ->pluck('name', 'id')
+                                $options = BranchAccess::branchOptionsForCurrentUser();
+
+                                if (! filled($record->first_branch_id)) {
+                                    return $options;
+                                }
+
+                                return collect($options)
+                                    ->reject(fn (string $name, int $branchId): bool => $branchId === (int) $record->first_branch_id)
                                     ->all();
                             })
                             ->searchable()

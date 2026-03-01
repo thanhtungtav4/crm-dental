@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Invoices\Schemas;
 use App\Models\Invoice;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
+use App\Support\BranchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -14,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class InvoiceForm
@@ -27,7 +29,11 @@ class InvoiceForm
                     ->schema([
                         Select::make('patient_id')
                             ->label('Bệnh nhân')
-                            ->relationship('patient', 'full_name')
+                            ->relationship(
+                                name: 'patient',
+                                titleAttribute: 'full_name',
+                                modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeQueryByAccessibleBranches($query, 'first_branch_id'),
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
@@ -256,6 +262,8 @@ class InvoiceForm
             ->select(['id', 'title', 'status', 'created_at', 'patient_id'])
             ->orderByDesc('created_at');
 
+        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
+
         if (is_numeric($patientId)) {
             $query->where('patient_id', (int) $patientId);
         }
@@ -277,11 +285,24 @@ class InvoiceForm
             return [];
         }
 
-        return TreatmentSession::query()
+        $query = TreatmentSession::query()
             ->select(['id', 'performed_at', 'status', 'procedure'])
             ->where('treatment_plan_id', (int) $treatmentPlanId)
             ->orderByDesc('performed_at')
-            ->orderByDesc('id')
+            ->orderByDesc('id');
+
+        $authUser = BranchAccess::currentUser();
+
+        if ($authUser instanceof \App\Models\User && ! $authUser->hasRole('Admin')) {
+            $branchIds = BranchAccess::accessibleBranchIds($authUser);
+            if ($branchIds === []) {
+                return [];
+            }
+
+            $query->whereHas('treatmentPlan', fn (Builder $planQuery) => $planQuery->whereIn('branch_id', $branchIds));
+        }
+
+        return $query
             ->limit(100)
             ->get()
             ->mapWithKeys(function (TreatmentSession $session): array {

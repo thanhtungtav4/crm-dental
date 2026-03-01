@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Patients\Schemas;
 
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 
 class PatientForm
@@ -20,7 +22,16 @@ class PatientForm
     {
         return [
             Forms\Components\Select::make('customer_id')
-                ->relationship('customer', 'full_name', fn ($query) => $query->doesntHave('patient'))
+                ->relationship(
+                    name: 'customer',
+                    titleAttribute: 'full_name',
+                    modifyQueryUsing: function (Builder $query): Builder {
+                        $query->doesntHave('patient');
+                        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
+
+                        return $query;
+                    },
+                )
                 ->label('Khách hàng')
                 ->searchable()
                 ->preload()
@@ -71,10 +82,15 @@ class PatientForm
                 ->nullable(),
 
             Forms\Components\Select::make('first_branch_id')
-                ->relationship('branch', 'name')
+                ->relationship(
+                    name: 'branch',
+                    titleAttribute: 'name',
+                    modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                )
                 ->label('Chi nhánh')
                 ->searchable()
                 ->preload()
+                ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
                 ->nullable(),
 
             Forms\Components\TextInput::make('full_name')

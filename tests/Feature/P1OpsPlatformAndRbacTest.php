@@ -449,11 +449,19 @@ it('enforces action level rbac for appointment override payment reversal and pla
 
     $this->actingAs($unauthorizedUser);
 
+    $unauthorizedUser->update([
+        'branch_id' => $appointment->branch_id,
+    ]);
+
     expect(fn () => $appointment->applyOperationalOverride(
         Appointment::OVERRIDE_EMERGENCY,
         'Đau cấp cần chen lịch',
         $unauthorizedUser->id,
     ))->toThrow(ValidationException::class, 'không có quyền override vận hành lịch hẹn');
+
+    $unauthorizedUser->update([
+        'branch_id' => $invoice->resolveBranchId(),
+    ]);
 
     expect(fn () => $invoice->recordPayment(
         amount: 100000,
@@ -462,6 +470,10 @@ it('enforces action level rbac for appointment override payment reversal and pla
         paidAt: now(),
         direction: 'refund',
     ))->toThrow(ValidationException::class, 'không có quyền thực hiện hoàn tiền');
+
+    $unauthorizedUser->update([
+        'branch_id' => $plan->branch_id,
+    ]);
 
     expect(fn () => $planItem->update([
         'approval_status' => PlanItem::APPROVAL_APPROVED,
@@ -485,6 +497,10 @@ it('blocks direct refund payment and insurance decision without action permissio
     ]);
 
     $this->actingAs($unauthorizedUser);
+
+    $unauthorizedUser->update([
+        'branch_id' => $invoice->resolveBranchId(),
+    ]);
 
     expect(fn () => Payment::query()->create([
         'invoice_id' => $invoice->id,
@@ -511,8 +527,13 @@ it('allows users with action permission to execute protected actions', function 
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
+    $doctor->update([
+        'branch_id' => $appointment->branch_id,
+    ]);
+
     $plan = TreatmentPlan::factory()->create([
         'status' => TreatmentPlan::STATUS_APPROVED,
+        'branch_id' => $appointment->branch_id,
     ]);
 
     $planItem = PlanItem::query()->create([
@@ -535,8 +556,12 @@ it('allows users with action permission to execute protected actions', function 
     ]);
 
     $this->actingAs($manager);
+    $manager->update([
+        'branch_id' => $appointment->branch_id,
+    ]);
 
     $invoice = Invoice::factory()->create([
+        'branch_id' => $appointment->branch_id,
         'status' => Invoice::STATUS_ISSUED,
         'total_amount' => 500000,
         'paid_amount' => 0,
@@ -556,12 +581,14 @@ it('allows users with action permission to execute protected actions', function 
 });
 
 it('records expanded audit logs for consent insurance claim and treatment session', function () {
-    $manager = User::factory()->create();
+    $patient = Patient::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
+    ]);
     $manager->assignRole('Manager');
 
     $this->actingAs($manager);
-
-    $patient = Patient::factory()->create();
 
     $consent = Consent::query()->create([
         'patient_id' => $patient->id,
@@ -577,6 +604,7 @@ it('records expanded audit logs for consent insurance claim and treatment sessio
 
     $invoice = Invoice::factory()->create([
         'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
         'status' => Invoice::STATUS_ISSUED,
         'total_amount' => 500000,
         'paid_amount' => 0,
@@ -594,6 +622,7 @@ it('records expanded audit logs for consent insurance claim and treatment sessio
 
     $plan = TreatmentPlan::factory()->create([
         'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
     ]);
 
     $session = TreatmentSession::query()->create([

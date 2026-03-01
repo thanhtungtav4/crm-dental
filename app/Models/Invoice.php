@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -97,6 +98,14 @@ class Invoice extends Model
             $invoice->status = static::normalizeStatus((string) $invoice->status);
 
             static::syncRelationalContext($invoice);
+
+            if (is_numeric($invoice->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $invoice->branch_id,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền thao tác hóa đơn ở chi nhánh này.',
+                );
+            }
 
             $shouldRecalculateTotal = $invoice->isDirty([
                 'subtotal',

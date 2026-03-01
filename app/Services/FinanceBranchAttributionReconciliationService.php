@@ -125,6 +125,153 @@ class FinanceBranchAttributionReconciliationService
     }
 
     /**
+     * @return array{
+     *     invoice_scanned:int,
+     *     invoice_updated:int,
+     *     invoice_skipped:int,
+     *     invoice_failed:int,
+     *     payment_scanned:int,
+     *     payment_updated:int,
+     *     payment_skipped:int,
+     *     payment_failed:int,
+     *     started_at:string,
+     *     finished_at:string
+     * }
+     */
+    public function backfillBranchAttribution(Carbon $from, Carbon $to, ?int $branchId = null): array
+    {
+        $stats = [
+            'invoice_scanned' => 0,
+            'invoice_updated' => 0,
+            'invoice_skipped' => 0,
+            'invoice_failed' => 0,
+            'payment_scanned' => 0,
+            'payment_updated' => 0,
+            'payment_skipped' => 0,
+            'payment_failed' => 0,
+            'started_at' => now()->toDateTimeString(),
+            'finished_at' => now()->toDateTimeString(),
+        ];
+
+        $timestamp = now();
+
+        Invoice::query()
+            ->whereNull('branch_id')
+            ->whereRaw('COALESCE(invoices.issued_at, invoices.created_at) BETWEEN ? AND ?', [
+                $from->toDateTimeString(),
+                $to->toDateTimeString(),
+            ])
+            ->when(
+                $branchId !== null,
+                function (Builder $query) use ($branchId): void {
+                    $query->where(function (Builder $innerQuery) use ($branchId): void {
+                        $innerQuery
+                            ->whereHas('plan', fn (Builder $planQuery): Builder => $planQuery->where('branch_id', $branchId))
+                            ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
+                                $fallbackQuery
+                                    ->whereDoesntHave('plan')
+                                    ->whereHas('patient', fn (Builder $patientQuery): Builder => $patientQuery->where('first_branch_id', $branchId));
+                            });
+                    });
+                },
+            )
+            ->with([
+                'plan:id,branch_id',
+                'patient:id,first_branch_id',
+            ])
+            ->orderBy('id')
+            ->chunkById(200, function ($invoices) use (&$stats, $timestamp): void {
+                foreach ($invoices as $invoice) {
+                    $stats['invoice_scanned']++;
+
+                    $resolvedBranchId = $invoice->resolveBranchId();
+                    if (! is_numeric($resolvedBranchId)) {
+                        $stats['invoice_skipped']++;
+
+                        continue;
+                    }
+
+                    try {
+                        $updated = Invoice::query()
+                            ->whereKey($invoice->id)
+                            ->whereNull('branch_id')
+                            ->update([
+                                'branch_id' => (int) $resolvedBranchId,
+                                'updated_at' => $timestamp,
+                            ]);
+
+                        if ($updated === 1) {
+                            $stats['invoice_updated']++;
+                        } else {
+                            $stats['invoice_skipped']++;
+                        }
+                    } catch (\Throwable) {
+                        $stats['invoice_failed']++;
+                    }
+                }
+            });
+
+        Payment::query()
+            ->whereNull('branch_id')
+            ->whereBetween('paid_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->when(
+                $branchId !== null,
+                function (Builder $query) use ($branchId): void {
+                    $query->where(function (Builder $innerQuery) use ($branchId): void {
+                        $innerQuery
+                            ->whereHas('invoice', fn (Builder $invoiceQuery): Builder => $invoiceQuery->where('branch_id', $branchId))
+                            ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
+                                $fallbackQuery->whereHas('invoice', function (Builder $invoiceQuery) use ($branchId): void {
+                                    $invoiceQuery
+                                        ->whereNull('branch_id')
+                                        ->whereHas('patient', fn (Builder $patientQuery): Builder => $patientQuery->where('first_branch_id', $branchId));
+                                });
+                            });
+                    });
+                },
+            )
+            ->with([
+                'invoice:id,branch_id,patient_id',
+                'invoice.patient:id,first_branch_id',
+            ])
+            ->orderBy('id')
+            ->chunkById(200, function ($payments) use (&$stats, $timestamp): void {
+                foreach ($payments as $payment) {
+                    $stats['payment_scanned']++;
+
+                    $resolvedBranchId = $payment->invoice?->branch_id ?? $payment->invoice?->patient?->first_branch_id;
+                    if (! is_numeric($resolvedBranchId)) {
+                        $stats['payment_skipped']++;
+
+                        continue;
+                    }
+
+                    try {
+                        $updated = Payment::query()
+                            ->whereKey($payment->id)
+                            ->whereNull('branch_id')
+                            ->update([
+                                'branch_id' => (int) $resolvedBranchId,
+                                'updated_at' => $timestamp,
+                            ]);
+
+                        if ($updated === 1) {
+                            $stats['payment_updated']++;
+                        } else {
+                            $stats['payment_skipped']++;
+                        }
+                    } catch (\Throwable) {
+                        $stats['payment_failed']++;
+                    }
+                }
+            });
+
+        $stats['finished_at'] = now()->toDateTimeString();
+
+        return $stats;
+    }
+
+    /**
      * @return array<string, array{amount:float,count:int}>
      */
     protected function loadInvoiceCurrentByBranch(Carbon $from, Carbon $to, ?int $branchId): array

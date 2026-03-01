@@ -227,7 +227,7 @@ it('does not fallback to legacy default_branch_id when default_branch_code is em
     expect($customer->branch_id)->toBeNull();
 });
 
-it('sends realtime notifications to all users in configured roles', function (): void {
+it('sends realtime notifications only to configured role users who can access the target branch', function (): void {
     $targetBranch = Branch::factory()->create([
         'code' => 'BR-WEB-NOTI-HCM',
         'active' => true,
@@ -283,10 +283,10 @@ it('sends realtime notifications to all users in configured roles', function ():
         ->where('notifiable_type', User::class)
         ->get();
 
-    expect($notifications->count())->toBe(3)
+    expect($notifications->count())->toBe(1)
         ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $sameBranchRecipient->id))->toBeTrue()
-        ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $globalRecipient->id))->toBeTrue()
-        ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $otherBranchRecipient->id))->toBeTrue()
+        ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $globalRecipient->id))->toBeFalse()
+        ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $otherBranchRecipient->id))->toBeFalse()
         ->and($notifications->contains(fn ($item) => (int) $item->notifiable_id === $nonTargetRoleRecipient->id))->toBeFalse();
 
     $payload = json_decode((string) $notifications->firstWhere('notifiable_id', $sameBranchRecipient->id)->data, true);

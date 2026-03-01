@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Payments\Pages;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -28,6 +29,12 @@ class CreatePayment extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $invoice = Invoice::query()->findOrFail((int) ($data['invoice_id'] ?? 0));
+        BranchAccess::assertCanAccessBranch(
+            branchId: $invoice->resolveBranchId(),
+            field: 'invoice_id',
+            message: 'Bạn không thể ghi nhận thanh toán cho hóa đơn thuộc chi nhánh ngoài phạm vi được phân quyền.',
+        );
+
         $transactionRef = filled($data['transaction_ref'] ?? null)
             ? trim((string) $data['transaction_ref'])
             : null;

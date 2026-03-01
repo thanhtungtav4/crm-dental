@@ -4,9 +4,10 @@ namespace App\Filament\Resources\Customers\Pages;
 
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Customer;
+use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class CreateCustomer extends CreateRecord
 {
@@ -23,7 +24,15 @@ class CreateCustomer extends CreateRecord
             }
         }
 
-        if (!empty($data['email'])) {
+        if (is_numeric($data['branch_id'] ?? null)) {
+            BranchAccess::assertCanAccessBranch(
+                branchId: (int) $data['branch_id'],
+                field: 'branch_id',
+                message: 'Bạn không thể tạo khách hàng ở chi nhánh ngoài phạm vi được phân quyền.',
+            );
+        }
+
+        if (! empty($data['email'])) {
             $exists = Customer::withTrashed()->where('email', $data['email'])->exists();
             if ($exists) {
                 throw ValidationException::withMessages([
@@ -31,7 +40,7 @@ class CreateCustomer extends CreateRecord
                 ]);
             }
         }
-        if (!empty($data['phone'])) {
+        if (! empty($data['phone'])) {
             $exists = Customer::withTrashed()->where('phone', $data['phone'])->exists();
             if ($exists) {
                 throw ValidationException::withMessages([

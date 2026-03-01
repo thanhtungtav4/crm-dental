@@ -156,3 +156,34 @@ it('treats legacy empty-string encrypted payloads as null instead of crashing', 
         ->and($note->treatment_plan_note)->toBeNull()
         ->and($note->other_diagnosis)->toBeNull();
 });
+
+it('treats invalid encrypted payloads as null instead of throwing decrypt exception', function () {
+    $branch = Branch::factory()->create();
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    DB::table('clinical_notes')->insert([
+        'patient_id' => $patient->id,
+        'doctor_id' => null,
+        'branch_id' => $branch->id,
+        'date' => '2026-03-11',
+        'examination_note' => 'not-an-encrypted-payload',
+        'general_exam_notes' => '{this-is-not-valid-json-cipher}',
+        'recommendation_notes' => null,
+        'treatment_plan_note' => null,
+        'indications' => json_encode([]),
+        'diagnoses' => json_encode([]),
+        'other_diagnosis' => 'invalid-cipher-text',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $note = ClinicalNote::query()->latest('id')->firstOrFail();
+
+    expect($note->examination_note)->toBeNull()
+        ->and($note->general_exam_notes)->toBeNull()
+        ->and($note->other_diagnosis)->toBeNull();
+});

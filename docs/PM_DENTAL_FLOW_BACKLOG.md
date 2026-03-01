@@ -1,6 +1,6 @@
 # PM Backlog - Dental CRM Flow Hardening
 
-Cap nhat: 2026-02-27
+Cap nhat: 2026-03-01
 Nguon tong hop: `docs/DENTAL_CRM_SPECIFICATION.md`, `docs/GAP_ANALYSIS.md`, `docs/IMPLEMENTATION_SPRINT_BACKLOG.md`
 
 ## 1) Muc tieu backlog
@@ -308,6 +308,10 @@ Ghi chu:
   - Enforce branch-scope o policy/query cho Patient, Appointment, Invoice, Payment, Prescription, Note, print endpoints.
   - Chan truy cap cheo chi nhanh khi chi co role van hanh tai 1 chi nhanh.
   - Dinh nghia ro role co quyen xem lien chi nhanh (vd Admin HQ).
+- **Status Note**:
+  - Da bo sung helper trung tam `BranchAccess` va enforce branch guard o model-level write path (`Customer/Patient/TreatmentPlan/Appointment/Invoice/Payment`).
+  - Da harden branch-scope o Filament create-flow (`Customer/Patient/Appointment/TreatmentPlan/Invoice/Payment`) va action nhanh tren list.
+  - Da bo sung regression test `BranchWriteIsolationGuardTest` + cap nhat test multi-branch transfer/realtime lead theo rule branch isolation.
 - **Acceptance Criteria (QA)**:
   1. User chi nhanh A khong xem/sua du lieu chi nhanh B (tru role HQ).
   2. Tat ca API/page/print route nhay cam deu qua branch-aware authorization.
@@ -326,6 +330,7 @@ Ghi chu:
   - Da xong schema + backfill + test attribution (`branch_id`) tren invoice/payment.
   - KPI da uu tien du lieu transactional branch, co fallback cho du lieu cu chua co `branch_id`.
   - Da bo sung command doi soat `finance:reconcile-branch-attribution` + export JSON + test regression.
+  - Da bo sung `--apply` backfill transaction branch attribution va bao cao `before/after` trong cung 1 lan chay.
 - **Acceptance Criteria (QA)**:
   1. Revenue theo chi nhanh khop so lieu van hanh va ledger.
   2. Chuyen chi nhanh benh nhan khong lam sai lich su doanh thu.

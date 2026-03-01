@@ -5,10 +5,12 @@ use App\Models\Invoice;
 use App\Models\User;
 
 it('records audit log when invoice is updated', function () {
-    $user = User::factory()->create();
     $invoice = Invoice::factory()->create([
         'discount_amount' => 0,
         'status' => 'issued',
+    ]);
+    $user = User::factory()->create([
+        'branch_id' => $invoice->resolveBranchId(),
     ]);
 
     $this->actingAs($user);
@@ -29,9 +31,11 @@ it('records audit log when invoice is updated', function () {
 });
 
 it('records audit log when invoice is cancelled', function () {
-    $user = User::factory()->create();
     $invoice = Invoice::factory()->create([
         'status' => 'issued',
+    ]);
+    $user = User::factory()->create([
+        'branch_id' => $invoice->resolveBranchId(),
     ]);
 
     $this->actingAs($user);

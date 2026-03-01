@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rules\Unique;
 
 class PaymentForm
@@ -27,7 +29,11 @@ class PaymentForm
                     ->schema([
                         Select::make('invoice_id')
                             ->label('Hóa đơn')
-                            ->relationship('invoice', 'invoice_no')
+                            ->relationship(
+                                name: 'invoice',
+                                titleAttribute: 'invoice_no',
+                                modifyQueryUsing: fn (Builder $query): Builder => self::scopeInvoiceQueryForCurrentUser($query),
+                            )
                             ->searchable()
                             ->preload()
                             ->default(fn () => request()->integer('invoice_id') ?: null)
@@ -201,5 +207,27 @@ class PaymentForm
                     ->collapsed()
                     ->visible(fn ($operation) => $operation === 'create'),
             ]);
+    }
+
+    protected static function scopeInvoiceQueryForCurrentUser(Builder $query): Builder
+    {
+        $authUser = BranchAccess::currentUser();
+
+        if (! $authUser instanceof \App\Models\User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($authUser);
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $innerQuery) use ($branchIds): void {
+            $innerQuery->whereIn('branch_id', $branchIds)
+                ->orWhere(function (Builder $fallbackQuery) use ($branchIds): void {
+                    $fallbackQuery->whereNull('branch_id')
+                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds));
+                });
+        });
     }
 }

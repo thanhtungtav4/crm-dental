@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Customers\Tables;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Services\DoctorBranchAssignmentService;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -185,20 +187,71 @@ class CustomersTable
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
                             ->label('Bác sĩ')
-                            ->options(fn () => \App\Models\User::role('Doctor')->pluck('name', 'id'))
+                            ->options(function (callable $get): array {
+                                $branchId = $get('branch_id');
+                                $date = $get('date');
+                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                                return app(DoctorBranchAssignmentService::class)
+                                    ->doctorOptionsForBranch(
+                                        branchId: filled($branchId) ? (int) $branchId : null,
+                                        at: $appointmentAt,
+                                    );
+                            })
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->helperText('Chỉ hiển thị bác sĩ đang được phân công ở chi nhánh đã chọn.'),
                         \Filament\Forms\Components\Select::make('branch_id')
                             ->label('Chi nhánh')
-                            ->options(fn () => \App\Models\Branch::query()->pluck('name', 'id'))
+                            ->options(fn (): array => BranchAccess::branchOptionsForCurrentUser())
                             ->searchable()
                             ->preload()
-                            ->default(fn ($record) => $record?->branch_id)
+                            ->default(fn ($record): ?int => is_numeric($record?->branch_id) ? (int) $record->branch_id : BranchAccess::defaultBranchIdForCurrentUser())
+                            ->live()
+                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                                $doctorId = $get('doctor_id');
+
+                                if (! filled($doctorId) || ! filled($state)) {
+                                    return;
+                                }
+
+                                $date = $get('date');
+                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
+
+                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                                    doctorId: (int) $doctorId,
+                                    branchId: (int) $state,
+                                    at: $appointmentAt,
+                                );
+
+                                if (! $isAllowed) {
+                                    $set('doctor_id', null);
+                                }
+                            })
                             ->required(),
                         \Filament\Forms\Components\DateTimePicker::make('date')
                             ->label('Thời gian')
                             ->default(fn () => now()->addDay())
+                            ->live()
+                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
+                                $doctorId = $get('doctor_id');
+                                $branchId = $get('branch_id');
+
+                                if (! filled($doctorId) || ! filled($branchId) || ! filled($state)) {
+                                    return;
+                                }
+
+                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
+                                    doctorId: (int) $doctorId,
+                                    branchId: (int) $branchId,
+                                    at: \Carbon\Carbon::parse((string) $state),
+                                );
+
+                                if (! $isAllowed) {
+                                    $set('doctor_id', null);
+                                }
+                            })
                             ->required(),
                         \Filament\Forms\Components\Select::make('appointment_kind')
                             ->label('Loại lịch hẹn')
@@ -227,6 +280,16 @@ class CustomersTable
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
+                        $resolvedBranchId = is_numeric($data['branch_id'] ?? null)
+                            ? (int) $data['branch_id']
+                            : (is_numeric($record->branch_id) ? (int) $record->branch_id : null);
+
+                        BranchAccess::assertCanAccessBranch(
+                            branchId: $resolvedBranchId,
+                            field: 'branch_id',
+                            message: 'Bạn không thể tạo lịch hẹn ở chi nhánh ngoài phạm vi được phân quyền.',
+                        );
+
                         /** @var \App\Services\PatientConversionService $service */
                         $service = app(\App\Services\PatientConversionService::class);
                         $patient = $service->convert($record);
@@ -235,7 +298,7 @@ class CustomersTable
                             'patient_id' => $patient->id,
                             'customer_id' => $record->id,
                             'doctor_id' => $data['doctor_id'] ?? null,
-                            'branch_id' => $data['branch_id'] ?? $record->branch_id,
+                            'branch_id' => $resolvedBranchId,
                             'date' => $data['date'],
                             'appointment_kind' => $data['appointment_kind'] ?? 'booking',
                             'status' => $data['status'] ?? Appointment::STATUS_SCHEDULED,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\NullableEncrypted;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\PatientCodeGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -213,6 +214,14 @@ class Patient extends Model
         });
 
         static::creating(function (self $patient) {
+            if (is_numeric($patient->first_branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $patient->first_branch_id,
+                    field: 'first_branch_id',
+                    message: 'Bạn không có quyền tạo hồ sơ bệnh nhân ở chi nhánh này.',
+                );
+            }
+
             // If no customer selected, create a lead automatically from patient info
             if (empty($patient->customer_id)) {
                 $customer = new Customer;
@@ -238,6 +247,14 @@ class Patient extends Model
         });
 
         static::updating(function (self $patient) {
+            if ($patient->isDirty('first_branch_id') && is_numeric($patient->first_branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $patient->first_branch_id,
+                    field: 'first_branch_id',
+                    message: 'Bạn không có quyền chuyển hồ sơ bệnh nhân sang chi nhánh này.',
+                );
+            }
+
             if ($patient->isDirty('first_branch_id')) {
                 $from = $patient->getOriginal('first_branch_id');
                 $to = $patient->first_branch_id;

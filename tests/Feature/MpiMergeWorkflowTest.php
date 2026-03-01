@@ -13,7 +13,7 @@ use App\Models\User;
 
 it('merges duplicate patients into canonical record and keeps mapping history', function () {
     $manager = User::factory()->create();
-    $manager->assignRole('Manager');
+    $manager->assignRole('Admin');
     $this->actingAs($manager);
 
     $branchA = Branch::factory()->create();
@@ -127,7 +127,7 @@ it('merges duplicate patients into canonical record and keeps mapping history', 
 
 it('rolls back patient merge and restores previous patient references', function () {
     $manager = User::factory()->create();
-    $manager->assignRole('Manager');
+    $manager->assignRole('Admin');
     $this->actingAs($manager);
 
     $branchA = Branch::factory()->create();

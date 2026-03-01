@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\DoctorBranchAssignmentService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -189,6 +190,14 @@ class Appointment extends Model
     protected static function booted(): void
     {
         static::saving(function (self $appointment): void {
+            if (is_numeric($appointment->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $appointment->branch_id,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền thao tác lịch hẹn ở chi nhánh này.',
+                );
+            }
+
             if (blank($appointment->patient_id) && filled($appointment->customer_id)) {
                 $linkedPatientId = Patient::query()
                     ->where('customer_id', (int) $appointment->customer_id)

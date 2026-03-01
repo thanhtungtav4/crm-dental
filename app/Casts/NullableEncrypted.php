@@ -3,8 +3,10 @@
 namespace App\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class NullableEncrypted implements CastsAttributes
 {
@@ -19,7 +21,18 @@ class NullableEncrypted implements CastsAttributes
             return null;
         }
 
-        return Crypt::decryptString((string) $value);
+        try {
+            return Crypt::decryptString((string) $value);
+        } catch (DecryptException $exception) {
+            Log::warning('Không thể giải mã dữ liệu mã hóa nullable, fallback về null.', [
+                'model' => $model::class,
+                'model_id' => $model->getKey(),
+                'attribute' => $key,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

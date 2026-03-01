@@ -6,6 +6,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
+use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateInvoice extends CreateRecord
@@ -42,12 +43,27 @@ class CreateInvoice extends CreateRecord
 
         if (! empty($data['treatment_plan_id'])) {
             $plan = TreatmentPlan::query()
-                ->select(['id', 'patient_id'])
+                ->select(['id', 'patient_id', 'branch_id'])
                 ->find((int) $data['treatment_plan_id']);
 
             if ($plan) {
                 $data['patient_id'] = $plan->patient_id;
+                $data['branch_id'] = $data['branch_id'] ?? $plan->branch_id;
             }
+        }
+
+        if (empty($data['branch_id']) && ! empty($data['patient_id'])) {
+            $data['branch_id'] = \App\Models\Patient::query()
+                ->whereKey((int) $data['patient_id'])
+                ->value('first_branch_id');
+        }
+
+        if (is_numeric($data['branch_id'] ?? null)) {
+            BranchAccess::assertCanAccessBranch(
+                branchId: (int) $data['branch_id'],
+                field: 'patient_id',
+                message: 'Bạn không thể tạo hóa đơn cho hồ sơ thuộc chi nhánh ngoài phạm vi được phân quyền.',
+            );
         }
 
         $subtotal = max(0, round((float) ($data['subtotal'] ?? 0), 2));

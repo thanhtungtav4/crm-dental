@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -21,6 +22,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ClinicalNotesRelationManager extends RelationManager
 {
@@ -54,7 +56,11 @@ class ClinicalNotesRelationManager extends RelationManager
 
                             Select::make('branch_id')
                                 ->label('Phòng khám')
-                                ->relationship('branch', 'name')
+                                ->relationship(
+                                    name: 'branch',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                                )
                                 ->searchable()
                                 ->preload()
                                 ->columnSpan(1),

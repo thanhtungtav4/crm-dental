@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +50,14 @@ class Payment extends Model
                 $payment->branch_id = Invoice::query()
                     ->whereKey((int) $payment->invoice_id)
                     ->value('branch_id');
+            }
+
+            if (is_numeric($payment->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $payment->branch_id,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền thao tác phiếu thu/hoàn ở chi nhánh này.',
+                );
             }
 
             if ($payment->direction === 'refund') {

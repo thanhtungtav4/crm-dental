@@ -106,7 +106,9 @@ it('transfers patient branch with request log branch log and audit log', functio
     $branchA = Branch::factory()->create();
     $branchB = Branch::factory()->create();
 
-    $manager = User::factory()->create();
+    $manager = User::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
     $manager->assignRole('Manager');
 
     $customer = Customer::factory()->create([

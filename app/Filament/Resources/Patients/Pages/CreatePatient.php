@@ -3,8 +3,9 @@
 namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
-use Filament\Resources\Pages\CreateRecord;
 use App\Models\Patient;
+use App\Support\BranchAccess;
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 
 class CreatePatient extends CreateRecord
@@ -13,7 +14,15 @@ class CreatePatient extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (!empty($data['email'])) {
+        if (is_numeric($data['first_branch_id'] ?? null)) {
+            BranchAccess::assertCanAccessBranch(
+                branchId: (int) $data['first_branch_id'],
+                field: 'first_branch_id',
+                message: 'Bạn không thể tạo bệnh nhân ở chi nhánh ngoài phạm vi được phân quyền.',
+            );
+        }
+
+        if (! empty($data['email'])) {
             $exists = Patient::withTrashed()->where('email', $data['email'])->exists();
             if ($exists) {
                 throw ValidationException::withMessages([
@@ -21,7 +30,7 @@ class CreatePatient extends CreateRecord
                 ]);
             }
         }
-        if (!empty($data['phone'])) {
+        if (! empty($data['phone'])) {
             $exists = Patient::withTrashed()
                 ->where('phone', $data['phone'])
                 ->when(

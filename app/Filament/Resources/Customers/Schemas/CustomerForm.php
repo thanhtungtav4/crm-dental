@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\Customers\Schemas;
 
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class CustomerForm
 {
@@ -36,11 +38,15 @@ class CustomerForm
                         Section::make('Phân loại & Trạng thái')
                             ->schema([
                                 Forms\Components\Select::make('branch_id')
-                                    ->relationship('branch', 'name')
+                                    ->relationship(
+                                        name: 'branch',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                                    )
                                     ->label('Chi nhánh')
                                     ->searchable()
                                     ->preload()
-                                    ->default(fn () => auth()->user()?->branch_id)
+                                    ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
                                     ->required(),
 
                                 Forms\Components\Select::make('source')

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\BranchTransferRequest;
 use App\Models\Patient;
+use App\Models\User;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class PatientBranchTransferService
             'Bạn không có quyền chuyển bệnh nhân liên chi nhánh.',
         );
 
-        $this->assertTargetBranch($patient, $toBranchId);
+        $this->assertTargetBranch($patient, $toBranchId, $actorId);
 
         $pendingExists = BranchTransferRequest::query()
             ->where('patient_id', $patient->id)
@@ -73,7 +74,7 @@ class PatientBranchTransferService
                 ->lockForUpdate()
                 ->findOrFail($request->patient_id);
 
-            $this->assertTargetBranch($patient, (int) $request->to_branch_id);
+            $this->assertTargetBranch($patient, (int) $request->to_branch_id, $actorId);
 
             $patient->branchTransferLogNote = $this->buildTransferLogNote(
                 reason: $request->reason,
@@ -151,7 +152,7 @@ class PatientBranchTransferService
         return $transferRequest;
     }
 
-    protected function assertTargetBranch(Patient $patient, int $toBranchId): void
+    protected function assertTargetBranch(Patient $patient, int $toBranchId, ?int $actorId = null): void
     {
         if ((int) ($patient->first_branch_id ?? 0) === $toBranchId) {
             throw ValidationException::withMessages([
@@ -169,6 +170,18 @@ class PatientBranchTransferService
                 'to_branch_id' => 'Chi nhánh nhận không hợp lệ hoặc đã ngưng hoạt động.',
             ]);
         }
+
+        $actor = $this->resolveActor($actorId);
+
+        if (
+            $actor instanceof User
+            && ! $actor->hasRole('Admin')
+            && ! $actor->canAccessBranch($toBranchId)
+        ) {
+            throw ValidationException::withMessages([
+                'to_branch_id' => 'Bạn không có quyền chuyển bệnh nhân sang chi nhánh này.',
+            ]);
+        }
     }
 
     protected function buildTransferLogNote(?string $reason = null, ?string $note = null): string
@@ -183,5 +196,16 @@ class PatientBranchTransferService
         }
 
         return 'Chuyển chi nhánh | '.implode(' | ', $payload);
+    }
+
+    protected function resolveActor(?int $actorId = null): ?User
+    {
+        if (is_numeric($actorId)) {
+            return User::query()->find((int) $actorId);
+        }
+
+        $authUser = auth()->user();
+
+        return $authUser instanceof User ? $authUser : null;
     }
 }

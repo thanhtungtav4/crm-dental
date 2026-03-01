@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\PatientConversionService;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -41,6 +42,21 @@ class Customer extends Model
         'next_follow_up_at' => 'datetime',
         'last_web_contact_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $customer): void {
+            if (! is_numeric($customer->branch_id)) {
+                return;
+            }
+
+            BranchAccess::assertCanAccessBranch(
+                branchId: (int) $customer->branch_id,
+                field: 'branch_id',
+                message: 'Bạn không có quyền thao tác khách hàng ở chi nhánh này.',
+            );
+        });
+    }
 
     public function branch()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,9 +13,13 @@ class TreatmentPlan extends Model
     use HasFactory, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const DEFAULT_STATUS = self::STATUS_DRAFT;
@@ -87,6 +92,14 @@ class TreatmentPlan extends Model
     protected static function booted(): void
     {
         static::saving(function (self $plan): void {
+            if (is_numeric($plan->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $plan->branch_id,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền thao tác kế hoạch điều trị ở chi nhánh này.',
+                );
+            }
+
             if (! $plan->exists || ! $plan->isDirty('status')) {
                 return;
             }
@@ -146,6 +159,7 @@ class TreatmentPlan extends Model
         }
 
         $totalProgress = $items->sum('progress_percentage');
+
         return (int) ($totalProgress / $items->count());
     }
 
@@ -222,7 +236,7 @@ class TreatmentPlan extends Model
      */
     public function isOverdue(): bool
     {
-        if (!$this->expected_end_date) {
+        if (! $this->expected_end_date) {
             return false;
         }
 
@@ -254,7 +268,7 @@ class TreatmentPlan extends Model
      */
     public function hasBeforePhoto(): bool
     {
-        return !empty($this->before_photo);
+        return ! empty($this->before_photo);
     }
 
     /**
@@ -262,7 +276,7 @@ class TreatmentPlan extends Model
      */
     public function hasAfterPhoto(): bool
     {
-        return !empty($this->after_photo);
+        return ! empty($this->after_photo);
     }
 
     /**

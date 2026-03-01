@@ -17,6 +17,7 @@ class ReconcileFinanceBranchAttribution extends Command
         {--from= : Từ ngày (Y-m-d)}
         {--to= : Đến ngày (Y-m-d)}
         {--branch_id= : Chỉ chạy cho 1 chi nhánh}
+        {--apply : Tự động backfill branch attribution cho invoice/payment bị thiếu}
         {--export= : Đường dẫn file JSON output}';
 
     protected $description = 'Đối soát branch attribution tài chính (invoice/payment) giữa mô hình mới và legacy.';
@@ -41,12 +42,37 @@ class ReconcileFinanceBranchAttribution extends Command
             : now()->endOfDay();
         $branchId = $this->option('branch_id') !== null ? (int) $this->option('branch_id') : null;
 
-        $report = $this->service->build($from, $to, $branchId);
+        $beforeReport = $this->service->build($from, $to, $branchId);
+        $report = $beforeReport;
+        $backfillSummary = null;
+
+        if ((bool) $this->option('apply')) {
+            $this->warn('APPLY_MODE: running branch attribution backfill for invoices/payments with missing branch_id...');
+
+            $backfillSummary = $this->service->backfillBranchAttribution($from, $to, $branchId);
+            $report = $this->service->build($from, $to, $branchId);
+        }
+
         $rows = (array) Arr::get($report, 'rows', []);
         $summary = (array) Arr::get($report, 'summary', []);
 
         $this->line('RECONCILIATION_WINDOW: '.$from->toDateTimeString().' -> '.$to->toDateTimeString());
         $this->line('RECONCILIATION_BRANCH_SCOPE: '.($branchId ?? 'ALL'));
+
+        if ($backfillSummary !== null) {
+            $beforeSummary = (array) Arr::get($beforeReport, 'summary', []);
+            $this->line('BEFORE_DELTA_INVOICES: '.$this->formatAmount((float) ($beforeSummary['invoice_delta_amount'] ?? 0)));
+            $this->line('BEFORE_DELTA_RECEIPTS: '.$this->formatAmount((float) ($beforeSummary['receipt_delta_amount'] ?? 0)));
+            $this->line(sprintf(
+                'BACKFILL_COUNTS: invoices updated=%d skipped=%d failed=%d | payments updated=%d skipped=%d failed=%d',
+                (int) ($backfillSummary['invoice_updated'] ?? 0),
+                (int) ($backfillSummary['invoice_skipped'] ?? 0),
+                (int) ($backfillSummary['invoice_failed'] ?? 0),
+                (int) ($backfillSummary['payment_updated'] ?? 0),
+                (int) ($backfillSummary['payment_skipped'] ?? 0),
+                (int) ($backfillSummary['payment_failed'] ?? 0),
+            ));
+        }
 
         $this->table(
             [
@@ -86,7 +112,17 @@ class ReconcileFinanceBranchAttribution extends Command
         $exportPath = $this->option('export')
             ? (string) $this->option('export')
             : storage_path('app/reconciliation/finance-branch-attribution-'.$from->toDateString().'_'.$to->toDateString().'.json');
-        $this->writeJsonReport($exportPath, $report);
+        $exportPayload = [
+            'window' => $report['window'] ?? [],
+            'rows' => $report['rows'] ?? [],
+            'summary' => $report['summary'] ?? [],
+            'before' => $beforeReport,
+            'after' => $report,
+            'applied' => $backfillSummary !== null,
+            'apply_summary' => $backfillSummary,
+        ];
+
+        $this->writeJsonReport($exportPath, $exportPayload);
 
         AuditLog::record(
             entityType: AuditLog::ENTITY_AUTOMATION,
@@ -99,6 +135,9 @@ class ReconcileFinanceBranchAttribution extends Command
                 'to' => $to->toDateTimeString(),
                 'branch_id' => $branchId,
                 'export_path' => $exportPath,
+                'applied' => $backfillSummary !== null,
+                'before_summary' => Arr::get($beforeReport, 'summary'),
+                'apply_summary' => $backfillSummary,
                 'summary' => $summary,
             ],
         );

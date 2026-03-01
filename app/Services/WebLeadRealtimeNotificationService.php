@@ -10,6 +10,7 @@ use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class WebLeadRealtimeNotificationService
 {
@@ -25,9 +26,9 @@ class WebLeadRealtimeNotificationService
             return;
         }
 
-        $recipients = $this->resolveRecipients(
-            roleNames: $roles,
-        );
+        $recipients = $this->resolveRecipients(roleNames: $roles)
+            ->filter(fn (User $user): bool => $this->canReceiveForBranch($user, $customer->branch_id !== null ? (int) $customer->branch_id : null))
+            ->values();
 
         if ($recipients->isEmpty()) {
             return;
@@ -72,10 +73,28 @@ class WebLeadRealtimeNotificationService
      */
     protected function resolveRecipients(array $roleNames): Collection
     {
-        return User::query()
+        $query = User::query()
             ->role($roleNames)
             ->select('users.*')
-            ->distinct('users.id')
-            ->get();
+            ->distinct('users.id');
+
+        if (Schema::hasColumn('users', 'status')) {
+            $query->where('status', true);
+        }
+
+        return $query->get();
+    }
+
+    protected function canReceiveForBranch(User $user, ?int $branchId): bool
+    {
+        if ($branchId === null) {
+            return true;
+        }
+
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        return $user->canAccessBranch($branchId);
     }
 }

@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Services\Schemas;
 
+use App\Support\BranchAccess;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class ServiceForm
 {
@@ -95,7 +97,11 @@ class ServiceForm
                             ->columnSpan(1),
                         Select::make('branch_id')
                             ->label('Chi nhánh')
-                            ->relationship('branch', 'name')
+                            ->relationship(
+                                name: 'branch',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                            )
                             ->searchable()
                             ->preload()
                             ->helperText('Để trống nếu dịch vụ áp dụng cho tất cả chi nhánh')

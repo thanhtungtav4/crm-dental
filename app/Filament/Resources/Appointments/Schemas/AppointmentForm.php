@@ -5,10 +5,12 @@ namespace App\Filament\Resources\Appointments\Schemas;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Services\DoctorBranchAssignmentService;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class AppointmentForm
 {
@@ -33,12 +35,16 @@ class AppointmentForm
                             ->value('customer_id');
                     })
                     ->getSearchResultsUsing(function (string $search): array {
-                        return \App\Models\Customer::query()
+                        $query = \App\Models\Customer::query()
                             ->where(function ($q) use ($search) {
                                 $q->where('full_name', 'like', "%{$search}%")
                                     ->orWhere('phone', 'like', "%{$search}%")
                                     ->orWhere('email', 'like', "%{$search}%");
-                            })
+                            });
+
+                        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
+
+                        return $query
                             ->orderBy('full_name')
                             ->limit(50)
                             ->get()
@@ -55,7 +61,12 @@ class AppointmentForm
                             return null;
                         }
 
-                        $c = \App\Models\Customer::find($value);
+                        $query = \App\Models\Customer::query()
+                            ->whereKey((int) $value);
+
+                        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
+
+                        $c = $query->first();
                         if (! $c) {
                             return null;
                         }
@@ -113,8 +124,11 @@ class AppointmentForm
                             ->columns(2),
                     ])
                     ->createOptionUsing(function (array $data): int {
+                        $branchId = BranchAccess::defaultBranchIdForCurrentUser();
+
                         // Chỉ tạo Customer (Lead)
                         $customer = \App\Models\Customer::create([
+                            'branch_id' => $branchId,
                             'full_name' => $data['full_name'],
                             'phone' => $data['phone'],
                             'email' => $data['email'] ?? null,
@@ -164,11 +178,15 @@ class AppointmentForm
                     ->helperText('Chỉ hiển thị bác sĩ đã được phân công theo chi nhánh và lịch hiệu lực.'),
 
                 Forms\Components\Select::make('branch_id')
-                    ->relationship('branch', 'name')
+                    ->relationship(
+                        name: 'branch',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                    )
                     ->label('Chi nhánh')
                     ->searchable()
                     ->preload()
-                    ->default(fn () => auth()->user()?->branch_id)
+                    ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
                     ->required()
                     ->live()
                     ->afterStateUpdated(function (callable $get, callable $set, $state): void {

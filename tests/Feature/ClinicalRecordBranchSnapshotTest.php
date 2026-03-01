@@ -109,6 +109,10 @@ it('keeps consent branch snapshot and audit metadata stable after patient transf
         'signed_by' => $manager->id,
     ]);
 
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
     $patient->update([
         'first_branch_id' => $branchB->id,
     ]);
