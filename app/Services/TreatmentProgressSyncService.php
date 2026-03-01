@@ -35,20 +35,24 @@ class TreatmentProgressSyncService
         }
 
         $status = $this->normalizeItemStatus((string) ($session->status ?? 'scheduled'));
-        $day = TreatmentProgressDay::query()->firstOrCreate(
-            [
+        $day = TreatmentProgressDay::query()
+            ->where('patient_id', (int) $patientId)
+            ->where('exam_session_id', (int) $examSession->id)
+            ->whereDate('progress_date', $progressDate)
+            ->first();
+
+        if (! $day) {
+            $day = TreatmentProgressDay::query()->create([
                 'patient_id' => (int) $patientId,
                 'exam_session_id' => (int) $examSession->id,
                 'progress_date' => $progressDate,
-            ],
-            [
                 'treatment_plan_id' => $session->treatment_plan_id ? (int) $session->treatment_plan_id : null,
                 'branch_id' => $session->treatmentPlan?->branch_id ? (int) $session->treatmentPlan->branch_id : null,
                 'status' => TreatmentProgressDay::STATUS_PLANNED,
                 'created_by' => $session->created_by,
                 'updated_by' => $session->updated_by,
-            ]
-        );
+            ]);
+        }
 
         if ($day->status !== TreatmentProgressDay::STATUS_LOCKED) {
             $day->fill([

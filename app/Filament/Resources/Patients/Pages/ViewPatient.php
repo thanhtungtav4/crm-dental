@@ -21,6 +21,8 @@ class ViewPatient extends ViewRecord
 
     protected ?Collection $cachedTreatmentProgress = null;
 
+    protected ?Collection $cachedTreatmentProgressDaySummaries = null;
+
     protected ?Collection $cachedMaterialUsages = null;
 
     protected ?array $cachedPaymentSummary = null;
@@ -164,6 +166,9 @@ class ViewPatient extends ViewRecord
 
         $this->cachedTreatmentProgress = $progressItems->map(function ($progressItem) {
             $performedAt = $progressItem->performed_at ?? $progressItem->created_at;
+            $progressDate = $progressItem->progressDay?->progress_date?->format('d/m/Y')
+                ?? $performedAt?->format('d/m/Y')
+                ?? '-';
             $statusLabel = match ($progressItem->status) {
                 'completed' => 'Hoàn thành',
                 'in_progress' => 'Đang thực hiện',
@@ -181,11 +186,13 @@ class ViewPatient extends ViewRecord
                 ?: (is_array($progressItem->planItem?->tooth_ids) ? implode(' ', $progressItem->planItem?->tooth_ids) : '-');
             $sessionQty = (float) ($progressItem->quantity ?? 1);
             $sessionPrice = (float) ($progressItem->unit_price ?? 0);
+            $sessionLineTotal = (float) ($progressItem->total_amount ?? ($sessionQty * $sessionPrice));
             $sessionId = $progressItem->treatment_session_id ? (int) $progressItem->treatment_session_id : null;
 
             return [
                 'session_id' => $progressItem->id,
                 'performed_at' => $performedAt?->format('d/m/Y H:i') ?? '-',
+                'progress_date' => $progressDate,
                 'tooth_label' => $toothLabel,
                 'plan_item_name' => $progressItem->procedure_name ?: ($progressItem->planItem?->name ?? '-'),
                 'procedure' => $progressItem->notes ?: '-',
@@ -193,6 +200,8 @@ class ViewPatient extends ViewRecord
                 'assistant_name' => $progressItem->assistant?->name ?? '-',
                 'quantity' => fmod($sessionQty, 1.0) === 0.0 ? (int) $sessionQty : $sessionQty,
                 'price_formatted' => $this->formatMoney($sessionPrice),
+                'total_amount' => $sessionLineTotal,
+                'total_amount_formatted' => $this->formatMoney($sessionLineTotal),
                 'status_label' => $statusLabel,
                 'status_class' => $statusClass,
                 'edit_url' => $sessionId
@@ -210,6 +219,56 @@ class ViewPatient extends ViewRecord
     public function getTreatmentProgressCountProperty(): int
     {
         return $this->treatmentProgress->count();
+    }
+
+    public function getTreatmentProgressDaySummariesProperty(): Collection
+    {
+        if ($this->cachedTreatmentProgressDaySummaries !== null) {
+            return $this->cachedTreatmentProgressDaySummaries;
+        }
+
+        $days = $this->record->treatmentProgressDays()
+            ->withSum('items as day_total_amount', 'total_amount')
+            ->withCount('items as sessions_count')
+            ->latest('progress_date')
+            ->latest('id')
+            ->limit(20)
+            ->get(['id', 'progress_date', 'status']);
+
+        $this->cachedTreatmentProgressDaySummaries = $days->map(function ($day) {
+            $statusLabel = match ($day->status) {
+                'completed' => 'Hoàn thành',
+                'in_progress' => 'Đang thực hiện',
+                'locked' => 'Đã khoá',
+                default => 'Đã lên lịch',
+            };
+
+            return [
+                'progress_date' => $day->progress_date?->format('d/m/Y') ?? '-',
+                'status_label' => $statusLabel,
+                'sessions_count' => (int) ($day->sessions_count ?? 0),
+                'day_total_amount' => (float) ($day->day_total_amount ?? 0),
+                'day_total_amount_formatted' => $this->formatMoney((float) ($day->day_total_amount ?? 0)),
+            ];
+        });
+
+        return $this->cachedTreatmentProgressDaySummaries;
+    }
+
+    public function getTreatmentProgressDayCountProperty(): int
+    {
+        return $this->treatmentProgressDaySummaries->count();
+    }
+
+    public function getTreatmentProgressTotalAmountProperty(): float
+    {
+        return $this->treatmentProgress
+            ->sum(fn (array $session): float => (float) ($session['total_amount'] ?? 0));
+    }
+
+    public function getTreatmentProgressTotalAmountFormattedProperty(): string
+    {
+        return $this->formatMoney($this->treatmentProgressTotalAmount);
     }
 
     public function getMaterialUsagesProperty(): Collection

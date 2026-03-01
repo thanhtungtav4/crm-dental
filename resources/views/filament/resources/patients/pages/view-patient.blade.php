@@ -260,14 +260,14 @@
                         <div class="crm-treatment-progress-stack">
                             <div class="crm-treatment-progress-head">
                                 <h3 class="crm-section-label">Tiến trình điều trị</h3>
-                                <span class="crm-section-badge">{{ $this->treatmentProgressCount }} phiên</span>
+                                <span class="crm-section-badge">{{ $this->treatmentProgressDayCount }} ngày · {{ $this->treatmentProgressCount }} phiên</span>
                             </div>
 
                             <div class="crm-treatment-card">
                                 <div class="crm-treatment-subhead">
                                     <div class="crm-treatment-subhead-title">Tiến trình điều trị</div>
                                     <div class="crm-treatment-subhead-actions">
-                                        <span class="crm-treatment-subhead-count">Hiển thị {{ $this->treatmentProgressCount }}/{{ $this->treatmentProgressCount }}</span>
+                                        <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressTotalAmountFormatted }}đ</span>
                                         <a href="{{ route('filament.admin.resources.treatment-sessions.create', ['patient_id' => $this->record->id]) }}"
                                            class="crm-btn crm-btn-primary crm-btn-md"
                                            style="color: #ffffff;"
@@ -276,6 +276,31 @@
                                         </a>
                                     </div>
                                 </div>
+
+                                @if($this->treatmentProgressDayCount > 0)
+                                    <div class="crm-treatment-table-wrap">
+                                        <table class="crm-treatment-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ngày điều trị</th>
+                                                    <th class="is-center">Số phiên</th>
+                                                    <th class="is-right">Tổng chi phí ngày</th>
+                                                    <th>Tình trạng</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($this->treatmentProgressDaySummaries as $summary)
+                                                    <tr>
+                                                        <td>{{ $summary['progress_date'] }}</td>
+                                                        <td class="is-center">{{ $summary['sessions_count'] }}</td>
+                                                        <td class="is-right">{{ $summary['day_total_amount_formatted'] }}đ</td>
+                                                        <td>{{ $summary['status_label'] }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
 
                                 <div class="crm-treatment-table-wrap">
                                     <table class="crm-treatment-table">
@@ -289,6 +314,7 @@
                                                 <th>Trợ thủ</th>
                                                 <th class="is-center">S.L</th>
                                                 <th class="is-right">Đơn giá</th>
+                                                <th class="is-right">Thành tiền</th>
                                                 <th>Tình trạng</th>
                                                 <th class="is-center">Thao tác</th>
                                             </tr>
@@ -304,6 +330,7 @@
                                                     <td>{{ $session['assistant_name'] }}</td>
                                                     <td class="is-center">{{ $session['quantity'] }}</td>
                                                     <td class="is-right">{{ $session['price_formatted'] }}</td>
+                                                    <td class="is-right">{{ $session['total_amount_formatted'] }}</td>
                                                     <td>
                                                         <span class="crm-treatment-status {{ $session['status_class'] }}">
                                                             {{ $session['status_label'] }}
@@ -323,7 +350,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="10" class="crm-treatment-empty">
+                                                    <td colspan="11" class="crm-treatment-empty">
                                                         Chưa có tiến trình điều trị cho bệnh nhân này.
                                                     </td>
                                                 </tr>

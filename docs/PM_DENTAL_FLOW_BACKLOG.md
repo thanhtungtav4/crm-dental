@@ -632,7 +632,7 @@ Ghi chu:
 - **Title**: Treatment progress days/items model hoa day thuc hien
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
-- **Status**: In Progress (`2026-03-01`)
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao `treatment_progress_days` va `treatment_progress_items`.
@@ -641,7 +641,9 @@ Ghi chu:
 - **Status Note**:
   - Da tao schema + backfill du lieu tu `treatment_sessions`.
   - Da dong bo runtime qua observer (`TreatmentSessionObserver`) va service `TreatmentProgressSyncService`.
-  - Da noi vao UI `exam-treatment` (table Tien trinh dieu tri doc tu progress items); con tiep tuc bo sung thao tac day/item tren UI o wave tiep theo.
+  - Da noi vao UI `exam-treatment` (table Tien trinh dieu tri doc tu progress items) + bo sung tong hop theo ngay, tong chi phi theo session/day.
+  - Da bo sung guard form tao/sua treatment session de bat buoc mapping `treatment_plan` ↔ `plan_item` dung nghiep vu.
+  - Da bo sung regression tests cho summary theo ngay/session va form guard.
 - **Acceptance Criteria (QA)**:
   1. Them ngay dieu tri + item tu plan hoat dong dung.
   2. Tong tien khop line items.
