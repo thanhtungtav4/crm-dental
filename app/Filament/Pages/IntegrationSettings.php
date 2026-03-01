@@ -174,6 +174,17 @@ class IntegrationSettings extends Page
                 ],
             ],
             [
+                'group' => 'security',
+                'title' => 'Runtime bảo mật',
+                'description' => 'Cấu hình MFA, session timeout và lockout khi đăng nhập sai nhiều lần.',
+                'fields' => [
+                    ['state' => 'security_mfa_required_roles', 'key' => 'security.mfa_required_roles', 'label' => 'Role bắt buộc MFA', 'type' => 'roles', 'default' => config('care.security_mfa_required_roles', ['Admin', 'Manager']), 'options' => $this->roleOptions(), 'sort_order' => 591],
+                    ['state' => 'security_session_idle_timeout_minutes', 'key' => 'security.session_idle_timeout_minutes', 'label' => 'Session idle timeout (phút)', 'type' => 'integer', 'default' => 30, 'sort_order' => 592],
+                    ['state' => 'security_login_max_attempts', 'key' => 'security.login_max_attempts', 'label' => 'Số lần đăng nhập sai tối đa trước khi khóa', 'type' => 'integer', 'default' => 5, 'sort_order' => 593],
+                    ['state' => 'security_login_lockout_minutes', 'key' => 'security.login_lockout_minutes', 'label' => 'Thời gian khóa đăng nhập (phút)', 'type' => 'integer', 'default' => 15, 'sort_order' => 594],
+                ],
+            ],
+            [
                 'group' => 'scheduler',
                 'title' => 'Runtime scheduler',
                 'description' => 'Policy timeout/retry/alert cho scheduler command chạy automation.',

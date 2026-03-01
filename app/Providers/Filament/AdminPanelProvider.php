@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login as AdminLogin;
 use App\Http\Middleware\EnforceAdminSessionIdleTimeout;
 use App\Http\Middleware\EnsureSensitiveRoleHasMfa;
 use App\Support\ClinicRuntimeSettings;
@@ -36,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(AdminLogin::class)
             ->brandName(fn (): string => ClinicRuntimeSettings::brandingClinicName())
             ->brandLogo(fn (): HtmlString => new HtmlString(sprintf(
                 '<img src="%s" alt="%s" style="height:2rem;width:auto;object-fit:contain;" onerror="this.src=\'%s\'">',

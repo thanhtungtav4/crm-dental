@@ -619,6 +619,28 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function securityLoginMaxAttempts(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'security.login_max_attempts',
+                (int) config('care.security_login_max_attempts', 5),
+            ),
+        );
+    }
+
+    public static function securityLoginLockoutMinutes(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'security.login_lockout_minutes',
+                (int) config('care.security_login_lockout_minutes', 15),
+            ),
+        );
+    }
+
     public static function schedulerCommandTimeoutSeconds(): int
     {
         return max(
@@ -966,6 +988,46 @@ class ClinicRuntimeSettings
     public static function riskAutoCreateHighRiskTicket(): bool
     {
         return static::boolean('risk.auto_create_high_risk_ticket', true);
+    }
+
+    /**
+     * @return array<string, array{owner_role:string,threshold:string,runbook:string}>
+     */
+    public static function opsAlertRunbookMap(): array
+    {
+        $value = static::get(
+            'ops.alert_runbook_map',
+            config('care.ops_alert_runbook', []),
+        );
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = $decoded;
+            }
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return collect($value)
+            ->filter(static fn (mixed $item): bool => is_array($item))
+            ->mapWithKeys(static function (array $item, string $key): array {
+                $ownerRole = trim((string) ($item['owner_role'] ?? ''));
+                $threshold = trim((string) ($item['threshold'] ?? ''));
+                $runbook = trim((string) ($item['runbook'] ?? ''));
+
+                return [
+                    $key => [
+                        'owner_role' => $ownerRole,
+                        'threshold' => $threshold,
+                        'runbook' => $runbook,
+                    ],
+                ];
+            })
+            ->all();
     }
 
     private static function normalizeHexColor(mixed $value, string $fallback): string

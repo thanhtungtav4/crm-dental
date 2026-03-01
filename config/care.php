@@ -22,5 +22,34 @@ return [
     'scheduler_command_alert_after_seconds' => (int) env('CARE_SCHEDULER_COMMAND_ALERT_AFTER_SECONDS', 120),
     'security_mfa_required_roles' => explode(',', (string) env('CARE_SECURITY_MFA_REQUIRED_ROLES', 'Admin,Manager')),
     'security_session_idle_timeout_minutes' => (int) env('CARE_SECURITY_SESSION_IDLE_TIMEOUT_MINUTES', 30),
+    'security_login_max_attempts' => (int) env('CARE_SECURITY_LOGIN_MAX_ATTEMPTS', 5),
+    'security_login_lockout_minutes' => (int) env('CARE_SECURITY_LOGIN_LOCKOUT_MINUTES', 15),
     'security_enforce_in_tests' => (bool) env('CARE_SECURITY_ENFORCE_IN_TESTS', false),
+    'ops_alert_runbook' => [
+        'backup_health' => [
+            'owner_role' => 'Admin',
+            'threshold' => 'latest_backup_age_hours<=26',
+            'runbook' => 'Backup health gate + manual verification',
+        ],
+        'restore_drill' => [
+            'owner_role' => 'Admin',
+            'threshold' => 'restore_drill=pass_daily',
+            'runbook' => 'Restore drill command and checksum verification',
+        ],
+        'scheduler_runtime' => [
+            'owner_role' => 'AutomationService',
+            'threshold' => 'runtime_seconds<=alert_after_seconds',
+            'runbook' => 'Retry policy + alert on failure/sla breach',
+        ],
+        'kpi_snapshot_sla' => [
+            'owner_role' => 'Manager',
+            'threshold' => 'snapshot_sla_status=on_time',
+            'runbook' => 'Snapshot SLA check + ownership follow-up',
+        ],
+        'security_login_lockout' => [
+            'owner_role' => 'Admin',
+            'threshold' => 'failed_login_attempts<=security.login_max_attempts',
+            'runbook' => 'Investigate suspicious login attempts and unblock workflow',
+        ],
+    ],
 ];
