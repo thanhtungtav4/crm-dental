@@ -13,6 +13,7 @@ class InventoryTransaction extends Model
         'material_id',
         'branch_id',
         'treatment_session_id',
+        'material_issue_note_id',
         'type', // in|out|adjust
         'quantity',
         'unit_cost',
@@ -20,8 +21,28 @@ class InventoryTransaction extends Model
         'created_by',
     ];
 
-    public function material() { return $this->belongsTo(Material::class); }
-    public function branch() { return $this->belongsTo(Branch::class); }
-    public function session() { return $this->belongsTo(TreatmentSession::class, 'treatment_session_id'); }
-    public function user() { return $this->belongsTo(User::class, 'created_by'); }
+    public function material()
+    {
+        return $this->belongsTo(Material::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function session()
+    {
+        return $this->belongsTo(TreatmentSession::class, 'treatment_session_id');
+    }
+
+    public function issueNote()
+    {
+        return $this->belongsTo(MaterialIssueNote::class, 'material_issue_note_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

@@ -717,12 +717,17 @@ Ghi chu:
 - **Title**: Calendar operational view (day/week MVP)
 - **Type**: Story (FE + BE)
 - **Estimate**: 8 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Day/week schedule view cho le tan.
   - Quick-create/reschedule + conflict warning.
   - Metrics bar theo appointment operational status.
+- **Status Note**:
+  - Da bo sung page `CalendarAppointments` (day/week) + quick-create tu o lich.
+  - Da bo sung drag-drop reschedule voi canh bao conflict va flow force override.
+  - Da scope branch access cho event source, metrics va branch filter theo quyen user.
+  - Da bo sung regression tests cho metrics scope va conflict reschedule.
 - **Acceptance Criteria (QA)**:
   1. Luong dieu phoi lich nhanh hon list thuong.
   2. Conflict doctor/branch hien thi dung.
@@ -732,12 +737,17 @@ Ghi chu:
 - **Title**: Photo library completion (clinical-first)
 - **Type**: Story (FE + BE)
 - **Estimate**: 5 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Chuan hoa loai anh `normal/ext/int/xray`.
   - Upload + paste clipboard on dinh trong clinical flow.
   - Retention policy theo clinic settings.
+- **Status Note**:
+  - Da chuan hoa type anh patient (`normal/ext/int/xray`) + index query patient/type/date.
+  - Da bo sung upload flow theo loai anh trong `PatientPhotosRelationManager` (paste/upload).
+  - Da bo sung runtime retention settings + command `photos:prune` + scheduler.
+  - Da bo sung regression tests cho retention policy (xoa dung loai/khong xoa sai loai).
 - **Acceptance Criteria (QA)**:
   1. Upload/paste chay on cho phieu kham.
   2. Filter/phan loai anh dung.
@@ -747,12 +757,17 @@ Ghi chu:
 - **Title**: Patient contacts separation (nhieu nguoi lien he)
 - **Type**: Story (BE + FE)
 - **Estimate**: 3 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao `patient_contacts` support nhieu nguoi lien he.
   - Migrate emergency contact cu neu co.
   - Hien thi relation manager tai ho so benh nhan.
+- **Status Note**:
+  - Da tao schema `patient_contacts` + backfill emergency contact tu `patient_medical_records`.
+  - Da bo sung relation `Patient::contacts()` + relation manager tren patient workspace.
+  - Da enforce branch isolation va quy tac single primary contact o model layer.
+  - Da bo sung regression tests cho primary-contact switch va cross-branch guard.
 - **Acceptance Criteria (QA)**:
   1. Ho tro >1 contact/benh nhan.
   2. Duu lieu cu giu duoc sau migration.
@@ -761,12 +776,17 @@ Ghi chu:
 - **Title**: CSKH SLA dashboard v2
 - **Type**: Story (BE + FE)
 - **Estimate**: 5 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - SLA board theo nhan vien/branch/channel.
   - Queue filter priority cho no-show/recall/follow-up.
   - Export view cho manager.
+- **Status Note**:
+  - Da bo sung SLA summary cards (open/overdue/due today + priority queues).
+  - Da bo sung tab `priority_queue` va group metrics theo channel/branch/staff.
+  - Da bo sung branch scoping cho toan bo query/tabs tren page `CustomerCare`.
+  - Da bo sung regression test cho SLA summary/priority queue.
 - **Acceptance Criteria (QA)**:
   1. Ticket overdue canh bao ro.
   2. Tong hop KPI CSKH khop du lieu ticket.
@@ -775,12 +795,17 @@ Ghi chu:
 - **Title**: Labo module foundation (orders + items)
 - **Type**: Story (BE + FE)
 - **Estimate**: 13 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao `factory_orders`, `factory_order_items`.
   - Tab Xuong/Vat tu tai patient workspace.
   - State machine `ordered -> in_progress -> delivered`.
+- **Status Note**:
+  - Da tao module Filament `FactoryOrderResource` + relation items + CRUD pages.
+  - Da enforce state transition tai model `FactoryOrder` + validation ly do huy.
+  - Da noi tab `Xuong/Vat tu` trong patient workspace (list + quick links).
+  - Da bo sung regression test cho transition guard.
 - **Acceptance Criteria (QA)**:
   1. CRUD dat xuong on dinh.
   2. Link dung voi patient/session branch context.
@@ -789,12 +814,17 @@ Ghi chu:
 - **Title**: Material issue notes integration voi ton kho
 - **Type**: Story (BE)
 - **Estimate**: 5 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao `material_issue_notes`, `material_issue_items`.
   - Tru ton kho + ghi inventory transactions.
   - Canh bao ton kho thap theo nguong.
+- **Status Note**:
+  - Da tao module `MaterialIssueNoteResource` + items relation + action post.
+  - Da bo sung stock decrement transaction-safe + ghi `inventory_transactions`.
+  - Da bo sung canh bao ton kho thap sau khi post phieu xuat.
+  - Da bo sung regression test cho stock movement + transaction linkage.
 - **Acceptance Criteria (QA)**:
   1. Xuat vat tu tru ton kho dung.
   2. Co canh bao khi duoi min stock.
@@ -803,12 +833,17 @@ Ghi chu:
 - **Title**: ZNS campaign lifecycle MVP
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Campaign draft/schedule/run/complete.
   - Retry co idempotency + delivery logs.
   - Audience filter co ban (branch/source/last_visit).
+- **Status Note**:
+  - Da tao module `ZnsCampaignResource` + deliveries relation + lifecycle actions.
+  - Da bo sung state machine `draft/scheduled/running/completed/failed/cancelled`.
+  - Da bo sung runner service co idempotency key theo campaign-target-phone.
+  - Da bo sung scheduler command `zns:run-campaigns` + regression tests lifecycle/idempotency.
 - **Acceptance Criteria (QA)**:
   1. Khong gui trung khi retry.
   2. Theo doi duoc sent/failed theo campaign.
@@ -817,12 +852,17 @@ Ghi chu:
 - **Title**: API v1 expansion theo use-case mobile/SPA
 - **Type**: Story (BE)
 - **Estimate**: 13 SP
-- **Status**: Open
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Endpoint MVP: Auth, Appointment, Patient summary, Invoice summary.
   - Sanctum + rate-limit + response envelope.
   - OpenAPI docs cho endpoint MVP.
+- **Status Note**:
+  - Da bo sung mobile auth token issue/revoke voi Sanctum ability `mobile:read`.
+  - Da bo sung endpoints MVP: appointments, patient summary, invoice summary + openapi stub.
+  - Da enforce rate limit `api-mobile` + branch isolation cho list/show APIs.
+  - Da bo sung regression tests cho branch isolation endpoints.
 - **Acceptance Criteria (QA)**:
   1. Mobile/SPA co the dung luong co ban.
   2. Auth/rate-limit/permission pass.
@@ -831,11 +871,16 @@ Ghi chu:
 - **Title**: Wallet/deposit ledger full module
 - **Type**: Story (Finance + BE)
 - **Estimate**: 5 SP
-- **Status**: Open
-- **Decision**: Defer (sau wave A/B)
+- **Status**: Done (`2026-03-01`)
+- **Decision**: Re-scope (MVP foundation)
 - **Scope**:
   - Vi benh nhan + giao dich nap/tru/hoan.
   - Dong bo voi payment/receipt lifecycle.
+- **Status Note**:
+  - Da tao schema `patient_wallets` + `wallet_ledger_entries` va resource quan ly vi.
+  - Da bo sung `PatientWalletService` de post ledger tu payment lifecycle (deposit/spend/refund/reversal).
+  - Da bo sung relation wallet tren patient summary API/workspace.
+  - Da bo sung regression tests cho deposit/spend/reversal va balance integrity.
 - **Acceptance Criteria (QA)**:
   1. Balance khong am.
   2. Co truy vet giao dich day du.

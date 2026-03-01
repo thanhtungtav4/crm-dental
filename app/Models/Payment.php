@@ -132,6 +132,11 @@ class Payment extends Model
         return $this->hasMany(self::class, 'reversal_of_id');
     }
 
+    public function walletEntries(): HasMany
+    {
+        return $this->hasMany(WalletLedgerEntry::class);
+    }
+
     // ==================== HELPER METHODS ====================
 
     /**

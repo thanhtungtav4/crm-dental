@@ -125,6 +125,11 @@ class Patient extends Model
         return $this->hasMany(PatientPhoto::class);
     }
 
+    public function contacts()
+    {
+        return $this->hasMany(PatientContact::class);
+    }
+
     public function treatmentSessions()
     {
         return $this->hasManyThrough(
@@ -148,6 +153,21 @@ class Patient extends Model
     public function prescriptions()
     {
         return $this->hasMany(Prescription::class);
+    }
+
+    public function factoryOrders()
+    {
+        return $this->hasMany(FactoryOrder::class);
+    }
+
+    public function materialIssueNotes()
+    {
+        return $this->hasMany(MaterialIssueNote::class);
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(PatientWallet::class);
     }
 
     public function clinicalOrders()

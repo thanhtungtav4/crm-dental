@@ -232,6 +232,21 @@
                                 @livewire(\App\Filament\Resources\Patients\Widgets\PatientOverviewWidget::class, ['record' => $this->record], key('patient-' . $this->record->id . '-overview'))
                             </div>
 
+                            <div class="crm-feature-card">
+                                <div class="crm-feature-card-head">
+                                    <div>
+                                        <h3 class="crm-feature-card-title">Người liên hệ</h3>
+                                        <p class="crm-feature-card-description">Tách danh sách người liên hệ để lễ tân/CSKH thao tác nhanh theo từng bệnh nhân.</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    @livewire(\App\Filament\Resources\Patients\RelationManagers\ContactsRelationManager::class, [
+                                        'ownerRecord' => $this->record,
+                                        'pageClass' => static::class,
+                                    ])
+                                </div>
+                            </div>
+
                             <div class="crm-history-card">
                                 <div class="crm-history-card-inner">
                                     <div>
@@ -380,12 +395,158 @@
                         <div class="crm-feature-card">
                             <div class="crm-feature-card-head">
                                 <div>
-                                    <h3 class="crm-feature-card-title">Danh sách vật tư tiêu hao</h3>
-                                    <p class="crm-feature-card-description">Theo dõi vật tư đã sử dụng trong các phiên điều trị của bệnh nhân.</p>
+                                    <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
+                                    <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
+                                </div>
+                                <a
+                                    href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                    class="crm-btn crm-btn-primary crm-btn-md">
+                                    Tạo lệnh labo
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="crm-feature-table-card">
+                            <div class="crm-feature-table-wrap">
+                                <table class="crm-feature-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã lệnh</th>
+                                            <th>Ngày đặt</th>
+                                            <th>Hẹn trả</th>
+                                            <th>Ưu tiên</th>
+                                            <th>Trạng thái</th>
+                                            <th>Số item</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($this->factoryOrders as $order)
+                                            <tr>
+                                                <td class="is-emphasis">{{ $order->order_no }}</td>
+                                                <td>{{ $order->ordered_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td>{{ $order->due_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td>{{ strtoupper((string) $order->priority) }}</td>
+                                                <td>
+                                                    <span
+                                                        class="crm-treatment-status-badge {{ match ($order->status) {
+                                                            \App\Models\FactoryOrder::STATUS_DELIVERED => 'is-completed',
+                                                            \App\Models\FactoryOrder::STATUS_ORDERED, \App\Models\FactoryOrder::STATUS_IN_PROGRESS => 'is-progress',
+                                                            default => 'is-default',
+                                                        } }}"
+                                                    >
+                                                        {{ match ($order->status) {
+                                                            \App\Models\FactoryOrder::STATUS_ORDERED => 'Đã đặt',
+                                                            \App\Models\FactoryOrder::STATUS_IN_PROGRESS => 'Đang làm',
+                                                            \App\Models\FactoryOrder::STATUS_DELIVERED => 'Đã giao',
+                                                            \App\Models\FactoryOrder::STATUS_CANCELLED => 'Đã hủy',
+                                                            default => 'Nháp',
+                                                        } }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ number_format((int) ($order->items_count ?? 0), 0, ',', '.') }}</td>
+                                                <td>
+                                                    <a
+                                                        href="{{ route('filament.admin.resources.factory-orders.edit', ['record' => $order->id]) }}"
+                                                        class="text-sm font-medium text-primary-600 hover:underline"
+                                                    >
+                                                        Chi tiết
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="7" class="crm-feature-table-empty">
+                                                    Chưa có lệnh labo cho bệnh nhân này.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="crm-feature-card">
+                            <div class="crm-feature-card-head">
+                                <div>
+                                    <h3 class="crm-feature-card-title">Phiếu xuất vật tư</h3>
+                                    <p class="crm-feature-card-description">Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.</p>
+                                </div>
+                                <a
+                                    href="{{ route('filament.admin.resources.material-issue-notes.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                    class="crm-btn crm-btn-primary crm-btn-md"
+                                >
+                                    Tạo phiếu xuất
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="crm-feature-table-card">
+                            <div class="crm-feature-table-wrap">
+                                <table class="crm-feature-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã phiếu</th>
+                                            <th>Ngày xuất</th>
+                                            <th>Trạng thái</th>
+                                            <th>Số vật tư</th>
+                                            <th>Tổng chi phí</th>
+                                            <th>Lý do</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($this->materialIssueNotes as $note)
+                                            <tr>
+                                                <td class="is-emphasis">{{ $note->note_no }}</td>
+                                                <td>{{ $note->issued_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td>
+                                                    <span
+                                                        class="crm-treatment-status-badge {{ match ($note->status) {
+                                                            \App\Models\MaterialIssueNote::STATUS_POSTED => 'is-completed',
+                                                            default => 'is-default',
+                                                        } }}"
+                                                    >
+                                                        {{ match ($note->status) {
+                                                            \App\Models\MaterialIssueNote::STATUS_POSTED => 'Đã xuất kho',
+                                                            \App\Models\MaterialIssueNote::STATUS_CANCELLED => 'Đã hủy',
+                                                            default => 'Nháp',
+                                                        } }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ number_format((int) ($note->items_count ?? 0), 0, ',', '.') }}</td>
+                                                <td class="is-emphasis">{{ number_format((float) ($note->total_cost ?? 0), 0, ',', '.') }}đ</td>
+                                                <td>{{ $note->reason ?: '-' }}</td>
+                                                <td>
+                                                    <a
+                                                        href="{{ route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id]) }}"
+                                                        class="text-sm font-medium text-primary-600 hover:underline"
+                                                    >
+                                                        Chi tiết
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="7" class="crm-feature-table-empty">
+                                                    Chưa có phiếu xuất vật tư cho bệnh nhân này.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="crm-feature-card">
+                            <div class="crm-feature-card-head">
+                                <div>
+                                    <h3 class="crm-feature-card-title">Vật tư đã dùng trong phiên điều trị</h3>
+                                    <p class="crm-feature-card-description">Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.</p>
                                 </div>
                                 <a href="{{ route('filament.admin.resources.treatment-materials.create') }}"
-                                    class="crm-btn crm-btn-primary crm-btn-md">
-                                    Thêm phiếu xuất
+                                    class="crm-btn crm-btn-outline crm-btn-md">
+                                    Thêm vật tư phiên
                                 </a>
                             </div>
                         </div>

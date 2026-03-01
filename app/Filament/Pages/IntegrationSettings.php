@@ -134,6 +134,16 @@ class IntegrationSettings extends Page
                 ],
             ],
             [
+                'group' => 'photos',
+                'title' => 'Thư viện ảnh lâm sàng',
+                'description' => 'Retention policy cho ảnh bệnh nhân theo vòng đời dữ liệu lâm sàng.',
+                'fields' => [
+                    ['state' => 'photos_retention_enabled', 'key' => 'photos.retention_enabled', 'label' => 'Bật tự động dọn ảnh quá hạn', 'type' => 'boolean', 'default' => false, 'sort_order' => 500],
+                    ['state' => 'photos_retention_days', 'key' => 'photos.retention_days', 'label' => 'Giữ ảnh trong bao nhiêu ngày (0 = không dọn)', 'type' => 'integer', 'default' => 0, 'sort_order' => 501],
+                    ['state' => 'photos_retention_include_xray', 'key' => 'photos.retention_include_xray', 'label' => 'Áp retention cho cả ảnh X-quang', 'type' => 'boolean', 'default' => false, 'sort_order' => 502],
+                ],
+            ],
+            [
                 'group' => 'care',
                 'title' => 'Runtime CSKH',
                 'description' => 'Cấu hình thời gian nhắc việc và kênh mặc định cho các ticket CSKH tự động.',

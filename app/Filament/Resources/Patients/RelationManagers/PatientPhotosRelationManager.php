@@ -7,9 +7,8 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -48,28 +47,31 @@ class PatientPhotosRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('type')
                     ->label('Loại ảnh')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'normal' => 'Thông thường',
-                        'ortho' => 'Chỉnh nha',
+                        'ext' => 'Ảnh ngoài miệng',
+                        'int' => 'Ảnh trong miệng',
                         'xray' => 'X-quang',
                         default => $state,
                     })
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'normal' => 'gray',
-                        'ortho' => 'primary',
+                        'ext' => 'primary',
+                        'int' => 'info',
                         'xray' => 'warning',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('title')
                     ->label('Tiêu đề / Ghi chú')
                     ->limit(50)
-                    ->description(fn($record) => $record->type === 'ortho' ? 'Gồm 9 góc chụp' : $record->description),
+                    ->description(fn ($record) => $record->description),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'normal' => 'Thông thường',
-                        'ortho' => 'Chỉnh nha',
+                        'ext' => 'Ảnh ngoài miệng',
+                        'int' => 'Ảnh trong miệng',
                         'xray' => 'X-quang',
                     ]),
             ])
@@ -87,17 +89,30 @@ class PatientPhotosRelationManager extends RelationManager
                             'type' => 'normal',
                         ]);
                     }),
-                Action::make('create_ortho_photo')
-                    ->label('Thêm ảnh chỉnh nha')
+                Action::make('create_external_photo')
+                    ->label('Thêm ảnh ngoài miệng')
                     ->color('primary')
                     ->icon('heroicon-o-photo')
-                    ->modalHeading('Thêm ảnh chỉnh nha')
+                    ->modalHeading('Thêm ảnh ngoài miệng')
                     ->modalSubmitActionLabel('Lưu ảnh')
-                    ->form($this->getOrthoPhotoCreateSchema())
+                    ->form($this->getExternalPhotoCreateSchema())
                     ->action(function (array $data): void {
                         $this->getRelationship()->create([
                             ...$data,
-                            'type' => 'ortho',
+                            'type' => 'ext',
+                        ]);
+                    }),
+                Action::make('create_internal_photo')
+                    ->label('Thêm ảnh trong miệng')
+                    ->color('info')
+                    ->icon('heroicon-o-photo')
+                    ->modalHeading('Thêm ảnh trong miệng')
+                    ->modalSubmitActionLabel('Lưu ảnh')
+                    ->form($this->getInternalPhotoCreateSchema())
+                    ->action(function (array $data): void {
+                        $this->getRelationship()->create([
+                            ...$data,
+                            'type' => 'int',
                         ]);
                     }),
                 Action::make('create_xray_photo')
@@ -159,6 +174,7 @@ class PatientPhotosRelationManager extends RelationManager
                 ->image()
                 ->multiple()
                 ->directory('patient-photos/normal')
+                ->pasteable()
                 ->required()
                 ->columnSpanFull(),
         ];
@@ -173,64 +189,38 @@ class PatientPhotosRelationManager extends RelationManager
                 ->image()
                 ->multiple()
                 ->directory('patient-photos/xray')
+                ->pasteable()
                 ->required()
                 ->columnSpanFull(),
         ];
     }
 
-    protected function getOrthoPhotoCreateSchema(): array
+    protected function getExternalPhotoCreateSchema(): array
     {
         return [
             ...$this->getBasePhotoCreateSchema(),
-            Group::make()
-                ->schema([
-                    Forms\Components\FileUpload::make('content.lateral')
-                        ->label('Nghiêng')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.frontal')
-                        ->label('Chính diện')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.profile_45')
-                        ->label('Nghiêng 45°')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.maxillary')
-                        ->label('Hàm trên')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.middle_1')
-                        ->label('Giữa (trong miệng)')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.mandibular')
-                        ->label('Hàm dưới')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.right')
-                        ->label('Bên phải')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.middle_2')
-                        ->label('Giữa (mặt trước)')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                    Forms\Components\FileUpload::make('content.left')
-                        ->label('Bên trái')
-                        ->image()
-                        ->directory('patient-photos/ortho')
-                        ->imageEditor(),
-                ])
-                ->columns(3)
+            Forms\Components\FileUpload::make('content')
+                ->label('Upload ảnh ngoài miệng')
+                ->image()
+                ->multiple()
+                ->directory('patient-photos/ext')
+                ->pasteable()
+                ->required()
+                ->columnSpanFull(),
+        ];
+    }
+
+    protected function getInternalPhotoCreateSchema(): array
+    {
+        return [
+            ...$this->getBasePhotoCreateSchema(),
+            Forms\Components\FileUpload::make('content')
+                ->label('Upload ảnh trong miệng')
+                ->image()
+                ->multiple()
+                ->directory('patient-photos/int')
+                ->pasteable()
+                ->required()
                 ->columnSpanFull(),
         ];
     }
@@ -250,69 +240,24 @@ class PatientPhotosRelationManager extends RelationManager
                 ->columnSpanFull(),
         ];
 
-        if ($record->type === 'ortho') {
-            return [
-                ...$baseFields,
-                Group::make()
-                    ->schema([
-                        Forms\Components\FileUpload::make('content.lateral')
-                            ->label('Nghiêng')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.frontal')
-                            ->label('Chính diện')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.profile_45')
-                            ->label('Nghiêng 45°')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.maxillary')
-                            ->label('Hàm trên')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.middle_1')
-                            ->label('Giữa (trong miệng)')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.mandibular')
-                            ->label('Hàm dưới')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.right')
-                            ->label('Bên phải')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.middle_2')
-                            ->label('Giữa (mặt trước)')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                        Forms\Components\FileUpload::make('content.left')
-                            ->label('Bên trái')
-                            ->image()
-                            ->directory('patient-photos/ortho')
-                            ->imageEditor(),
-                    ])
-                    ->columns(3)
-                    ->columnSpanFull(),
-            ];
-        }
-
         return [
             ...$baseFields,
             Forms\Components\FileUpload::make('content')
-                ->label($record->type === 'xray' ? 'Upload ảnh X-quang' : 'Upload hình ảnh từ file')
+                ->label(match ($record->type) {
+                    'xray' => 'Upload ảnh X-quang',
+                    'ext' => 'Upload ảnh ngoài miệng',
+                    'int' => 'Upload ảnh trong miệng',
+                    default => 'Upload hình ảnh từ file',
+                })
                 ->image()
                 ->multiple()
-                ->directory($record->type === 'xray' ? 'patient-photos/xray' : 'patient-photos/normal')
+                ->directory(match ($record->type) {
+                    'xray' => 'patient-photos/xray',
+                    'ext' => 'patient-photos/ext',
+                    'int' => 'patient-photos/int',
+                    default => 'patient-photos/normal',
+                })
+                ->pasteable()
                 ->columnSpanFull(),
         ];
     }

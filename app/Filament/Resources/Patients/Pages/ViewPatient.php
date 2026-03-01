@@ -26,6 +26,10 @@ class ViewPatient extends ViewRecord
 
     protected ?Collection $cachedMaterialUsages = null;
 
+    protected ?Collection $cachedFactoryOrders = null;
+
+    protected ?Collection $cachedMaterialIssueNotes = null;
+
     protected ?array $cachedPaymentSummary = null;
 
     protected ?Collection $cachedLatestPrescriptions = null;
@@ -129,11 +133,16 @@ class ViewPatient extends ViewRecord
             'prescriptions',
             'payments',
             'branchLogs',
+            'factoryOrders',
+            'materialIssueNotes',
         ]);
 
         $materialCount = TreatmentMaterial::query()
             ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $this->record->id))
             ->count();
+
+        $factoryOrdersCount = (int) ($this->record->factory_orders_count ?? 0);
+        $materialIssueNotesCount = (int) ($this->record->material_issue_notes_count ?? 0);
 
         $this->cachedTabCounters = [
             'treatment_plans' => (int) ($this->record->treatment_plans_count ?? 0),
@@ -145,7 +154,7 @@ class ViewPatient extends ViewRecord
             'photos' => (int) ($this->record->photos_count ?? 0),
             'prescriptions' => (int) ($this->record->prescriptions_count ?? 0),
             'payments' => (int) ($this->record->payments_count ?? 0),
-            'materials' => $materialCount,
+            'materials' => $materialCount + $factoryOrdersCount + $materialIssueNotesCount,
             'activity' => (int) (($this->record->appointments_count ?? 0)
                 + ($this->record->treatment_plans_count ?? 0)
                 + ($this->record->invoices_count ?? 0)
@@ -296,6 +305,58 @@ class ViewPatient extends ViewRecord
             ->get();
 
         return $this->cachedMaterialUsages;
+    }
+
+    public function getFactoryOrdersProperty(): Collection
+    {
+        if ($this->cachedFactoryOrders !== null) {
+            return $this->cachedFactoryOrders;
+        }
+
+        $this->cachedFactoryOrders = $this->record->factoryOrders()
+            ->withCount('items')
+            ->latest('ordered_at')
+            ->latest('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'order_no',
+                'patient_id',
+                'status',
+                'priority',
+                'ordered_at',
+                'due_at',
+                'delivered_at',
+                'notes',
+            ]);
+
+        return $this->cachedFactoryOrders;
+    }
+
+    public function getMaterialIssueNotesProperty(): Collection
+    {
+        if ($this->cachedMaterialIssueNotes !== null) {
+            return $this->cachedMaterialIssueNotes;
+        }
+
+        $this->cachedMaterialIssueNotes = $this->record->materialIssueNotes()
+            ->withCount('items')
+            ->withSum('items as total_cost', 'total_cost')
+            ->latest('issued_at')
+            ->latest('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'note_no',
+                'patient_id',
+                'status',
+                'issued_at',
+                'posted_at',
+                'reason',
+                'notes',
+            ]);
+
+        return $this->cachedMaterialIssueNotes;
     }
 
     public function getPaymentSummaryProperty(): array

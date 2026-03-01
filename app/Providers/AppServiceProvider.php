@@ -68,6 +68,13 @@ class AppServiceProvider extends ServiceProvider
                 ->by(sha1($tokenFingerprint.'|'.$request->ip()));
         });
 
+        RateLimiter::for('api-mobile', function (Request $request): Limit {
+            $tokenId = optional($request->user()?->currentAccessToken())->id;
+
+            return Limit::perMinute(120)
+                ->by(($tokenId ? 'token:'.$tokenId : 'ip:'.$request->ip()));
+        });
+
         // Register Appointment Observer
         Appointment::observe(AppointmentObserver::class);
         ClinicalNote::observe(ClinicalNoteVersionObserver::class);

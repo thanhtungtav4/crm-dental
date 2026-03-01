@@ -174,6 +174,7 @@ class AppointmentForm
                     ->getOptionLabelUsing(fn ($value): ?string => $value ? \App\Models\User::query()->whereKey($value)->value('name') : null)
                     ->searchable()
                     ->preload()
+                    ->default(fn (): ?int => request()->integer('doctor_id') ?: null)
                     ->required()
                     ->helperText('Chỉ hiển thị bác sĩ đã được phân công theo chi nhánh và lịch hiệu lực.'),
 
@@ -186,7 +187,7 @@ class AppointmentForm
                     ->label('Chi nhánh')
                     ->searchable()
                     ->preload()
-                    ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
+                    ->default(fn (): ?int => request()->integer('branch_id') ?: BranchAccess::defaultBranchIdForCurrentUser())
                     ->required()
                     ->live()
                     ->afterStateUpdated(function (callable $get, callable $set, $state): void {
@@ -212,6 +213,15 @@ class AppointmentForm
 
                 Forms\Components\DateTimePicker::make('date')
                     ->label('Thời gian')
+                    ->default(function (): ?string {
+                        $requestedDate = request()->query('date');
+
+                        if (! is_string($requestedDate) || trim($requestedDate) === '') {
+                            return null;
+                        }
+
+                        return \Carbon\Carbon::parse($requestedDate)->format('Y-m-d H:i:s');
+                    })
                     ->required()
                     ->native(false)
                     ->seconds(false)

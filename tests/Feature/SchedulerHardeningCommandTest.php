@@ -135,6 +135,8 @@ it('schedules critical automations via hardened wrapper with single-node lock', 
         'ops:check-alert-runbook-map',
         'emr:sync-events',
         'emr:reconcile-integrity',
+        'zns:run-campaigns',
+        'photos:prune',
         'appointments:run-no-show-recovery',
         'invoices:sync-overdue-status',
     ];

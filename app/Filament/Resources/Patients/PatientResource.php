@@ -81,6 +81,7 @@ class PatientResource extends Resource
             RelationManagers\ClinicalNotesRelationManager::class,
             RelationManagers\TreatmentPlansRelationManager::class,
             RelationManagers\PatientPhotosRelationManager::class,
+            RelationManagers\ContactsRelationManager::class,
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\PatientWalletService;
 
 class PaymentObserver
 {
@@ -12,6 +13,7 @@ class PaymentObserver
     {
         $payment->invoice?->updatePaidAmount();
         $payment->invoice?->installmentPlan?->syncFinancialState();
+        app(PatientWalletService::class)->postPayment($payment);
         $this->logPaymentCreated($payment);
     }
 

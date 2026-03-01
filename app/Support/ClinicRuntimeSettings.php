@@ -231,6 +231,7 @@ class ClinicRuntimeSettings
     {
         return [
             'patient' => 'Bệnh nhân',
+            'wallet' => 'Ví bệnh nhân',
             'insurance' => 'Bảo hiểm',
             'other' => 'Khác',
         ];
@@ -238,10 +239,28 @@ class ClinicRuntimeSettings
 
     public static function paymentSourceLabels(): array
     {
-        return static::catalogOptions(
+        $labels = static::catalogOptions(
             'catalog.payment_sources',
             static::defaultPaymentSourceLabels(),
         );
+
+        if (! array_key_exists('patient', $labels)) {
+            $labels = ['patient' => 'Bệnh nhân', ...$labels];
+        }
+
+        if (! array_key_exists('wallet', $labels)) {
+            $labels['wallet'] = 'Ví bệnh nhân';
+        }
+
+        if (! array_key_exists('insurance', $labels)) {
+            $labels['insurance'] = 'Bảo hiểm';
+        }
+
+        if (! array_key_exists('other', $labels)) {
+            $labels['other'] = 'Khác';
+        }
+
+        return $labels;
     }
 
     public static function paymentSourceOptions(bool $withEmoji = true): array
@@ -254,6 +273,7 @@ class ClinicRuntimeSettings
 
         $emojiMap = [
             'patient' => '👤',
+            'wallet' => '👛',
             'insurance' => '🏥',
             'other' => '📄',
         ];
@@ -292,10 +312,38 @@ class ClinicRuntimeSettings
     {
         return match (trim((string) $source)) {
             'patient' => 'success',
+            'wallet' => 'primary',
             'insurance' => 'info',
             'other' => 'gray',
             default => 'gray',
         };
+    }
+
+    public static function patientPhotoRetentionEnabled(): bool
+    {
+        return static::boolean(
+            'photos.retention_enabled',
+            (bool) config('care.photos_retention_enabled', false),
+        );
+    }
+
+    public static function patientPhotoRetentionDays(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'photos.retention_days',
+                (int) config('care.photos_retention_days', 0),
+            ),
+        );
+    }
+
+    public static function patientPhotoRetentionIncludeXray(): bool
+    {
+        return static::boolean(
+            'photos.retention_include_xray',
+            (bool) config('care.photos_retention_include_xray', false),
+        );
     }
 
     public static function defaultPaymentDirectionLabels(): array

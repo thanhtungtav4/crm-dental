@@ -4,10 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Models\Branch;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\TreatmentSession;
+use App\Models\User;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\Exports\ExportsCsv;
 use Filament\Actions\Action as HeaderAction;
@@ -91,6 +94,7 @@ class CustomerCare extends Page implements HasTable
     {
         return [
             'care_schedule' => 'Lịch chăm sóc',
+            'priority_queue' => 'Queue ưu tiên',
             'appointment_reminder' => 'Nhắc lịch hẹn',
             'prescription_reminder' => 'Nhắc lịch uống thuốc',
             'post_treatment_followup' => 'Hỏi thăm sau điều trị',
@@ -98,27 +102,124 @@ class CustomerCare extends Page implements HasTable
         ];
     }
 
+    /**
+     * @return array{
+     *   total_open:int,
+     *   overdue:int,
+     *   due_today:int,
+     *   priority_no_show:int,
+     *   priority_recall:int,
+     *   priority_follow_up:int,
+     *   by_channel:array<int, array{label:string,total:int}>,
+     *   by_branch:array<int, array{label:string,total:int}>,
+     *   by_staff:array<int, array{label:string,total:int}>
+     * }
+     */
+    public function getSlaSummaryProperty(): array
+    {
+        $baseQuery = $this->baseCareTicketQuery();
+        $now = now();
+        $today = $now->toDateString();
+
+        $totalOpen = (clone $baseQuery)->count();
+        $overdue = (clone $baseQuery)
+            ->whereNotNull('care_at')
+            ->where('care_at', '<', $now)
+            ->count();
+        $dueToday = (clone $baseQuery)
+            ->whereDate('care_at', $today)
+            ->count();
+
+        $priorityNoShow = (clone $baseQuery)->where('care_type', 'no_show_recovery')->count();
+        $priorityRecall = (clone $baseQuery)->where('care_type', 'recall_recare')->count();
+        $priorityFollowUp = (clone $baseQuery)->where('care_type', 'treatment_plan_follow_up')->count();
+
+        $byChannelRows = (clone $baseQuery)
+            ->selectRaw('COALESCE(care_channel, "other") as metric_key, COUNT(*) as total')
+            ->groupBy('metric_key')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $byBranchRows = (clone $baseQuery)
+            ->whereNotNull('branch_id')
+            ->selectRaw('branch_id as metric_key, COUNT(*) as total')
+            ->groupBy('metric_key')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $byStaffRows = (clone $baseQuery)
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id as metric_key, COUNT(*) as total')
+            ->groupBy('metric_key')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $branchNames = Branch::query()
+            ->whereIn('id', $byBranchRows->pluck('metric_key')->filter()->map(static fn ($id): int => (int) $id)->all())
+            ->pluck('name', 'id');
+
+        $staffNames = User::query()
+            ->whereIn('id', $byStaffRows->pluck('metric_key')->filter()->map(static fn ($id): int => (int) $id)->all())
+            ->pluck('name', 'id');
+
+        return [
+            'total_open' => (int) $totalOpen,
+            'overdue' => (int) $overdue,
+            'due_today' => (int) $dueToday,
+            'priority_no_show' => (int) $priorityNoShow,
+            'priority_recall' => (int) $priorityRecall,
+            'priority_follow_up' => (int) $priorityFollowUp,
+            'by_channel' => $byChannelRows
+                ->map(fn ($row): array => [
+                    'label' => $this->formatCareChannel((string) $row->metric_key),
+                    'total' => (int) $row->total,
+                ])
+                ->values()
+                ->all(),
+            'by_branch' => $byBranchRows
+                ->map(fn ($row): array => [
+                    'label' => (string) ($branchNames[(int) $row->metric_key] ?? 'Không xác định'),
+                    'total' => (int) $row->total,
+                ])
+                ->values()
+                ->all(),
+            'by_staff' => $byStaffRows
+                ->map(fn ($row): array => [
+                    'label' => (string) ($staffNames[(int) $row->metric_key] ?? 'Chưa phân công'),
+                    'total' => (int) $row->total,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
     protected function getTableQuery(): Builder
     {
         return match ($this->activeTab) {
-            'appointment_reminder' => Appointment::query()
+            'appointment_reminder' => $this->applyDirectBranchScope(Appointment::query(), 'branch_id')
                 ->with(['patient', 'doctor', 'assignedTo'])
                 ->whereNotNull('patient_id')
                 ->whereIn('status', Appointment::statusesForQuery([
                     Appointment::STATUS_NO_SHOW,
                     Appointment::STATUS_RESCHEDULED,
                 ])),
-            'prescription_reminder' => Prescription::query()
+            'prescription_reminder' => $this->applyPatientBranchScope(Prescription::query(), 'patient')
                 ->with(['patient', 'doctor'])
                 ->whereNotNull('patient_id'),
-            'post_treatment_followup' => TreatmentSession::query()
+            'post_treatment_followup' => $this->applyPatientBranchScope(TreatmentSession::query(), 'treatmentPlan.patient')
                 ->with(['treatmentPlan.patient', 'doctor', 'planItem.service'])
                 ->whereNotNull('performed_at'),
-            'birthday' => Patient::query()
+            'birthday' => $this->applyDirectBranchScope(Patient::query(), 'first_branch_id')
                 ->with('ownerStaff')
                 ->whereNotNull('birthday'),
-            default => Note::query()
-                ->with(['patient', 'user'])
+            'priority_queue' => $this->baseCareTicketQuery()
+                ->with(['patient', 'user', 'branch'])
+                ->whereIn('care_type', array_keys($this->priorityCareTypeOptions())),
+            default => $this->applyDirectBranchScope(Note::query(), 'branch_id')
+                ->with(['patient', 'user', 'branch'])
                 ->whereNotNull('patient_id')
                 ->where(function (Builder $query): void {
                     $query->whereNull('care_type');
@@ -135,6 +236,7 @@ class CustomerCare extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return match ($this->activeTab) {
+            'priority_queue' => $this->getPriorityQueueColumns(),
             'appointment_reminder' => $this->getAppointmentColumns(),
             'prescription_reminder' => $this->getPrescriptionColumns(),
             'post_treatment_followup' => $this->getFollowupColumns(),
@@ -146,6 +248,7 @@ class CustomerCare extends Page implements HasTable
     protected function getTableFilters(): array
     {
         return match ($this->activeTab) {
+            'priority_queue' => $this->getPriorityQueueFilters(),
             'appointment_reminder' => $this->getAppointmentFilters(),
             'prescription_reminder' => $this->getPrescriptionFilters(),
             'post_treatment_followup' => $this->getFollowupFilters(),
@@ -198,7 +301,10 @@ class CustomerCare extends Page implements HasTable
             ->columns($this->getTableColumns())
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->actions($this->getTableActions())
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort(
+                $this->activeTab === 'priority_queue' ? 'care_at' : 'created_at',
+                $this->activeTab === 'priority_queue' ? 'asc' : 'desc',
+            )
             ->emptyStateHeading('Chưa có dữ liệu')
             ->emptyStateDescription('Dữ liệu chăm sóc khách hàng sẽ hiển thị tại đây.');
     }
@@ -322,6 +428,77 @@ class CustomerCare extends Page implements HasTable
                 ->sortable(),
             TextColumn::make('user.name')
                 ->label('Nhân viên chăm sóc')
+                ->sortable(),
+            TextColumn::make('content')
+                ->label('Nội dung')
+                ->limit(80)
+                ->wrap(),
+        ];
+    }
+
+    protected function getPriorityQueueColumns(): array
+    {
+        return [
+            TextColumn::make('patient.patient_code')
+                ->label('Mã hồ sơ')
+                ->searchable()
+                ->sortable(),
+            TextColumn::make('patient.full_name')
+                ->label('Họ tên')
+                ->searchable()
+                ->sortable(),
+            TextColumn::make('patient.phone')
+                ->label('Điện thoại')
+                ->searchable(),
+            TextColumn::make('branch.name')
+                ->label('Chi nhánh')
+                ->default('-')
+                ->sortable(),
+            TextColumn::make('care_type')
+                ->label('Loại ưu tiên')
+                ->badge()
+                ->formatStateUsing(fn ($state) => $this->formatCareType($state)),
+            TextColumn::make('care_status')
+                ->label('Trạng thái')
+                ->badge()
+                ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
+                ->color(fn ($state) => $this->getCareStatusColor($state)),
+            TextColumn::make('care_channel')
+                ->label('Kênh')
+                ->badge()
+                ->formatStateUsing(fn ($state) => $this->formatCareChannel($state)),
+            TextColumn::make('care_at')
+                ->label('Deadline')
+                ->dateTime('d/m/Y H:i')
+                ->sortable(),
+            TextColumn::make('overdue_by')
+                ->label('SLA')
+                ->getStateUsing(function ($record): string {
+                    if (! $record->care_at) {
+                        return 'Chưa đặt lịch';
+                    }
+
+                    if ($record->care_at->isFuture()) {
+                        return 'Còn '.$record->care_at->diffForHumans(now(), true);
+                    }
+
+                    return 'Quá hạn '.$record->care_at->diffForHumans(now(), true);
+                })
+                ->badge()
+                ->color(function ($record): string {
+                    if (! $record->care_at) {
+                        return 'gray';
+                    }
+
+                    if ($record->care_at->isFuture()) {
+                        return 'success';
+                    }
+
+                    return 'danger';
+                }),
+            TextColumn::make('user.name')
+                ->label('Nhân viên')
+                ->default('Chưa phân công')
                 ->sortable(),
             TextColumn::make('content')
                 ->label('Nội dung')
@@ -559,8 +736,47 @@ class CustomerCare extends Page implements HasTable
             SelectFilter::make('care_channel')
                 ->label('Kênh chăm sóc')
                 ->options($this->getCareChannelOptions()),
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->relationship('branch', 'name'),
             SelectFilter::make('user_id')
                 ->label('Nhân viên chăm sóc')
+                ->relationship('user', 'name'),
+        ];
+    }
+
+    protected function getPriorityQueueFilters(): array
+    {
+        return [
+            Filter::make('care_at')
+                ->form([
+                    DatePicker::make('from')->label('Từ ngày'),
+                    DatePicker::make('until')->label('Đến ngày'),
+                ])
+                ->query(fn (Builder $query, array $data) => $this->applyDateRangeFilter($query, $data, 'care_at')),
+            SelectFilter::make('care_type')
+                ->label('Loại ưu tiên')
+                ->options($this->priorityCareTypeOptions()),
+            SelectFilter::make('care_status')
+                ->label('Trạng thái')
+                ->options($this->getCareStatusOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    $value = $data['value'] ?? null;
+
+                    if (! $value) {
+                        return $query;
+                    }
+
+                    return $query->whereIn('care_status', Note::statusesForQuery([$value]));
+                }),
+            SelectFilter::make('care_channel')
+                ->label('Kênh')
+                ->options($this->getCareChannelOptions()),
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->relationship('branch', 'name'),
+            SelectFilter::make('user_id')
+                ->label('Nhân viên')
                 ->relationship('user', 'name'),
         ];
     }
@@ -751,6 +967,64 @@ class CustomerCare extends Page implements HasTable
             11 => 'Tháng 11',
             12 => 'Tháng 12',
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function priorityCareTypeOptions(): array
+    {
+        $allTypes = $this->getCareTypeOptions();
+        $priorityKeys = [
+            'no_show_recovery',
+            'recall_recare',
+            'treatment_plan_follow_up',
+        ];
+
+        return collect($priorityKeys)
+            ->filter(fn (string $type): bool => array_key_exists($type, $allTypes))
+            ->mapWithKeys(fn (string $type): array => [$type => $allTypes[$type]])
+            ->all();
+    }
+
+    protected function baseCareTicketQuery(): Builder
+    {
+        return $this->applyDirectBranchScope(Note::query(), 'branch_id')
+            ->whereNotNull('patient_id')
+            ->whereNotNull('care_type')
+            ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()));
+    }
+
+    protected function applyDirectBranchScope(Builder $query, string $column): Builder
+    {
+        $authUser = auth()->user();
+        if ($authUser instanceof User && $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($authUser);
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn($column, $branchIds);
+    }
+
+    protected function applyPatientBranchScope(Builder $query, string $patientRelationPath): Builder
+    {
+        $authUser = auth()->user();
+        if ($authUser instanceof User && $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($authUser);
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas($patientRelationPath, function (Builder $patientQuery) use ($branchIds): void {
+            $patientQuery->whereIn('first_branch_id', $branchIds);
+        });
     }
 
     /**
