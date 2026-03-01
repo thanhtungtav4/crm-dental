@@ -25,7 +25,7 @@ class ExamSession extends Model
 
     protected const TRANSITIONS = [
         self::STATUS_DRAFT => [self::STATUS_PLANNED, self::STATUS_IN_PROGRESS],
-        self::STATUS_PLANNED => [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED],
+        self::STATUS_PLANNED => [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED, self::STATUS_LOCKED],
         self::STATUS_IN_PROGRESS => [self::STATUS_COMPLETED, self::STATUS_LOCKED],
         self::STATUS_COMPLETED => [self::STATUS_LOCKED],
         self::STATUS_LOCKED => [],
@@ -154,5 +154,15 @@ class ExamSession extends Model
     public function prescriptions(): HasMany
     {
         return $this->hasMany(Prescription::class);
+    }
+
+    public function treatmentProgressDays(): HasMany
+    {
+        return $this->hasMany(TreatmentProgressDay::class);
+    }
+
+    public function treatmentProgressItems(): HasMany
+    {
+        return $this->hasMany(TreatmentProgressItem::class);
     }
 }

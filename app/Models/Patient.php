@@ -135,6 +135,16 @@ class Patient extends Model
         );
     }
 
+    public function treatmentProgressDays()
+    {
+        return $this->hasMany(TreatmentProgressDay::class);
+    }
+
+    public function treatmentProgressItems()
+    {
+        return $this->hasMany(TreatmentProgressItem::class);
+    }
+
     public function prescriptions()
     {
         return $this->hasMany(Prescription::class);

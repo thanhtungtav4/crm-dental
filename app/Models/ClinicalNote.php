@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\NullableEncrypted;
+use App\Services\ExamSessionLifecycleService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -145,6 +146,7 @@ class ClinicalNote extends Model
     {
         return [
             'date',
+            'exam_session_id',
             'visit_episode_id',
             'examining_doctor_id',
             'treating_doctor_id',
@@ -272,6 +274,8 @@ class ClinicalNote extends Model
         if ($session->isDirty()) {
             $session->save();
         }
+
+        app(ExamSessionLifecycleService::class)->refresh((int) $session->id);
     }
 
     protected function resolveExamSessionStatus(): string

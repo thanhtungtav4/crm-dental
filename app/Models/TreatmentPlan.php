@@ -120,6 +120,16 @@ class TreatmentPlan extends Model
         return $this->hasMany(TreatmentSession::class);
     }
 
+    public function progressDays()
+    {
+        return $this->hasMany(TreatmentProgressDay::class);
+    }
+
+    public function progressItems()
+    {
+        return $this->hasMany(TreatmentProgressItem::class);
+    }
+
     public function planItems()
     {
         return $this->hasMany(PlanItem::class);

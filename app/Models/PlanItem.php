@@ -223,6 +223,11 @@ class PlanItem extends Model
         return $this->hasMany(TreatmentSession::class, 'plan_item_id');
     }
 
+    public function progressItems()
+    {
+        return $this->hasMany(TreatmentProgressItem::class);
+    }
+
     public function service()
     {
         return $this->belongsTo(Service::class);

@@ -310,11 +310,15 @@
                                                         </span>
                                                     </td>
                                                     <td class="is-center">
-                                                        <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị">
-                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                                            </svg>
-                                                        </a>
+                                                        @if($session['edit_url'])
+                                                            <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị">
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                                                </svg>
+                                                            </a>
+                                                        @else
+                                                            <span class="text-xs text-gray-400">-</span>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @empty

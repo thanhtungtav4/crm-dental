@@ -12,6 +12,7 @@ class TreatmentSession extends Model
 
     protected $fillable = [
         'treatment_plan_id',
+        'exam_session_id',
         'plan_item_id',
         'doctor_id',
         'assistant_id',
@@ -28,6 +29,7 @@ class TreatmentSession extends Model
     ];
 
     protected $casts = [
+        'exam_session_id' => 'integer',
         'images' => 'array',
         'start_at' => 'datetime',
         'end_at' => 'datetime',
@@ -37,6 +39,11 @@ class TreatmentSession extends Model
     public function treatmentPlan()
     {
         return $this->belongsTo(TreatmentPlan::class);
+    }
+
+    public function examSession()
+    {
+        return $this->belongsTo(ExamSession::class, 'exam_session_id');
     }
 
     public function planItem()
@@ -62,6 +69,11 @@ class TreatmentSession extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function progressItem()
+    {
+        return $this->hasOne(TreatmentProgressItem::class, 'treatment_session_id');
     }
 
     public function resolveBranchId(): ?int

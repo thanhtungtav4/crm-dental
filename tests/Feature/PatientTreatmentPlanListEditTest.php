@@ -124,10 +124,12 @@ it('provides treatment session edit link from patient exam treatment progress ta
     $blade = File::get($bladePath);
 
     expect($pageClass)
-        ->toContain("'edit_url' => route('filament.admin.resources.treatment-sessions.edit'")
+        ->toContain("'edit_url' => \$sessionId")
+        ->toContain("route('filament.admin.resources.treatment-sessions.edit'")
         ->toContain("'return_url' => request()->fullUrl()");
 
     expect($blade)
         ->toContain("{{ \$session['edit_url'] }}")
+        ->toContain("@if(\$session['edit_url'])")
         ->toContain('Chỉnh sửa phiên điều trị');
 });

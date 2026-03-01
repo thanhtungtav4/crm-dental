@@ -2,12 +2,16 @@
 
 namespace App\Observers;
 
+use App\Models\ClinicalOrder;
 use App\Models\ClinicalResult;
 use App\Models\EmrAuditLog;
 use App\Services\EmrAuditLogger;
+use App\Services\ExamSessionLifecycleService;
 
 class ClinicalResultObserver
 {
+    public function __construct(protected ExamSessionLifecycleService $examSessionLifecycleService) {}
+
     public function created(ClinicalResult $clinicalResult): void
     {
         app(EmrAuditLogger::class)->record(
@@ -24,6 +28,8 @@ class ClinicalResultObserver
                 'status' => $clinicalResult->status,
             ],
         );
+
+        $this->syncExamSessionLifecycle($clinicalResult);
     }
 
     public function updated(ClinicalResult $clinicalResult): void
@@ -54,5 +60,20 @@ class ClinicalResultObserver
                 'status_to' => $statusTo,
             ],
         );
+
+        $this->syncExamSessionLifecycle($clinicalResult);
+    }
+
+    protected function syncExamSessionLifecycle(ClinicalResult $clinicalResult): void
+    {
+        $examSessionId = $clinicalResult->clinicalOrder?->exam_session_id;
+
+        if (! $examSessionId && $clinicalResult->clinical_order_id) {
+            $examSessionId = ClinicalOrder::query()
+                ->whereKey((int) $clinicalResult->clinical_order_id)
+                ->value('exam_session_id');
+        }
+
+        $this->examSessionLifecycleService->refresh($examSessionId ? (int) $examSessionId : null);
     }
 }

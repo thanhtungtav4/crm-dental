@@ -612,7 +612,7 @@ Ghi chu:
 - **Title**: Exam session separation khoi clinical note aggregate
 - **Type**: Story (BE + FE + Data)
 - **Estimate**: 13 SP
-- **Status**: In Progress (`2026-03-01`)
+- **Status**: Done (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao bang `exam_sessions`, mapping relation voi patient/treatment/prescription.
@@ -621,7 +621,8 @@ Ghi chu:
 - **Status Note**:
   - Da tao schema `exam_sessions` + backfill `exam_session_id` tren `clinical_notes/clinical_orders/prescriptions`.
   - Da chuyen patient workspace (`PatientExamForm`) sang doc session moi, giu backward-compat voi `clinical_notes`.
-  - Da bo sung test lifecycle/inference can ban; tiep tuc wave sau de hoàn thiện lifecycle `completed/locked` theo business event.
+  - Da hoan tat lifecycle theo event nghiep vu: `completed` khi tien trinh ngay da hoan tat, `locked` khi phat sinh don thuoc/ket qua lam sang final.
+  - Da bo sung service recompute lifecycle va regression test cho state transition.
 - **Acceptance Criteria (QA)**:
   1. Du lieu clinical cu khong mat sau migration.
   2. Workspace benh nhan (`exam-treatment`) hoat dong on dinh.
@@ -631,12 +632,16 @@ Ghi chu:
 - **Title**: Treatment progress days/items model hoa day thuc hien
 - **Type**: Story (BE + FE)
 - **Estimate**: 8 SP
-- **Status**: Open
+- **Status**: In Progress (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao `treatment_progress_days` va `treatment_progress_items`.
   - Dong bo treatment state tren odontogram/plan item.
   - Tinh tong chi phi theo ngay va theo session.
+- **Status Note**:
+  - Da tao schema + backfill du lieu tu `treatment_sessions`.
+  - Da dong bo runtime qua observer (`TreatmentSessionObserver`) va service `TreatmentProgressSyncService`.
+  - Da noi vao UI `exam-treatment` (table Tien trinh dieu tri doc tu progress items); con tiep tuc bo sung thao tac day/item tren UI o wave tiep theo.
 - **Acceptance Criteria (QA)**:
   1. Them ngay dieu tri + item tu plan hoat dong dung.
   2. Tong tien khop line items.

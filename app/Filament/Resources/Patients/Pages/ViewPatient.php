@@ -150,46 +150,57 @@ class ViewPatient extends ViewRecord
             return $this->cachedTreatmentProgress;
         }
 
-        $sessions = $this->record->treatmentSessions()
-            ->with(['doctor:id,name', 'assistant:id,name', 'planItem:id,name,tooth_number,tooth_ids,quantity,price,status'])
+        $progressItems = $this->record->treatmentProgressItems()
+            ->with([
+                'doctor:id,name',
+                'assistant:id,name',
+                'planItem:id,name,tooth_number,tooth_ids,quantity,price,status',
+                'progressDay:id,progress_date,status',
+            ])
             ->latest('performed_at')
             ->latest('id')
             ->limit(50)
             ->get();
 
-        $this->cachedTreatmentProgress = $sessions->map(function ($session) {
-            $performedAt = $session->performed_at ?? $session->start_at ?? $session->created_at;
-            $statusLabel = match ($session->status) {
-                'done', 'completed' => 'Hoàn thành',
-                'follow_up' => 'Tái khám',
+        $this->cachedTreatmentProgress = $progressItems->map(function ($progressItem) {
+            $performedAt = $progressItem->performed_at ?? $progressItem->created_at;
+            $statusLabel = match ($progressItem->status) {
+                'completed' => 'Hoàn thành',
+                'in_progress' => 'Đang thực hiện',
+                'cancelled' => 'Đã hủy',
                 default => 'Đã lên lịch',
             };
-            $statusClass = match ($session->status) {
-                'done', 'completed' => 'is-completed',
-                'follow_up' => 'is-progress',
+            $statusClass = match ($progressItem->status) {
+                'completed' => 'is-completed',
+                'in_progress' => 'is-progress',
+                'cancelled' => 'is-default',
                 default => 'is-default',
             };
-            $toothLabel = $session->planItem?->tooth_number
-                ?: (is_array($session->planItem?->tooth_ids) ? implode(' ', $session->planItem?->tooth_ids) : '-');
-            $sessionQty = $session->planItem?->quantity ?? 1;
-            $sessionPrice = (float) ($session->planItem?->price ?? 0);
+            $toothLabel = $progressItem->tooth_number
+                ?: $progressItem->planItem?->tooth_number
+                ?: (is_array($progressItem->planItem?->tooth_ids) ? implode(' ', $progressItem->planItem?->tooth_ids) : '-');
+            $sessionQty = (float) ($progressItem->quantity ?? 1);
+            $sessionPrice = (float) ($progressItem->unit_price ?? 0);
+            $sessionId = $progressItem->treatment_session_id ? (int) $progressItem->treatment_session_id : null;
 
             return [
-                'session_id' => $session->id,
+                'session_id' => $progressItem->id,
                 'performed_at' => $performedAt?->format('d/m/Y H:i') ?? '-',
                 'tooth_label' => $toothLabel,
-                'plan_item_name' => $session->planItem?->name ?? '-',
-                'procedure' => $session->procedure ?: ($session->notes ?: '-'),
-                'doctor_name' => $session->doctor?->name ?? '-',
-                'assistant_name' => $session->assistant?->name ?? '-',
-                'quantity' => (int) $sessionQty,
+                'plan_item_name' => $progressItem->procedure_name ?: ($progressItem->planItem?->name ?? '-'),
+                'procedure' => $progressItem->notes ?: '-',
+                'doctor_name' => $progressItem->doctor?->name ?? '-',
+                'assistant_name' => $progressItem->assistant?->name ?? '-',
+                'quantity' => fmod($sessionQty, 1.0) === 0.0 ? (int) $sessionQty : $sessionQty,
                 'price_formatted' => $this->formatMoney($sessionPrice),
                 'status_label' => $statusLabel,
                 'status_class' => $statusClass,
-                'edit_url' => route('filament.admin.resources.treatment-sessions.edit', [
-                    'record' => $session->id,
-                    'return_url' => request()->fullUrl(),
-                ]),
+                'edit_url' => $sessionId
+                    ? route('filament.admin.resources.treatment-sessions.edit', [
+                        'record' => $sessionId,
+                        'return_url' => request()->fullUrl(),
+                    ])
+                    : null,
             ];
         });
 

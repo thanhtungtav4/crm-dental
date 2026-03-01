@@ -737,6 +737,18 @@ class PatientExamForm extends Component
 
     protected function getTreatmentProgressDates(): array
     {
+        $progressDates = $this->patient->treatmentProgressDays()
+            ->get(['progress_date'])
+            ->map(fn ($day) => $day->progress_date?->toDateString())
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($progressDates !== []) {
+            return $progressDates;
+        }
+
         return $this->patient->treatmentSessions()
             ->get(['performed_at', 'start_at', 'end_at'])
             ->flatMap(function ($session) {
