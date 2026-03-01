@@ -885,3 +885,21 @@ Ghi chu:
 - **Acceptance Criteria (QA)**:
   1. Balance khong am.
   2. Co truy vet giao dich day du.
+
+### TICKET PM-61 (P0)
+- **Title**: Finance reconciliation strict gate truoc production release
+- **Type**: Task (Ops + Finance)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-03-02`)
+- **Decision**: Adopt
+- **Scope**:
+  - Bo sung strict mode cho `finance:reconcile-branch-attribution`.
+  - Release gate production `--with-finance` phai fail neu mismatch con ton tai.
+  - Bo sung regression test command + release gate args.
+- **Status Note**:
+  - Da them `--strict` vao command reconciliation, fail-fast khi `invoice_mismatch_count` hoac `receipt_mismatch_count` > 0.
+  - Da noi `RunReleaseGates` de truyen `--strict` cho finance gate khi profile production.
+  - Da bo sung regression tests cho strict fail case va dry-run output release gate.
+- **Acceptance Criteria (QA)**:
+  1. Production gate co `--with-finance` fail neu mismatch.
+  2. Ops co the chay non-strict o profile ci/ops de tham khao.

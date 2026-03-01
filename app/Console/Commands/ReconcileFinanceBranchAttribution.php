@@ -18,6 +18,7 @@ class ReconcileFinanceBranchAttribution extends Command
         {--to= : Đến ngày (Y-m-d)}
         {--branch_id= : Chỉ chạy cho 1 chi nhánh}
         {--apply : Tự động backfill branch attribution cho invoice/payment bị thiếu}
+        {--strict : Fail command neu con mismatch invoice/receipt sau doi soat}
         {--export= : Đường dẫn file JSON output}';
 
     protected $description = 'Đối soát branch attribution tài chính (invoice/payment) giữa mô hình mới và legacy.';
@@ -109,6 +110,10 @@ class ReconcileFinanceBranchAttribution extends Command
         $this->line('TOTAL_DELTA_RECEIPTS: '.$this->formatAmount((float) ($summary['receipt_delta_amount'] ?? 0)));
         $this->line('MISMATCH_COUNTS: invoices='.(int) ($summary['invoice_mismatch_count'] ?? 0).', receipts='.(int) ($summary['receipt_mismatch_count'] ?? 0));
 
+        $invoiceMismatchCount = (int) ($summary['invoice_mismatch_count'] ?? 0);
+        $receiptMismatchCount = (int) ($summary['receipt_mismatch_count'] ?? 0);
+        $hasMismatch = $invoiceMismatchCount > 0 || $receiptMismatchCount > 0;
+
         $exportPath = $this->option('export')
             ? (string) $this->option('export')
             : storage_path('app/reconciliation/finance-branch-attribution-'.$from->toDateString().'_'.$to->toDateString().'.json');
@@ -143,6 +148,16 @@ class ReconcileFinanceBranchAttribution extends Command
         );
 
         $this->info('Reconciliation report exported: '.$exportPath);
+
+        if ((bool) $this->option('strict') && $hasMismatch) {
+            $this->error(sprintf(
+                'Strict mode: finance reconciliation mismatch con ton tai (invoices=%d, receipts=%d).',
+                $invoiceMismatchCount,
+                $receiptMismatchCount,
+            ));
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }

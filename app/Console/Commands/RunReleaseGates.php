@@ -175,6 +175,7 @@ class RunReleaseGates extends Command
                     '--from' => $from,
                     '--to' => $to,
                     '--export' => $exportPath,
+                    '--strict' => $profile === self::PROFILE_PRODUCTION,
                 ],
             ];
         }

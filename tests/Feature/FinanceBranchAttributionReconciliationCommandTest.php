@@ -138,3 +138,48 @@ it('can apply branch attribution backfill and export before after reconciliation
         ->and(data_get($report, 'before.summary'))->toBeArray()
         ->and(data_get($report, 'after.summary'))->toBeArray();
 });
+
+it('fails strict mode when reconciliation still has mismatches', function () {
+    $billingBranch = Branch::factory()->create();
+    $originBranch = Branch::factory()->create();
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $originBranch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $originBranch->id,
+    ]);
+
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $billingBranch->id,
+    ]);
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'treatment_plan_id' => $plan->id,
+        'branch_id' => $billingBranch->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 500_000,
+        'paid_amount' => 0,
+        'issued_at' => now(),
+    ]);
+
+    $invoice->recordPayment(
+        amount: 100_000,
+        method: 'cash',
+        notes: 'strict mismatch test',
+        direction: 'receipt',
+    );
+
+    $this->artisan('finance:reconcile-branch-attribution', [
+        '--from' => now()->toDateString(),
+        '--to' => now()->toDateString(),
+        '--strict' => true,
+    ])
+        ->expectsOutputToContain('MISMATCH_COUNTS')
+        ->expectsOutputToContain('Strict mode: finance reconciliation mismatch con ton tai')
+        ->assertFailed();
+});

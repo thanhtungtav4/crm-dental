@@ -20,6 +20,7 @@ it('shows planned steps in dry-run production profile', function (): void {
         ->expectsOutputToContain('ops:run-restore-drill')
         ->expectsOutputToContain('ops:check-alert-runbook-map')
         ->expectsOutputToContain('finance:reconcile-branch-attribution')
+        ->expectsOutputToContain('--strict')
         ->expectsOutputToContain('Dry-run completed')
         ->assertSuccessful();
 });
