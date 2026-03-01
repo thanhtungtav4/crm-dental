@@ -603,3 +603,209 @@ Ghi chu:
 - **Acceptance Criteria (QA)**:
   1. Backlog co du ticket PM-41..PM-45 voi scope va acceptance ro rang.
   2. Khong con ticket "lam roi nhung chua ghi backlog" trong wave nay.
+
+---
+
+## 10) Open (Feasibility backlog tu external review)
+
+### TICKET PM-47 (P0)
+- **Title**: Exam session separation khoi clinical note aggregate
+- **Type**: Story (BE + FE + Data)
+- **Estimate**: 13 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Tao bang `exam_sessions`, mapping relation voi patient/treatment/prescription.
+  - Migration du lieu cu sang aggregate moi.
+  - Enforce lifecycle `draft -> planned -> in_progress -> completed -> locked`.
+- **Acceptance Criteria (QA)**:
+  1. Du lieu clinical cu khong mat sau migration.
+  2. Workspace benh nhan (`exam-treatment`) hoat dong on dinh.
+  3. Session co du lieu tien trinh thi khong cho xoa.
+
+### TICKET PM-48 (P0)
+- **Title**: Treatment progress days/items model hoa day thuc hien
+- **Type**: Story (BE + FE)
+- **Estimate**: 8 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Tao `treatment_progress_days` va `treatment_progress_items`.
+  - Dong bo treatment state tren odontogram/plan item.
+  - Tinh tong chi phi theo ngay va theo session.
+- **Acceptance Criteria (QA)**:
+  1. Them ngay dieu tri + item tu plan hoat dong dung.
+  2. Tong tien khop line items.
+  3. UI table tien trinh khong vo layout desktop/mobile.
+
+### TICKET PM-49 (P0)
+- **Title**: Performance baseline + pre-aggregation cho report hot paths
+- **Type**: Story (BE + Data)
+- **Estimate**: 8 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - Pre-aggregate 3 report nong nhat (ops dashboard, revenue branch, care queue).
+  - Chot SLA p95 list/workspace/report.
+  - Artifact EXPLAIN + latency baseline truoc/sau.
+- **Acceptance Criteria (QA)**:
+  1. Report hot path dat SLA da chot.
+  2. Khong full-scan tren strict explain gate.
+  3. Co baseline de so sanh regression.
+
+### TICKET PM-50 (P0)
+- **Title**: Security ops hardening (MFA + session policy + PHI read log)
+- **Type**: Story (Security + BE)
+- **Estimate**: 8 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - MFA bat buoc cho role `Admin/Manager`.
+  - Session timeout + lockout co audit.
+  - Log truy cap read PHI cho clinical/EMR entities nhay cam.
+- **Acceptance Criteria (QA)**:
+  1. Role nhay cam khong MFA thi khong vao panel.
+  2. Co lockout + timeout policy truy vet duoc.
+  3. PHI access logs day du actor/entity/timestamp.
+
+### TICKET PM-51 (P0)
+- **Title**: Go-live reliability pack (backup/restore + monitoring + production gate)
+- **Type**: Task (Ops + BE)
+- **Estimate**: 5 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Backup automation DB/file + restore drill.
+  - Runbook alert (error rate, queue lag, scheduler miss).
+  - Cap nhat profile production gate theo danh sach bat buoc.
+- **Acceptance Criteria (QA)**:
+  1. Restore drill pass tren staging.
+  2. Monitoring alert map ro owner va threshold.
+  3. Production gate fail-fast neu thieu precondition.
+
+### TICKET PM-52 (P1)
+- **Title**: Calendar operational view (day/week MVP)
+- **Type**: Story (FE + BE)
+- **Estimate**: 8 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - Day/week schedule view cho le tan.
+  - Quick-create/reschedule + conflict warning.
+  - Metrics bar theo appointment operational status.
+- **Acceptance Criteria (QA)**:
+  1. Luong dieu phoi lich nhanh hon list thuong.
+  2. Conflict doctor/branch hien thi dung.
+  3. Khong pha state machine appointment hien tai.
+
+### TICKET PM-53 (P1)
+- **Title**: Photo library completion (clinical-first)
+- **Type**: Story (FE + BE)
+- **Estimate**: 5 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - Chuan hoa loai anh `normal/ext/int/xray`.
+  - Upload + paste clipboard on dinh trong clinical flow.
+  - Retention policy theo clinic settings.
+- **Acceptance Criteria (QA)**:
+  1. Upload/paste chay on cho phieu kham.
+  2. Filter/phan loai anh dung.
+  3. Khong mat lien ket voi note/session.
+
+### TICKET PM-54 (P1)
+- **Title**: Patient contacts separation (nhieu nguoi lien he)
+- **Type**: Story (BE + FE)
+- **Estimate**: 3 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Tao `patient_contacts` support nhieu nguoi lien he.
+  - Migrate emergency contact cu neu co.
+  - Hien thi relation manager tai ho so benh nhan.
+- **Acceptance Criteria (QA)**:
+  1. Ho tro >1 contact/benh nhan.
+  2. Duu lieu cu giu duoc sau migration.
+
+### TICKET PM-55 (P1)
+- **Title**: CSKH SLA dashboard v2
+- **Type**: Story (BE + FE)
+- **Estimate**: 5 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - SLA board theo nhan vien/branch/channel.
+  - Queue filter priority cho no-show/recall/follow-up.
+  - Export view cho manager.
+- **Acceptance Criteria (QA)**:
+  1. Ticket overdue canh bao ro.
+  2. Tong hop KPI CSKH khop du lieu ticket.
+
+### TICKET PM-56 (P1)
+- **Title**: Labo module foundation (orders + items)
+- **Type**: Story (BE + FE)
+- **Estimate**: 13 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Tao `factory_orders`, `factory_order_items`.
+  - Tab Xuong/Vat tu tai patient workspace.
+  - State machine `ordered -> in_progress -> delivered`.
+- **Acceptance Criteria (QA)**:
+  1. CRUD dat xuong on dinh.
+  2. Link dung voi patient/session branch context.
+
+### TICKET PM-57 (P1)
+- **Title**: Material issue notes integration voi ton kho
+- **Type**: Story (BE)
+- **Estimate**: 5 SP
+- **Status**: Open
+- **Decision**: Adopt
+- **Scope**:
+  - Tao `material_issue_notes`, `material_issue_items`.
+  - Tru ton kho + ghi inventory transactions.
+  - Canh bao ton kho thap theo nguong.
+- **Acceptance Criteria (QA)**:
+  1. Xuat vat tu tru ton kho dung.
+  2. Co canh bao khi duoi min stock.
+
+### TICKET PM-58 (P1)
+- **Title**: ZNS campaign lifecycle MVP
+- **Type**: Story (BE + FE)
+- **Estimate**: 8 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - Campaign draft/schedule/run/complete.
+  - Retry co idempotency + delivery logs.
+  - Audience filter co ban (branch/source/last_visit).
+- **Acceptance Criteria (QA)**:
+  1. Khong gui trung khi retry.
+  2. Theo doi duoc sent/failed theo campaign.
+
+### TICKET PM-59 (P2)
+- **Title**: API v1 expansion theo use-case mobile/SPA
+- **Type**: Story (BE)
+- **Estimate**: 13 SP
+- **Status**: Open
+- **Decision**: Re-scope (MVP)
+- **Scope**:
+  - Endpoint MVP: Auth, Appointment, Patient summary, Invoice summary.
+  - Sanctum + rate-limit + response envelope.
+  - OpenAPI docs cho endpoint MVP.
+- **Acceptance Criteria (QA)**:
+  1. Mobile/SPA co the dung luong co ban.
+  2. Auth/rate-limit/permission pass.
+
+### TICKET PM-60 (P2)
+- **Title**: Wallet/deposit ledger full module
+- **Type**: Story (Finance + BE)
+- **Estimate**: 5 SP
+- **Status**: Open
+- **Decision**: Defer (sau wave A/B)
+- **Scope**:
+  - Vi benh nhan + giao dich nap/tru/hoan.
+  - Dong bo voi payment/receipt lifecycle.
+- **Acceptance Criteria (QA)**:
+  1. Balance khong am.
+  2. Co truy vet giao dich day du.
