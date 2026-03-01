@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\EnforceAdminSessionIdleTimeout;
+use App\Http\Middleware\EnsureSensitiveRoleHasMfa;
 use App\Support\ClinicRuntimeSettings;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Forms\Components\FileUpload;
@@ -131,6 +133,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureSensitiveRoleHasMfa::class,
+                EnforceAdminSessionIdleTimeout::class,
             ]);
     }
 }

@@ -21,6 +21,8 @@ class EmrAuditLog extends Model
 
     public const ENTITY_CLINICAL_NOTE = 'clinical_note';
 
+    public const ENTITY_PHI_ACCESS = 'phi_access';
+
     public const ACTION_CREATE = 'create';
 
     public const ACTION_UPDATE = 'update';
@@ -40,6 +42,8 @@ class EmrAuditLog extends Model
     public const ACTION_FINALIZE = 'finalize';
 
     public const ACTION_AMEND = 'amend';
+
+    public const ACTION_READ = 'read';
 
     protected $fillable = [
         'entity_type',

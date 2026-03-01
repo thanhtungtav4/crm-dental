@@ -20,4 +20,7 @@ return [
     'scheduler_command_max_attempts' => (int) env('CARE_SCHEDULER_COMMAND_MAX_ATTEMPTS', 2),
     'scheduler_command_retry_delay_seconds' => (int) env('CARE_SCHEDULER_COMMAND_RETRY_DELAY_SECONDS', 15),
     'scheduler_command_alert_after_seconds' => (int) env('CARE_SCHEDULER_COMMAND_ALERT_AFTER_SECONDS', 120),
+    'security_mfa_required_roles' => explode(',', (string) env('CARE_SECURITY_MFA_REQUIRED_ROLES', 'Admin,Manager')),
+    'security_session_idle_timeout_minutes' => (int) env('CARE_SECURITY_SESSION_IDLE_TIMEOUT_MINUTES', 30),
+    'security_enforce_in_tests' => (bool) env('CARE_SECURITY_ENFORCE_IN_TESTS', false),
 ];

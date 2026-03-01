@@ -6,6 +6,7 @@ use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\PatientMedicalRecord;
 use App\Models\TreatmentMaterial;
+use App\Services\PhiAccessAuditService;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
@@ -71,6 +72,16 @@ class ViewPatient extends ViewRecord
         $this->activeTab = in_array($requestedTab, $this->workspaceTabs, true)
             ? $requestedTab
             : 'basic-info';
+
+        if ($this->activeTab === 'exam-treatment') {
+            app(PhiAccessAuditService::class)->recordPatientWorkspaceRead(
+                patient: $this->record,
+                context: [
+                    'tab' => 'exam-treatment',
+                    'route' => request()->path(),
+                ],
+            );
+        }
     }
 
     public function getView(): string

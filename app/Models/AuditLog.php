@@ -55,6 +55,8 @@ class AuditLog extends Model
 
     public const ENTITY_AUTOMATION = 'automation';
 
+    public const ENTITY_SECURITY = 'security';
+
     public const ACTION_CREATE = 'create';
 
     public const ACTION_UPDATE = 'update';
@@ -98,6 +100,10 @@ class AuditLog extends Model
     public const ACTION_PRINT = 'print';
 
     public const ACTION_EXPORT = 'export';
+
+    public const ACTION_READ = 'read';
+
+    public const ACTION_BLOCK = 'block';
 
     public function actor(): BelongsTo
     {

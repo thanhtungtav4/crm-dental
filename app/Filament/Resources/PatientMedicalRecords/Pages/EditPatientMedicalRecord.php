@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PatientMedicalRecords\Pages;
 use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Patient;
+use App\Services\PhiAccessAuditService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
@@ -12,6 +13,18 @@ use Filament\Resources\Pages\EditRecord;
 class EditPatientMedicalRecord extends EditRecord
 {
     protected static string $resource = PatientMedicalRecordResource::class;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        app(PhiAccessAuditService::class)->recordMedicalRecordRead(
+            record: $this->getRecord(),
+            context: [
+                'route' => request()->path(),
+            ],
+        );
+    }
 
     /**
      * @param  array<string, mixed>  $data

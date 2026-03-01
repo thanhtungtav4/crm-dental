@@ -672,12 +672,17 @@ Ghi chu:
 - **Title**: Security ops hardening (MFA + session policy + PHI read log)
 - **Type**: Story (Security + BE)
 - **Estimate**: 8 SP
-- **Status**: Open
+- **Status**: In Progress (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - MFA bat buoc cho role `Admin/Manager`.
   - Session timeout + lockout co audit.
   - Log truy cap read PHI cho clinical/EMR entities nhay cam.
+- **Status Note**:
+  - Da them middleware enforce MFA cho role nhay cam (Admin/Manager) tren panel admin.
+  - Da them session idle-timeout middleware + audit security khi timeout.
+  - Da them PHI read audit log (`emr_audit_logs`) khi mo tab `exam-treatment` va ho so y te.
+  - Con lai: bo sung lockout policy theo login attempt threshold de dong PM-50.
 - **Acceptance Criteria (QA)**:
   1. Role nhay cam khong MFA thi khong vao panel.
   2. Co lockout + timeout policy truy vet duoc.

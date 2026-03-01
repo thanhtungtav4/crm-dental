@@ -586,6 +586,39 @@ class ClinicRuntimeSettings
         );
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function securityMfaRequiredRoles(): array
+    {
+        $value = static::get(
+            'security.mfa_required_roles',
+            (array) config('care.security_mfa_required_roles', ['Admin', 'Manager']),
+        );
+
+        $roles = is_array($value)
+            ? $value
+            : explode(',', (string) $value);
+
+        return collect($roles)
+            ->filter(static fn (mixed $role): bool => is_string($role) && trim($role) !== '')
+            ->map(static fn (string $role): string => trim($role))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function securitySessionIdleTimeoutMinutes(): int
+    {
+        return max(
+            5,
+            static::integer(
+                'security.session_idle_timeout_minutes',
+                (int) config('care.security_session_idle_timeout_minutes', 30),
+            ),
+        );
+    }
+
     public static function schedulerCommandTimeoutSeconds(): int
     {
         return max(
