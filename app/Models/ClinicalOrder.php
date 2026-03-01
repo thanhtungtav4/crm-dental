@@ -32,6 +32,7 @@ class ClinicalOrder extends Model
 
     protected $fillable = [
         'patient_id',
+        'exam_session_id',
         'visit_episode_id',
         'clinical_note_id',
         'branch_id',
@@ -48,6 +49,9 @@ class ClinicalOrder extends Model
     protected function casts(): array
     {
         return [
+            'exam_session_id' => 'integer',
+            'visit_episode_id' => 'integer',
+            'branch_id' => 'integer',
             'requested_at' => 'datetime',
             'completed_at' => 'datetime',
             'payload' => 'array',
@@ -77,6 +81,10 @@ class ClinicalOrder extends Model
 
             if (blank($order->patient_id)) {
                 $order->patient_id = self::inferPatientId($order);
+            }
+
+            if (blank($order->exam_session_id)) {
+                $order->exam_session_id = self::inferExamSessionId($order);
             }
 
             if (blank($order->visit_episode_id)) {
@@ -109,6 +117,11 @@ class ClinicalOrder extends Model
     public function encounter(): BelongsTo
     {
         return $this->belongsTo(Encounter::class, 'visit_episode_id');
+    }
+
+    public function examSession(): BelongsTo
+    {
+        return $this->belongsTo(ExamSession::class, 'exam_session_id');
     }
 
     public function visitEpisode(): BelongsTo
@@ -188,6 +201,16 @@ class ClinicalOrder extends Model
 
     protected static function inferPatientId(self $order): ?int
     {
+        if ($order->exam_session_id) {
+            $sessionPatientId = ExamSession::query()
+                ->whereKey((int) $order->exam_session_id)
+                ->value('patient_id');
+
+            if ($sessionPatientId !== null) {
+                return (int) $sessionPatientId;
+            }
+        }
+
         if ($order->clinical_note_id) {
             $notePatientId = ClinicalNote::query()
                 ->whereKey((int) $order->clinical_note_id)
@@ -211,6 +234,16 @@ class ClinicalOrder extends Model
 
     protected static function inferVisitEpisodeId(self $order): ?int
     {
+        if ($order->exam_session_id) {
+            $sessionEpisodeId = ExamSession::query()
+                ->whereKey((int) $order->exam_session_id)
+                ->value('visit_episode_id');
+
+            if ($sessionEpisodeId !== null) {
+                return (int) $sessionEpisodeId;
+            }
+        }
+
         if (! $order->clinical_note_id) {
             return null;
         }
@@ -224,6 +257,16 @@ class ClinicalOrder extends Model
 
     protected static function inferBranchId(self $order): ?int
     {
+        if ($order->exam_session_id) {
+            $sessionBranchId = ExamSession::query()
+                ->whereKey((int) $order->exam_session_id)
+                ->value('branch_id');
+
+            if ($sessionBranchId !== null) {
+                return (int) $sessionBranchId;
+            }
+        }
+
         if ($order->clinical_note_id) {
             $noteBranchId = ClinicalNote::query()
                 ->whereKey((int) $order->clinical_note_id)
@@ -253,5 +296,40 @@ class ClinicalOrder extends Model
             ->value('first_branch_id');
 
         return $patientBranchId !== null ? (int) $patientBranchId : null;
+    }
+
+    protected static function inferExamSessionId(self $order): ?int
+    {
+        if ($order->clinical_note_id) {
+            $sessionId = ClinicalNote::query()
+                ->whereKey((int) $order->clinical_note_id)
+                ->value('exam_session_id');
+
+            if ($sessionId !== null) {
+                return (int) $sessionId;
+            }
+        }
+
+        if (! $order->patient_id) {
+            return null;
+        }
+
+        $query = ExamSession::query()
+            ->where('patient_id', (int) $order->patient_id);
+
+        if ($order->visit_episode_id) {
+            $query->where('visit_episode_id', (int) $order->visit_episode_id);
+        }
+
+        if ($order->requested_at !== null) {
+            $query->whereDate('session_date', $order->requested_at);
+        }
+
+        $sessionId = $query
+            ->orderByDesc('session_date')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return $sessionId !== null ? (int) $sessionId : null;
     }
 }

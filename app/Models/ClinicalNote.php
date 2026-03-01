@@ -20,6 +20,7 @@ class ClinicalNote extends Model
 
     protected $fillable = [
         'patient_id',
+        'exam_session_id',
         'visit_episode_id',
         'doctor_id',
         'examining_doctor_id',
@@ -41,6 +42,7 @@ class ClinicalNote extends Model
     ];
 
     protected $casts = [
+        'exam_session_id' => 'integer',
         'visit_episode_id' => 'integer',
         'lock_version' => 'integer',
         'date' => 'date',
@@ -61,6 +63,10 @@ class ClinicalNote extends Model
             if (! $clinicalNote->lock_version || (int) $clinicalNote->lock_version < 1) {
                 $clinicalNote->lock_version = 1;
             }
+
+            if (! $clinicalNote->exam_session_id && $clinicalNote->patient_id) {
+                $clinicalNote->exam_session_id = self::provisionExamSessionId($clinicalNote);
+            }
         });
 
         static::updating(function (self $clinicalNote): void {
@@ -76,6 +82,10 @@ class ClinicalNote extends Model
 
             $clinicalNote->lock_version = ((int) $clinicalNote->getOriginal('lock_version')) + 1;
         });
+
+        static::saved(function (self $clinicalNote): void {
+            $clinicalNote->syncExamSessionSnapshot();
+        });
     }
 
     public function patient()
@@ -86,6 +96,11 @@ class ClinicalNote extends Model
     public function visitEpisode()
     {
         return $this->belongsTo(VisitEpisode::class, 'visit_episode_id');
+    }
+
+    public function examSession()
+    {
+        return $this->belongsTo(ExamSession::class, 'exam_session_id');
     }
 
     public function encounter()
@@ -154,6 +169,7 @@ class ClinicalNote extends Model
     {
         return [
             'date' => $this->date?->toDateString(),
+            'exam_session_id' => $this->exam_session_id ? (int) $this->exam_session_id : null,
             'visit_episode_id' => $this->visit_episode_id ? (int) $this->visit_episode_id : null,
             'examining_doctor_id' => $this->examining_doctor_id ? (int) $this->examining_doctor_id : null,
             'treating_doctor_id' => $this->treating_doctor_id ? (int) $this->treating_doctor_id : null,
@@ -169,5 +185,117 @@ class ClinicalNote extends Model
     public function scopeCurrentVersion(Builder $query): Builder
     {
         return $query->where('lock_version', '>=', 1);
+    }
+
+    protected static function provisionExamSessionId(self $clinicalNote): ?int
+    {
+        $doctorId = $clinicalNote->examining_doctor_id
+            ?: $clinicalNote->treating_doctor_id
+            ?: $clinicalNote->doctor_id
+            ?: null;
+
+        $session = ExamSession::query()->create([
+            'patient_id' => (int) $clinicalNote->patient_id,
+            'visit_episode_id' => $clinicalNote->visit_episode_id ? (int) $clinicalNote->visit_episode_id : null,
+            'branch_id' => $clinicalNote->branch_id ? (int) $clinicalNote->branch_id : null,
+            'doctor_id' => $doctorId ? (int) $doctorId : null,
+            'session_date' => $clinicalNote->date?->toDateString() ?: now()->toDateString(),
+            'status' => $clinicalNote->resolveExamSessionStatus(),
+            'created_by' => $clinicalNote->created_by ? (int) $clinicalNote->created_by : auth()->id(),
+            'updated_by' => $clinicalNote->updated_by ? (int) $clinicalNote->updated_by : auth()->id(),
+        ]);
+
+        return $session->id ? (int) $session->id : null;
+    }
+
+    public function syncExamSessionSnapshot(): void
+    {
+        if (! $this->patient_id) {
+            return;
+        }
+
+        if (! $this->exam_session_id) {
+            $sessionId = self::provisionExamSessionId($this);
+
+            if (! $sessionId) {
+                return;
+            }
+
+            $this->forceFill([
+                'exam_session_id' => $sessionId,
+            ])->saveQuietly();
+
+            $this->exam_session_id = $sessionId;
+        }
+
+        $session = ExamSession::query()->find((int) $this->exam_session_id);
+        if (! $session) {
+            return;
+        }
+
+        $doctorId = $this->examining_doctor_id
+            ?: $this->treating_doctor_id
+            ?: $this->doctor_id
+            ?: null;
+
+        $statusPriority = [
+            ExamSession::STATUS_DRAFT => 0,
+            ExamSession::STATUS_PLANNED => 1,
+            ExamSession::STATUS_IN_PROGRESS => 2,
+            ExamSession::STATUS_COMPLETED => 3,
+            ExamSession::STATUS_LOCKED => 4,
+        ];
+
+        $currentStatus = (string) ($session->status ?: ExamSession::STATUS_DRAFT);
+        $targetStatus = $this->resolveExamSessionStatus();
+
+        if (($statusPriority[$targetStatus] ?? 0) < ($statusPriority[$currentStatus] ?? 0)) {
+            $targetStatus = $currentStatus;
+        }
+
+        $payload = [
+            'patient_id' => (int) $this->patient_id,
+            'visit_episode_id' => $this->visit_episode_id ? (int) $this->visit_episode_id : null,
+            'branch_id' => $this->branch_id ? (int) $this->branch_id : null,
+            'doctor_id' => $doctorId ? (int) $doctorId : null,
+            'session_date' => $this->date?->toDateString() ?: now()->toDateString(),
+            'updated_by' => $this->updated_by ? (int) $this->updated_by : auth()->id(),
+        ];
+
+        if (! in_array($currentStatus, [ExamSession::STATUS_LOCKED], true)
+            && ExamSession::canTransition($currentStatus, $targetStatus)) {
+            $payload['status'] = $targetStatus;
+        }
+
+        $session->fill($payload);
+
+        if ($session->isDirty()) {
+            $session->save();
+        }
+    }
+
+    protected function resolveExamSessionStatus(): string
+    {
+        if ($this->hasClinicalPayloadContent()) {
+            return ExamSession::STATUS_IN_PROGRESS;
+        }
+
+        if ($this->visit_episode_id || $this->examining_doctor_id || $this->treating_doctor_id || $this->doctor_id) {
+            return ExamSession::STATUS_PLANNED;
+        }
+
+        return ExamSession::STATUS_DRAFT;
+    }
+
+    protected function hasClinicalPayloadContent(): bool
+    {
+        $indications = array_filter((array) ($this->indications ?? []), fn ($item) => filled($item));
+        $diagnosis = array_filter((array) ($this->tooth_diagnosis_data ?? []), fn ($item) => filled($item));
+
+        return filled($this->general_exam_notes)
+            || filled($this->treatment_plan_note)
+            || filled($this->other_diagnosis)
+            || ! empty($indications)
+            || ! empty($diagnosis);
     }
 }

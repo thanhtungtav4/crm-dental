@@ -25,6 +25,7 @@ class MasterPatientMergeService
     protected const DIRECT_REFERENCE_TABLES = [
         'appointments',
         'branch_logs',
+        'exam_sessions',
         'clinical_notes',
         'consents',
         'installment_plans',

@@ -612,12 +612,16 @@ Ghi chu:
 - **Title**: Exam session separation khoi clinical note aggregate
 - **Type**: Story (BE + FE + Data)
 - **Estimate**: 13 SP
-- **Status**: Open
+- **Status**: In Progress (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Tao bang `exam_sessions`, mapping relation voi patient/treatment/prescription.
   - Migration du lieu cu sang aggregate moi.
   - Enforce lifecycle `draft -> planned -> in_progress -> completed -> locked`.
+- **Status Note**:
+  - Da tao schema `exam_sessions` + backfill `exam_session_id` tren `clinical_notes/clinical_orders/prescriptions`.
+  - Da chuyen patient workspace (`PatientExamForm`) sang doc session moi, giu backward-compat voi `clinical_notes`.
+  - Da bo sung test lifecycle/inference can ban; tiep tuc wave sau de hoàn thiện lifecycle `completed/locked` theo business event.
 - **Acceptance Criteria (QA)**:
   1. Du lieu clinical cu khong mat sau migration.
   2. Workspace benh nhan (`exam-treatment`) hoat dong on dinh.

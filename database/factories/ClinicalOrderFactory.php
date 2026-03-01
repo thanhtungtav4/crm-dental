@@ -25,6 +25,7 @@ class ClinicalOrderFactory extends Factory
     {
         return [
             'patient_id' => Patient::factory(),
+            'exam_session_id' => null,
             'visit_episode_id' => null,
             'clinical_note_id' => null,
             'branch_id' => null,
@@ -61,6 +62,7 @@ class ClinicalOrderFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'patient_id' => $note->patient_id,
+            'exam_session_id' => $note->exam_session_id,
             'visit_episode_id' => $note->visit_episode_id,
             'clinical_note_id' => $note->id,
             'branch_id' => $note->branch_id,

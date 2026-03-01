@@ -87,7 +87,7 @@ class ViewPatient extends ViewRecord
 
         return [
             ['id' => 'basic-info', 'label' => 'Thông tin cơ bản', 'count' => null],
-            ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $counter['clinical_notes'] + $counter['treatment_plans']],
+            ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $counter['exam_sessions'] + $counter['treatment_plans']],
             ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $counter['prescriptions']],
             ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $counter['photos']],
             ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $counter['materials']],
@@ -111,6 +111,7 @@ class ViewPatient extends ViewRecord
             'appointments',
             'notes',
             'clinicalNotes',
+            'examSessions',
             'photos',
             'prescriptions',
             'payments',
@@ -127,6 +128,7 @@ class ViewPatient extends ViewRecord
             'appointments' => (int) ($this->record->appointments_count ?? 0),
             'notes' => (int) ($this->record->notes_count ?? 0),
             'clinical_notes' => (int) ($this->record->clinical_notes_count ?? 0),
+            'exam_sessions' => (int) ($this->record->exam_sessions_count ?? 0),
             'photos' => (int) ($this->record->photos_count ?? 0),
             'prescriptions' => (int) ($this->record->prescriptions_count ?? 0),
             'payments' => (int) ($this->record->payments_count ?? 0),

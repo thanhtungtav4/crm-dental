@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ClinicalOrder;
 use App\Models\ClinicalResult;
+use App\Models\ExamSession;
 use App\Models\Patient;
 use App\Models\PlanItem;
 use App\Models\Prescription;
@@ -19,6 +20,8 @@ class EmrPatientPayloadBuilder
     {
         $patient->loadMissing([
             'medicalRecord',
+            'examSessions' => fn ($query) => $query->latest('session_date')->limit(30),
+            'examSessions.clinicalNote',
             'visitEpisodes' => fn ($query) => $query->latest('scheduled_at')->limit(20),
             'treatmentPlans' => fn ($query) => $query->latest('updated_at')->limit(20),
             'treatmentPlans.planItems',
@@ -50,6 +53,12 @@ class EmrPatientPayloadBuilder
             'encounter' => [
                 'records' => $patient->visitEpisodes
                     ->map(fn (VisitEpisode $episode): array => $this->mapEncounter($episode))
+                    ->values()
+                    ->all(),
+            ],
+            'exam_session' => [
+                'records' => $patient->examSessions
+                    ->map(fn (ExamSession $session): array => $this->mapExamSession($session))
                     ->values()
                     ->all(),
             ],
@@ -174,6 +183,7 @@ class EmrPatientPayloadBuilder
         return [
             'id' => (int) $prescription->id,
             'visit_episode_id' => $prescription->visit_episode_id ? (int) $prescription->visit_episode_id : null,
+            'exam_session_id' => $prescription->exam_session_id ? (int) $prescription->exam_session_id : null,
             'prescription_code' => (string) $prescription->prescription_code,
             'prescription_name' => $prescription->prescription_name,
             'doctor_id' => $prescription->doctor_id ? (int) $prescription->doctor_id : null,
@@ -209,6 +219,7 @@ class EmrPatientPayloadBuilder
             'status' => (string) $order->status,
             'patient_id' => $order->patient_id ? (int) $order->patient_id : null,
             'visit_episode_id' => $order->visit_episode_id ? (int) $order->visit_episode_id : null,
+            'exam_session_id' => $order->exam_session_id ? (int) $order->exam_session_id : null,
             'clinical_note_id' => $order->clinical_note_id ? (int) $order->clinical_note_id : null,
             'branch_id' => $order->branch_id ? (int) $order->branch_id : null,
             'ordered_by' => $order->ordered_by ? (int) $order->ordered_by : null,
@@ -273,6 +284,24 @@ class EmrPatientPayloadBuilder
                 ? (int) $episode->waiting_minutes
                 : null,
             'updated_at' => $episode->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapExamSession(ExamSession $session): array
+    {
+        return [
+            'id' => (int) $session->id,
+            'patient_id' => (int) $session->patient_id,
+            'visit_episode_id' => $session->visit_episode_id ? (int) $session->visit_episode_id : null,
+            'branch_id' => $session->branch_id ? (int) $session->branch_id : null,
+            'doctor_id' => $session->doctor_id ? (int) $session->doctor_id : null,
+            'session_date' => $session->session_date?->toDateString(),
+            'status' => (string) $session->status,
+            'clinical_note_id' => $session->clinicalNote?->id ? (int) $session->clinicalNote->id : null,
+            'updated_at' => $session->updated_at?->toISOString(),
         ];
     }
 }

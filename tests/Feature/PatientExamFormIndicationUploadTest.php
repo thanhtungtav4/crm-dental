@@ -29,8 +29,10 @@ it('stores uploaded indication images per selected indication type', function ()
         'updated_by' => $user->id,
     ]);
 
+    $session->refresh();
+
     Livewire::test(PatientExamForm::class, ['patient' => $patient])
-        ->call('setActiveSession', $session->id)
+        ->call('setActiveSession', (int) $session->exam_session_id)
         ->call('toggleIndication', 'panorama')
         ->set('tempUploads.panorama', [
             UploadedFile::fake()->image('panorama-result.png'),

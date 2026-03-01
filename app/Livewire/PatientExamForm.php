@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\ClinicalNote;
 use App\Models\Disease;
+use App\Models\ExamSession;
 use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
 use App\Models\ToothCondition;
@@ -29,6 +30,8 @@ class PatientExamForm extends Component
     public Patient $patient;
 
     public ?ClinicalNote $clinicalNote = null;
+
+    public ?ExamSession $examSession = null;
 
     public ?int $activeSessionId = null;
 
@@ -100,8 +103,10 @@ class PatientExamForm extends Component
             'newSessionDate' => ['required', 'date'],
         ]);
 
-        $existingSession = $this->patient->clinicalNotes()
-            ->whereDate('date', $validated['newSessionDate'])
+        $sessionDate = (string) $validated['newSessionDate'];
+
+        $existingSession = $this->patient->examSessions()
+            ->whereDate('session_date', $sessionDate)
             ->latest('id')
             ->first();
 
@@ -116,12 +121,26 @@ class PatientExamForm extends Component
             return;
         }
 
-        $session = $this->patient->clinicalNotes()->create([
+        $visitEpisodeId = $this->resolveEncounterIdForDate($sessionDate);
+
+        $session = $this->patient->examSessions()->create([
             'patient_id' => $this->patient->id,
-            'visit_episode_id' => $this->resolveEncounterIdForDate((string) $validated['newSessionDate']),
+            'visit_episode_id' => $visitEpisodeId,
+            'doctor_id' => Auth::id() ?: null,
+            'branch_id' => $this->patient->first_branch_id,
+            'session_date' => $sessionDate,
+            'status' => ExamSession::STATUS_DRAFT,
+            'created_by' => Auth::id() ?: null,
+            'updated_by' => Auth::id() ?: null,
+        ]);
+
+        $this->patient->clinicalNotes()->create([
+            'exam_session_id' => $session->id,
+            'patient_id' => $this->patient->id,
+            'visit_episode_id' => $visitEpisodeId,
             'doctor_id' => Auth::id(),
             'branch_id' => $this->patient->first_branch_id,
-            'date' => $validated['newSessionDate'],
+            'date' => $sessionDate,
             'indications' => [],
             'indication_images' => [],
             'tooth_diagnosis_data' => [],
@@ -139,23 +158,45 @@ class PatientExamForm extends Component
 
     public function setActiveSession(int $sessionId): void
     {
-        $session = $this->patient->clinicalNotes()->find($sessionId);
+        $session = $this->patient->examSessions()
+            ->with('clinicalNote')
+            ->find($sessionId);
 
         if (! $session) {
             return;
         }
 
-        $this->clinicalNote = $session;
+        $note = $session->clinicalNote;
+
+        if (! $note) {
+            $note = $this->patient->clinicalNotes()->create([
+                'exam_session_id' => $session->id,
+                'patient_id' => $this->patient->id,
+                'visit_episode_id' => $session->visit_episode_id,
+                'doctor_id' => $session->doctor_id,
+                'branch_id' => $session->branch_id,
+                'date' => $session->session_date?->toDateString() ?? now()->toDateString(),
+                'indications' => [],
+                'indication_images' => [],
+                'tooth_diagnosis_data' => [],
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+            $session->refresh();
+        }
+
+        $this->examSession = $session;
+        $this->clinicalNote = $note;
         $this->activeSessionId = $session->id;
         $this->editingSessionId = null;
         $this->editingSessionDate = null;
 
-        $this->hydrateFormFromSession($session);
+        $this->hydrateFormFromSession($note);
     }
 
     public function startEditingSession(int $sessionId): void
     {
-        $session = $this->patient->clinicalNotes()->find($sessionId);
+        $session = $this->patient->examSessions()->find($sessionId);
 
         if (! $session) {
             return;
@@ -172,7 +213,7 @@ class PatientExamForm extends Component
 
         $this->setActiveSession($session->id);
         $this->editingSessionId = $session->id;
-        $this->editingSessionDate = $session->date?->format('Y-m-d');
+        $this->editingSessionDate = $session->session_date?->format('Y-m-d');
     }
 
     public function cancelEditingSession(): void
@@ -193,7 +234,9 @@ class PatientExamForm extends Component
             'editingSessionDate' => ['required', 'date'],
         ]);
 
-        $session = $this->patient->clinicalNotes()->find($this->editingSessionId);
+        $session = $this->patient->examSessions()
+            ->with('clinicalNote')
+            ->find($this->editingSessionId);
 
         if (! $session) {
             $this->cancelEditingSession();
@@ -212,8 +255,8 @@ class PatientExamForm extends Component
         }
 
         $newDate = (string) $this->editingSessionDate;
-        $existingSession = $this->patient->clinicalNotes()
-            ->whereDate('date', $newDate)
+        $existingSession = $this->patient->examSessions()
+            ->whereDate('session_date', $newDate)
             ->where('id', '!=', $session->id)
             ->first();
 
@@ -226,43 +269,54 @@ class PatientExamForm extends Component
             return;
         }
 
-        $payload = [
-            'date' => $newDate,
+        $visitEpisodeId = $session->visit_episode_id
+            ?: $this->resolveEncounterIdForDate($newDate);
+
+        $session->fill([
+            'session_date' => $newDate,
+            'visit_episode_id' => $visitEpisodeId,
             'updated_by' => Auth::id(),
-        ];
+        ]);
+        $session->save();
 
-        if (! $session->visit_episode_id) {
-            $payload['visit_episode_id'] = $this->resolveEncounterIdForDate($newDate);
+        $note = $session->clinicalNote;
+
+        if ($note) {
+            $payload = [
+                'date' => $newDate,
+                'visit_episode_id' => $visitEpisodeId,
+                'updated_by' => Auth::id(),
+            ];
+
+            try {
+                $this->clinicalNote = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
+                    clinicalNote: $note,
+                    attributes: $payload,
+                    expectedVersion: (int) ($note->lock_version ?: 1),
+                    actorId: Auth::id(),
+                    operation: 'amend',
+                    reason: 'session_date_update',
+                );
+            } catch (ValidationException $exception) {
+                $errorMessage = (string) (collect($exception->errors())->flatten()->first()
+                    ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
+
+                Notification::make()
+                    ->title($errorMessage)
+                    ->danger()
+                    ->send();
+
+                $this->setActiveSession($session->id);
+
+                return;
+            }
         }
 
-        try {
-            $updatedSession = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
-                clinicalNote: $session,
-                attributes: $payload,
-                expectedVersion: $this->clinicalNoteVersion,
-                actorId: Auth::id(),
-                operation: 'amend',
-                reason: 'session_date_update',
-            );
-        } catch (ValidationException $exception) {
-            $errorMessage = (string) (collect($exception->errors())->flatten()->first()
-                ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
-
-            Notification::make()
-                ->title($errorMessage)
-                ->danger()
-                ->send();
-
-            $this->setActiveSession($session->id);
-
-            return;
+        if ($visitEpisodeId) {
+            $this->encounterService()->syncStandaloneEncounterDate((int) $visitEpisodeId, $newDate);
         }
 
-        if ($updatedSession->visit_episode_id) {
-            $this->encounterService()->syncStandaloneEncounterDate((int) $updatedSession->visit_episode_id, $newDate);
-        }
-
-        $this->setActiveSession($updatedSession->id);
+        $this->setActiveSession($session->id);
 
         Notification::make()
             ->title('Đã cập nhật ngày khám')
@@ -274,7 +328,9 @@ class PatientExamForm extends Component
     {
         $this->authorizeClinicalWrite();
 
-        $session = $this->patient->clinicalNotes()->find($sessionId);
+        $session = $this->patient->examSessions()
+            ->with(['clinicalOrders:id,exam_session_id', 'prescriptions:id,exam_session_id'])
+            ->find($sessionId);
 
         if (! $session) {
             return;
@@ -289,6 +345,19 @@ class PatientExamForm extends Component
             return;
         }
 
+        if ($session->clinicalOrders->isNotEmpty() || $session->prescriptions->isNotEmpty()) {
+            Notification::make()
+                ->title('Phiếu khám đã phát sinh chỉ định/đơn thuốc nên không thể xóa.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        ClinicalNote::query()
+            ->where('exam_session_id', $session->id)
+            ->delete();
+
         $session->delete();
 
         if ($this->activeSessionId === $sessionId) {
@@ -298,6 +367,7 @@ class PatientExamForm extends Component
                 $this->setActiveSession($nextSession->id);
             } else {
                 $this->clinicalNote = null;
+                $this->examSession = null;
                 $this->activeSessionId = null;
                 $this->resetExamForm();
             }
@@ -471,7 +541,9 @@ class PatientExamForm extends Component
                 ->danger()
                 ->send();
 
-            $this->setActiveSession((int) $this->clinicalNote->id);
+            if ($this->activeSessionId) {
+                $this->setActiveSession($this->activeSessionId);
+            }
 
             return;
         }
@@ -535,8 +607,12 @@ class PatientExamForm extends Component
             ->all();
 
         foreach ($sessions as $session) {
-            $sessionDate = $session->date?->toDateString();
-            $session->setAttribute('is_locked', $sessionDate !== null && isset($lockedDates[$sessionDate]));
+            $sessionDate = $session->session_date?->toDateString();
+            $session->setAttribute(
+                'is_locked',
+                $session->status === ExamSession::STATUS_LOCKED
+                    || ($sessionDate !== null && isset($lockedDates[$sessionDate]))
+            );
         }
 
         $authUser = Auth::user();
@@ -601,14 +677,15 @@ class PatientExamForm extends Component
 
     protected function getSessionQuery()
     {
-        return $this->patient->clinicalNotes()
-            ->with(['examiningDoctor:id,name', 'treatingDoctor:id,name'])
-            ->orderByDesc('date')
+        return $this->patient->examSessions()
+            ->with('clinicalNote')
+            ->orderByDesc('session_date')
             ->orderByDesc('id');
     }
 
     protected function resetExamForm(): void
     {
+        $this->examSession = null;
         $this->examining_doctor_id = null;
         $this->treating_doctor_id = null;
         $this->general_exam_notes = '';
@@ -643,9 +720,13 @@ class PatientExamForm extends Component
         $this->treatingDoctorSearch = $this->getTreatingDoctorNameProperty();
     }
 
-    protected function isSessionLockedByProgress(ClinicalNote $session): bool
+    protected function isSessionLockedByProgress(ExamSession $session): bool
     {
-        $sessionDate = $session->date?->toDateString();
+        if ($session->status === ExamSession::STATUS_LOCKED) {
+            return true;
+        }
+
+        $sessionDate = $session->session_date?->toDateString();
 
         if (! $sessionDate) {
             return false;

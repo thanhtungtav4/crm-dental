@@ -25,6 +25,7 @@ class PrescriptionFactory extends Factory
         return [
             'patient_id' => Patient::factory(),
             'branch_id' => null,
+            'exam_session_id' => null,
             'treatment_session_id' => null,
             'prescription_code' => Prescription::generatePrescriptionCode(),
             'prescription_name' => fake()->optional()->sentence(3),

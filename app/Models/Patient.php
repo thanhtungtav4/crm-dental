@@ -115,6 +115,11 @@ class Patient extends Model
         return $this->hasMany(ClinicalNote::class);
     }
 
+    public function examSessions()
+    {
+        return $this->hasMany(ExamSession::class);
+    }
+
     public function photos()
     {
         return $this->hasMany(PatientPhoto::class);
