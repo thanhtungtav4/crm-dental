@@ -31,6 +31,7 @@ it('creates plan → session → materials and updates stock & logs', function (
 
     $material = Material::factory()->create([
         'stock_qty' => 100,
+        'cost_price' => 125000,
     ]);
 
     $usage = TreatmentMaterial::create([
@@ -45,6 +46,7 @@ it('creates plan → session → materials and updates stock & logs', function (
         ->and(InventoryTransaction::where('material_id', $material->id)
             ->where('treatment_session_id', $session->id)
             ->where('type', 'out')
+            ->where('unit_cost', 125000)
             ->exists())->toBeTrue();
 
     $usage->delete();
@@ -144,4 +146,48 @@ it('enforces treatment material access by branch in policy and resource query', 
     expect(TreatmentMaterialResource::getEloquentQuery()->pluck('id')->all())
         ->toEqualCanonicalizing([$usageA->id])
         ->not->toContain($usageB->id);
+});
+
+it('rejects material usage when session branch and material branch do not match', function () {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+    $staff = User::factory()->create(['branch_id' => $branchA->id]);
+    $staff->assignRole('Manager');
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branchA->id]);
+
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $staff->id,
+        'branch_id' => $branchA->id,
+        'status' => 'in_progress',
+    ]);
+
+    $session = TreatmentSession::factory()->create([
+        'treatment_plan_id' => $plan->id,
+    ]);
+
+    $materialOtherBranch = Material::factory()->create([
+        'branch_id' => $branchB->id,
+        'stock_qty' => 10,
+    ]);
+
+    $this->actingAs($staff);
+
+    expect(fn () => TreatmentMaterial::query()->create([
+        'treatment_session_id' => $session->id,
+        'material_id' => $materialOtherBranch->id,
+        'quantity' => 1,
+        'used_by' => $staff->id,
+    ]))->toThrow(ValidationException::class, 'Vật tư không cùng chi nhánh với phiên điều trị đã chọn.');
+});
+
+it('loads treatment material create page', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    $this->actingAs($admin)
+        ->get(route('filament.admin.resources.treatment-materials.create'))
+        ->assertSuccessful()
+        ->assertSee('Phiên điều trị');
 });
