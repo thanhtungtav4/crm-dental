@@ -692,12 +692,16 @@ Ghi chu:
 - **Title**: Go-live reliability pack (backup/restore + monitoring + production gate)
 - **Type**: Task (Ops + BE)
 - **Estimate**: 5 SP
-- **Status**: Open
+- **Status**: In Progress (`2026-03-01`)
 - **Decision**: Adopt
 - **Scope**:
   - Backup automation DB/file + restore drill.
   - Runbook alert (error rate, queue lag, scheduler miss).
   - Cap nhat profile production gate theo danh sach bat buoc.
+- **Status Note**:
+  - Da bo sung gate `ops:check-backup-health` (strict mode) va noi vao profile `production` cua `ops:run-release-gates`.
+  - Da bo sung test strict pass/fail cho backup health gate.
+  - Con lai: restore drill command + runbook map owner/threshold theo alert category de dong PM-51.
 - **Acceptance Criteria (QA)**:
   1. Restore drill pass tren staging.
   2. Monitoring alert map ro owner va threshold.

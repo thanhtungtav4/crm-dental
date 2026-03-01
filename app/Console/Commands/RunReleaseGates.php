@@ -139,6 +139,12 @@ class RunReleaseGates extends Command
                 'command' => 'security:check-automation-actor',
                 'arguments' => ['--strict' => true],
             ];
+
+            $steps[] = [
+                'name' => 'Backup health gate',
+                'command' => 'ops:check-backup-health',
+                'arguments' => ['--strict' => true],
+            ];
         }
 
         if ($withFinance) {

@@ -16,6 +16,7 @@ it('shows planned steps in dry-run production profile', function (): void {
     ])
         ->expectsOutputToContain('RELEASE_GATE_PROFILE: production')
         ->expectsOutputToContain('security:check-automation-actor')
+        ->expectsOutputToContain('ops:check-backup-health')
         ->expectsOutputToContain('finance:reconcile-branch-attribution')
         ->expectsOutputToContain('Dry-run completed')
         ->assertSuccessful();
