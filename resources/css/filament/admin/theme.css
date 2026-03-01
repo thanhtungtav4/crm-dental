@@ -278,7 +278,7 @@ select {
   color: var(--crm-muted);
 }
 
-a:not(.fi-btn):not(.fi-icon-btn) {
+a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(.crm-patient-info-link):not(.crm-table-icon-btn) {
   color: var(--crm-primary);
 }
 
@@ -304,6 +304,7 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 
 .crm-patient-overview-body {
   padding: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
 }
 
 .crm-top-tabs-nav {
@@ -532,6 +533,21 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   background: rgba(255, 255, 255, 0.25);
 }
 
+.crm-patient-phone-chip,
+.crm-patient-phone-chip:hover,
+.crm-patient-phone-chip:focus,
+.crm-patient-phone-chip:visited {
+  color: #fff !important;
+}
+
+.crm-patient-phone-chip *,
+.crm-patient-phone-chip .crm-patient-phone-chip-icon,
+.crm-patient-phone-chip .crm-patient-phone-chip-text {
+  color: #fff !important;
+  fill: currentColor !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
 .crm-patient-phone-chip-icon {
   width: 16px;
   height: 16px;
@@ -547,12 +563,14 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 .crm-patient-address-card {
   border-radius: 12px;
   background: #f8fafc;
+  border: 1px solid #e6ebf3;
   padding: 16px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .crm-patient-info-card:hover {
-  background: #f3f4f6;
+  background: #f3f6fc;
+  border-color: #d8e0ef;
 }
 
 .crm-patient-address-card {
@@ -610,12 +628,12 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 }
 
 .crm-patient-info-link {
-  color: inherit;
+  color: inherit !important;
   text-decoration: none;
 }
 
 .crm-patient-info-link:hover {
-  color: #2563eb;
+  color: #2563eb !important;
 }
 
 .crm-patient-info-muted {
@@ -1099,6 +1117,79 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   background: #e50717;
 }
 
+/* Treatment plan list page */
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-header-actions .fi-btn {
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-header-actions .fi-color-primary.fi-btn {
+  background: var(--crm-brand-button-bg);
+  color: var(--crm-brand-button-text) !important;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-header-actions .fi-color-primary.fi-btn:hover {
+  background: var(--crm-brand-button-bg-hover);
+  color: var(--crm-brand-button-text) !important;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta {
+  border: 1px solid var(--crm-table-border-soft);
+  border-radius: 10px;
+  box-shadow: none;
+  overflow: hidden;
+  background: var(--crm-surface);
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--crm-table-divider);
+  background: var(--crm-surface);
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-header-heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-header-toolbar .fi-input-wrp {
+  min-height: 36px;
+  border-radius: 9px;
+  border-color: var(--crm-input-border-soft);
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table thead tr {
+  background: var(--crm-table-head-bg);
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table thead th {
+  background: var(--crm-table-head-bg);
+  border-right: 1px solid var(--crm-table-head-border);
+  color: var(--crm-text-inverse);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table thead th button,
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table thead th span {
+  color: var(--crm-text-inverse);
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table tbody td {
+  border-bottom: 1px solid var(--crm-table-row-border);
+  color: var(--crm-text-body);
+  font-size: 13px;
+}
+
+.fi-page.fi-resource-treatment-plans.fi-resource-list-records-page .fi-ta-table tbody tr:hover td {
+  background: var(--crm-table-row-hover);
+}
+
 /* Patient relation manager tables */
 .crm-rel-tab {
   --crm-rel-border: var(--crm-table-border-soft);
@@ -1154,7 +1245,18 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 }
 
 .crm-rel-tab.crm-rel-tab-prescriptions .fi-ta-table {
-  min-width: 1020px;
+  width: 100%;
+  min-width: 100%;
+}
+
+.crm-rel-tab.crm-rel-tab-prescriptions .fi-ta-table th.fi-ta-actions-header-cell,
+.crm-rel-tab.crm-rel-tab-prescriptions .fi-ta-table td.fi-ta-actions-cell {
+  width: 124px;
+  min-width: 124px;
+}
+
+.crm-rel-tab.crm-rel-tab-prescriptions .fi-ta-table .fi-ta-actions {
+  justify-content: flex-end;
 }
 
 .crm-rel-tab.crm-rel-tab-photos .fi-ta-table {
@@ -1534,11 +1636,12 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 
 .crm-btn-primary {
   background: var(--crm-brand-button-bg);
-  color: var(--crm-brand-button-text);
+  color: var(--crm-brand-button-text) !important;
 }
 
 .crm-btn-primary:hover {
   background: var(--crm-brand-button-bg-hover);
+  color: var(--crm-brand-button-text) !important;
 }
 
 .crm-btn-outline {
@@ -2651,9 +2754,9 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 
 .crm-payment-summary-title {
   margin: 0;
-  font-size: clamp(30px, 2vw, 42px);
+  font-size: clamp(22px, 1.6vw, 30px);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -2698,7 +2801,7 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   align-items: center;
   gap: 6px;
   color: var(--crm-payment-balance-text);
-  font-size: clamp(22px, 1.8vw, 38px);
+  font-size: clamp(18px, 1.35vw, 26px);
   font-weight: 700;
   line-height: 1;
   margin-right: 2px;
@@ -2706,7 +2809,7 @@ a:not(.fi-btn):not(.fi-icon-btn) {
 }
 
 .crm-payment-balance strong {
-  font-size: clamp(22px, 1.8vw, 38px);
+  font-size: clamp(18px, 1.35vw, 26px);
   line-height: 1;
 }
 
@@ -2747,7 +2850,7 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   display: block;
   margin-top: 8px;
   color: var(--crm-text);
-  font-size: clamp(22px, 1.9vw, 36px);
+  font-size: clamp(16px, 1.25vw, 22px);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -3060,12 +3163,12 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   }
 
   .crm-payment-summary-title {
-    font-size: clamp(24px, 2.2vw, 34px);
+    font-size: clamp(22px, 1.9vw, 28px);
   }
 
   .crm-payment-balance,
   .crm-payment-balance strong {
-    font-size: clamp(20px, 1.8vw, 32px);
+    font-size: clamp(18px, 1.5vw, 24px);
   }
 }
 
@@ -3120,12 +3223,12 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   }
 
   .crm-payment-summary-title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .crm-payment-balance,
   .crm-payment-balance strong {
-    font-size: 30px;
+    font-size: 22px;
   }
 
   .crm-payment-metrics {
@@ -3133,7 +3236,7 @@ a:not(.fi-btn):not(.fi-icon-btn) {
   }
 
   .crm-payment-metric strong {
-    font-size: 32px;
+    font-size: 24px;
   }
 
   .crm-treatment-subhead-title {
