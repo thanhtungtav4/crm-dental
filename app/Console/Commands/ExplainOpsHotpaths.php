@@ -15,6 +15,8 @@ class ExplainOpsHotpaths extends Command
     protected $signature = 'reports:explain-ops-hotpaths
         {--branch_id= : Branch scope để tạo plan baseline}
         {--write= : Đường dẫn file JSON baseline}
+        {--benchmark-runs=5 : Số lần chạy benchmark mỗi query để tính p95}
+        {--sla-p95-ms=250 : Ngưỡng SLA p95 (ms) cho mỗi hot-path query}
         {--strict : Fail nếu phát hiện full table scan}';
 
     protected $description = 'Sinh EXPLAIN baseline cho hot-path queries của care/appointment/finance.';
@@ -29,6 +31,8 @@ class ExplainOpsHotpaths extends Command
         $from = $now->copy()->startOfDay()->toDateTimeString();
         $to = $now->copy()->endOfDay()->toDateTimeString();
         $driver = (string) DB::connection()->getDriverName();
+        $benchmarkRuns = max(1, (int) $this->option('benchmark-runs'));
+        $slaP95Ms = max(0.001, (float) $this->option('sla-p95-ms'));
 
         $queries = $this->hotpathQueries(
             branchId: $branchId,
@@ -37,8 +41,13 @@ class ExplainOpsHotpaths extends Command
             to: $to,
         );
 
-        $results = collect($queries)->map(function (array $query) use ($driver): array {
+        $results = collect($queries)->map(function (array $query) use ($driver, $benchmarkRuns, $slaP95Ms): array {
             $planRows = $this->explain($driver, (string) $query['sql'], (array) $query['bindings']);
+            $benchmark = $this->benchmark(
+                sql: (string) $query['sql'],
+                bindings: (array) $query['bindings'],
+                runs: $benchmarkRuns,
+            );
 
             return [
                 'key' => (string) $query['key'],
@@ -46,15 +55,24 @@ class ExplainOpsHotpaths extends Command
                 'bindings' => (array) $query['bindings'],
                 'plan_rows' => $planRows,
                 'full_scan_detected' => $this->hasFullScan($driver, $planRows),
+                'benchmark_runs' => $benchmarkRuns,
+                'benchmark_ms' => $benchmark['runs_ms'],
+                'avg_ms' => $benchmark['avg_ms'],
+                'p95_ms' => $benchmark['p95_ms'],
+                'max_ms' => $benchmark['max_ms'],
+                'sla_p95_ms' => $slaP95Ms,
+                'sla_violated' => $benchmark['p95_ms'] > $slaP95Ms,
             ];
         })->values();
 
         $this->table(
-            ['Key', 'Plan Rows', 'Full Scan'],
+            ['Key', 'Plan Rows', 'Full Scan', 'P95 (ms)', 'SLA'],
             $results->map(fn (array $row): array => [
                 $row['key'],
                 count((array) $row['plan_rows']),
                 $row['full_scan_detected'] ? 'yes' : 'no',
+                number_format((float) $row['p95_ms'], 2),
+                $row['sla_violated'] ? 'violated' : 'ok',
             ])->all(),
         );
 
@@ -68,6 +86,10 @@ class ExplainOpsHotpaths extends Command
                 'from' => $from,
                 'to' => $to,
             ],
+            'benchmark' => [
+                'runs' => $benchmarkRuns,
+                'sla_p95_ms' => $slaP95Ms,
+            ],
             'queries' => $results->all(),
         ];
 
@@ -77,6 +99,7 @@ class ExplainOpsHotpaths extends Command
         $this->writeBaseline($target, $baseline);
 
         $fullScanCount = (int) $results->where('full_scan_detected', true)->count();
+        $slaViolationCount = (int) $results->where('sla_violated', true)->count();
 
         AuditLog::record(
             entityType: AuditLog::ENTITY_AUTOMATION,
@@ -89,15 +112,25 @@ class ExplainOpsHotpaths extends Command
                 'branch_id' => $branchId,
                 'doctor_id' => $doctorId,
                 'full_scan_count' => $fullScanCount,
+                'benchmark_runs' => $benchmarkRuns,
+                'sla_p95_ms' => $slaP95Ms,
+                'sla_violation_count' => $slaViolationCount,
                 'write' => $target,
             ],
         );
 
         $this->line('EXPLAIN_BASELINE_WRITTEN: '.$target);
         $this->line('EXPLAIN_FULL_SCAN_COUNT: '.$fullScanCount);
+        $this->line('EXPLAIN_SLA_VIOLATION_COUNT: '.$slaViolationCount);
 
-        if ((bool) $this->option('strict') && $fullScanCount > 0) {
-            $this->error('Strict mode: phát hiện full table scan trong hot-path query.');
+        if ((bool) $this->option('strict') && ($fullScanCount > 0 || $slaViolationCount > 0)) {
+            if ($fullScanCount > 0) {
+                $this->error('Strict mode: phát hiện full table scan trong hot-path query.');
+            }
+
+            if ($slaViolationCount > 0) {
+                $this->error('Strict mode: phát hiện hot-path query vượt ngưỡng SLA p95.');
+            }
 
             return self::FAILURE;
         }
@@ -187,6 +220,41 @@ class ExplainOpsHotpaths extends Command
     protected function inClause(array $values): string
     {
         return '('.implode(',', array_fill(0, count($values), '?')).')';
+    }
+
+    /**
+     * @param  array<int, mixed>  $bindings
+     * @return array{
+     *     runs_ms:array<int, float>,
+     *     avg_ms:float,
+     *     p95_ms:float,
+     *     max_ms:float
+     * }
+     */
+    protected function benchmark(string $sql, array $bindings, int $runs): array
+    {
+        $runsMs = [];
+
+        for ($iteration = 0; $iteration < $runs; $iteration++) {
+            $startedAt = microtime(true);
+            DB::select($sql, $bindings);
+            $runsMs[] = round((microtime(true) - $startedAt) * 1000, 3);
+        }
+
+        sort($runsMs);
+
+        $count = count($runsMs);
+        $p95Index = (int) max(0, min($count - 1, ceil($count * 0.95) - 1));
+        $avgMs = $count > 0 ? round(array_sum($runsMs) / $count, 3) : 0.0;
+        $maxMs = $count > 0 ? max($runsMs) : 0.0;
+        $p95Ms = $count > 0 ? (float) $runsMs[$p95Index] : 0.0;
+
+        return [
+            'runs_ms' => $runsMs,
+            'avg_ms' => $avgMs,
+            'p95_ms' => $p95Ms,
+            'max_ms' => $maxMs,
+        ];
     }
 
     /**

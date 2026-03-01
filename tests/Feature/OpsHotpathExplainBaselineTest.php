@@ -17,8 +17,11 @@ it('generates explain baseline artifact for operational hotpaths', function () {
     $this->artisan('reports:explain-ops-hotpaths', [
         '--branch_id' => $branch->id,
         '--write' => $outputPath,
+        '--benchmark-runs' => 3,
+        '--sla-p95-ms' => 200,
     ])
         ->expectsOutputToContain('EXPLAIN_BASELINE_WRITTEN')
+        ->expectsOutputToContain('EXPLAIN_SLA_VIOLATION_COUNT')
         ->assertSuccessful();
 
     expect(File::exists($outputPath))->toBeTrue();
@@ -34,5 +37,7 @@ it('generates explain baseline artifact for operational hotpaths', function () {
             'invoices_branch_status',
         ])
         ->and($queries->every(fn (array $query): bool => array_key_exists('plan_rows', $query)))->toBeTrue()
-        ->and($queries->every(fn (array $query): bool => array_key_exists('full_scan_detected', $query)))->toBeTrue();
+        ->and($queries->every(fn (array $query): bool => array_key_exists('full_scan_detected', $query)))->toBeTrue()
+        ->and($queries->every(fn (array $query): bool => array_key_exists('p95_ms', $query)))->toBeTrue()
+        ->and($queries->every(fn (array $query): bool => array_key_exists('sla_violated', $query)))->toBeTrue();
 });

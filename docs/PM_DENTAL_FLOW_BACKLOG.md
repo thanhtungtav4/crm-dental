@@ -653,12 +653,16 @@ Ghi chu:
 - **Title**: Performance baseline + pre-aggregation cho report hot paths
 - **Type**: Story (BE + Data)
 - **Estimate**: 8 SP
-- **Status**: Open
+- **Status**: In Progress (`2026-03-01`)
 - **Decision**: Re-scope (MVP)
 - **Scope**:
   - Pre-aggregate 3 report nong nhat (ops dashboard, revenue branch, care queue).
   - Chot SLA p95 list/workspace/report.
   - Artifact EXPLAIN + latency baseline truoc/sau.
+- **Status Note**:
+  - Da mo rong `reports:explain-ops-hotpaths` voi benchmark p95/avg/max latency theo query + threshold SLA.
+  - Strict mode da fail-fast neu vuot SLA p95 hoac co full scan; artifact baseline ghi du execution metrics.
+  - Con lai: chot pre-aggregation layer cho revenue/care reports de dong PM-49.
 - **Acceptance Criteria (QA)**:
   1. Report hot path dat SLA da chot.
   2. Khong full-scan tren strict explain gate.
