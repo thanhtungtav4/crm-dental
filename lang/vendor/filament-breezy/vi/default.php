@@ -58,6 +58,15 @@ return [
         'account' => 'Tài khoản',
         'profile' => 'Hồ sơ',
         'my_profile' => 'Hồ sơ của tôi',
+        'subheading' => 'Quản lý hồ sơ người dùng của bạn tại đây.',
+        'mfa_required_notice' => [
+            'title' => 'Bắt buộc bật MFA trước khi tiếp tục',
+            'body' => 'Bạn cần hoàn tất ít nhất một phương thức bảo mật: 2FA hoặc Passkey.',
+            'description' => 'Tài khoản của bạn thuộc nhóm bắt buộc MFA, nên hiện tại hệ thống đang chặn truy cập màn hình nghiệp vụ.',
+            'step_2fa' => 'Cách 1 (khuyến nghị): trong mục "Xác thực hai yếu tố", bấm "Bật", quét QR, nhập mã OTP rồi bấm "Xác nhận & hoàn tất".',
+            'step_passkey' => 'Cách 2: trong mục "Passkeys", tạo khóa truy cập mới và xác nhận thành công trên thiết bị.',
+            'done' => 'Sau khi hoàn tất một trong hai cách, tải lại trang để tiếp tục làm việc.',
+        ],
         'personal_info' => [
             'heading' => 'Thông tin cá nhân',
             'subheading' => 'Quản lý thông tin cá nhân của bạn.',
@@ -83,8 +92,10 @@ return [
                 'disable' => 'Tắt',
                 'confirm_finish' => 'Xác nhận & hoàn tất',
                 'cancel_setup' => 'Hủy thiết lập',
+                'confirm' => 'Xác nhận',
             ],
             'setup_key' => 'Thiết lập khóa',
+            'must_enable' => 'Bạn phải bật xác thực hai yếu tố để sử dụng ứng dụng này.',
             'not_enabled' => [
                 'title' => 'Bạn chưa bật xác thực hai yếu tố.',
                 'description' => 'Khi xác thực hai yếu tố được bật, bạn sẽ được nhắc nhập mã token ngẫu nhiên, an toàn trong quá trình xác thực. Bạn có thể lấy mã token này từ ứng dụng Google Authenticator trên điện thoại của mình.',
@@ -94,11 +105,18 @@ return [
                 'description' => 'Để hoàn tất việc bật xác thực hai yếu tố, hãy quét mã QR sau bằng ứng dụng xác thực trên điện thoại của bạn hoặc nhập khóa thiết lập và cung cấp mã OTP đã tạo.',
             ],
             'enabled' => [
+                'notify' => 'Đã bật xác thực hai yếu tố.',
                 'title' => 'Bạn đã bật xác thực hai yếu tố!',
                 'description' => 'Xác thực hai yếu tố hiện đã được bật. Điều này giúp làm cho tài khoản của bạn an toàn hơn.',
                 'store_codes' => 'Lưu trữ các mã khôi phục này trong trình quản lý mật khẩu an toàn. Chúng có thể được sử dụng để khôi phục quyền truy cập vào tài khoản của bạn nếu thiết bị xác thực hai yếu tố của bạn bị mất.',
                 'show_codes' => 'Hiển thị mã khôi phục',
                 'hide_codes' => 'Ẩn mã khôi phục',
+            ],
+            'disabling' => [
+                'notify' => 'Đã tắt xác thực hai yếu tố.',
+            ],
+            'regenerate_codes' => [
+                'notify' => 'Đã tạo mã khôi phục mới.',
             ],
             'confirmation' => [
                 'success_notification' => 'Đã xác minh mã. Đã bật xác thực hai yếu tố.',
@@ -110,13 +128,34 @@ return [
             'description' => 'Quản lý mã token API cho phép các dịch vụ của bên thứ ba thay mặt bạn truy cập vào ứng dụng này. LƯU Ý: mã token của bạn được hiển thị một lần khi tạo. Nếu bạn mất mã token của mình, bạn sẽ cần phải xóa nó và tạo một mã mới.',
             'create' => [
                 'notify' => 'Tạo mã token thành công!',
+                'message' => 'Mã token chỉ hiển thị một lần khi tạo. Nếu bạn làm mất, hãy xóa và tạo mã token mới.',
                 'submit' => [
                     'label' => 'Tạo',
                 ],
             ],
             'update' => [
                 'notify' => 'Cập nhật mã token thành công!',
+                'submit' => [
+                    'label' => 'Cập nhật',
+                ],
             ],
+            'copied' => [
+                'label' => 'Tôi đã sao chép mã token',
+            ],
+        ],
+        'browser_sessions' => [
+            'heading' => 'Phiên trình duyệt',
+            'subheading' => 'Quản lý các phiên đang hoạt động của bạn.',
+            'label' => 'Phiên trình duyệt',
+            'content' => 'Khi cần, bạn có thể đăng xuất tất cả các phiên trình duyệt khác trên mọi thiết bị. Một số phiên gần đây được liệt kê bên dưới, nhưng có thể không đầy đủ. Nếu bạn nghi ngờ tài khoản bị lộ, hãy đổi mật khẩu ngay.',
+            'device' => 'Thiết bị này',
+            'last_active' => 'Hoạt động lần cuối',
+            'logout_other_sessions' => 'Đăng xuất các phiên trình duyệt khác',
+            'logout_heading' => 'Đăng xuất các phiên trình duyệt khác',
+            'logout_description' => 'Vui lòng nhập mật khẩu để xác nhận đăng xuất các phiên trình duyệt khác trên mọi thiết bị.',
+            'logout_action' => 'Đăng xuất các phiên trình duyệt khác',
+            'incorrect_password' => 'Mật khẩu bạn nhập không chính xác. Vui lòng thử lại.',
+            'logout_success' => 'Đã đăng xuất thành công tất cả phiên trình duyệt khác.',
         ],
     ],
     'clipboard' => [
@@ -124,6 +163,7 @@ return [
         'tooltip' => 'Đã sao chép!',
     ],
     'fields' => [
+        'avatar' => 'Ảnh đại diện',
         'email' => 'Email',
         'login' => 'Đăng nhập',
         'name' => 'Tên',
@@ -132,6 +172,7 @@ return [
         'new_password' => 'Mật khẩu mới',
         'new_password_confirmation' => 'Mật khẩu xác nhận',
         'token_name' => 'Tên mã token',
+        'token_expiry' => 'Thời hạn mã token',
         'abilities' => 'Khả năng',
         '2fa_code' => 'Mã',
         '2fa_recovery_code' => 'Mã khôi phục',

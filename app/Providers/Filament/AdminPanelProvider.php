@@ -119,8 +119,7 @@ class AdminPanelProvider extends PanelProvider
                     ])
                     ->enableBrowserSessions(true)
                     ->avatarUploadComponent(function (FileUpload $fileUpload) {
-                        // Use our existing `users.avatar` column and public storage
-                        return FileUpload::make('avatar')
+                        return FileUpload::make('avatar_url')
                             ->label(__('Avatar'))
                             ->image()
                             ->disk('public')

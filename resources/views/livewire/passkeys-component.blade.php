@@ -1,21 +1,25 @@
-<x-filament::section 
-    :aside="true" 
-    heading="Khóa truy cập (Passkey)" 
+<x-filament::section
+    :aside="true"
+    heading="Khóa truy cập (Passkey)"
     description="Khóa truy cập (passkey) cho phép bạn đăng nhập mà không cần mật khẩu. Thay vì mật khẩu, bạn có thể tạo passkey sẽ được lưu trữ trong 1Password, ứng dụng mật khẩu của MacOS, hoặc các ứng dụng tương tự trên hệ điều hành của bạn."
 >
-    {{-- Check WebAuthn support --}}
-    <div x-data="{ 
+    <div x-data="{
         supported: false,
-        checking: true 
-    }" 
+        checking: true,
+        secureContext: false,
+        hasWebAuthnApi: false,
+        origin: '',
+    }"
     x-init="
         checking = true;
-        supported = window.PublicKeyCredential !== undefined && 
-                   navigator.credentials !== undefined &&
-                   navigator.credentials.create !== undefined;
+        origin = window.location.origin;
+        secureContext = window.isSecureContext === true;
+        hasWebAuthnApi = window.PublicKeyCredential !== undefined
+            && navigator.credentials !== undefined
+            && navigator.credentials.create !== undefined;
+        supported = secureContext && hasWebAuthnApi;
         checking = false;
     ">
-        {{-- Error message if not supported --}}
         <div x-show="!checking && !supported" x-cloak>
             <x-filament::section>
                 <div class="rounded-lg bg-warning-50 dark:bg-warning-900/20 p-4">
@@ -27,13 +31,19 @@
                         </div>
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-warning-800 dark:text-warning-200">
-                                WebAuthn không được hỗ trợ
+                                Không thể sử dụng Passkey trên môi trường hiện tại
                             </h3>
                             <div class="mt-2 text-sm text-warning-700 dark:text-warning-300">
-                                <p>Trình duyệt của bạn không hỗ trợ WebAuthn/Passkeys. Để sử dụng tính năng này, vui lòng:</p>
+                                <p x-show="!secureContext">
+                                    Trình duyệt đang ở ngữ cảnh không bảo mật (<span class="font-semibold" x-text="origin"></span>).
+                                    Passkey yêu cầu HTTPS hoặc localhost.
+                                </p>
+                                <p x-show="secureContext && !hasWebAuthnApi">
+                                    Trình duyệt chưa hỗ trợ đầy đủ WebAuthn/Passkeys.
+                                </p>
                                 <ul class="list-disc list-inside mt-2 space-y-1">
                                     <li>Sử dụng trình duyệt hiện đại (Chrome 109+, Safari 16+, Firefox 119+)</li>
-                                    <li>Truy cập qua HTTPS hoặc localhost</li>
+                                    <li>Truy cập qua HTTPS (ví dụ: https://crm.test) hoặc localhost</li>
                                     <li>Đảm bảo trình duyệt được cập nhật lên phiên bản mới nhất</li>
                                 </ul>
                             </div>
@@ -43,12 +53,10 @@
             </x-filament::section>
         </div>
 
-        {{-- Passkeys component if supported --}}
         <div x-show="!checking && supported">
             @livewire(\MarcelWeidum\Passkeys\Livewire\Passkeys::class)
         </div>
 
-        {{-- Loading state --}}
         <div x-show="checking">
             <div class="flex items-center justify-center p-4">
                 <x-filament::loading-indicator class="h-5 w-5" />
