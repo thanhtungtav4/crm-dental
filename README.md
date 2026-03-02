@@ -67,6 +67,254 @@ Edge flow đã có:
 - payment reversal/refund với audit
 - idempotency cho các API ghi nhận nhạy cảm
 
+## 4.1) State machine các thành phần chính
+
+Nguồn sự thật là các model/service hiện tại trong `app/Models` và action trong Filament resources.  
+Các sơ đồ dưới đây mô tả lifecycle chuẩn để team PM/QA/dev thống nhất khi review regression.
+
+### A. Customer (Lead lifecycle, trạng thái có thể cấu hình)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Lead : create customer
+    Lead --> Contacted : outreach done
+    Contacted --> Confirmed : booking confirmed
+    Confirmed --> Converted : convertToPatient()
+    Lead --> Lost : disqualified / no response
+    Contacted --> Lost
+    Confirmed --> Lost
+    Lost --> Contacted : re-activate
+    Converted --> [*]
+```
+
+Default labels hiện tại: `lead`, `contacted`, `confirmed`, `converted`, `lost` (configurable qua catalog settings).
+
+### B. Appointment (booking operational state)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Scheduled
+    Scheduled --> Confirmed
+    Scheduled --> InProgress
+    Scheduled --> Completed
+    Scheduled --> Cancelled
+    Scheduled --> NoShow
+    Scheduled --> Rescheduled
+
+    Confirmed --> Scheduled
+    Confirmed --> InProgress
+    Confirmed --> Completed
+    Confirmed --> Cancelled
+    Confirmed --> NoShow
+    Confirmed --> Rescheduled
+
+    InProgress --> Completed
+    InProgress --> Cancelled
+    InProgress --> Rescheduled
+
+    NoShow --> Scheduled
+    NoShow --> Rescheduled
+    NoShow --> Cancelled
+
+    Rescheduled --> Scheduled
+    Rescheduled --> Confirmed
+    Rescheduled --> Cancelled
+
+    Cancelled --> Scheduled
+    Cancelled --> Rescheduled
+
+    Completed --> [*]
+```
+
+### C. Visit episode (chair-time lifecycle)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Scheduled
+    Scheduled --> InProgress : arrived / in-chair
+    Scheduled --> NoShow
+    Scheduled --> Cancelled
+    Scheduled --> Rescheduled
+    InProgress --> Completed
+    InProgress --> Cancelled
+    InProgress --> Rescheduled
+    Rescheduled --> Scheduled
+    Completed --> [*]
+```
+
+### D. Exam session (clinical form lifecycle)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Planned
+    Draft --> InProgress
+    Planned --> InProgress
+    Planned --> Completed
+    Planned --> Locked
+    InProgress --> Completed
+    InProgress --> Locked
+    Completed --> Locked
+    Locked --> [*]
+```
+
+### E. Treatment plan + plan item
+
+Treatment plan:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Approved : approve
+    Draft --> Cancelled
+    Approved --> InProgress : start treatment
+    Approved --> Completed : auto/updateProgress(100%)
+    Approved --> Cancelled
+    InProgress --> Completed
+    InProgress --> Cancelled
+    Completed --> [*]
+    Cancelled --> [*]
+```
+
+Plan item approval:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Proposed
+    Draft --> Declined
+    Proposed --> Draft
+    Proposed --> Approved
+    Proposed --> Declined
+    Declined --> Draft
+    Declined --> Proposed
+    Declined --> Approved
+    Approved --> Approved
+```
+
+Plan item execution (chỉ được chạy khi `approval_status = approved`):
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> InProgress : start / completeVisit
+    Pending --> Cancelled
+    InProgress --> Completed
+    InProgress --> Cancelled
+    Completed --> [*]
+    Cancelled --> [*]
+```
+
+### F. Clinical orders/results
+
+Clinical order:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> InProgress
+    Pending --> Completed
+    Pending --> Cancelled
+    InProgress --> Completed
+    InProgress --> Cancelled
+    Completed --> [*]
+    Cancelled --> [*]
+```
+
+Clinical result:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Preliminary
+    Draft --> Final
+    Preliminary --> Final
+    Preliminary --> Amended
+    Final --> Amended
+    Amended --> [*]
+```
+
+### G. Finance (invoice, installment, insurance claim)
+
+Invoice:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Issued : issue invoice
+    Draft --> Cancelled
+    Issued --> Partial : receipt > 0
+    Issued --> Paid : fully paid
+    Issued --> Overdue : past due
+    Issued --> Cancelled
+    Partial --> Paid
+    Partial --> Overdue : past due
+    Overdue --> Paid
+    Overdue --> Cancelled
+    Paid --> [*]
+    Cancelled --> [*]
+```
+
+Installment plan:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active
+    Active --> Defaulted : overdue bucket > 0
+    Defaulted --> Active : paid catch-up
+    Active --> Completed : remaining_amount = 0
+    Defaulted --> Completed : remaining_amount = 0
+    Active --> Cancelled
+    Defaulted --> Cancelled
+    Completed --> [*]
+    Cancelled --> [*]
+```
+
+Insurance claim:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted
+    Draft --> Cancelled
+    Submitted --> Approved
+    Submitted --> Denied
+    Submitted --> Cancelled
+    Denied --> Resubmitted
+    Denied --> Cancelled
+    Resubmitted --> Approved
+    Resubmitted --> Denied
+    Resubmitted --> Cancelled
+    Approved --> Paid
+    Approved --> Cancelled
+    Paid --> [*]
+    Cancelled --> [*]
+```
+
+### H. CSKH / Recall note
+
+```mermaid
+stateDiagram-v2
+    [*] --> NotStarted
+    NotStarted --> InProgress
+    NotStarted --> Done
+    NotStarted --> NeedFollowup
+    NotStarted --> Failed
+
+    InProgress --> Done
+    InProgress --> NeedFollowup
+    InProgress --> Failed
+
+    NeedFollowup --> NotStarted
+    NeedFollowup --> InProgress
+    NeedFollowup --> Done
+    NeedFollowup --> Failed
+
+    Failed --> NotStarted
+    Failed --> InProgress
+    Done --> [*]
+```
+
 ## 5) Module chính
 
 ### 5.1 CRM & Frontdesk
