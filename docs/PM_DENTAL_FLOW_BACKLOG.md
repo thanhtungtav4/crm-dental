@@ -940,3 +940,24 @@ Ghi chu:
   1. Co report JSON de PM/QA ky duyet go-live.
   2. Strict-full khong cho loophole filter partial test.
   3. Fail flow co artifact debug day du.
+
+### TICKET PM-64 (P1)
+- **Title**: Verify readiness report schema + QA/PM sign-off gate
+- **Type**: Task (Ops Governance)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-03-02`)
+- **Decision**: Adopt
+- **Scope**:
+  - Tao command `ops:verify-production-readiness-report`.
+  - Validate schema artifact JSON tu `ops:run-production-readiness`.
+  - Ky checklist QA/PM va xuat sign-off artifact truoc deploy.
+- **Status Note**:
+  - Da them command verify report: check schema, check business consistency (`status pass`, khong dry-run, steps run thanh cong, failures rong).
+  - Da bo sung strict mode: yeu cau `strict_full=true`, `with_finance=true`, `run_tests=true` + co `release_ref`.
+  - Da bo sung ky QA/PM qua options `--qa`, `--pm`, `--release-ref` va xuat sign-off JSON artifact (`--output`).
+  - Da ghi audit log cho pass/fail verify flow de truy vet governance.
+  - Da bo sung regression tests cho pass path, schema invalid, va strict checklist fail.
+- **Acceptance Criteria (QA)**:
+  1. Report sai schema bi chan.
+  2. Report chua dat strict checklist khong duoc ky deploy.
+  3. Sign-off artifact co du thong tin QA/PM/release ref/hash report.
