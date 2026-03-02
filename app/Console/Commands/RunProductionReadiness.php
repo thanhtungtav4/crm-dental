@@ -84,14 +84,20 @@ class RunProductionReadiness extends Command
             $name = (string) Arr::get($step, 'name', 'Step');
             $command = (array) Arr::get($step, 'command', []);
             $timeout = (int) Arr::get($step, 'timeout', 600);
+            $environment = (array) Arr::get($step, 'env', []);
 
             $this->newLine();
             $this->line(sprintf('[%d/%d] %s', $index + 1, $totalSteps, $name));
 
             $stepStartedAt = microtime(true);
-            $result = Process::path(base_path())
-                ->timeout($timeout)
-                ->run($command);
+            $process = Process::path(base_path())
+                ->timeout($timeout);
+
+            if ($environment !== []) {
+                $process = $process->env($environment);
+            }
+
+            $result = $process->run($command);
             $durationMs = (int) round((microtime(true) - $stepStartedAt) * 1000);
 
             $output = trim((string) $result->output());
@@ -159,7 +165,7 @@ class RunProductionReadiness extends Command
     }
 
     /**
-     * @return array<int, array{name:string, command:array<int, string>, display_command:string, timeout:int}>
+     * @return array<int, array{name:string, command:array<int, string>, display_command:string, timeout:int, env?:array<string, string|bool>}>
      */
     protected function buildSteps(): array
     {
@@ -207,10 +213,32 @@ class RunProductionReadiness extends Command
                 'command' => $testCommand,
                 'display_command' => implode(' ', $testCommand),
                 'timeout' => 7200,
+                'env' => $this->testingProcessEnvironment(),
             ];
         }
 
         return $steps;
+    }
+
+    /**
+     * @return array<string, string|bool>
+     */
+    protected function testingProcessEnvironment(): array
+    {
+        return [
+            'APP_ENV' => 'testing',
+            'APP_MAINTENANCE_DRIVER' => 'file',
+            'BCRYPT_ROUNDS' => '4',
+            'CACHE_STORE' => 'array',
+            'DB_CONNECTION' => 'sqlite',
+            'DB_DATABASE' => ':memory:',
+            'MAIL_MAILER' => 'array',
+            'QUEUE_CONNECTION' => 'sync',
+            'SESSION_DRIVER' => 'array',
+            'PULSE_ENABLED' => 'false',
+            'TELESCOPE_ENABLED' => 'false',
+            'NIGHTWATCH_ENABLED' => 'false',
+        ];
     }
 
     protected function defaultReportPath(): string

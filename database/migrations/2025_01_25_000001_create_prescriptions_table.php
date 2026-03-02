@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('prescriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('treatment_session_id')->nullable()->constrained()->nullOnDelete();
+            $table->unsignedBigInteger('patient_id');
+            $table->unsignedBigInteger('treatment_session_id')->nullable();
             $table->string('prescription_code')->unique();
             $table->string('prescription_name')->nullable();
             $table->foreignId('doctor_id')->constrained('users')->cascadeOnDelete();
@@ -23,6 +23,14 @@ return new class extends Migration
 
             $table->index(['patient_id', 'treatment_date']);
             $table->index('prescription_code');
+
+            if (Schema::hasTable('patients')) {
+                $table->foreign('patient_id')->references('id')->on('patients')->cascadeOnDelete();
+            }
+
+            if (Schema::hasTable('treatment_sessions')) {
+                $table->foreign('treatment_session_id')->references('id')->on('treatment_sessions')->nullOnDelete();
+            }
         });
     }
 

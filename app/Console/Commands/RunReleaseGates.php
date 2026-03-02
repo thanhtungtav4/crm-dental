@@ -119,6 +119,11 @@ class RunReleaseGates extends Command
                 'arguments' => [],
             ],
             [
+                'name' => 'Critical foreign key gate',
+                'command' => 'schema:assert-critical-foreign-keys',
+                'arguments' => [],
+            ],
+            [
                 'name' => 'Action permission baseline gate',
                 'command' => 'security:assert-action-permission-baseline',
                 'arguments' => ['--sync' => true],

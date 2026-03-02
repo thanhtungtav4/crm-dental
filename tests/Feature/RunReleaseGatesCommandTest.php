@@ -15,6 +15,7 @@ it('shows planned steps in dry-run production profile', function (): void {
         '--dry-run' => true,
     ])
         ->expectsOutputToContain('RELEASE_GATE_PROFILE: production')
+        ->expectsOutputToContain('schema:assert-critical-foreign-keys')
         ->expectsOutputToContain('security:check-automation-actor')
         ->expectsOutputToContain('ops:check-backup-health')
         ->expectsOutputToContain('ops:run-restore-drill')
@@ -30,6 +31,7 @@ it('runs ci release gates successfully', function (): void {
         '--profile' => 'ci',
     ])
         ->expectsOutputToContain('schema:assert-no-pending-migrations')
+        ->expectsOutputToContain('schema:assert-critical-foreign-keys')
         ->expectsOutputToContain('security:assert-action-permission-baseline')
         ->expectsOutputToContain('Release gate: PASS')
         ->assertSuccessful();
