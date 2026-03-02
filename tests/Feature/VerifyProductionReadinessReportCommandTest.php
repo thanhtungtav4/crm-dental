@@ -71,6 +71,26 @@ it('fails strict mode when full strict checklist conditions are not met', functi
         ->assertFailed();
 });
 
+it('fails strict mode when required release gate commands are missing in report contract', function (): void {
+    $reportPath = storage_path('app/testing/readiness-verify/missing-required-gates-report.json');
+    File::ensureDirectoryExists(dirname($reportPath));
+
+    $report = validReadinessReport();
+    $report['steps_run'][0]['output'] = 'release gate ok';
+    file_put_contents($reportPath, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    $this->artisan('ops:verify-production-readiness-report', [
+        'report' => $reportPath,
+        '--qa' => 'qa.lead@clinic.test',
+        '--pm' => 'pm.owner@clinic.test',
+        '--release-ref' => 'REL-2026-03-02',
+        '--strict' => true,
+    ])
+        ->expectsOutputToContain('READINESS_REPORT_STATUS: FAIL')
+        ->expectsOutputToContain('missing_required_gate_schema_assert_critical_foreign_keys')
+        ->assertFailed();
+});
+
 /**
  * @return array<string, mixed>
  */
@@ -107,7 +127,17 @@ function validReadinessReport(): array
                 'duration_ms' => 120000,
                 'exit_code' => 0,
                 'successful' => true,
-                'output' => 'release gate ok',
+                'output' => implode(PHP_EOL, [
+                    'schema:assert-no-pending-migrations',
+                    'schema:assert-critical-foreign-keys',
+                    'security:assert-action-permission-baseline',
+                    'reports:explain-ops-hotpaths',
+                    'security:check-automation-actor',
+                    'ops:check-backup-health',
+                    'ops:run-restore-drill',
+                    'ops:check-alert-runbook-map',
+                    'finance:reconcile-branch-attribution',
+                ]),
                 'error_output' => '',
             ],
             [

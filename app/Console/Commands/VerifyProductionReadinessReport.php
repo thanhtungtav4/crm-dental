@@ -81,6 +81,8 @@ class VerifyProductionReadinessReport extends Command
             if (! (bool) ($decoded['run_tests'] ?? false)) {
                 $issues[] = 'run_tests_phai_true_khi_xac_nhan_deploy';
             }
+
+            $issues = array_merge($issues, $this->collectMissingGateIssues($decoded));
         }
 
         $qaSigner = trim((string) ($this->option('qa') ?? ''));
@@ -246,6 +248,76 @@ class VerifyProductionReadinessReport extends Command
         }
 
         return $issues;
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array<int, string>
+     */
+    protected function collectMissingGateIssues(array $report): array
+    {
+        $requiredCommands = $this->requiredGateCommands($report);
+        $haystack = $this->reportGateHaystack($report);
+        $issues = [];
+
+        foreach ($requiredCommands as $command) {
+            if (! str_contains($haystack, strtolower($command))) {
+                $issues[] = $this->formatGateIssueCode($command);
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array<int, string>
+     */
+    protected function requiredGateCommands(array $report): array
+    {
+        $commands = [
+            'schema:assert-no-pending-migrations',
+            'schema:assert-critical-foreign-keys',
+            'security:assert-action-permission-baseline',
+            'reports:explain-ops-hotpaths',
+            'security:check-automation-actor',
+            'ops:check-backup-health',
+            'ops:run-restore-drill',
+            'ops:check-alert-runbook-map',
+        ];
+
+        if ((bool) ($report['with_finance'] ?? false)) {
+            $commands[] = 'finance:reconcile-branch-attribution';
+        }
+
+        return $commands;
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     */
+    protected function reportGateHaystack(array $report): string
+    {
+        $chunks = [];
+
+        foreach ((array) ($report['steps_plan'] ?? []) as $step) {
+            $chunks[] = (string) Arr::get($step, 'command', '');
+        }
+
+        foreach ((array) ($report['steps_run'] ?? []) as $step) {
+            $chunks[] = (string) Arr::get($step, 'command', '');
+            $chunks[] = (string) Arr::get($step, 'output', '');
+            $chunks[] = (string) Arr::get($step, 'error_output', '');
+        }
+
+        return strtolower(implode("\n", $chunks));
+    }
+
+    protected function formatGateIssueCode(string $command): string
+    {
+        $normalized = preg_replace('/[^a-z0-9]+/i', '_', strtolower($command));
+
+        return 'missing_required_gate_'.trim((string) $normalized, '_');
     }
 
     protected function resolveReportPath(string $input): ?string

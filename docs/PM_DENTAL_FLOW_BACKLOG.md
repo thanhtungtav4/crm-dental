@@ -606,7 +606,7 @@ Ghi chu:
 
 ---
 
-## 10) Open (Feasibility backlog tu external review)
+## 10) Historical/Completed (Feasibility backlog tu external review)
 
 ### TICKET PM-47 (P0)
 - **Title**: Exam session separation khoi clinical note aggregate
