@@ -897,9 +897,9 @@ Ghi chu:
   - Release gate production `--with-finance` phai fail neu mismatch con ton tai.
   - Bo sung regression test command + release gate args.
 - **Status Note**:
-  - Da them `--strict` vao command reconciliation, fail-fast khi `invoice_mismatch_count` hoac `receipt_mismatch_count` > 0.
+  - Da them `--strict` vao command reconciliation, fail-fast khi con `invoice_missing_branch_id_count` hoac `receipt_missing_branch_id_count` > 0 (thieu persist attribution).
   - Da noi `RunReleaseGates` de truyen `--strict` cho finance gate khi profile production.
-  - Da bo sung regression tests cho strict fail case va dry-run output release gate.
+  - Da bo sung regression tests cho strict fail case theo missing attribution va dry-run output release gate.
 - **Acceptance Criteria (QA)**:
   1. Production gate co `--with-finance` fail neu mismatch.
   2. Ops co the chay non-strict o profile ci/ops de tham khao.

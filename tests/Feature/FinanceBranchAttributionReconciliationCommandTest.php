@@ -139,7 +139,7 @@ it('can apply branch attribution backfill and export before after reconciliation
         ->and(data_get($report, 'after.summary'))->toBeArray();
 });
 
-it('fails strict mode when reconciliation still has mismatches', function () {
+it('fails strict mode when reconciliation still has missing branch attribution', function () {
     $billingBranch = Branch::factory()->create();
     $originBranch = Branch::factory()->create();
 
@@ -174,12 +174,21 @@ it('fails strict mode when reconciliation still has mismatches', function () {
         direction: 'receipt',
     );
 
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->firstOrFail();
+
+    DB::table('invoices')
+        ->where('id', $invoice->id)
+        ->update(['branch_id' => null]);
+    DB::table('payments')
+        ->where('id', $payment->id)
+        ->update(['branch_id' => null]);
+
     $this->artisan('finance:reconcile-branch-attribution', [
         '--from' => now()->toDateString(),
         '--to' => now()->toDateString(),
         '--strict' => true,
     ])
-        ->expectsOutputToContain('MISMATCH_COUNTS')
-        ->expectsOutputToContain('Strict mode: finance reconciliation mismatch con ton tai')
+        ->expectsOutputToContain('MISSING_ATTRIBUTION_COUNTS')
+        ->expectsOutputToContain('Strict mode: finance branch attribution chua duoc persist day du')
         ->assertFailed();
 });

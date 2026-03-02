@@ -109,10 +109,11 @@ class ReconcileFinanceBranchAttribution extends Command
         $this->line('TOTAL_LEGACY_RECEIPTS: '.$this->formatAmount((float) ($summary['receipt_legacy_amount'] ?? 0)));
         $this->line('TOTAL_DELTA_RECEIPTS: '.$this->formatAmount((float) ($summary['receipt_delta_amount'] ?? 0)));
         $this->line('MISMATCH_COUNTS: invoices='.(int) ($summary['invoice_mismatch_count'] ?? 0).', receipts='.(int) ($summary['receipt_mismatch_count'] ?? 0));
+        $this->line('MISSING_ATTRIBUTION_COUNTS: invoices='.(int) ($summary['invoice_missing_branch_id_count'] ?? 0).', receipts='.(int) ($summary['receipt_missing_branch_id_count'] ?? 0));
 
-        $invoiceMismatchCount = (int) ($summary['invoice_mismatch_count'] ?? 0);
-        $receiptMismatchCount = (int) ($summary['receipt_mismatch_count'] ?? 0);
-        $hasMismatch = $invoiceMismatchCount > 0 || $receiptMismatchCount > 0;
+        $invoiceMissingBranchIdCount = (int) ($summary['invoice_missing_branch_id_count'] ?? 0);
+        $receiptMissingBranchIdCount = (int) ($summary['receipt_missing_branch_id_count'] ?? 0);
+        $hasMissingAttribution = $invoiceMissingBranchIdCount > 0 || $receiptMissingBranchIdCount > 0;
 
         $exportPath = $this->option('export')
             ? (string) $this->option('export')
@@ -149,11 +150,11 @@ class ReconcileFinanceBranchAttribution extends Command
 
         $this->info('Reconciliation report exported: '.$exportPath);
 
-        if ((bool) $this->option('strict') && $hasMismatch) {
+        if ((bool) $this->option('strict') && $hasMissingAttribution) {
             $this->error(sprintf(
-                'Strict mode: finance reconciliation mismatch con ton tai (invoices=%d, receipts=%d).',
-                $invoiceMismatchCount,
-                $receiptMismatchCount,
+                'Strict mode: finance branch attribution chua duoc persist day du (invoices_missing=%d, receipts_missing=%d).',
+                $invoiceMissingBranchIdCount,
+                $receiptMissingBranchIdCount,
             ));
 
             return self::FAILURE;

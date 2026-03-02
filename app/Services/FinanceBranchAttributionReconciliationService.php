@@ -39,7 +39,9 @@ class FinanceBranchAttributionReconciliationService
      *         receipt_current_count:int,
      *         receipt_legacy_count:int,
      *         invoice_mismatch_count:int,
-     *         receipt_mismatch_count:int
+     *         receipt_mismatch_count:int,
+     *         invoice_missing_branch_id_count:int,
+     *         receipt_missing_branch_id_count:int
      *     }
      * }
      */
@@ -111,6 +113,8 @@ class FinanceBranchAttributionReconciliationService
             'receipt_legacy_count' => (int) collect($rows)->sum('receipt_legacy_count'),
             'invoice_mismatch_count' => $this->countInvoiceBranchMismatches($from, $to, $branchId),
             'receipt_mismatch_count' => $this->countReceiptBranchMismatches($from, $to, $branchId),
+            'invoice_missing_branch_id_count' => $this->countInvoiceMissingBranchId($from, $to, $branchId),
+            'receipt_missing_branch_id_count' => $this->countReceiptMissingBranchId($from, $to, $branchId),
         ];
 
         return [
@@ -415,6 +419,44 @@ class FinanceBranchAttributionReconciliationService
             ->when(
                 $branchId !== null,
                 fn (Builder $query) => $query->whereRaw('COALESCE(payments.branch_id, invoices.branch_id, patients.first_branch_id) = ?', [$branchId]),
+            )
+            ->count('payments.id');
+    }
+
+    protected function countInvoiceMissingBranchId(Carbon $from, Carbon $to, ?int $branchId): int
+    {
+        return Invoice::query()
+            ->leftJoin('patients', 'patients.id', '=', 'invoices.patient_id')
+            ->whereNull('invoices.branch_id')
+            ->whereIn('invoices.status', [
+                Invoice::STATUS_ISSUED,
+                Invoice::STATUS_PARTIAL,
+                Invoice::STATUS_PAID,
+                Invoice::STATUS_OVERDUE,
+            ])
+            ->where('invoices.total_amount', '>', 0)
+            ->whereRaw('COALESCE(invoices.issued_at, invoices.created_at) BETWEEN ? AND ?', [
+                $from->toDateTimeString(),
+                $to->toDateTimeString(),
+            ])
+            ->when(
+                $branchId !== null,
+                fn (Builder $query) => $query->where('patients.first_branch_id', $branchId),
+            )
+            ->count('invoices.id');
+    }
+
+    protected function countReceiptMissingBranchId(Carbon $from, Carbon $to, ?int $branchId): int
+    {
+        return Payment::query()
+            ->leftJoin('invoices', 'invoices.id', '=', 'payments.invoice_id')
+            ->leftJoin('patients', 'patients.id', '=', 'invoices.patient_id')
+            ->where('payments.direction', 'receipt')
+            ->whereNull('payments.branch_id')
+            ->whereBetween('payments.paid_at', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->when(
+                $branchId !== null,
+                fn (Builder $query) => $query->where('patients.first_branch_id', $branchId),
             )
             ->count('payments.id');
     }
