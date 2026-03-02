@@ -921,3 +921,22 @@ Ghi chu:
   1. Co the in checklist truoc khi chay (`--dry-run`).
   2. Co the chay full readiness voi finance gate + test suite.
   3. Fail co output step ro rang de ops debug nhanh.
+
+### TICKET PM-63 (P1)
+- **Title**: Production readiness strict-full + report artifact
+- **Type**: Task (Ops DX + QA Sign-off)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-03-02`)
+- **Decision**: Adopt
+- **Scope**:
+  - Bo sung `--strict-full` cho `ops:run-production-readiness` (bat buoc chay full suite, bo qua filter).
+  - Bo sung `--report` de xuat JSON artifact readiness.
+  - Luu ket qua tung step (command, timeout, duration, exit code, output excerpt, status).
+- **Status Note**:
+  - Da cap nhat command readiness de support strict-full mode va canh bao khi filter bi bo qua.
+  - Da ghi JSON report artifact cho ca dry-run/pass/fail flow, gom `steps_plan`, `steps_run`, `failures`, timestamps.
+  - Da bo sung regression tests cho dry-run report, fail-fast report va strict-full success path.
+- **Acceptance Criteria (QA)**:
+  1. Co report JSON de PM/QA ky duyet go-live.
+  2. Strict-full khong cho loophole filter partial test.
+  3. Fail flow co artifact debug day du.
