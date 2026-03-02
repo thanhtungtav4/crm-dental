@@ -903,3 +903,21 @@ Ghi chu:
 - **Acceptance Criteria (QA)**:
   1. Production gate co `--with-finance` fail neu mismatch.
   2. Ops co the chay non-strict o profile ci/ops de tham khao.
+
+### TICKET PM-62 (P1)
+- **Title**: One-click production readiness command (go-live orchestration)
+- **Type**: Task (Ops DX)
+- **Estimate**: 3 SP
+- **Status**: Done (`2026-03-02`)
+- **Decision**: Adopt
+- **Scope**:
+  - Tao command `ops:run-production-readiness`.
+  - Orchestrate `ops:run-release-gates --profile=production` + optional `php artisan test`.
+  - Ho tro `--dry-run`, `--with-finance`, window `--from/--to`, `--test-filter`, `--fail-fast`.
+- **Status Note**:
+  - Da them command moi de chay checklist go-live theo 1 lenh, output ro tung step/timeout/command.
+  - Da bo sung regression tests cho dry-run, fail-fast va success path (co finance + test filter).
+- **Acceptance Criteria (QA)**:
+  1. Co the in checklist truoc khi chay (`--dry-run`).
+  2. Co the chay full readiness voi finance gate + test suite.
+  3. Fail co output step ro rang de ops debug nhanh.
