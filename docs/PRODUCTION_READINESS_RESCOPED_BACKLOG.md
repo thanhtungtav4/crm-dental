@@ -1,10 +1,10 @@
 # Production Readiness Rescoped Backlog (From External AI Review)
 
-Cap nhat: 2026-03-01  
+Cap nhat: 2026-03-02  
 Nguon input:
 - `/Users/macbook/Desktop/crm_dental_analysis_report.md.resolved`
 - `/Users/macbook/Desktop/implementation_plan.md.resolved`
-- `docs/PM_DENTAL_FLOW_BACKLOG.md` (PM-01..PM-46 da Done)
+- `docs/PM_DENTAL_FLOW_BACKLOG.md` (PM-01..PM-64 da Done)
 
 ## 1) Muc tieu
 
@@ -55,7 +55,7 @@ Khoang trong con mo (co y nghia production):
   - Migration integrity test
   - Exam session lifecycle feature test
   - Regression test `patients/{id}?tab=exam-treatment`
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-48 (P0) - Treatment Progress Days & Items
 - **Decision**: Adopt
@@ -73,7 +73,7 @@ Khoang trong con mo (co y nghia production):
   - Progress day CRUD tests
   - Financial sum assertions
   - UI layout snapshot tests
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-49 (P0) - Performance Baseline for Operational Hot Paths
 - **Decision**: Re-scope (MVP truoc)
@@ -91,7 +91,7 @@ Khoang trong con mo (co y nghia production):
   - Command tests cho snapshot/pre-aggregation
   - Strict explain gate
   - Perf smoke baseline script
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-50 (P0) - Security Ops Hardening (MFA + Session + PHI Access Log)
 - **Decision**: Re-scope (bat buoc cho role nhay cam truoc)
@@ -109,7 +109,7 @@ Khoang trong con mo (co y nghia production):
   - MFA flow tests
   - Session expiry tests
   - PHI audit trail tests
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-51 (P0) - Go-live Reliability Pack (Backup + DR + Monitoring)
 - **Decision**: Adopt
@@ -126,7 +126,7 @@ Khoang trong con mo (co y nghia production):
 - **Test gate**:
   - Command tests cho release profile
   - Health check command tests
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 ### Wave B - Ops UX + Growth Enablers (P1, 4-5 tuan)
 
@@ -142,7 +142,7 @@ Khoang trong con mo (co y nghia production):
   1. Le tan thao tac tao doi lich nhanh hon list table.
   2. Conflict branch/doctor hien thi ro.
   3. Khong vo state machine appointment.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-53 (P1) - Photo Library Completion (Clinical-first)
 - **Decision**: Re-scope
@@ -156,7 +156,7 @@ Khoang trong con mo (co y nghia production):
   1. Upload/paste chay on cho clinical.
   2. Filter theo loai anh dung.
   3. Khong mat lien ket voi note/session.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-54 (P1) - Patient Contacts Separation
 - **Decision**: Adopt
@@ -168,7 +168,7 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. Ho tro >1 contact/benh nhan.
   2. Form va relation manager de su dung cho le tan.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-55 (P1) - CSKH SLA Dashboard v2
 - **Decision**: Adopt
@@ -180,7 +180,7 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. SLA overdue hien canh bao ro.
   2. Co export cho quan ly.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 ### Wave C - Expansion Tracks (P1/P2, 4-6 tuan)
 
@@ -195,7 +195,7 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. CRUD dat xuong on dinh.
   2. Link duoc voi patient + session.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-57 (P1) - Material Issue Notes Integration
 - **Decision**: Adopt
@@ -207,7 +207,7 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. Xuat vat tu tru ton kho dung.
   2. Co canh bao ton thap.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-58 (P1) - ZNS Campaign Lifecycle MVP
 - **Decision**: Re-scope
@@ -220,7 +220,7 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. Campaign khong gui trung khi retry.
   2. Tracking sent/failed ro rang.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-59 (P2) - API v1 Expansion for Mobile/SPA
 - **Decision**: Re-scope
@@ -233,12 +233,12 @@ Khoang trong con mo (co y nghia production):
 - **Acceptance**:
   1. Co the dung mobile cho luong kham co ban.
   2. Auth/rate-limit/permission pass test.
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 #### PM-60 (P2) - Wallet/Deposit Full Ledger
 - **Decision**: Defer (sau Wave A/B)
 - **Estimate**: 5 SP
-- **Status**: Todo
+- **Status**: Done (`2026-03-01`)
 
 ## 5) Defer list (khong dua vao release wave gan nhat)
 
@@ -274,4 +274,3 @@ Khoang trong con mo (co y nghia production):
 - Report SLA p95 < 5s.
 - Security incidents critical = 0.
 - UAT pass rate theo role >= 95%.
-

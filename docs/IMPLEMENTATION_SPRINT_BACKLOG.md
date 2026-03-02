@@ -433,13 +433,18 @@ Công việc đang làm (WIP):
 - **Title**: PM Flow Hardening Wave 1 (ops + finance + lifecycle)
 - **Type**: Epic (Cross-team)
 - **Estimate**: 61 SP (gói `PM-01..PM-10`)
-- **Status**: In Progress (`2026-02-25`)
+- **Status**: Done (`2026-02-26`)
 - **Tiến độ con**:
   - Done: `PM-01` Appointment state machine normalization.
   - Done: `PM-02` Care Ticket state machine normalization.
   - Done: `PM-03` Visit Episode + chair metrics tracking.
   - Done: `PM-04` Appointment override audit flow (late/emergency/walk-in).
   - Done: `PM-05` Treatment approval lifecycle + phase gating + decline follow-up queue.
+  - Done: `PM-06` Financial hardening (refund/reversal/deposit/prepay-overpay).
+  - Done: `PM-07` Installment/payment plan lifecycle + dunning.
+  - Done: `PM-08` Insurance claim workflow.
+  - Done: `PM-09` Consent forms as clinical gate.
+  - Done: `PM-10` Overbooking policy freeze + clinic-level config.
 - **Dependencies**: Không
 - **Scope**:
   - Chuẩn hóa state machine `Appointment/Care`.
@@ -454,6 +459,7 @@ Công việc đang làm (WIP):
 - **Title**: PM Flow Hardening Wave 2 (automation + metrics + governance)
 - **Type**: Epic (Cross-team)
 - **Estimate**: 54 SP (gói `PM-11..PM-20`)
+- **Status**: Done (`2026-02-27`)
 - **Dependencies**: X-05
 - **Scope**:
   - Recall/no-show/payment automation.
@@ -468,6 +474,7 @@ Công việc đang làm (WIP):
 - **Title**: PM Flow Hardening Wave 3 (growth)
 - **Type**: Epic (Product + Data)
 - **Estimate**: 16 SP (gói `PM-21..PM-22`)
+- **Status**: Done (`2026-02-27`)
 - **Dependencies**: X-06
 - **Scope**:
   - Loyalty/referral/reactivation.
