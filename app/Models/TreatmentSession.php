@@ -76,6 +76,11 @@ class TreatmentSession extends Model
         return $this->hasOne(TreatmentProgressItem::class, 'treatment_session_id');
     }
 
+    public function mediaAssets()
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function resolveBranchId(): ?int
     {
         $branchId = $this->treatmentPlan?->branch_id

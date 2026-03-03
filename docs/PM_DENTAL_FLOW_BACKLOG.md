@@ -975,12 +975,16 @@ Ghi chu:
 - **Title**: Clinical media domain model (asset/version/access log)
 - **Type**: Story (BE + Data)
 - **Estimate**: 8 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-03`)
 - **Scope**:
   - Tao `clinical_media_assets` voi linkage day du: `patient_id`, `visit_episode_id`, `exam_session_id`, `plan_item_id`, `treatment_session_id`, `clinical_order_id`, `clinical_result_id`, `branch_id`.
   - Tao `clinical_media_versions` de giu immutable original + derivative (annotated/crop).
   - Tao `clinical_media_access_logs` cho view/download/share/delete.
   - Bo sung checksum (`sha256`), `captured_at`, `captured_by`, `retention_class`, `legal_hold`.
+- **Status Note**:
+  - Da tao schema foundation cho `clinical_media_assets/versions/access_logs` voi FK/index cho linkage clinical.
+  - Da bo sung model + factory + policy branch-aware cho `ClinicalMediaAsset`.
+  - Da bo sung access log immutable (`ClinicalMediaAccessLog`) va regression tests `ClinicalMediaFoundationTest`.
 - **Acceptance Criteria (QA)**:
   1. Moi file anh clinical co record metadata + checksum + branch snapshot.
   2. Khong overwrite file goc sau khi da luu.

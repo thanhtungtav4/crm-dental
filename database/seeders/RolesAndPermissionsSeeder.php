@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'Payment',
             'Prescription',
             'PatientPhoto',
+            'ClinicalMediaAsset',
             'PatientMedicalRecord',
             'ReceiptExpense',
             'Note',

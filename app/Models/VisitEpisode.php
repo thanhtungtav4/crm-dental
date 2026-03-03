@@ -96,4 +96,9 @@ class VisitEpisode extends Model
     {
         return $this->hasMany(ClinicalResult::class, 'visit_episode_id');
     }
+
+    public function clinicalMediaAssets()
+    {
+        return $this->hasMany(ClinicalMediaAsset::class, 'visit_episode_id');
+    }
 }

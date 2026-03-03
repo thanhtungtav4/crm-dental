@@ -125,6 +125,11 @@ class Patient extends Model
         return $this->hasMany(PatientPhoto::class);
     }
 
+    public function clinicalMediaAssets()
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function contacts()
     {
         return $this->hasMany(PatientContact::class);
