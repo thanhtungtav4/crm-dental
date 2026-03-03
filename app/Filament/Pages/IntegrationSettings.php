@@ -134,6 +134,17 @@ class IntegrationSettings extends Page
                 ],
             ],
             [
+                'group' => 'popup',
+                'title' => 'Popup thông báo nội bộ',
+                'description' => 'Thông báo realtime theo chi nhánh + nhóm quyền. Polling 10s, hiển thị một lần cho mỗi user.',
+                'fields' => [
+                    ['state' => 'popup_enabled', 'key' => 'popup.enabled', 'label' => 'Bật popup thông báo nội bộ', 'type' => 'boolean', 'default' => false, 'sort_order' => 494],
+                    ['state' => 'popup_polling_seconds', 'key' => 'popup.polling_seconds', 'label' => 'Chu kỳ polling (giây)', 'type' => 'integer', 'default' => 10, 'sort_order' => 495],
+                    ['state' => 'popup_retention_days', 'key' => 'popup.retention_days', 'label' => 'Giữ log popup (ngày)', 'type' => 'integer', 'default' => 180, 'sort_order' => 496],
+                    ['state' => 'popup_sender_roles', 'key' => 'popup.sender_roles', 'label' => 'Nhóm quyền được gửi popup toàn hệ thống', 'type' => 'roles', 'default' => ['Admin', 'Manager'], 'options' => $this->roleOptions(), 'sort_order' => 497],
+                ],
+            ],
+            [
                 'group' => 'photos',
                 'title' => 'Thư viện ảnh lâm sàng',
                 'description' => 'Retention policy cho ảnh bệnh nhân theo vòng đời dữ liệu lâm sàng.',
@@ -471,6 +482,18 @@ class IntegrationSettings extends Page
                         Rule::exists('branches', 'code')
                             ->where(fn ($query) => $query->where('active', true)->whereNull('deleted_at')),
                     ];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'popup.polling_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:5', 'max:60'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'popup.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
 
                     continue;
                 }

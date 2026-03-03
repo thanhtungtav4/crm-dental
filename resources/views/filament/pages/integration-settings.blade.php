@@ -215,7 +215,15 @@
                                 @endif
 
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    Chỉ các user thuộc nhóm quyền đã chọn mới nhận thông báo realtime khi có lead mới từ website.
+                                    @if(($field['key'] ?? null) === 'web_lead.realtime_notification_roles')
+                                        Chỉ các user thuộc nhóm quyền đã chọn mới nhận thông báo realtime khi có lead mới từ website.
+                                    @elseif(($field['key'] ?? null) === 'popup.sender_roles')
+                                        Chỉ các role đã chọn mới có quyền gửi popup toàn hệ thống.
+                                    @elseif(($field['key'] ?? null) === 'security.mfa_required_roles')
+                                        User thuộc các role này sẽ bắt buộc cấu hình MFA khi đăng nhập admin.
+                                    @else
+                                        Cấu hình nhóm quyền áp dụng cho runtime tương ứng.
+                                    @endif
                                 </p>
                                 @error($statePath)
                                     <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
@@ -465,6 +473,18 @@
     "note": "Form tu website landing page"
   }'</code></pre>
                         </div>
+                    </div>
+                @endif
+
+                @if(($provider['group'] ?? null) === 'popup')
+                    <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                        <div class="mb-2 text-sm font-semibold">Nguyên tắc popup nội bộ</div>
+                        <ul class="list-disc space-y-1 pl-5 text-xs md:text-sm">
+                            <li>Popup nhận theo nhóm quyền + chi nhánh, không phát ngẫu nhiên toàn hệ thống.</li>
+                            <li>Mỗi popup chỉ hiển thị 1 lần cho mỗi user (sau khi xác nhận/đóng sẽ không lặp).</li>
+                            <li>Role được phép gửi popup toàn hệ thống được cấu hình ở mục này.</li>
+                            <li>Không dùng websocket. UI poll theo chu kỳ giây đã cấu hình.</li>
+                        </ul>
                     </div>
                 @endif
             </x-filament::section>

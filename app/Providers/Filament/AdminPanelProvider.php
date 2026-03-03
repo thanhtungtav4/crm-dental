@@ -28,6 +28,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
 use MarcelWeidum\Passkeys\PasskeysPlugin;
+use SolutionForest\FilamentFirewall\FilamentFirewallPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -59,6 +60,10 @@ class AdminPanelProvider extends PanelProvider
                     e(ClinicRuntimeSettings::brandingButtonTextColor()),
                     e(ClinicRuntimeSettings::brandingLogoUrl()),
                 ))
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.components.popup-announcement-center')->render(),
             )
             ->colors([
                 'primary' => Color::Violet,
@@ -103,6 +108,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                FilamentFirewallPlugin::make(),
                 PasskeysPlugin::make(),
                 BreezyCore::make()
                     ->myProfile(
@@ -119,8 +125,7 @@ class AdminPanelProvider extends PanelProvider
                     ])
                     ->enableBrowserSessions(true)
                     ->avatarUploadComponent(function (FileUpload $fileUpload) {
-                        // Use our existing `users.avatar` column and public storage
-                        return FileUpload::make('avatar')
+                        return FileUpload::make('avatar_url')
                             ->label(__('Avatar'))
                             ->image()
                             ->disk('public')

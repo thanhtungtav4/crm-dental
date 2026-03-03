@@ -178,6 +178,49 @@ class ClinicRuntimeSettings
             ->all();
     }
 
+    public static function popupAnnouncementsEnabled(): bool
+    {
+        return static::boolean('popup.enabled', false);
+    }
+
+    public static function popupAnnouncementsPollingSeconds(): int
+    {
+        return max(
+            5,
+            min(
+                60,
+                static::integer('popup.polling_seconds', 10),
+            ),
+        );
+    }
+
+    public static function popupAnnouncementRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('popup.retention_days', 180),
+        );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function popupAnnouncementSenderRoles(): array
+    {
+        $value = static::get('popup.sender_roles', ['Admin', 'Manager']);
+
+        $roles = is_array($value)
+            ? $value
+            : explode(',', (string) $value);
+
+        return collect($roles)
+            ->filter(static fn (mixed $role): bool => is_string($role) && trim($role) !== '')
+            ->map(static fn (string $role): string => trim($role))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public static function defaultCareTypeOptions(): array
     {
         return [
