@@ -82,7 +82,10 @@ it('records clinical order and result logs queryable by encounter', function () 
     $result = ClinicalResult::query()->create([
         'clinical_order_id' => $order->id,
         'status' => ClinicalResult::STATUS_DRAFT,
-        'payload' => ['modality' => 'panorama'],
+        'payload' => [
+            'modality' => 'panorama',
+            'attachment' => 'xray/dedicated-audit-panorama.png',
+        ],
     ]);
 
     $result->finalize(verifiedBy: $doctor->id, interpretation: 'Không phát hiện bất thường lớn.');

@@ -26,6 +26,9 @@ class ClinicalResultObserver
                 'result_code' => $clinicalResult->result_code,
                 'clinical_order_id' => $clinicalResult->clinical_order_id,
                 'status' => $clinicalResult->status,
+                'evidence_override_reason' => $clinicalResult->evidence_override_reason,
+                'evidence_override_by' => $clinicalResult->evidence_override_by,
+                'evidence_override_at' => $clinicalResult->evidence_override_at?->toISOString(),
             ],
         );
 
@@ -58,6 +61,9 @@ class ClinicalResultObserver
                 'clinical_order_id' => $clinicalResult->clinical_order_id,
                 'status_from' => (string) $clinicalResult->getOriginal('status'),
                 'status_to' => $statusTo,
+                'evidence_override_reason' => $clinicalResult->evidence_override_reason,
+                'evidence_override_by' => $clinicalResult->evidence_override_by,
+                'evidence_override_at' => $clinicalResult->evidence_override_at?->toISOString(),
             ],
         );
 

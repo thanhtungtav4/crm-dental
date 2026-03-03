@@ -109,7 +109,16 @@ class TreatmentSessionForm
                         'scheduled' => 'Đã hẹn',
                         'done' => 'Hoàn tất',
                         'follow_up' => 'Tái khám',
-                    ])->default('scheduled'),
+                    ])
+                    ->default('scheduled')
+                    ->live(),
+                Forms\Components\Textarea::make('evidence_override_reason')
+                    ->label('Lý do override thiếu evidence')
+                    ->rows(2)
+                    ->placeholder('Chỉ dùng khi chưa có đủ chứng cứ hình ảnh cho phiên hoàn tất.')
+                    ->helperText('Khi chuyển trạng thái Hoàn tất mà thiếu ảnh chứng cứ, phải nhập lý do override và có quyền phù hợp.')
+                    ->visible(fn (Get $get): bool => in_array((string) $get('status'), ['done', 'completed'], true))
+                    ->columnSpanFull(),
             ]);
     }
 

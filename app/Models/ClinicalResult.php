@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\NullableEncrypted;
+use App\Services\ClinicalEvidenceGateService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +45,9 @@ class ClinicalResult extends Model
         'payload',
         'interpretation',
         'notes',
+        'evidence_override_reason',
+        'evidence_override_by',
+        'evidence_override_at',
     ];
 
     protected function casts(): array
@@ -51,9 +55,12 @@ class ClinicalResult extends Model
         return [
             'resulted_at' => 'datetime',
             'verified_at' => 'datetime',
+            'evidence_override_by' => 'integer',
+            'evidence_override_at' => 'datetime',
             'payload' => 'array',
             'interpretation' => NullableEncrypted::class,
             'notes' => NullableEncrypted::class,
+            'evidence_override_reason' => NullableEncrypted::class,
         ];
     }
 
@@ -100,6 +107,31 @@ class ClinicalResult extends Model
 
             if (in_array($result->status, [self::STATUS_FINAL, self::STATUS_AMENDED], true) && blank($result->verified_at)) {
                 $result->verified_at = now();
+            }
+
+            if ($result->status !== self::STATUS_FINAL && $result->isDirty('status')) {
+                $result->evidence_override_reason = null;
+                $result->evidence_override_by = null;
+                $result->evidence_override_at = null;
+            }
+
+            if ($result->status === self::STATUS_FINAL && (! $result->exists || $result->isDirty('status'))) {
+                $decision = app(ClinicalEvidenceGateService::class)->assertCanFinalizeClinicalResult(
+                    result: $result,
+                    overrideReason: $result->evidence_override_reason,
+                );
+
+                if (($decision['override_used'] ?? false) === true) {
+                    $result->evidence_override_reason = trim((string) $result->evidence_override_reason);
+                    $result->evidence_override_by = $result->evidence_override_by
+                        ?? $result->verified_by
+                        ?? auth()->id();
+                    $result->evidence_override_at = $result->evidence_override_at ?? now();
+                } else {
+                    $result->evidence_override_reason = null;
+                    $result->evidence_override_by = null;
+                    $result->evidence_override_at = null;
+                }
             }
         });
 
@@ -148,6 +180,11 @@ class ClinicalResult extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    public function evidenceOverrideBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'evidence_override_by');
+    }
+
     public function mediaAssets(): HasMany
     {
         return $this->hasMany(ClinicalMediaAsset::class);
@@ -177,9 +214,14 @@ class ClinicalResult extends Model
     /**
      * @param  array<string, mixed>|null  $payload
      */
-    public function finalize(?int $verifiedBy = null, ?array $payload = null, ?string $interpretation = null, ?string $notes = null): void
-    {
-        DB::transaction(function () use ($verifiedBy, $payload, $interpretation, $notes): void {
+    public function finalize(
+        ?int $verifiedBy = null,
+        ?array $payload = null,
+        ?string $interpretation = null,
+        ?string $notes = null,
+        ?string $evidenceOverrideReason = null,
+    ): void {
+        DB::transaction(function () use ($verifiedBy, $payload, $interpretation, $notes, $evidenceOverrideReason): void {
             if ($payload !== null) {
                 $this->payload = $payload;
             }
@@ -194,6 +236,10 @@ class ClinicalResult extends Model
 
             if ($verifiedBy !== null) {
                 $this->verified_by = $verifiedBy;
+            }
+
+            if ($evidenceOverrideReason !== null) {
+                $this->evidence_override_reason = $evidenceOverrideReason;
             }
 
             $this->status = self::STATUS_FINAL;

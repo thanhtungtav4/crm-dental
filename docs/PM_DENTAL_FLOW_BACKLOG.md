@@ -994,12 +994,18 @@ Ghi chu:
 - **Title**: Evidence gate theo thu thuat/chi dinh (hard business gate)
 - **Type**: Story (BE + Product)
 - **Estimate**: 5 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Policy engine: map thu thuat/chi dinh -> danh sach evidence bat buoc.
   - Chan `clinical_result finalize` neu thieu evidence bat buoc.
   - Chan `treatment_session completed` neu thieu anh hau can thiep (neu protocol yeu cau).
   - Co override co ly do + audit.
+- **Status Note**:
+  - Da them `ClinicalEvidenceGateService` voi map evidence theo `order_type` va protocol service.
+  - Da chan finalize `ClinicalResult::STATUS_FINAL` khi thieu evidence; override bat buoc ly do + permission `Action:EmrEvidenceOverride`.
+  - Da chan transition `TreatmentSession` sang `done/completed` khi protocol yeu cau evidence.
+  - Da bo sung truong override + audit metadata (`evidence_override_reason/by/at`) cho ket qua chi dinh va phien dieu tri.
+  - Da bo sung regression tests `ClinicalEvidenceGateTest` (pass/fail/override) va cap nhat matrix security action.
 - **Acceptance Criteria (QA)**:
   1. Case thieu anh khong cho finalize/complete.
   2. Override bat buoc ghi ly do va duoc role hop le.

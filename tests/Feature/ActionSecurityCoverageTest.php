@@ -17,6 +17,7 @@ it('keeps sensitive action registry in sync with action permissions', function (
         ActionPermission::MPI_DEDUPE_REVIEW,
         ActionPermission::PATIENT_BRANCH_TRANSFER,
         ActionPermission::EMR_CLINICAL_WRITE,
+        ActionPermission::EMR_EVIDENCE_OVERRIDE,
         ActionPermission::EMR_RECORD_EXPORT,
         ActionPermission::EMR_SYNC_PUSH,
     ];
@@ -80,6 +81,7 @@ it('passes strict security checklist review command', function () {
         ->expectsOutputToContain('Action:MpiDedupeReview')
         ->expectsOutputToContain('Action:PatientBranchTransfer')
         ->expectsOutputToContain('Action:EmrClinicalWrite')
+        ->expectsOutputToContain('Action:EmrEvidenceOverride')
         ->expectsOutputToContain('Action:EmrRecordExport')
         ->expectsOutputToContain('Action:EmrSyncPush')
         ->assertSuccessful();

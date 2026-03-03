@@ -65,6 +65,58 @@ class ClinicRuntimeSettings
         };
     }
 
+    /**
+     * @return array<string, int>
+     */
+    public static function clinicalEvidenceOrderTypeRequirements(): array
+    {
+        $default = [
+            'xray' => 1,
+            'panorama' => 1,
+            'cephalometric' => 1,
+            '3d' => 1,
+            '3d5x5' => 1,
+            'ext' => 1,
+            'int' => 1,
+            '*' => 0,
+        ];
+
+        $configured = static::get('emr.evidence_gate.order_type_requirements', $default);
+        if (! is_array($configured)) {
+            return $default;
+        }
+
+        $normalized = [];
+        foreach ($configured as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $normalizedKey = strtolower(trim($key));
+            if ($normalizedKey === '') {
+                continue;
+            }
+
+            $normalized[$normalizedKey] = max(0, (int) $value);
+        }
+
+        if (! array_key_exists('*', $normalized)) {
+            $normalized['*'] = 0;
+        }
+
+        return $normalized;
+    }
+
+    public static function clinicalEvidenceSessionProtocolMinMedia(): int
+    {
+        return max(0, static::integer('emr.evidence_gate.session_protocol_min_media', 1));
+    }
+
+    public static function clinicalEvidenceSessionDefaultMinMedia(): int
+    {
+        return max(0, static::integer('emr.evidence_gate.session_default_min_media', 0));
+    }
+
     public static function defaultCustomerSourceOptions(): array
     {
         return [

@@ -27,7 +27,7 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-09 | P2 | Done | Internal EMR API v1 | Idempotent mutation endpoint amend clinical note + authz + tests | a52c936 |
 | EMR-10 | P2 | Done | Reconciliation & observability | Command `emr:reconcile-integrity` + alert audit log + schedule + test | 88e5788 |
 | EMR-11 | P0 | Done (`2026-03-03`) | Clinical media domain core | `clinical_media_assets/versions/access_logs`, checksum, linkage encounter/session, immutable original | d7c5049 |
-| EMR-12 | P0 | Open (Planned) | Evidence gate by procedure/order/result | Block finalize/complete when missing required image evidence, allow override with reason+audit | pending |
+| EMR-12 | P0 | Done (`2026-03-04`) | Evidence gate by procedure/order/result | Block finalize/complete when missing required image evidence, allow override with reason+audit | pending |
 | EMR-13 | P0 | Open (Planned) | Legal hold + retention class | Class-aware retention (`clinical_legal/operational/temporary`), legal hold, safe delete policy | pending |
 | EMR-14 | P1 | Open (Planned) | EMR payload media dossier | Expand payload builder for media linkage with encounter/order/result/prescription | pending |
 | EMR-15 | P1 | Open (Planned) | Clinical image UX | Timeline, completeness bar, quality checklist, quick links CRM<->EMR | pending |
