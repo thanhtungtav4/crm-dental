@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('google_calendar_sync_events')) {
+            return;
+        }
+
         Schema::create('google_calendar_sync_events', function (Blueprint $table): void {
             $table->id();
             $table->string('event_key', 100)->unique();
@@ -41,6 +45,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('google_calendar_sync_events')) {
+            return;
+        }
+
         Schema::dropIfExists('google_calendar_sync_events');
     }
 };
