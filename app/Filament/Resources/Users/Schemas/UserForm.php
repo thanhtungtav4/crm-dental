@@ -86,7 +86,7 @@ class UserForm
                     ->maxLength(255)
                     ->columnSpanFull(),
 
-                Forms\Components\FileUpload::make('avatar')
+                Forms\Components\FileUpload::make('avatar_url')
                     ->label('Avatar')
                     ->image()
                     ->disk('public')

@@ -34,7 +34,7 @@ class User extends Authenticatable implements FilamentUser, HasPasskeys
         'gender',
         'phone',
         'specialty',
-        'avatar',
+        'avatar_url',
         'branch_id',
         'status',
     ];
