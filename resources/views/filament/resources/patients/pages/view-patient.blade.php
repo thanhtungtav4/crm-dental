@@ -283,7 +283,10 @@
                                     <div class="crm-treatment-subhead-title">Tiến trình điều trị</div>
                                     <div class="crm-treatment-subhead-actions">
                                         <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressTotalAmountFormatted }}đ</span>
-                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', ['patient_id' => $this->record->id]) }}"
+                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', [
+                                            'patient_id' => $this->record->id,
+                                            'return_url' => $this->workspaceReturnUrl,
+                                        ]) }}"
                                            class="crm-btn crm-btn-primary crm-btn-md"
                                            style="color: #ffffff;"
                                         >

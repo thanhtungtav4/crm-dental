@@ -40,3 +40,22 @@ it('resolves vietnamese passkeys translations', function (): void {
             ->and($translated)->not()->toBe($key);
     }
 });
+
+it('resolves vietnamese filament firewall translations', function (): void {
+    App::setLocale('vi');
+
+    $keys = [
+        'filament-firewall::filament-firewall.filament.resource.ip.navigationLabel',
+        'filament-firewall::filament-firewall.filament.resource.ip.pluralModelLabel',
+        'filament-firewall::filament-firewall.table.column.ip',
+        'filament-firewall::filament-firewall.action.addMyIp',
+        'filament-firewall::filament-firewall.labels.allow',
+    ];
+
+    foreach ($keys as $key) {
+        $translated = __($key);
+
+        expect(Lang::has($key))->toBeTrue()
+            ->and($translated)->not()->toBe($key);
+    }
+});

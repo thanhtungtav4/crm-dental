@@ -18,6 +18,8 @@ class ViewPatient extends ViewRecord
 
     public string $activeTab = 'basic-info';
 
+    public string $workspaceReturnUrl = '';
+
     protected ?array $cachedTabCounters = null;
 
     protected ?Collection $cachedTreatmentProgress = null;
@@ -69,6 +71,8 @@ class ViewPatient extends ViewRecord
     public function mount($record): void
     {
         parent::mount($record);
+
+        $this->workspaceReturnUrl = request()->fullUrl();
 
         $requestedTab = (string) request()->query('tab', 'basic-info');
         $requestedTab = $this->legacyTabMap[$requestedTab] ?? $requestedTab;
@@ -227,7 +231,7 @@ class ViewPatient extends ViewRecord
                 'edit_url' => $sessionId
                     ? route('filament.admin.resources.treatment-sessions.edit', [
                         'record' => $sessionId,
-                        'return_url' => request()->fullUrl(),
+                        'return_url' => $this->workspaceReturnUrl,
                     ])
                     : null,
             ];
@@ -449,6 +453,7 @@ class ViewPatient extends ViewRecord
                 ->color('success')
                 ->url(fn () => route('filament.admin.resources.treatment-plans.create', [
                     'patient_id' => $this->record->id,
+                    'return_url' => $this->workspaceReturnUrl,
                 ]))
                 ->openUrlInNewTab(),
 

@@ -429,7 +429,7 @@ class PatientTreatmentPlanSection extends Component
     protected function getPlanItems(): Collection
     {
         return PlanItem::query()
-            ->with(['service:id,name', 'treatmentPlan:id,patient_id'])
+            ->with(['service:id,name', 'treatmentPlan:id,patient_id,title'])
             ->whereHas('treatmentPlan', fn ($query) => $query->where('patient_id', $this->patientId))
             ->latest('id')
             ->get();

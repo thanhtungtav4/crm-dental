@@ -9,7 +9,9 @@ it('keeps patient context when opening plan item edit from treatment plan list',
     $bladePath = resource_path('views/livewire/patient-treatment-plan-section.blade.php');
     $blade = File::get($bladePath);
 
-    expect($blade)->toContain("'return_url' => \$returnUrl");
+    expect($blade)
+        ->toContain("'return_url' => \$returnUrl")
+        ->toContain("'patient_id' => \$patientId");
 });
 
 it('captures return url once at mount to avoid livewire internal endpoint redirect', function (): void {
@@ -30,7 +32,9 @@ it('exposes detailed fields in plan item edit form for treatment workflow', func
         ->and($form)->toContain("TextInput::make('discount_amount')")
         ->and($form)->toContain("TextInput::make('vat_amount')")
         ->and($form)->toContain("TextInput::make('final_amount')")
-        ->and($form)->toContain("Select::make('status')");
+        ->and($form)->toContain("Select::make('status')")
+        ->and($form)->toContain('scopeTreatmentPlanQueryByContext')
+        ->and($form)->toContain("request()->integer('patient_id')");
 });
 
 it('redirects plan item edit page back to return url after save', function (): void {
@@ -38,9 +42,13 @@ it('redirects plan item edit page back to return url after save', function (): v
     $page = File::get($pagePath);
 
     expect($page)->toContain('protected function getRedirectUrl(): string')
+        ->and($page)->toContain("Action::make('open_patient_exam_treatment')")
         ->and($page)->toContain('DeleteAction::make()')
         ->and($page)->toContain('RestoreAction::make()')
         ->and($page)->toContain('->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl(\'index\'))')
+        ->and($page)->toContain("request()->integer('patient_id')")
+        ->and($page)->toContain('assertRecordMatchesPatientContext')
+        ->and($page)->toContain("'tab' => 'exam-treatment'")
         ->and($page)->toContain("request()->query('return_url')")
         ->and($page)->toContain('isDisallowedReturnPath')
         ->and($page)->toContain('isGetAccessiblePath');
@@ -126,10 +134,82 @@ it('provides treatment session edit link from patient exam treatment progress ta
     expect($pageClass)
         ->toContain("'edit_url' => \$sessionId")
         ->toContain("route('filament.admin.resources.treatment-sessions.edit'")
-        ->toContain("'return_url' => request()->fullUrl()");
+        ->toContain("'return_url' => \$this->workspaceReturnUrl");
 
     expect($blade)
         ->toContain("{{ \$session['edit_url'] }}")
         ->toContain("@if(\$session['edit_url'])")
         ->toContain('Chỉnh sửa phiên điều trị');
+});
+
+it('captures exam-treatment workspace url once and reuses it for create and edit session links', function (): void {
+    $pageClassPath = app_path('Filament/Resources/Patients/Pages/ViewPatient.php');
+    $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
+
+    $pageClass = File::get($pageClassPath);
+    $blade = File::get($bladePath);
+
+    expect($pageClass)
+        ->toContain("public string \$workspaceReturnUrl = '';")
+        ->toContain('$this->workspaceReturnUrl = request()->fullUrl();')
+        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+
+    expect($blade)
+        ->toContain("route('filament.admin.resources.treatment-sessions.create', [")
+        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+});
+
+it('supports safe return url redirect for treatment plan create page', function (): void {
+    $pagePath = app_path('Filament/Resources/TreatmentPlans/Pages/CreateTreatmentPlan.php');
+    $page = File::get($pagePath);
+
+    expect($page)
+        ->toContain('protected function getRedirectUrl(): string')
+        ->toContain("request()->query('return_url')")
+        ->toContain("request()->integer('patient_id')")
+        ->toContain("'tab' => 'exam-treatment'")
+        ->toContain('isDisallowedReturnPath')
+        ->toContain('isGetAccessiblePath');
+});
+
+it('supports safe return url redirect for treatment session create page', function (): void {
+    $pagePath = app_path('Filament/Resources/TreatmentSessions/Pages/CreateTreatmentSession.php');
+    $page = File::get($pagePath);
+
+    expect($page)
+        ->toContain('protected function getRedirectUrl(): string')
+        ->toContain("request()->query('return_url')")
+        ->toContain("request()->integer('patient_id')")
+        ->toContain("request()->integer('treatment_plan_id')")
+        ->toContain("'tab' => 'exam-treatment'")
+        ->toContain('isDisallowedReturnPath')
+        ->toContain('isGetAccessiblePath');
+});
+
+it('shows treatment plan link in patient treatment list to avoid plan item flow confusion', function (): void {
+    $bladePath = resource_path('views/livewire/patient-treatment-plan-section.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)
+        ->toContain('<th>Kế hoạch</th>')
+        ->toContain("route('filament.admin.resources.treatment-plans.edit'")
+        ->toContain('title="Sửa hạng mục"');
+});
+
+it('adds quick action from treatment plan and session edit pages back to patient exam-treatment', function (): void {
+    $planEditPath = app_path('Filament/Resources/TreatmentPlans/Pages/EditTreatmentPlan.php');
+    $sessionEditPath = app_path('Filament/Resources/TreatmentSessions/Pages/EditTreatmentSession.php');
+
+    $planEdit = File::get($planEditPath);
+    $sessionEdit = File::get($sessionEditPath);
+
+    expect($planEdit)
+        ->toContain("Action::make('open_patient_exam_treatment')")
+        ->toContain('resolvePatientExamTreatmentUrl')
+        ->toContain("'tab' => 'exam-treatment'");
+
+    expect($sessionEdit)
+        ->toContain("Action::make('open_patient_exam_treatment')")
+        ->toContain('resolvePatientExamTreatmentUrl')
+        ->toContain("'tab' => 'exam-treatment'");
 });

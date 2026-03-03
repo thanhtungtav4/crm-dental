@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\TreatmentSessions\Pages;
 
+use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentSessions\TreatmentSessionResource;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Support\BranchAccess;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Http\Request;
@@ -29,6 +31,12 @@ class EditTreatmentSession extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('open_patient_exam_treatment')
+                ->label('Về hồ sơ BN')
+                ->icon('heroicon-o-user')
+                ->color('gray')
+                ->url(fn (): ?string => $this->resolvePatientExamTreatmentUrl())
+                ->visible(fn (): bool => filled($this->resolvePatientExamTreatmentUrl())),
             DeleteAction::make()
                 ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
         ];
@@ -90,6 +98,30 @@ class EditTreatmentSession extends EditRecord
     private function resolveReturnUrl(): ?string
     {
         return $this->sanitizeReturnUrl($this->returnUrl);
+    }
+
+    private function resolvePatientExamTreatmentUrl(): ?string
+    {
+        $patientId = null;
+
+        if (is_numeric($this->record?->treatmentPlan?->patient_id ?? null)) {
+            $patientId = (int) $this->record->treatmentPlan->patient_id;
+        }
+
+        if (! $patientId && is_numeric($this->record?->treatment_plan_id ?? null)) {
+            $patientId = (int) (TreatmentPlan::query()
+                ->whereKey((int) $this->record->treatment_plan_id)
+                ->value('patient_id') ?? 0);
+        }
+
+        if (! $patientId) {
+            return null;
+        }
+
+        return PatientResource::getUrl('view', [
+            'record' => $patientId,
+            'tab' => 'exam-treatment',
+        ]);
     }
 
     private function sanitizeReturnUrl(mixed $returnUrl): ?string
