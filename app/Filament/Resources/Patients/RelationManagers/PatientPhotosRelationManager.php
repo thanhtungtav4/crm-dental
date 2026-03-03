@@ -75,6 +75,7 @@ class PatientPhotosRelationManager extends RelationManager
                         'xray' => 'X-quang',
                     ]),
             ])
+            ->actionsColumnLabel('Thao tác')
             ->headerActions([
                 Action::make('create_normal_photo')
                     ->label('Thêm ảnh thông thường')

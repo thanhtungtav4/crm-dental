@@ -5,26 +5,18 @@ namespace App\Observers;
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Services\CareTicketService;
+use App\Services\GoogleCalendarSyncEventPublisher;
 use App\Services\PatientConversionService;
 use App\Services\VisitEpisodeService;
 
 class AppointmentObserver
 {
-    protected PatientConversionService $conversionService;
-
-    protected CareTicketService $careTicketService;
-
-    protected VisitEpisodeService $visitEpisodeService;
-
     public function __construct(
-        PatientConversionService $conversionService,
-        CareTicketService $careTicketService,
-        VisitEpisodeService $visitEpisodeService
-    ) {
-        $this->conversionService = $conversionService;
-        $this->careTicketService = $careTicketService;
-        $this->visitEpisodeService = $visitEpisodeService;
-    }
+        protected PatientConversionService $conversionService,
+        protected CareTicketService $careTicketService,
+        protected VisitEpisodeService $visitEpisodeService,
+        protected GoogleCalendarSyncEventPublisher $googleCalendarSyncEventPublisher,
+    ) {}
 
     /**
      * Handle the Appointment "created" event.
@@ -37,6 +29,7 @@ class AppointmentObserver
 
         $this->careTicketService->syncAppointment($appointment);
         $this->visitEpisodeService->syncFromAppointment($appointment, true);
+        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
     }
 
     /**
@@ -62,6 +55,7 @@ class AppointmentObserver
         if ($appointment->wasChanged(['status', 'date', 'duration_minutes', 'assigned_to', 'doctor_id', 'patient_id', 'branch_id', 'note'])) {
             $this->careTicketService->syncAppointment($appointment);
             $this->visitEpisodeService->syncFromAppointment($appointment, $statusChanged);
+            $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
         }
     }
 
@@ -161,6 +155,7 @@ class AppointmentObserver
     {
         $this->careTicketService->cancelBySource(Appointment::class, $appointment->id, 'appointment_reminder');
         $this->visitEpisodeService->markAppointmentDeleted($appointment);
+        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
     }
 
     /**
@@ -168,7 +163,7 @@ class AppointmentObserver
      */
     public function restored(Appointment $appointment): void
     {
-        //
+        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
     }
 
     /**

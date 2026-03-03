@@ -41,6 +41,7 @@ $scheduleAutomation('ops:run-restore-drill')->dailyAt('02:10');
 $scheduleAutomation('ops:check-alert-runbook-map')->dailyAt('02:20');
 $scheduleAutomation('emr:sync-events')->hourlyAt(15);
 $scheduleAutomation('emr:reconcile-integrity')->hourlyAt(40);
+$scheduleAutomation('google-calendar:sync-events')->everyTenMinutes();
 $scheduleAutomation('zns:run-campaigns')->everyTenMinutes();
 $scheduleAutomation('popups:dispatch-due')->everyMinute();
 $scheduleAutomation('popups:prune')->dailyAt('03:30');

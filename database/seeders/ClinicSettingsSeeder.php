@@ -28,6 +28,8 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'google_calendar', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 210],
             ['group' => 'google_calendar', 'key' => 'google_calendar.client_id', 'label' => 'Client ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 220],
             ['group' => 'google_calendar', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 230],
+            ['group' => 'google_calendar', 'key' => 'google_calendar.refresh_token', 'label' => 'Refresh Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 235],
+            ['group' => 'google_calendar', 'key' => 'google_calendar.account_email', 'label' => 'Google Account Email', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 238],
             ['group' => 'google_calendar', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 240],
             ['group' => 'google_calendar', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'value' => 'two_way', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 250],
 

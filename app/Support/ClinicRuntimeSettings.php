@@ -476,9 +476,58 @@ class ClinicRuntimeSettings
         return static::boolean('google_calendar.enabled', false);
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function googleCalendarSyncModeOptions(): array
+    {
+        return [
+            'two_way' => 'Hai chiều',
+            'one_way_to_google' => 'Một chiều: CRM -> Google',
+            'one_way_to_crm' => 'Một chiều: Google -> CRM',
+        ];
+    }
+
     public static function googleCalendarSyncMode(): string
     {
-        return (string) static::get('google_calendar.sync_mode', 'two_way');
+        $mode = trim((string) static::get('google_calendar.sync_mode', 'two_way'));
+
+        return array_key_exists($mode, static::googleCalendarSyncModeOptions()) ? $mode : 'two_way';
+    }
+
+    public static function googleCalendarClientId(): string
+    {
+        return trim((string) static::get('google_calendar.client_id', ''));
+    }
+
+    public static function googleCalendarClientSecret(): string
+    {
+        return trim((string) static::get('google_calendar.client_secret', ''));
+    }
+
+    public static function googleCalendarRefreshToken(): string
+    {
+        return trim((string) static::get('google_calendar.refresh_token', ''));
+    }
+
+    public static function googleCalendarCalendarId(): string
+    {
+        return trim((string) static::get('google_calendar.calendar_id', ''));
+    }
+
+    public static function googleCalendarAccountEmail(): string
+    {
+        return trim((string) static::get('google_calendar.account_email', ''));
+    }
+
+    public static function googleCalendarAllowsPushToGoogle(): bool
+    {
+        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_google'], true);
+    }
+
+    public static function googleCalendarAllowsPullFromGoogle(): bool
+    {
+        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_crm'], true);
     }
 
     public static function isEmrEnabled(): bool

@@ -15,6 +15,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,6 +29,20 @@ class TreatmentPlansTable
                 'patient:id,full_name,patient_code,phone',
                 'doctor:id,name',
             ]))
+            ->groups([
+                Group::make('patient_id')
+                    ->label('Bệnh nhân')
+                    ->collapsible()
+                    ->getTitleFromRecordUsing(function (TreatmentPlan $record): string {
+                        $patientName = $record->patient?->full_name ?? 'Chưa gán bệnh nhân';
+                        $patientCode = filled($record->patient?->patient_code)
+                            ? " ({$record->patient->patient_code})"
+                            : '';
+
+                        return $patientName.$patientCode;
+                    }),
+            ])
+            ->defaultGroup('patient_id')
             ->defaultSort('updated_at', 'desc')
             ->columns([
                 TextColumn::make('title')

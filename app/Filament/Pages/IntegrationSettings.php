@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Services\EmrIntegrationService;
+use App\Services\GoogleCalendarIntegrationService;
 use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
@@ -104,8 +105,18 @@ class IntegrationSettings extends Page
                     ['state' => 'google_calendar_enabled', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'type' => 'boolean', 'default' => false, 'sort_order' => 210],
                     ['state' => 'google_calendar_client_id', 'key' => 'google_calendar.client_id', 'label' => 'Client ID', 'type' => 'text', 'default' => '', 'sort_order' => 220],
                     ['state' => 'google_calendar_client_secret', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 230],
+                    ['state' => 'google_calendar_refresh_token', 'key' => 'google_calendar.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 235],
+                    ['state' => 'google_calendar_account_email', 'key' => 'google_calendar.account_email', 'label' => 'Google Account Email', 'type' => 'email', 'default' => '', 'sort_order' => 238],
                     ['state' => 'google_calendar_calendar_id', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'type' => 'text', 'default' => '', 'sort_order' => 240],
-                    ['state' => 'google_calendar_sync_mode', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'type' => 'text', 'default' => 'two_way', 'sort_order' => 250],
+                    [
+                        'state' => 'google_calendar_sync_mode',
+                        'key' => 'google_calendar.sync_mode',
+                        'label' => 'Chế độ đồng bộ',
+                        'type' => 'select',
+                        'default' => 'two_way',
+                        'options' => ClinicRuntimeSettings::googleCalendarSyncModeOptions(),
+                        'sort_order' => 250,
+                    ],
                 ],
             ],
             [
@@ -639,6 +650,37 @@ class IntegrationSettings extends Page
         (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
     }
 
+    public function testGoogleCalendarConnection(): void
+    {
+        $result = app(GoogleCalendarIntegrationService::class)->testConnection();
+
+        if (($result['success'] ?? false) === true) {
+            $message = collect([
+                (string) ($result['message'] ?? 'Kết nối thành công.'),
+                filled($result['calendar_id'] ?? null) ? 'Calendar ID: '.(string) $result['calendar_id'] : null,
+                filled($result['account_email'] ?? null) ? 'Google Account: '.(string) $result['account_email'] : null,
+            ])->filter()->implode("\n");
+
+            if (filled($result['account_email'] ?? null)) {
+                $this->settings['google_calendar_account_email'] = (string) $result['account_email'];
+            }
+
+            Notification::make()
+                ->title('Kết nối Google Calendar thành công')
+                ->body($message)
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Kết nối Google Calendar thất bại')
+            ->body((string) ($result['message'] ?? 'Không thể kết nối Google Calendar.'))
+            ->danger()
+            ->send();
+    }
+
     public function openEmrConfigUrl(): void
     {
         $result = app(EmrIntegrationService::class)->resolveConfigUrl();
@@ -1047,6 +1089,26 @@ class IntegrationSettings extends Page
 
             if ($templateAppointment === '' && $templatePayment === '') {
                 $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+            }
+        }
+
+        $googleEnabled = filter_var(data_get($validated, 'settings.google_calendar_enabled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($googleEnabled) {
+            if (trim((string) data_get($validated, 'settings.google_calendar_client_id', '')) === '') {
+                $errors['settings.google_calendar_client_id'] = 'Client ID là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_client_secret', '')) === '') {
+                $errors['settings.google_calendar_client_secret'] = 'Client Secret là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_refresh_token', '')) === '') {
+                $errors['settings.google_calendar_refresh_token'] = 'Refresh Token là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_calendar_id', '')) === '') {
+                $errors['settings.google_calendar_calendar_id'] = 'Calendar ID là bắt buộc khi bật Google Calendar.';
             }
         }
 

@@ -8,6 +8,9 @@ it('uses table-first layout with key columns for treatment plan list', function 
     $tableConfig = File::get(app_path('Filament/Resources/TreatmentPlans/Tables/TreatmentPlansTable.php'));
 
     expect($tableConfig)
+        ->toContain("Group::make('patient_id')")
+        ->toContain("->label('Bệnh nhân')")
+        ->toContain("->defaultGroup('patient_id')")
         ->toContain("->defaultSort('updated_at', 'desc')")
         ->toContain("TextColumn::make('title')")
         ->toContain("TextColumn::make('patient.full_name')")

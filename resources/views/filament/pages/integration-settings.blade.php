@@ -434,6 +434,14 @@
                     </div>
                 @endif
 
+                @if(($provider['group'] ?? null) === 'google_calendar')
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testGoogleCalendarConnection">
+                            Test Google Calendar
+                        </x-filament::button>
+                    </div>
+                @endif
+
                 @if(($provider['group'] ?? null) === 'emr')
                     <div class="mt-4 flex flex-wrap gap-2">
                         <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testEmrConnection">
