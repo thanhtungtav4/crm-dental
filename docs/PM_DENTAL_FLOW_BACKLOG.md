@@ -961,3 +961,135 @@ Ghi chu:
   1. Report sai schema bi chan.
   2. Report chua dat strict checklist khong duoc ky deploy.
   3. Sign-off artifact co du thong tin QA/PM/release ref/hash report.
+
+---
+
+## 11) Open - EMR Clinical Image Evidence Hardening (Plan-first)
+
+Ghi chu:
+- Muc nay la roadmap chi tiet truoc khi code.
+- Uu tien data integrity + legal traceability + branch isolation.
+- Scope nay mo rong tu PM-53 (photo library MVP) len evidence-grade EMR.
+
+### TICKET PM-65 (P0)
+- **Title**: Clinical media domain model (asset/version/access log)
+- **Type**: Story (BE + Data)
+- **Estimate**: 8 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Tao `clinical_media_assets` voi linkage day du: `patient_id`, `visit_episode_id`, `exam_session_id`, `plan_item_id`, `treatment_session_id`, `clinical_order_id`, `clinical_result_id`, `branch_id`.
+  - Tao `clinical_media_versions` de giu immutable original + derivative (annotated/crop).
+  - Tao `clinical_media_access_logs` cho view/download/share/delete.
+  - Bo sung checksum (`sha256`), `captured_at`, `captured_by`, `retention_class`, `legal_hold`.
+- **Acceptance Criteria (QA)**:
+  1. Moi file anh clinical co record metadata + checksum + branch snapshot.
+  2. Khong overwrite file goc sau khi da luu.
+  3. Co truy vet access log day du actor/action/ip.
+
+### TICKET PM-66 (P0)
+- **Title**: Evidence gate theo thu thuat/chi dinh (hard business gate)
+- **Type**: Story (BE + Product)
+- **Estimate**: 5 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Policy engine: map thu thuat/chi dinh -> danh sach evidence bat buoc.
+  - Chan `clinical_result finalize` neu thieu evidence bat buoc.
+  - Chan `treatment_session completed` neu thieu anh hau can thiep (neu protocol yeu cau).
+  - Co override co ly do + audit.
+- **Acceptance Criteria (QA)**:
+  1. Case thieu anh khong cho finalize/complete.
+  2. Override bat buoc ghi ly do va duoc role hop le.
+  3. Co regression tests cho pass/fail gate.
+
+### TICKET PM-67 (P0)
+- **Title**: Retention class + legal hold + safe delete workflow
+- **Type**: Story (BE + Security + Legal)
+- **Estimate**: 5 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Dinh nghia retention class: `clinical_legal`, `clinical_operational`, `temporary`.
+  - Legal hold chan prune/delete khi record dang tranh chap/claim.
+  - Chuyen prune command sang class-aware, khong xoa mu timeline clinical da khoa.
+  - Signed URL TTL ngan + private disk enforcement.
+- **Acceptance Criteria (QA)**:
+  1. Prune khong xoa record dang legal hold.
+  2. Record class `clinical_legal` khong bi xoa boi retention job thong thuong.
+  3. Download file chi qua signed URL hop le.
+
+### TICKET PM-68 (P1)
+- **Title**: EMR payload expansion cho media dossier + report linkage
+- **Type**: Story (BE + Integration)
+- **Estimate**: 8 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Mo rong `EmrPatientPayloadBuilder` them media dossier theo encounter/session.
+  - Link media vao `clinical_orders`, `clinical_results`, `prescriptions` payload context.
+  - Ho tro mapping noi bo toi contract FHIR-likeness (`Media`, `DiagnosticReport`, `DocumentReference`).
+- **Acceptance Criteria (QA)**:
+  1. Payload EMR co media metadata day du theo encounter/session.
+  2. Co test schema payload de chan breaking change.
+  3. Sync pipeline khong duplicate media event.
+
+### TICKET PM-69 (P1)
+- **Title**: Clinical image UX (timeline + completeness bar + quality checklist)
+- **Type**: Story (FE + UX)
+- **Estimate**: 8 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Hien thi timeline anh theo phase: baseline/pre/intra/post/follow-up.
+  - Completeness bar theo protocol thu thuat.
+  - Checklist chat luong (missing view, blurry warning, wrong angle).
+  - Bo sung quick-link 2 chieu `exam-treatment` <-> `EMR medical record`.
+- **Acceptance Criteria (QA)**:
+  1. Nguoi dung nhin duoc muc do hoan tat evidence trong 1 man hinh.
+  2. Co canh bao ro khi evidence thieu/khong dat.
+  3. Mobile/desktop khong vo layout.
+
+### TICKET PM-70 (P1)
+- **Title**: Media authorization hardening (branch + care-team + PHI read log)
+- **Type**: Story (Security + BE)
+- **Estimate**: 5 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Policy branch-aware cho media CRUD/view/download.
+  - Role + care-team scope cho action nhay cam.
+  - Audit log chi tiet cho read/download/share image evidence.
+- **Acceptance Criteria (QA)**:
+  1. Cross-branch media access bi chan dung policy.
+  2. PHI media read/download co audit log truy vet du.
+  3. Co test matrix role-action cho media.
+
+### TICKET PM-71 (P1)
+- **Title**: Migration/backfill + reconcile gate cho clinical media
+- **Type**: Story (Data + Ops)
+- **Estimate**: 5 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Backfill anh cu (`patient_photos`, `indication_images`) sang `clinical_media_assets`.
+  - Tao command `emr:reconcile-clinical-media` + strict gate.
+  - Release gate moi: fail neu co media orphan/metadata missing/checksum invalid.
+- **Acceptance Criteria (QA)**:
+  1. Backfill idempotent, khong duplicate.
+  2. Reconcile command detect du orphan/missing link/checksum mismatch.
+  3. Release gate chan deploy neu reconcile strict fail.
+
+### TICKET PM-72 (P2)
+- **Title**: DICOM readiness track (optional ext PACS integration)
+- **Type**: Discovery + Story (Integration)
+- **Estimate**: 8 SP
+- **Status**: Open (`Planned`)
+- **Scope**:
+  - Dinh nghia adapter boundary cho DICOMweb (WADO/STOW) neu co PACS.
+  - Mapping branch + patient identity khi dong bo study.
+  - Checklist security + SLA cho imaging retrieval.
+- **Acceptance Criteria (QA)**:
+  1. Co architecture decision record ro pham vi DICOM.
+  2. Co mock integration test cho adapter layer.
+  3. Khong block go-live neu chua bat module nay.
+
+## 12) De xuat thu tu trien khai cho cum PM-65..PM-72
+
+1. `Phase 1 (bat buoc truoc code FE lon)`: PM-65, PM-67, PM-70
+2. `Phase 2 (business hard gate)`: PM-66, PM-71
+3. `Phase 3 (integration + UX)`: PM-68, PM-69
+4. `Phase 4 (optional imaging expansion)`: PM-72
