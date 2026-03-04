@@ -106,8 +106,7 @@ class ZnsCampaignRunnerService
                 if (
                     ! $delivery->wasRecentlyCreated
                     && $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
-                    && $delivery->next_retry_at !== null
-                    && $delivery->next_retry_at->isFuture()
+                    && $this->shouldSkipFailedDelivery($delivery)
                 ) {
                     $skipped++;
 
@@ -158,7 +157,9 @@ class ZnsCampaignRunnerService
                 $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
                 $delivery->provider_response = $sendResult['response'] ?? null;
                 $delivery->error_message = $sendResult['error'] ?? 'ZNS provider request failed.';
-                $delivery->next_retry_at = now()->addMinutes(15);
+                $delivery->next_retry_at = $this->isRetryableProviderFailure($sendResult)
+                    ? now()->addMinutes(15)
+                    : null;
                 $delivery->save();
                 $failed++;
             }
@@ -242,6 +243,33 @@ class ZnsCampaignRunnerService
         }
 
         return trim($digits);
+    }
+
+    protected function shouldSkipFailedDelivery(ZnsCampaignDelivery $delivery): bool
+    {
+        if ($delivery->next_retry_at === null) {
+            return true;
+        }
+
+        return $delivery->next_retry_at->isFuture();
+    }
+
+    /**
+     * @param  array<string, mixed>  $sendResult
+     */
+    protected function isRetryableProviderFailure(array $sendResult): bool
+    {
+        $statusCode = isset($sendResult['status']) ? (int) $sendResult['status'] : null;
+
+        if ($statusCode === null) {
+            return true;
+        }
+
+        if ($statusCode >= 400 && $statusCode < 500 && $statusCode !== 429) {
+            return false;
+        }
+
+        return true;
     }
 
     protected function assertZnsReadyForRun(): void
