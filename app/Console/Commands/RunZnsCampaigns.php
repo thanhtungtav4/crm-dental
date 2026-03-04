@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ZnsCampaign;
+use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +22,7 @@ class RunZnsCampaigns extends Command
      *
      * @var string
      */
-    protected $description = 'Chạy campaign ZNS đang scheduled/running với idempotency delivery log.';
+    protected $description = 'Chạy campaign ZNS scheduled/running và failed có delivery retryable tới hạn.';
 
     /**
      * Execute the console command.
@@ -35,10 +36,26 @@ class RunZnsCampaigns extends Command
                 filled($campaignId),
                 fn ($builder) => $builder->whereKey((int) $campaignId),
                 fn ($builder) => $builder
-                    ->whereIn('status', [ZnsCampaign::STATUS_SCHEDULED, ZnsCampaign::STATUS_RUNNING])
-                    ->where(function ($innerQuery): void {
-                        $innerQuery->whereNull('scheduled_at')
-                            ->orWhere('scheduled_at', '<=', now());
+                    ->where(function ($campaignQuery): void {
+                        $campaignQuery
+                            ->where(function ($liveCampaignQuery): void {
+                                $liveCampaignQuery
+                                    ->whereIn('status', [ZnsCampaign::STATUS_SCHEDULED, ZnsCampaign::STATUS_RUNNING])
+                                    ->where(function ($innerQuery): void {
+                                        $innerQuery->whereNull('scheduled_at')
+                                            ->orWhere('scheduled_at', '<=', now());
+                                    });
+                            })
+                            ->orWhere(function ($failedCampaignQuery): void {
+                                $failedCampaignQuery
+                                    ->where('status', ZnsCampaign::STATUS_FAILED)
+                                    ->whereHas('deliveries', function ($deliveryQuery): void {
+                                        $deliveryQuery
+                                            ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+                                            ->whereNotNull('next_retry_at')
+                                            ->where('next_retry_at', '<=', now());
+                                    });
+                            });
                     })
             )
             ->orderBy('scheduled_at')
