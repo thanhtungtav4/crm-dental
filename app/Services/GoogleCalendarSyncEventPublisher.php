@@ -5,7 +5,8 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Support\ClinicRuntimeSettings;
-use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class GoogleCalendarSyncEventPublisher
 {
@@ -44,43 +45,58 @@ class GoogleCalendarSyncEventPublisher
             : $this->payloadBuilder->build($appointment);
 
         $checksum = $this->payloadBuilder->checksum($payload);
-        $openDuplicateEvent = $this->findOpenDuplicateEvent(
-            appointmentId: (int) $appointment->id,
-            eventType: $resolvedEventType,
-            payloadChecksum: $checksum,
-        );
+        $eventKey = $this->eventKey((int) $appointment->id, $resolvedEventType, $checksum);
 
-        if ($openDuplicateEvent) {
-            return $openDuplicateEvent;
-        }
+        return DB::transaction(function () use ($appointment, $resolvedEventType, $payload, $checksum, $eventKey): GoogleCalendarSyncEvent {
+            $existing = GoogleCalendarSyncEvent::query()
+                ->where('event_key', $eventKey)
+                ->lockForUpdate()
+                ->first();
 
-        return GoogleCalendarSyncEvent::query()->create(
-            [
-                'event_key' => $this->eventKey((int) $appointment->id, $resolvedEventType, $checksum),
-                'appointment_id' => $appointment->id,
-                'branch_id' => $appointment->branch_id,
-                'event_type' => $resolvedEventType,
-                'payload' => $payload,
-                'payload_checksum' => $checksum,
-                'status' => GoogleCalendarSyncEvent::STATUS_PENDING,
-                'next_retry_at' => now(),
-            ],
-        );
-    }
+            if ($existing) {
+                return $this->refreshExistingEvent(
+                    event: $existing,
+                    appointment: $appointment,
+                    eventType: $resolvedEventType,
+                    payload: $payload,
+                    checksum: $checksum,
+                );
+            }
 
-    protected function findOpenDuplicateEvent(int $appointmentId, string $eventType, string $payloadChecksum): ?GoogleCalendarSyncEvent
-    {
-        return GoogleCalendarSyncEvent::query()
-            ->where('appointment_id', $appointmentId)
-            ->where('event_type', $eventType)
-            ->where('payload_checksum', $payloadChecksum)
-            ->whereIn('status', [
-                GoogleCalendarSyncEvent::STATUS_PENDING,
-                GoogleCalendarSyncEvent::STATUS_PROCESSING,
-                GoogleCalendarSyncEvent::STATUS_FAILED,
-            ])
-            ->latest('id')
-            ->first();
+            try {
+                return GoogleCalendarSyncEvent::query()->create([
+                    'event_key' => $eventKey,
+                    'appointment_id' => $appointment->id,
+                    'branch_id' => $appointment->branch_id,
+                    'event_type' => $resolvedEventType,
+                    'payload' => $payload,
+                    'payload_checksum' => $checksum,
+                    'status' => GoogleCalendarSyncEvent::STATUS_PENDING,
+                    'next_retry_at' => now(),
+                ]);
+            } catch (QueryException $exception) {
+                if (! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+
+                $existing = GoogleCalendarSyncEvent::query()
+                    ->where('event_key', $eventKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $existing) {
+                    throw $exception;
+                }
+
+                return $this->refreshExistingEvent(
+                    event: $existing,
+                    appointment: $appointment,
+                    eventType: $resolvedEventType,
+                    payload: $payload,
+                    checksum: $checksum,
+                );
+            }
+        }, 3);
     }
 
     public function shouldPushToGoogle(): bool
@@ -118,8 +134,48 @@ class GoogleCalendarSyncEventPublisher
             $appointmentId,
             $eventType,
             $checksum,
-            now()->format('Uv'),
-            (string) Str::uuid(),
         ])), 0, 40);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function refreshExistingEvent(
+        GoogleCalendarSyncEvent $event,
+        Appointment $appointment,
+        string $eventType,
+        array $payload,
+        string $checksum,
+    ): GoogleCalendarSyncEvent {
+        if ($event->status === GoogleCalendarSyncEvent::STATUS_PROCESSING) {
+            return $event;
+        }
+
+        $event->forceFill([
+            'appointment_id' => $appointment->id,
+            'branch_id' => $appointment->branch_id,
+            'event_type' => $eventType,
+            'payload' => $payload,
+            'payload_checksum' => $checksum,
+            'status' => GoogleCalendarSyncEvent::STATUS_PENDING,
+            'attempts' => 0,
+            'next_retry_at' => now(),
+            'locked_at' => null,
+            'processed_at' => null,
+            'last_http_status' => null,
+            'last_error' => null,
+            'external_event_id' => null,
+        ])->save();
+
+        return $event->fresh() ?? $event;
+    }
+
+    protected function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? '');
+        $driverCode = (int) ($exception->errorInfo[1] ?? 0);
+
+        return in_array($sqlState, ['23000', '23505'], true)
+            || $driverCode === 1062;
     }
 }

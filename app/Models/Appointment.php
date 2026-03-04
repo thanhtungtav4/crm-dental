@@ -484,12 +484,13 @@ class Appointment extends Model
         );
     }
 
-    protected static function statusesOccupyingCapacity(): array
+    public static function statusesOccupyingCapacity(): array
     {
         return [
             self::STATUS_SCHEDULED,
             self::STATUS_CONFIRMED,
             self::STATUS_IN_PROGRESS,
+            self::STATUS_RESCHEDULED,
         ];
     }
 

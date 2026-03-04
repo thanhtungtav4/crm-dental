@@ -58,6 +58,13 @@ class SyncGoogleCalendarEvents extends Command
         $appointmentId = $this->option('appointment_id') ? (int) $this->option('appointment_id') : null;
         $dryRun = (bool) $this->option('dry-run');
 
+        if (! $dryRun) {
+            $reclaimed = GoogleCalendarSyncEvent::reclaimStaleProcessing();
+            if ($reclaimed > 0) {
+                $this->warn("Đã reclaim {$reclaimed} event Google Calendar bị kẹt trạng thái processing.");
+            }
+        }
+
         $query = GoogleCalendarSyncEvent::query()
             ->ready()
             ->orderBy('id')

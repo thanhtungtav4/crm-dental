@@ -6,7 +6,8 @@ use App\Models\EmrAuditLog;
 use App\Models\EmrSyncEvent;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
-use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class EmrSyncEventPublisher
 {
@@ -38,37 +39,72 @@ class EmrSyncEventPublisher
 
         $payload = $this->payloadBuilder->build($patient);
         $checksum = $this->payloadBuilder->checksum($payload);
-        $openDuplicateEvent = $this->findOpenDuplicateEvent(
-            patientId: (int) $patient->id,
-            eventType: $eventType,
-            payloadChecksum: $checksum,
-        );
+        $eventKey = $this->eventKey((int) $patient->id, $eventType, $checksum);
+        $event = DB::transaction(function () use ($patient, $eventType, $payload, $checksum, $eventKey): EmrSyncEvent {
+            $existing = EmrSyncEvent::query()
+                ->where('event_key', $eventKey)
+                ->lockForUpdate()
+                ->first();
 
-        if ($openDuplicateEvent) {
+            if ($existing) {
+                return $this->refreshExistingEvent(
+                    event: $existing,
+                    patient: $patient,
+                    eventType: $eventType,
+                    payload: $payload,
+                    checksum: $checksum,
+                );
+            }
+
+            try {
+                return EmrSyncEvent::query()->create([
+                    'event_key' => $eventKey,
+                    'patient_id' => $patient->id,
+                    'branch_id' => $patient->first_branch_id,
+                    'event_type' => $eventType,
+                    'payload' => $payload,
+                    'payload_checksum' => $checksum,
+                    'status' => EmrSyncEvent::STATUS_PENDING,
+                    'next_retry_at' => now(),
+                ]);
+            } catch (QueryException $exception) {
+                if (! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+
+                $existing = EmrSyncEvent::query()
+                    ->where('event_key', $eventKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $existing) {
+                    throw $exception;
+                }
+
+                return $this->refreshExistingEvent(
+                    event: $existing,
+                    patient: $patient,
+                    eventType: $eventType,
+                    payload: $payload,
+                    checksum: $checksum,
+                );
+            }
+        }, 3);
+
+        if (! $event->wasRecentlyCreated) {
             $this->emrAuditLogger->recordSyncEvent(
-                event: $openDuplicateEvent,
+                event: $event,
                 action: EmrAuditLog::ACTION_DEDUPE,
                 context: [
-                    'event_key' => $openDuplicateEvent->event_key,
-                    'event_type' => $openDuplicateEvent->event_type,
-                    'payload_checksum' => $openDuplicateEvent->payload_checksum,
+                    'event_key' => $event->event_key,
+                    'event_type' => $event->event_type,
+                    'payload_checksum' => $event->payload_checksum,
                 ],
                 actorId: auth()->id(),
             );
 
-            return $openDuplicateEvent;
+            return $event;
         }
-
-        $event = EmrSyncEvent::query()->create([
-            'event_key' => $this->eventKey($patient->id, $eventType, $checksum),
-            'patient_id' => $patient->id,
-            'branch_id' => $patient->first_branch_id,
-            'event_type' => $eventType,
-            'payload' => $payload,
-            'payload_checksum' => $checksum,
-            'status' => EmrSyncEvent::STATUS_PENDING,
-            'next_retry_at' => now(),
-        ]);
 
         $this->emrAuditLogger->recordSyncEvent(
             event: $event,
@@ -84,21 +120,6 @@ class EmrSyncEventPublisher
         return $event;
     }
 
-    protected function findOpenDuplicateEvent(int $patientId, string $eventType, string $payloadChecksum): ?EmrSyncEvent
-    {
-        return EmrSyncEvent::query()
-            ->where('patient_id', $patientId)
-            ->where('event_type', $eventType)
-            ->where('payload_checksum', $payloadChecksum)
-            ->whereIn('status', [
-                EmrSyncEvent::STATUS_PENDING,
-                EmrSyncEvent::STATUS_PROCESSING,
-                EmrSyncEvent::STATUS_FAILED,
-            ])
-            ->latest('id')
-            ->first();
-    }
-
     protected function eventKey(int $patientId, string $eventType, string $checksum): string
     {
         return substr(hash('sha1', implode('|', [
@@ -106,8 +127,48 @@ class EmrSyncEventPublisher
             $patientId,
             $eventType,
             $checksum,
-            now()->format('Uv'),
-            (string) Str::uuid(),
         ])), 0, 40);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function refreshExistingEvent(
+        EmrSyncEvent $event,
+        Patient $patient,
+        string $eventType,
+        array $payload,
+        string $checksum,
+    ): EmrSyncEvent {
+        if ($event->status === EmrSyncEvent::STATUS_PROCESSING) {
+            return $event;
+        }
+
+        $event->forceFill([
+            'patient_id' => $patient->id,
+            'branch_id' => $patient->first_branch_id,
+            'event_type' => $eventType,
+            'payload' => $payload,
+            'payload_checksum' => $checksum,
+            'status' => EmrSyncEvent::STATUS_PENDING,
+            'attempts' => 0,
+            'next_retry_at' => now(),
+            'locked_at' => null,
+            'processed_at' => null,
+            'last_http_status' => null,
+            'last_error' => null,
+            'external_patient_id' => null,
+        ])->save();
+
+        return $event->fresh() ?? $event;
+    }
+
+    protected function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? '');
+        $driverCode = (int) ($exception->errorInfo[1] ?? 0);
+
+        return in_array($sqlState, ['23000', '23505'], true)
+            || $driverCode === 1062;
     }
 }

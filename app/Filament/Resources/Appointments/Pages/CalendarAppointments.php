@@ -156,7 +156,7 @@ class CalendarAppointments extends Page
             ->where('id', '!=', $appointment->id)
             ->where('doctor_id', $appointment->doctor_id)
             ->where('branch_id', $appointment->branch_id)
-            ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
+            ->whereIn('status', Appointment::statusesForQuery(Appointment::statusesOccupyingCapacity()))
             ->where('date', '<', $endAt->format('Y-m-d H:i:s'))
             ->where('date', '>=', $startAt->copy()->subDay()->format('Y-m-d H:i:s'))
             ->get(['id', 'date', 'duration_minutes'])
@@ -181,10 +181,6 @@ class CalendarAppointments extends Page
         try {
             $appointment->forceFill([
                 'date' => $startAt,
-                'status' => Appointment::STATUS_RESCHEDULED,
-                'reschedule_reason' => $hasConflict
-                    ? 'Điều phối từ lịch ngày/tuần (override conflict)'
-                    : 'Điều phối từ lịch ngày/tuần',
                 'overbooking_reason' => $hasConflict ? 'Override từ màn hình calendar' : $appointment->overbooking_reason,
                 'overbooking_override_by' => $hasConflict ? auth()->id() : $appointment->overbooking_override_by,
                 'overbooking_override_at' => $hasConflict ? now() : $appointment->overbooking_override_at,

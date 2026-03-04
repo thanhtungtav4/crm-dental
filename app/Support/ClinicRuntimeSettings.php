@@ -637,9 +637,9 @@ class ClinicRuntimeSettings
     public static function googleCalendarSyncModeOptions(): array
     {
         return [
-            'two_way' => 'Hai chiều',
-            'one_way_to_google' => 'Một chiều: CRM -> Google',
-            'one_way_to_crm' => 'Một chiều: Google -> CRM',
+            'two_way' => 'Hai chiều (Google -> CRM: coming soon)',
+            'one_way_to_google' => 'Một chiều: CRM -> Google (đã hỗ trợ)',
+            'one_way_to_crm' => 'Một chiều: Google -> CRM (coming soon)',
         ];
     }
 

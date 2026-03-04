@@ -176,8 +176,73 @@ it('returns conflict warning and supports force reschedule from calendar', funct
     $appointment->refresh();
 
     expect($forceResult['ok'])->toBeTrue()
-        ->and($appointment->status)->toBe(Appointment::STATUS_RESCHEDULED)
-        ->and($appointment->reschedule_reason)->toContain('Điều phối từ lịch ngày/tuần');
+        ->and($appointment->status)->toBe(Appointment::STATUS_SCHEDULED)
+        ->and($appointment->is_overbooked)->toBeTrue()
+        ->and((string) $appointment->overbooking_reason)->toContain('Override');
+});
+
+it('keeps overlap guard enforced when rescheduling from calendar under disabled overbooking policy', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'is_active' => true,
+        'is_primary' => true,
+    ]);
+
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    $primary = Appointment::query()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(8, 0),
+        'status' => Appointment::STATUS_SCHEDULED,
+        'duration_minutes' => 30,
+    ]);
+
+    $toMove = Appointment::query()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(10, 0),
+        'status' => Appointment::STATUS_SCHEDULED,
+        'duration_minutes' => 30,
+    ]);
+
+    $this->actingAs($admin);
+
+    $page = Livewire::test(CalendarAppointments::class)->instance();
+
+    $forceResult = $page->rescheduleAppointmentFromCalendar(
+        $toMove->id,
+        now()->addDay()->setTime(8, 10)->toIso8601String(),
+        true,
+    );
+
+    $toMove->refresh();
+    $primary->refresh();
+
+    expect($forceResult['ok'])->toBeFalse()
+        ->and($forceResult['message'])->toContain('overbooking')
+        ->and($toMove->status)->toBe(Appointment::STATUS_SCHEDULED)
+        ->and($toMove->date?->format('H:i'))->toBe('10:00')
+        ->and($primary->is_overbooked)->toBeFalse();
 });
 
 it('prunes old patient photos by retention policy and keeps non eligible records', function (): void {

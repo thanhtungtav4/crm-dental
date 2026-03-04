@@ -49,6 +49,13 @@ class SyncEmrEvents extends Command
         $patientId = $this->option('patient_id') ? (int) $this->option('patient_id') : null;
         $dryRun = (bool) $this->option('dry-run');
 
+        if (! $dryRun) {
+            $reclaimed = EmrSyncEvent::reclaimStaleProcessing();
+            if ($reclaimed > 0) {
+                $this->warn("Đã reclaim {$reclaimed} event EMR bị kẹt trạng thái processing.");
+            }
+        }
+
         $query = EmrSyncEvent::query()
             ->ready()
             ->orderBy('id')

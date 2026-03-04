@@ -21,6 +21,8 @@ class EmrSyncEvent extends Model
 
     public const STATUS_DEAD = 'dead';
 
+    public const STALE_PROCESSING_TTL_MINUTES = 15;
+
     protected $fillable = [
         'event_key',
         'patient_id',
@@ -117,6 +119,24 @@ class EmrSyncEvent extends Model
             'last_error' => mb_substr($message, 0, 1000),
             'locked_at' => null,
         ])->save();
+    }
+
+    public static function reclaimStaleProcessing(int $ttlMinutes = self::STALE_PROCESSING_TTL_MINUTES): int
+    {
+        $ttlMinutes = max(1, $ttlMinutes);
+        $lockedBefore = now()->subMinutes($ttlMinutes);
+
+        return static::query()
+            ->where('status', self::STATUS_PROCESSING)
+            ->whereNotNull('locked_at')
+            ->where('locked_at', '<=', $lockedBefore)
+            ->update([
+                'status' => self::STATUS_FAILED,
+                'next_retry_at' => now(),
+                'locked_at' => null,
+                'last_error' => 'Stale processing lock reclaimed for retry.',
+                'updated_at' => now(),
+            ]);
     }
 
     protected function resolveNextRetryAt(int $attempt): Carbon

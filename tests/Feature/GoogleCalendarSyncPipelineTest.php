@@ -6,6 +6,7 @@ use App\Models\GoogleCalendarEventMap;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Services\GoogleCalendarSyncEventPublisher;
+use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\Http;
 
 it('syncs google calendar outbox event successfully and persists appointment map', function (): void {
@@ -141,7 +142,7 @@ it('publishes delete event from appointment observer on soft delete', function (
         ->and($deleteEvent?->status)->toBe(GoogleCalendarSyncEvent::STATUS_PENDING);
 });
 
-it('dedupes only open google events and allows republish after synced', function (): void {
+it('keeps deterministic idempotency key for repeated google publish attempts and requeues after synced', function (): void {
     configureGoogleCalendarRuntime();
 
     $appointment = Appointment::factory()->create([
@@ -150,22 +151,79 @@ it('dedupes only open google events and allows republish after synced', function
         'duration_minutes' => 30,
     ]);
 
-    $publisher = app(GoogleCalendarSyncEventPublisher::class);
+    $appointmentId = (int) $appointment->id;
+    $tasks = [];
+    for ($attempt = 0; $attempt < 20; $attempt++) {
+        $tasks[] = static fn (): ?int => app(GoogleCalendarSyncEventPublisher::class)
+            ->publishForAppointmentId($appointmentId)?->id;
+    }
 
-    $firstEvent = $publisher->publishForAppointment($appointment->fresh());
-    $duplicateOpenEvent = $publisher->publishForAppointment($appointment->fresh());
+    $resultIds = Concurrency::driver('sync')->run($tasks);
 
-    expect($firstEvent)->not->toBeNull()
-        ->and($duplicateOpenEvent)->not->toBeNull()
-        ->and((int) $duplicateOpenEvent?->id)->toBe((int) $firstEvent?->id);
+    $event = GoogleCalendarSyncEvent::query()
+        ->where('appointment_id', $appointmentId)
+        ->first();
 
-    $firstEvent?->markSynced('gcal-event-open-001', 200);
+    expect($event)->not->toBeNull()
+        ->and(collect($resultIds)->filter()->unique()->count())->toBe(1)
+        ->and(GoogleCalendarSyncEvent::query()->count())->toBe(1)
+        ->and($event?->status)->toBe(GoogleCalendarSyncEvent::STATUS_PENDING);
 
-    $replayedEvent = $publisher->publishForAppointment($appointment->fresh());
+    $event?->markSynced('gcal-event-open-001', 200);
+
+    $replayedEvent = app(GoogleCalendarSyncEventPublisher::class)
+        ->publishForAppointmentId($appointmentId);
 
     expect($replayedEvent)->not->toBeNull()
-        ->and((int) $replayedEvent?->id)->not->toBe((int) $firstEvent?->id)
-        ->and($replayedEvent?->status)->toBe(GoogleCalendarSyncEvent::STATUS_PENDING);
+        ->and((int) $replayedEvent?->id)->toBe((int) $event?->id)
+        ->and($replayedEvent?->status)->toBe(GoogleCalendarSyncEvent::STATUS_PENDING)
+        ->and((int) $replayedEvent?->attempts)->toBe(0);
+});
+
+it('reclaims stale processing google events and retries them successfully', function (): void {
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(5),
+        'duration_minutes' => 30,
+    ]);
+
+    configureGoogleCalendarRuntime();
+
+    $event = app(GoogleCalendarSyncEventPublisher::class)->publishForAppointment($appointment->fresh());
+
+    expect($event)->not->toBeNull();
+
+    $event?->forceFill([
+        'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
+        'attempts' => 1,
+        'locked_at' => now()->subMinutes(30),
+        'next_retry_at' => now()->addMinutes(30),
+        'last_error' => 'simulated worker crash',
+    ])->save();
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://oauth2.googleapis.com/token' => Http::response([
+            'access_token' => 'gcal-test-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*/events' => Http::response([
+            'id' => 'gcal-event-retry-0001',
+            'updated' => '2026-03-04T03:00:00Z',
+        ], 200),
+    ]);
+
+    $this->artisan('google-calendar:sync-events')
+        ->assertSuccessful();
+
+    $event = $event?->fresh();
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(GoogleCalendarSyncEvent::STATUS_SYNCED)
+        ->and((int) $event?->attempts)->toBe(2)
+        ->and($event?->locked_at)->toBeNull()
+        ->and((string) ($event?->last_error ?? ''))->toBe('');
 });
 
 it('falls back to create event when google upsert target event is stale', function (): void {

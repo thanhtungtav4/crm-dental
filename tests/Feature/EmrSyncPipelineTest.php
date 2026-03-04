@@ -14,6 +14,7 @@ use App\Models\PrescriptionItem;
 use App\Models\TreatmentPlan;
 use App\Models\User;
 use App\Services\EmrSyncEventPublisher;
+use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\Http;
 
 it('syncs emr outbox event successfully and persists patient map', function () {
@@ -80,27 +81,75 @@ it('moves emr outbox event to dead letter after max attempts', function () {
         ->and($log?->status)->toBe(EmrSyncEvent::STATUS_FAILED);
 });
 
-it('dedupes only open emr events and allows republish after synced', function (): void {
+it('keeps deterministic idempotency key for repeated emr publish attempts and requeues after synced', function (): void {
     [$patient] = seedEmrPatientAggregate();
 
     configureEmrRuntime();
 
-    $publisher = app(EmrSyncEventPublisher::class);
+    $patientId = (int) $patient->id;
+    $tasks = [];
+    for ($attempt = 0; $attempt < 20; $attempt++) {
+        $tasks[] = static fn (): ?int => app(EmrSyncEventPublisher::class)
+            ->publishForPatientId($patientId, 'manual.sync')?->id;
+    }
 
-    $firstEvent = $publisher->publishForPatient($patient, 'manual.sync');
-    $duplicateOpenEvent = $publisher->publishForPatient($patient, 'manual.sync');
+    $resultIds = Concurrency::driver('sync')->run($tasks);
 
-    expect($firstEvent)->not->toBeNull()
-        ->and($duplicateOpenEvent)->not->toBeNull()
-        ->and((int) $duplicateOpenEvent?->id)->toBe((int) $firstEvent?->id);
+    $event = EmrSyncEvent::query()
+        ->where('patient_id', $patientId)
+        ->where('event_type', 'manual.sync')
+        ->first();
 
-    $firstEvent?->markSynced('EMR-PAT-0001', 200);
+    expect($event)->not->toBeNull()
+        ->and(collect($resultIds)->filter()->unique()->count())->toBe(1)
+        ->and(EmrSyncEvent::query()->count())->toBe(1)
+        ->and($event?->status)->toBe(EmrSyncEvent::STATUS_PENDING);
 
-    $replayedEvent = $publisher->publishForPatient($patient, 'manual.sync');
+    $event?->markSynced('EMR-PAT-0001', 200);
+
+    $replayedEvent = app(EmrSyncEventPublisher::class)
+        ->publishForPatientId($patientId, 'manual.sync');
 
     expect($replayedEvent)->not->toBeNull()
-        ->and((int) $replayedEvent?->id)->not->toBe((int) $firstEvent?->id)
-        ->and($replayedEvent?->status)->toBe(EmrSyncEvent::STATUS_PENDING);
+        ->and((int) $replayedEvent?->id)->toBe((int) $event?->id)
+        ->and($replayedEvent?->status)->toBe(EmrSyncEvent::STATUS_PENDING)
+        ->and((int) $replayedEvent?->attempts)->toBe(0);
+});
+
+it('reclaims stale processing emr events and retries them successfully', function (): void {
+    [$patient] = seedEmrPatientAggregate();
+
+    configureEmrRuntime();
+
+    $event = app(EmrSyncEventPublisher::class)->publishForPatient($patient, 'manual.sync');
+
+    expect($event)->not->toBeNull();
+
+    $event?->forceFill([
+        'status' => EmrSyncEvent::STATUS_PROCESSING,
+        'attempts' => 1,
+        'locked_at' => now()->subMinutes(30),
+        'next_retry_at' => now()->addMinutes(20),
+        'last_error' => 'simulated worker crash',
+    ])->save();
+
+    Http::fake([
+        'https://emr.example.test/api/emr/patients/sync' => Http::response([
+            'external_patient_id' => 'EMR-PAT-RECOVER-0001',
+            'message' => 'ok',
+        ], 200),
+    ]);
+
+    $this->artisan('emr:sync-events')
+        ->assertSuccessful();
+
+    $event = $event?->fresh();
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(EmrSyncEvent::STATUS_SYNCED)
+        ->and((int) $event?->attempts)->toBe(2)
+        ->and($event?->locked_at)->toBeNull()
+        ->and((string) ($event?->last_error ?? ''))->toBe('');
 });
 
 /**
