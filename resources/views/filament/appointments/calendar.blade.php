@@ -1,68 +1,16 @@
 @php
-    use App\Models\Appointment;
     use App\Models\User;
     use App\Support\BranchAccess;
 
-    // Eager-load relationships to build richer event data
-    $appointmentQuery = Appointment::query()
-        ->with(['patient:id,full_name,phone,email','doctor:id,name,phone,specialty','branch:id,name'])
-        ->orderBy('date');
+    $metrics = $this->getOperationalStatusMetrics();
+    $statusColors = $this->getStatusColors();
 
     $authUser = auth()->user();
     $branchIds = [];
 
     if ($authUser instanceof User && ! $authUser->hasRole('Admin')) {
         $branchIds = BranchAccess::accessibleBranchIds($authUser);
-
-        if ($branchIds === []) {
-            $appointmentQuery->whereRaw('1 = 0');
-        } else {
-            $appointmentQuery->whereIn('branch_id', $branchIds);
-        }
     }
-
-    $appointments = $appointmentQuery->get();
-    $metrics = $this->getOperationalStatusMetrics();
-
-    $statusColors = [
-        Appointment::STATUS_SCHEDULED => ['#3b82f6', '#1d4ed8'],      // blue
-        Appointment::STATUS_CONFIRMED => ['#10b981', '#059669'],      // green
-        Appointment::STATUS_IN_PROGRESS => ['#f59e0b', '#d97706'],    // amber
-        Appointment::STATUS_COMPLETED => ['#6b7280', '#4b5563'],      // gray
-        Appointment::STATUS_RESCHEDULED => ['#8b5cf6', '#7c3aed'],    // violet
-        Appointment::STATUS_CANCELLED => ['#ef4444', '#b91c1c'],      // red
-        Appointment::STATUS_NO_SHOW => ['#9ca3af', '#6b7280'],        // muted gray
-    ];
-
-    $events = $appointments->map(function ($a) use ($statusColors) {
-        $status = Appointment::normalizeStatus($a->status) ?? Appointment::DEFAULT_STATUS;
-        $statusLabel = Appointment::statusLabel($status);
-        [$bg, $bd] = $statusColors[$status] ?? $statusColors[Appointment::DEFAULT_STATUS];
-        $patient = optional($a->patient);
-        $doctor = optional($a->doctor);
-        $branch = optional($a->branch);
-        $title = ($patient->full_name ?: 'Chưa rõ bệnh nhân');
-        return [
-            'id' => $a->id,
-            'title' => $title,
-            'start' => \Carbon\Carbon::parse($a->date)->toIso8601String(),
-            'url' => \App\Filament\Resources\Appointments\AppointmentResource::getUrl('edit', ['record' => $a->id]),
-            'backgroundColor' => $bg,
-            'borderColor' => $bd,
-            'textColor' => '#ffffff',
-            'extendedProps' => [
-                'status' => $status,
-                'statusLabel' => $statusLabel,
-                'note' => $a->note,
-                'patient' => $patient->full_name,
-                'doctor' => $doctor->name,
-                'branch' => $branch->name,
-                'doctorPhone' => $doctor->phone,
-                'branch_id' => $a->branch_id,
-                'doctor_id' => $a->doctor_id,
-            ],
-        ];
-    });
 
     $branches = \App\Models\Branch::query()
         ->when(
@@ -71,13 +19,32 @@
                 ? $query->whereRaw('1 = 0')
                 : $query->whereIn('id', $branchIds),
         )
+        ->orderBy('name')
         ->pluck('name', 'id');
-    $doctors = \App\Models\User::role('Doctor')->pluck('name','id');
+
+    $doctors = User::query()
+        ->role('Doctor')
+        ->when(
+            $authUser instanceof User && ! $authUser->hasRole('Admin'),
+            function ($query) use ($branchIds) {
+                if ($branchIds === []) {
+                    return $query->whereRaw('1 = 0');
+                }
+
+                return $query->where(function ($doctorQuery) use ($branchIds) {
+                    $doctorQuery
+                        ->whereIn('branch_id', $branchIds)
+                        ->orWhereHas('activeDoctorBranchAssignments', fn ($assignmentQuery) => $assignmentQuery->whereIn('branch_id', $branchIds));
+                });
+            }
+        )
+        ->orderBy('name')
+        ->pluck('name', 'id');
 @endphp
 
 <x-filament::section>
     <div class="flex flex-col gap-4">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div class="space-y-1">
                 <h1 class="fi-header-heading">Lịch hẹn</h1>
                 <div class="text-sm text-gray-600 dark:text-gray-300">
@@ -122,19 +89,19 @@
             </div>
         </div>
 
-        <div x-data="calendar()" x-init="init(@js($events), @js($statusColors))">
+        <div x-data="calendar()" x-init="init(@js($statusColors))">
             <div class="mb-4 grid gap-3 rounded-lg border border-gray-200 bg-white p-3 md:grid-cols-4 dark:border-gray-700 dark:bg-gray-900/60">
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">Trạng thái</label>
                     <select x-model="filters.status" @change="applyFilters()" class="w-full rounded-lg border-gray-300 text-sm dark:border-gray-700 dark:bg-gray-900">
                         <option value="">Tất cả</option>
-                        <option value="{{ Appointment::STATUS_SCHEDULED }}">Đã đặt</option>
-                        <option value="{{ Appointment::STATUS_CONFIRMED }}">Đã xác nhận</option>
-                        <option value="{{ Appointment::STATUS_IN_PROGRESS }}">Đang khám</option>
-                        <option value="{{ Appointment::STATUS_COMPLETED }}">Hoàn thành</option>
-                        <option value="{{ Appointment::STATUS_NO_SHOW }}">No-show</option>
-                        <option value="{{ Appointment::STATUS_CANCELLED }}">Đã hủy</option>
-                        <option value="{{ Appointment::STATUS_RESCHEDULED }}">Đã hẹn lại</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_SCHEDULED }}">Đã đặt</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_CONFIRMED }}">Đã xác nhận</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_IN_PROGRESS }}">Đang khám</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_COMPLETED }}">Hoàn thành</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_NO_SHOW }}">No-show</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_CANCELLED }}">Đã hủy</option>
+                        <option value="{{ \App\Models\Appointment::STATUS_RESCHEDULED }}">Đã hẹn lại</option>
                     </select>
                 </div>
                 <div>
@@ -162,7 +129,7 @@
                 </div>
             </div>
 
-            <div id="calendar" class="w-full bg-white rounded-lg shadow ring-1 ring-gray-200 crm-calendar-shell"></div>
+            <div id="calendar" class="crm-calendar-shell w-full rounded-lg bg-white shadow ring-1 ring-gray-200"></div>
         </div>
     </div>
 </x-filament::section>
@@ -174,14 +141,12 @@ function calendar() {
     return {
         componentId: @js($this->getId()),
         calendar: null,
-        allEvents: [],
         filters: {
             status: '',
             branchId: '',
             doctorId: '',
         },
-        init(events, statusColors) {
-            this.allEvents = events
+        init(statusColors) {
             const el = document.getElementById('calendar')
             this.calendar = new FullCalendar.Calendar(el, {
                 locale: 'vi',
@@ -198,22 +163,21 @@ function calendar() {
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'timeGridWeek,timeGridDay'
+                    right: 'timeGridWeek,timeGridDay',
                 },
                 eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: false },
                 navLinks: true,
                 selectable: true,
                 selectMirror: true,
                 editable: true,
+                eventDurationEditable: false,
                 dateClick: (info) => {
                     const baseUrl = @json(\App\Filament\Resources\Appointments\AppointmentResource::getUrl('create'))
                     const params = new URLSearchParams()
-                    const dateValue = info.date ? info.date.toISOString().slice(0, 16) : info.dateStr
-                    params.set('date', dateValue)
+                    params.set('date', info.dateStr)
                     if (this.filters.branchId) params.set('branch_id', this.filters.branchId)
                     if (this.filters.doctorId) params.set('doctor_id', this.filters.doctorId)
-                    const url = `${baseUrl}?${params.toString()}`
-                    window.location.href = url
+                    window.location.href = `${baseUrl}?${params.toString()}`
                 },
                 eventClick: (info) => {
                     if (info.event.url) {
@@ -225,6 +189,7 @@ function calendar() {
                     const result = await this.callReschedule(info.event, false)
 
                     if (result?.ok) {
+                        this.calendar.refetchEvents()
                         return
                     }
 
@@ -232,6 +197,7 @@ function calendar() {
                     if (conflictMessage.includes('trùng lịch') && window.confirm(`${conflictMessage}\n\nBạn có muốn override để lưu lịch?`)) {
                         const forcedResult = await this.callReschedule(info.event, true)
                         if (forcedResult?.ok) {
+                            this.calendar.refetchEvents()
                             return
                         }
 
@@ -254,9 +220,24 @@ function calendar() {
                     ].filter(Boolean).join('\n')
                     info.el.setAttribute('title', tip)
                 },
-                events: events,
+                events: async (fetchInfo, successCallback, failureCallback) => {
+                    try {
+                        const events = await this.callFetchEvents(fetchInfo.startStr, fetchInfo.endStr)
+                        successCallback(Array.isArray(events) ? events : [])
+                    } catch (error) {
+                        failureCallback(error)
+                    }
+                },
             })
             this.calendar.render()
+        },
+        async callFetchEvents(startAtIso, endAtIso) {
+            const component = window.Livewire?.find(this.componentId)
+            if (!component) {
+                return []
+            }
+
+            return await component.call('getCalendarEvents', startAtIso, endAtIso, this.filters)
         },
         async callReschedule(event, force) {
             const component = window.Livewire?.find(this.componentId)
@@ -267,20 +248,16 @@ function calendar() {
             return await component.call(
                 'rescheduleAppointmentFromCalendar',
                 Number(event.id),
-                event.start.toISOString(),
+                event.startStr,
                 force,
             )
         },
         applyFilters() {
-            const filtered = this.allEvents.filter(e => {
-                const p = e.extendedProps || {}
-                if (this.filters.status && p.status !== this.filters.status) return false
-                if (this.filters.branchId && String(p.branch_id || '') !== String(this.filters.branchId)) return false
-                if (this.filters.doctorId && String(p.doctor_id || '') !== String(this.filters.doctorId)) return false
-                return true
-            })
-            this.calendar.removeAllEvents()
-            this.calendar.addEventSource(filtered)
+            if (!this.calendar) {
+                return
+            }
+
+            this.calendar.refetchEvents()
         },
         resetFilters() {
             this.filters = { status: '', branchId: '', doctorId: '' }

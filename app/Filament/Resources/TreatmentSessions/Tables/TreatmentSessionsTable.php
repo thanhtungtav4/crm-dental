@@ -11,6 +11,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -25,6 +26,20 @@ class TreatmentSessionsTable
                 'doctor:id,name',
                 'assistant:id,name',
             ]))
+            ->groups([
+                Group::make('treatmentPlan.patient_id')
+                    ->label('Bệnh nhân')
+                    ->collapsible()
+                    ->getTitleFromRecordUsing(function (TreatmentSession $record): string {
+                        $patientName = $record->treatmentPlan?->patient?->full_name ?? 'Chưa gán bệnh nhân';
+                        $patientCode = filled($record->treatmentPlan?->patient?->patient_code)
+                            ? " ({$record->treatmentPlan->patient->patient_code})"
+                            : '';
+
+                        return $patientName.$patientCode;
+                    }),
+            ])
+            ->defaultGroup('treatmentPlan.patient_id')
             ->columns([
                 TextColumn::make('treatmentPlan.patient.full_name')
                     ->label('Bệnh nhân')

@@ -1,26 +1,33 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\File;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Schema;
 
-it('uses avatar_url as the avatar upload field in admin profile configuration', function (): void {
-    $providerSource = (string) File::get(app_path('Providers/Filament/AdminPanelProvider.php'));
-
-    expect($providerSource)
-        ->toContain("FileUpload::make('avatar_url')")
-        ->not->toContain("FileUpload::make('avatar')");
+it('uses avatar_url as the persisted profile avatar column', function (): void {
+    expect(Schema::hasColumn('users', 'avatar_url'))->toBeTrue()
+        ->and(Schema::hasColumn('users', 'avatar'))->toBeFalse()
+        ->and((new User)->getFillable())->toContain('avatar_url')
+        ->not->toContain('avatar');
 });
 
-it('allows mass assignment for avatar_url and does not rely on legacy avatar field', function (): void {
-    $user = User::factory()->create();
+it('configures my profile avatar upload component to use avatar_url', function (): void {
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
 
-    $user->update([
-        'avatar_url' => 'avatars/test-avatar.jpg',
+    $avatarUploadStatePath = filament('filament-breezy')
+        ->getAvatarUploadComponent()
+        ->getStatePath(false);
+
+    expect($avatarUploadStatePath)->toBe('avatar_url');
+});
+
+it('renders my-profile page successfully for sensitive role with mfa', function (): void {
+    $admin = User::factory()->create([
+        'two_factor_confirmed_at' => now(),
     ]);
+    $admin->assignRole('Admin');
 
-    $user->refresh();
-
-    expect($user->avatar_url)->toBe('avatars/test-avatar.jpg')
-        ->and(in_array('avatar_url', $user->getFillable(), true))->toBeTrue()
-        ->and(in_array('avatar', $user->getFillable(), true))->toBeFalse();
+    $this->actingAs($admin)
+        ->get(route('filament.admin.pages.my-profile'))
+        ->assertOk();
 });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ClinicalMediaController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\PrescriptionController;
@@ -35,4 +36,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/print/payments/{payment}', PaymentReceiptController::class)
         ->middleware('can:view,payment')
         ->name('payments.print');
+
+    Route::get('/clinical-media/{clinicalMediaAsset}/view', [ClinicalMediaController::class, 'view'])
+        ->middleware(['signed', 'can:view,clinicalMediaAsset'])
+        ->name('clinical-media.view');
+    Route::get('/clinical-media/{clinicalMediaAsset}/download', [ClinicalMediaController::class, 'download'])
+        ->middleware(['signed', 'can:view,clinicalMediaAsset'])
+        ->name('clinical-media.download');
+    Route::post('/clinical-media/{clinicalMediaAsset}/share', [ClinicalMediaController::class, 'share'])
+        ->middleware('can:view,clinicalMediaAsset')
+        ->name('clinical-media.share');
 });

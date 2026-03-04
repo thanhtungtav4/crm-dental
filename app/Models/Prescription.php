@@ -76,6 +76,11 @@ class Prescription extends Model
         return $this->hasMany(PrescriptionItem::class);
     }
 
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

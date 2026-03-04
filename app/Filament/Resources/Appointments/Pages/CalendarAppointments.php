@@ -48,11 +48,25 @@ class CalendarAppointments extends Page
 
     public function getGoogleCalendarSyncModeLabel(): string
     {
-        return match (ClinicRuntimeSettings::googleCalendarSyncMode()) {
-            'one_way_to_google' => 'Một chiều: CRM -> Google',
-            'one_way_to_crm' => 'Một chiều: Google -> CRM',
-            default => 'Hai chiều',
-        };
+        $options = ClinicRuntimeSettings::googleCalendarSyncModeOptions();
+
+        return $options[ClinicRuntimeSettings::googleCalendarSyncMode()] ?? $options['two_way'];
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public function getStatusColors(): array
+    {
+        return [
+            Appointment::STATUS_SCHEDULED => ['#3b82f6', '#1d4ed8'],
+            Appointment::STATUS_CONFIRMED => ['#10b981', '#059669'],
+            Appointment::STATUS_IN_PROGRESS => ['#f59e0b', '#d97706'],
+            Appointment::STATUS_COMPLETED => ['#6b7280', '#4b5563'],
+            Appointment::STATUS_RESCHEDULED => ['#8b5cf6', '#7c3aed'],
+            Appointment::STATUS_CANCELLED => ['#ef4444', '#b91c1c'],
+            Appointment::STATUS_NO_SHOW => ['#9ca3af', '#6b7280'],
+        ];
     }
 
     protected function getHeaderActions(): array
@@ -85,6 +99,46 @@ class CalendarAppointments extends Page
     }
 
     /**
+     * @param  array{status?:string,branchId?:string|int,doctorId?:string|int}  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCalendarEvents(string $startAtIso, string $endAtIso, array $filters = []): array
+    {
+        $startAt = Carbon::parse($startAtIso)->setTimezone(config('app.timezone'))->startOfMinute();
+        $endAt = Carbon::parse($endAtIso)->setTimezone(config('app.timezone'))->startOfMinute();
+
+        $query = $this->scopeBranchAccess(
+            Appointment::query()
+                ->with(['patient:id,full_name,phone,email', 'doctor:id,name,phone,specialty', 'branch:id,name'])
+                ->where('date', '>=', $startAt->format('Y-m-d H:i:s'))
+                ->where('date', '<', $endAt->format('Y-m-d H:i:s'))
+                ->orderBy('date')
+        );
+
+        $statusFilter = Appointment::normalizeStatus((string) ($filters['status'] ?? ''));
+        if ($statusFilter !== null && $statusFilter !== '') {
+            $query->whereIn('status', Appointment::statusesForQuery([$statusFilter]));
+        }
+
+        $branchFilter = is_numeric($filters['branchId'] ?? null) ? (int) $filters['branchId'] : null;
+        if ($branchFilter !== null) {
+            $query->where('branch_id', $branchFilter);
+        }
+
+        $doctorFilter = is_numeric($filters['doctorId'] ?? null) ? (int) $filters['doctorId'] : null;
+        if ($doctorFilter !== null) {
+            $query->where('doctor_id', $doctorFilter);
+        }
+
+        $statusColors = $this->getStatusColors();
+
+        return $query
+            ->get()
+            ->map(fn (Appointment $appointment): array => $this->mapAppointmentToEvent($appointment, $statusColors))
+            ->all();
+    }
+
+    /**
      * @return array{ok:bool,message:string}
      */
     public function rescheduleAppointmentFromCalendar(int $appointmentId, string $startAtIso, bool $force = false): array
@@ -92,7 +146,9 @@ class CalendarAppointments extends Page
         $appointment = Appointment::query()->findOrFail($appointmentId);
         $this->authorize('update', $appointment);
 
-        $startAt = Carbon::parse($startAtIso)->seconds(0);
+        $startAt = Carbon::parse($startAtIso)
+            ->setTimezone(config('app.timezone'))
+            ->seconds(0);
         $duration = max(1, (int) ($appointment->duration_minutes ?? 30));
         $endAt = $startAt->copy()->addMinutes($duration);
 
@@ -164,5 +220,41 @@ class CalendarAppointments extends Page
         }
 
         return $query->whereIn('branch_id', $branchIds);
+    }
+
+    /**
+     * @param  array<string, array<int, string>>  $statusColors
+     * @return array<string, mixed>
+     */
+    protected function mapAppointmentToEvent(Appointment $appointment, array $statusColors): array
+    {
+        $status = Appointment::normalizeStatus($appointment->status) ?? Appointment::DEFAULT_STATUS;
+        $statusLabel = Appointment::statusLabel($status);
+        [$bg, $bd] = $statusColors[$status] ?? $statusColors[Appointment::DEFAULT_STATUS];
+
+        $startAt = $appointment->date?->copy();
+        $endAt = $startAt?->copy()->addMinutes(max(1, (int) ($appointment->duration_minutes ?? 30)));
+
+        return [
+            'id' => $appointment->id,
+            'title' => $appointment->patient?->full_name ?: 'Chưa rõ bệnh nhân',
+            'start' => $startAt?->toIso8601String(),
+            'end' => $endAt?->toIso8601String(),
+            'url' => AppointmentResource::getUrl('edit', ['record' => $appointment->id]),
+            'backgroundColor' => $bg,
+            'borderColor' => $bd,
+            'textColor' => '#ffffff',
+            'extendedProps' => [
+                'status' => $status,
+                'statusLabel' => $statusLabel,
+                'note' => $appointment->note,
+                'patient' => $appointment->patient?->full_name,
+                'doctor' => $appointment->doctor?->name,
+                'branch' => $appointment->branch?->name,
+                'doctorPhone' => $appointment->doctor?->phone,
+                'branch_id' => $appointment->branch_id,
+                'doctor_id' => $appointment->doctor_id,
+            ],
+        ];
     }
 }

@@ -19,13 +19,21 @@ class ZnsCampaignDelivery extends Model
         'zns_campaign_id',
         'patient_id',
         'customer_id',
+        'branch_id',
         'phone',
+        'normalized_phone',
         'idempotency_key',
         'status',
+        'attempt_count',
         'provider_message_id',
+        'provider_status_code',
+        'provider_response',
         'error_message',
         'sent_at',
+        'next_retry_at',
         'payload',
+        'template_key_snapshot',
+        'template_id_snapshot',
     ];
 
     /**
@@ -37,8 +45,12 @@ class ZnsCampaignDelivery extends Model
             'zns_campaign_id' => 'integer',
             'patient_id' => 'integer',
             'customer_id' => 'integer',
+            'branch_id' => 'integer',
+            'attempt_count' => 'integer',
             'sent_at' => 'datetime',
+            'next_retry_at' => 'datetime',
             'payload' => 'array',
+            'provider_response' => 'array',
         ];
     }
 
@@ -55,5 +67,10 @@ class ZnsCampaignDelivery extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

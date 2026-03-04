@@ -1,0 +1,1 @@
+<livewire:popup-announcement-center />

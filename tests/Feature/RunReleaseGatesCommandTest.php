@@ -16,10 +16,12 @@ it('shows planned steps in dry-run production profile', function (): void {
     ])
         ->expectsOutputToContain('RELEASE_GATE_PROFILE: production')
         ->expectsOutputToContain('schema:assert-critical-foreign-keys')
+        ->expectsOutputToContain('emr:reconcile-clinical-media')
         ->expectsOutputToContain('security:check-automation-actor')
         ->expectsOutputToContain('ops:check-backup-health')
         ->expectsOutputToContain('ops:run-restore-drill')
         ->expectsOutputToContain('ops:check-alert-runbook-map')
+        ->expectsOutputToContain('emr:check-dicom-readiness')
         ->expectsOutputToContain('finance:reconcile-branch-attribution')
         ->expectsOutputToContain('--strict')
         ->expectsOutputToContain('Dry-run completed')
@@ -33,6 +35,7 @@ it('runs ci release gates successfully', function (): void {
         ->expectsOutputToContain('schema:assert-no-pending-migrations')
         ->expectsOutputToContain('schema:assert-critical-foreign-keys')
         ->expectsOutputToContain('security:assert-action-permission-baseline')
+        ->expectsOutputToContain('emr:reconcile-clinical-media')
         ->expectsOutputToContain('Release gate: PASS')
         ->assertSuccessful();
 });

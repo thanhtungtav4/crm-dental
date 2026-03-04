@@ -7,11 +7,44 @@ use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CreateTreatmentSession extends CreateRecord
 {
     protected static string $resource = TreatmentSessionResource::class;
+
+    public ?string $returnUrl = null;
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->returnUrl = $this->sanitizeReturnUrl(request()->query('return_url'));
+
+        if ($this->returnUrl !== null) {
+            return;
+        }
+
+        $patientId = request()->integer('patient_id');
+
+        if ($patientId <= 0) {
+            $treatmentPlanId = request()->integer('treatment_plan_id');
+
+            if ($treatmentPlanId > 0) {
+                $patientId = (int) (TreatmentPlan::query()->whereKey($treatmentPlanId)->value('patient_id') ?? 0);
+            }
+        }
+
+        if ($patientId > 0) {
+            $this->returnUrl = route('filament.admin.resources.patients.view', [
+                'record' => $patientId,
+                'tab' => 'exam-treatment',
+            ]);
+        }
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -76,5 +109,66 @@ class CreateTreatmentSession extends CreateRecord
         $data['plan_item_id'] = $planItemId;
 
         return $data;
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->resolveReturnUrl() ?? static::getResource()::getUrl('index');
+    }
+
+    private function resolveReturnUrl(): ?string
+    {
+        return $this->sanitizeReturnUrl($this->returnUrl);
+    }
+
+    private function sanitizeReturnUrl(mixed $returnUrl): ?string
+    {
+        if (! is_string($returnUrl) || trim($returnUrl) === '') {
+            return null;
+        }
+
+        $candidateUrl = trim($returnUrl);
+
+        if (str_starts_with($candidateUrl, '/')) {
+            $candidateUrl = url($candidateUrl);
+        } else {
+            $appBaseUrl = rtrim(url('/'), '/');
+            if (! ($candidateUrl === $appBaseUrl || str_starts_with($candidateUrl, $appBaseUrl.'/'))) {
+                return null;
+            }
+        }
+
+        $parsedUrl = parse_url($candidateUrl);
+        if ($parsedUrl === false) {
+            return null;
+        }
+
+        $path = '/'.ltrim((string) ($parsedUrl['path'] ?? '/'), '/');
+        if ($this->isDisallowedReturnPath($path)) {
+            return null;
+        }
+
+        $pathWithQuery = $path.(isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '');
+        if (! $this->isGetAccessiblePath($pathWithQuery)) {
+            return null;
+        }
+
+        return $candidateUrl;
+    }
+
+    private function isDisallowedReturnPath(string $path): bool
+    {
+        return $path === '/livewire/update' || str_starts_with($path, '/livewire/');
+    }
+
+    private function isGetAccessiblePath(string $pathWithQuery): bool
+    {
+        try {
+            app('router')->getRoutes()->match(Request::create($pathWithQuery, Request::METHOD_GET));
+
+            return true;
+        } catch (MethodNotAllowedHttpException|NotFoundHttpException) {
+            return false;
+        }
     }
 }

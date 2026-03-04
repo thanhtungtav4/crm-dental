@@ -67,6 +67,8 @@ class ZaloIntegrationService
         $refreshToken = trim((string) ClinicRuntimeSettings::get('zns.refresh_token', ''));
         $templateAppointment = trim((string) ClinicRuntimeSettings::get('zns.template_appointment', ''));
         $templatePayment = trim((string) ClinicRuntimeSettings::get('zns.template_payment', ''));
+        $sendEndpoint = trim((string) ClinicRuntimeSettings::znsSendEndpoint());
+        $timeoutSeconds = ClinicRuntimeSettings::znsRequestTimeoutSeconds();
 
         $issues = [];
         $recommendations = [];
@@ -88,7 +90,15 @@ class ZaloIntegrationService
             $issues[] = 'Thiếu template ZNS (nhắc lịch hoặc nhắc thanh toán).';
         }
 
-        if ($enabled && $accessToken !== '' && $refreshToken !== '') {
+        if ($sendEndpoint === '') {
+            $issues[] = 'Thiếu ZNS send endpoint.';
+        }
+
+        if ($timeoutSeconds < 3 || $timeoutSeconds > 30) {
+            $issues[] = 'Timeout gọi ZNS ngoài phạm vi an toàn (3-30 giây).';
+        }
+
+        if ($enabled && $accessToken !== '' && $refreshToken !== '' && $sendEndpoint !== '') {
             $recommendations[] = 'Thiết lập quy trình xoay vòng token định kỳ và giám sát hạn token.';
         }
 

@@ -16,6 +16,7 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'zalo', 'key' => 'zalo.app_id', 'label' => 'App ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 30],
             ['group' => 'zalo', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 40],
             ['group' => 'zalo', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 50],
+            ['group' => 'zalo', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook / phút', 'value' => 120, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 55],
 
             // ZNS
             ['group' => 'zns', 'key' => 'zns.enabled', 'label' => 'Bật tích hợp ZNS', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 110],
@@ -23,11 +24,15 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'zns', 'key' => 'zns.refresh_token', 'label' => 'ZNS Refresh Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 130],
             ['group' => 'zns', 'key' => 'zns.template_appointment', 'label' => 'Template ID Nhắc lịch hẹn', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 140],
             ['group' => 'zns', 'key' => 'zns.template_payment', 'label' => 'Template ID Nhắc thanh toán', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 150],
+            ['group' => 'zns', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'value' => 'https://business.openapi.zalo.me/message/template', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 160],
+            ['group' => 'zns', 'key' => 'zns.request_timeout_seconds', 'label' => 'ZNS request timeout (seconds)', 'value' => 15, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 170],
 
             // Google Calendar
             ['group' => 'google_calendar', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 210],
             ['group' => 'google_calendar', 'key' => 'google_calendar.client_id', 'label' => 'Client ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 220],
             ['group' => 'google_calendar', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 230],
+            ['group' => 'google_calendar', 'key' => 'google_calendar.refresh_token', 'label' => 'Refresh Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 235],
+            ['group' => 'google_calendar', 'key' => 'google_calendar.account_email', 'label' => 'Google Account Email', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 238],
             ['group' => 'google_calendar', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 240],
             ['group' => 'google_calendar', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'value' => 'two_way', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 250],
 

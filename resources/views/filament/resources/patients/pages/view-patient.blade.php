@@ -3,6 +3,8 @@
         class="crm-patient-record-page"
         x-data="{
             activeTab: $wire.entangle('activeTab'),
+            copiedMessage: null,
+            copyTimer: null,
             ensureActiveTabVisible() {
                 this.$nextTick(() => {
                     const tabs = this.$refs.topTabs;
@@ -41,6 +43,41 @@
                         block: 'nearest',
                         inline: 'center',
                     });
+                });
+            },
+            copyToClipboard(value, label) {
+                if (! value) {
+                    return;
+                }
+
+                const writeClipboard = () => {
+                    if (window.navigator?.clipboard?.writeText) {
+                        return window.navigator.clipboard.writeText(value);
+                    }
+
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = value;
+                    tempInput.setAttribute('readonly', '');
+                    tempInput.style.position = 'fixed';
+                    tempInput.style.opacity = '0';
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+
+                    return Promise.resolve();
+                };
+
+                writeClipboard().then(() => {
+                    this.copiedMessage = `${label} đã được sao chép`;
+
+                    if (this.copyTimer) {
+                        window.clearTimeout(this.copyTimer);
+                    }
+
+                    this.copyTimer = window.setTimeout(() => {
+                        this.copiedMessage = null;
+                    }, 1400);
                 });
             },
         }"
@@ -86,16 +123,45 @@
                                     <span class="crm-patient-gender-badge is-female">Nữ</span>
                                 @endif
                             </div>
-                            <p class="crm-patient-code">
-                                {{ $this->record->patient_code }}</p>
+                            <div class="crm-copy-inline-row">
+                                <p class="crm-patient-code">{{ $this->record->patient_code }}</p>
+                                @if($this->record->patient_code)
+                                    <button
+                                        type="button"
+                                        class="crm-copy-icon-btn is-light"
+                                        x-on:click.prevent="copyToClipboard(@js($this->record->patient_code), 'Mã bệnh nhân')"
+                                        title="Sao chép mã bệnh nhân"
+                                        aria-label="Sao chép mã bệnh nhân"
+                                    >
+                                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
+                                            <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
+                                        </svg>
+                                    </button>
+                                @endif
+                            </div>
                             @if($this->record->phone)
-                                <a href="tel:{{ $this->record->phone }}" class="crm-patient-phone-chip">
-                                    <svg class="crm-patient-phone-chip-icon" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                    </svg>
-                                    <span class="crm-patient-phone-chip-text">{{ $this->record->phone }}</span>
-                                </a>
+                                <div class="crm-copy-inline-row">
+                                    <a href="tel:{{ $this->record->phone }}" class="crm-patient-phone-chip" style="color: #ffffff;">
+                                        <svg class="crm-patient-phone-chip-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                        </svg>
+                                        <span class="crm-patient-phone-chip-text" style="color: #ffffff;">{{ $this->record->phone }}</span>
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="crm-copy-icon-btn is-light"
+                                        x-on:click.prevent="copyToClipboard(@js($this->record->phone), 'Số điện thoại')"
+                                        title="Sao chép số điện thoại"
+                                        aria-label="Sao chép số điện thoại"
+                                    >
+                                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
+                                            <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -116,8 +182,22 @@
                             </div>
                             <p class="crm-patient-info-value">
                                 @if($this->record->phone)
-                                    <a href="tel:{{ $this->record->phone }}"
-                                        class="crm-patient-info-link">{{ $this->record->phone }}</a>
+                                    <span class="crm-copy-value-row">
+                                        <a href="tel:{{ $this->record->phone }}"
+                                            class="crm-patient-info-link">{{ $this->record->phone }}</a>
+                                        <button
+                                            type="button"
+                                            class="crm-copy-icon-btn"
+                                            x-on:click.prevent="copyToClipboard(@js($this->record->phone), 'Số điện thoại')"
+                                            title="Sao chép số điện thoại"
+                                            aria-label="Sao chép số điện thoại"
+                                        >
+                                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
+                                                <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
+                                            </svg>
+                                        </button>
+                                    </span>
                                 @else
                                     <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
@@ -283,7 +363,10 @@
                                     <div class="crm-treatment-subhead-title">Tiến trình điều trị</div>
                                     <div class="crm-treatment-subhead-actions">
                                         <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressTotalAmountFormatted }}đ</span>
-                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', ['patient_id' => $this->record->id]) }}"
+                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', [
+                                            'patient_id' => $this->record->id,
+                                            'return_url' => $this->workspaceReturnUrl,
+                                        ]) }}"
                                            class="crm-btn crm-btn-primary crm-btn-md"
                                            style="color: #ffffff;"
                                         >
@@ -400,7 +483,8 @@
                                 </div>
                                 <a
                                     href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
-                                    class="crm-btn crm-btn-primary crm-btn-md">
+                                    class="crm-btn crm-btn-primary crm-btn-md"
+                                    style="color: #ffffff;">
                                     Tạo lệnh labo
                                 </a>
                             </div>
@@ -475,6 +559,7 @@
                                 <a
                                     href="{{ route('filament.admin.resources.material-issue-notes.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
                                     class="crm-btn crm-btn-primary crm-btn-md"
+                                    style="color: #ffffff;"
                                 >
                                     Tạo phiếu xuất
                                 </a>
@@ -719,6 +804,14 @@
                     </div>
                 @endif
             </div>
+
+            <div
+                x-cloak
+                x-show="copiedMessage"
+                x-transition.opacity.duration.150ms
+                class="crm-copy-toast"
+                x-text="copiedMessage"
+            ></div>
 
     </div>
 </x-filament-panels::page>

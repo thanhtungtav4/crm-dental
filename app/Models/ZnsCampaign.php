@@ -92,9 +92,11 @@ class ZnsCampaign extends Model
                 $campaign->updated_by = auth()->id();
             }
 
-            if (is_numeric($campaign->branch_id)) {
+            $authUser = BranchAccess::currentUser();
+
+            if ($authUser instanceof User && ! $authUser->hasRole('Admin')) {
                 BranchAccess::assertCanAccessBranch(
-                    branchId: (int) $campaign->branch_id,
+                    branchId: $campaign->branch_id !== null ? (int) $campaign->branch_id : null,
                     field: 'branch_id',
                     message: 'Bạn không có quyền thao tác campaign ZNS ở chi nhánh này.',
                 );

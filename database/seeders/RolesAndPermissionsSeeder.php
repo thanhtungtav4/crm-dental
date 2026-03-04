@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'Payment',
             'Prescription',
             'PatientPhoto',
+            'ClinicalMediaAsset',
             'PatientMedicalRecord',
             'ReceiptExpense',
             'Note',
@@ -113,6 +114,7 @@ class RolesAndPermissionsSeeder extends Seeder
             ActionPermission::MPI_DEDUPE_REVIEW,
             ActionPermission::PATIENT_BRANCH_TRANSFER,
             ActionPermission::EMR_CLINICAL_WRITE,
+            ActionPermission::EMR_EVIDENCE_OVERRIDE,
             ActionPermission::EMR_RECORD_EXPORT,
             ActionPermission::EMR_SYNC_PUSH,
         ]);

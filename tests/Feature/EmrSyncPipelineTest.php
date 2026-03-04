@@ -80,6 +80,29 @@ it('moves emr outbox event to dead letter after max attempts', function () {
         ->and($log?->status)->toBe(EmrSyncEvent::STATUS_FAILED);
 });
 
+it('dedupes only open emr events and allows republish after synced', function (): void {
+    [$patient] = seedEmrPatientAggregate();
+
+    configureEmrRuntime();
+
+    $publisher = app(EmrSyncEventPublisher::class);
+
+    $firstEvent = $publisher->publishForPatient($patient, 'manual.sync');
+    $duplicateOpenEvent = $publisher->publishForPatient($patient, 'manual.sync');
+
+    expect($firstEvent)->not->toBeNull()
+        ->and($duplicateOpenEvent)->not->toBeNull()
+        ->and((int) $duplicateOpenEvent?->id)->toBe((int) $firstEvent?->id);
+
+    $firstEvent?->markSynced('EMR-PAT-0001', 200);
+
+    $replayedEvent = $publisher->publishForPatient($patient, 'manual.sync');
+
+    expect($replayedEvent)->not->toBeNull()
+        ->and((int) $replayedEvent?->id)->not->toBe((int) $firstEvent?->id)
+        ->and($replayedEvent?->status)->toBe(EmrSyncEvent::STATUS_PENDING);
+});
+
 /**
  * @return array{0: Patient, 1: User}
  */

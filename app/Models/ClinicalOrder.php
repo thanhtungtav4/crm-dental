@@ -149,6 +149,11 @@ class ClinicalOrder extends Model
         return $this->hasMany(ClinicalResult::class);
     }
 
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function markInProgress(): void
     {
         $this->status = self::STATUS_IN_PROGRESS;

@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class PlanItemForm
 {
@@ -26,7 +27,11 @@ class PlanItemForm
                     ->schema([
                         Select::make('treatment_plan_id')
                             ->label('Kế hoạch điều trị')
-                            ->relationship('treatmentPlan', 'title')
+                            ->relationship(
+                                name: 'treatmentPlan',
+                                titleAttribute: 'title',
+                                modifyQueryUsing: fn (Builder $query): Builder => self::scopeTreatmentPlanQueryByContext($query),
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
@@ -293,5 +298,16 @@ class PlanItemForm
                 return [$diagnosis->id => $label];
             })
             ->all();
+    }
+
+    private static function scopeTreatmentPlanQueryByContext(Builder $query): Builder
+    {
+        $patientIdFromRequest = request()->integer('patient_id');
+
+        if ($patientIdFromRequest > 0) {
+            $query->where('patient_id', $patientIdFromRequest);
+        }
+
+        return $query;
     }
 }

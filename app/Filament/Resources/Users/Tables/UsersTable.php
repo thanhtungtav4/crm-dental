@@ -16,7 +16,7 @@ class UsersTable
     {
         return $table
             ->columns([
-                ImageColumn::make('avatar')
+                ImageColumn::make('avatar_url')
                     ->label('')
                     ->disk('public')
                     ->circular()
@@ -36,13 +36,13 @@ class UsersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-        ->filters([])
+            ->filters([])
             ->recordActions([
                 EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-            DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

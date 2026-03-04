@@ -1,6 +1,6 @@
 # EMR Domain Split Backlog (CRM Monolith)
 
-Updated: 2026-02-28
+Updated: 2026-03-04
 Owner: Product + Tech Lead
 Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Auth/Org/Branch/User/Permission.
 
@@ -26,6 +26,14 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 | EMR-08 | P1 | Done | Clinical versioning | Revision history + optimistic lock + amend flow cho clinical note | 3dc4b31 |
 | EMR-09 | P2 | Done | Internal EMR API v1 | Idempotent mutation endpoint amend clinical note + authz + tests | a52c936 |
 | EMR-10 | P2 | Done | Reconciliation & observability | Command `emr:reconcile-integrity` + alert audit log + schedule + test | 88e5788 |
+| EMR-11 | P0 | Done (`2026-03-03`) | Clinical media domain core | `clinical_media_assets/versions/access_logs`, checksum, linkage encounter/session, immutable original | d7c5049 |
+| EMR-12 | P0 | Done (`2026-03-04`) | Evidence gate by procedure/order/result | Block finalize/complete when missing required image evidence, allow override with reason+audit | 03dd1e0 |
+| EMR-13 | P0 | Done (`2026-03-04`) | Legal hold + retention class | Class-aware retention (`clinical_legal/operational/temporary`), legal hold, safe delete policy | pending |
+| EMR-14 | P1 | Done (`2026-03-04`) | EMR payload media dossier | Expand payload builder for media linkage with encounter/order/result/prescription | pending |
+| EMR-15 | P1 | Done (`2026-03-04`) | Clinical image UX | Timeline, completeness bar, quality checklist, quick links CRM<->EMR | pending |
+| EMR-16 | P1 | Done (`2026-03-04`) | Media authz + PHI read/download audit | Branch-aware policy, role/care-team scope, read/download/share logs | pending |
+| EMR-17 | P1 | Done (`2026-03-04`) | Backfill + reconcile gate | Backfill legacy photo/indication data + strict reconcile command before release | pending |
+| EMR-18 | P2 | Done (`2026-03-04`) | DICOM readiness adapter | Optional DICOMweb boundary + identity mapping + security checklist | pending |
 
 ## Execution Rules
 
@@ -55,4 +63,11 @@ Scope: Same Laravel codebase, split CRM vs EMR domain boundaries with shared Aut
 ## Notes
 
 - Current baseline: EMR outbound sync tables/services already exist (`emr_sync_events`, `emr_sync_logs`, `emr_patient_maps`).
-- Current known gap: branch isolation not fully enforced for PlanItem/TreatmentSession.
+- Current known gap: none for EMR-12..EMR-18 (all delivered); next wave should focus on DICOM adapter implementation only when integration contract is confirmed.
+
+## Planned Delivery Order (New Wave)
+
+1. Wave M1 (foundation): EMR-11, EMR-13, EMR-16
+2. Wave M2 (business gates): EMR-12, EMR-17
+3. Wave M3 (integration + UX): EMR-14, EMR-15
+4. Wave M4 (optional expansion): EMR-18

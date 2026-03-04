@@ -151,6 +151,11 @@ class ExamSession extends Model
         return $this->hasMany(ClinicalOrder::class);
     }
 
+    public function clinicalMediaAssets(): HasMany
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function prescriptions(): HasMany
     {
         return $this->hasMany(Prescription::class);

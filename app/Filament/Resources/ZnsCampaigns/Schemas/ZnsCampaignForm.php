@@ -37,6 +37,7 @@ class ZnsCampaignForm
                     )
                     ->searchable()
                     ->preload()
+                    ->required(fn (): bool => auth()->check() && ! auth()->user()?->hasRole('Admin'))
                     ->nullable(),
 
                 Select::make('audience_source')
@@ -73,6 +74,7 @@ class ZnsCampaignForm
 
                 Textarea::make('message_payload')
                     ->label('Message payload (JSON)')
+                    ->json()
                     ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state)
                     ->dehydrateStateUsing(function ($state) {
                         if (is_array($state)) {
@@ -83,6 +85,9 @@ class ZnsCampaignForm
 
                         return is_array($decoded) ? $decoded : [];
                     })
+                    ->validationMessages([
+                        'json' => 'Message payload phải là JSON hợp lệ.',
+                    ])
                     ->helperText('Có thể nhập JSON object cho biến template ZNS.')
                     ->rows(8)
                     ->columnSpanFull(),

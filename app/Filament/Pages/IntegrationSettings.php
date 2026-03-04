@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Services\EmrIntegrationService;
+use App\Services\GoogleCalendarIntegrationService;
 use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
@@ -82,6 +83,7 @@ class IntegrationSettings extends Page
                     ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
                     ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
                     ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
+                    ['state' => 'zalo_webhook_rate_limit_per_minute', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook/phút', 'type' => 'integer', 'default' => 120, 'sort_order' => 55],
                 ],
             ],
             [
@@ -94,6 +96,8 @@ class IntegrationSettings extends Page
                     ['state' => 'zns_refresh_token', 'key' => 'zns.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 130],
                     ['state' => 'zns_template_appointment', 'key' => 'zns.template_appointment', 'label' => 'Template nhắc lịch hẹn', 'type' => 'text', 'default' => '', 'sort_order' => 140],
                     ['state' => 'zns_template_payment', 'key' => 'zns.template_payment', 'label' => 'Template nhắc thanh toán', 'type' => 'text', 'default' => '', 'sort_order' => 150],
+                    ['state' => 'zns_send_endpoint', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::znsSendEndpoint(), 'sort_order' => 160],
+                    ['state' => 'zns_request_timeout_seconds', 'key' => 'zns.request_timeout_seconds', 'label' => 'Timeout gọi ZNS (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsRequestTimeoutSeconds(), 'sort_order' => 170],
                 ],
             ],
             [
@@ -104,8 +108,18 @@ class IntegrationSettings extends Page
                     ['state' => 'google_calendar_enabled', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'type' => 'boolean', 'default' => false, 'sort_order' => 210],
                     ['state' => 'google_calendar_client_id', 'key' => 'google_calendar.client_id', 'label' => 'Client ID', 'type' => 'text', 'default' => '', 'sort_order' => 220],
                     ['state' => 'google_calendar_client_secret', 'key' => 'google_calendar.client_secret', 'label' => 'Client Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 230],
+                    ['state' => 'google_calendar_refresh_token', 'key' => 'google_calendar.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 235],
+                    ['state' => 'google_calendar_account_email', 'key' => 'google_calendar.account_email', 'label' => 'Google Account Email', 'type' => 'email', 'default' => '', 'sort_order' => 238],
                     ['state' => 'google_calendar_calendar_id', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'type' => 'text', 'default' => '', 'sort_order' => 240],
-                    ['state' => 'google_calendar_sync_mode', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'type' => 'text', 'default' => 'two_way', 'sort_order' => 250],
+                    [
+                        'state' => 'google_calendar_sync_mode',
+                        'key' => 'google_calendar.sync_mode',
+                        'label' => 'Chế độ đồng bộ',
+                        'type' => 'select',
+                        'default' => 'two_way',
+                        'options' => ClinicRuntimeSettings::googleCalendarSyncModeOptions(),
+                        'sort_order' => 250,
+                    ],
                 ],
             ],
             [
@@ -118,6 +132,25 @@ class IntegrationSettings extends Page
                     ['state' => 'emr_base_url', 'key' => 'emr.base_url', 'label' => 'Base URL', 'type' => 'url', 'default' => '', 'sort_order' => 430],
                     ['state' => 'emr_api_key', 'key' => 'emr.api_key', 'label' => 'API Key', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 440],
                     ['state' => 'emr_clinic_code', 'key' => 'emr.clinic_code', 'label' => 'Mã cơ sở', 'type' => 'text', 'default' => '', 'sort_order' => 450],
+                    [
+                        'state' => 'emr_media_storage_disk',
+                        'key' => 'emr.media.storage_disk',
+                        'label' => 'Disk lưu hồ ảnh lâm sàng',
+                        'type' => 'select',
+                        'default' => config('care.emr_media_storage_disk', 'local'),
+                        'options' => $this->mediaDiskOptions(),
+                        'sort_order' => 451,
+                    ],
+                    ['state' => 'emr_media_signed_url_ttl_minutes', 'key' => 'emr.media.signed_url_ttl_minutes', 'label' => 'TTL signed URL hồ ảnh (phút)', 'type' => 'integer', 'default' => config('care.emr_media_signed_url_ttl_minutes', 5), 'sort_order' => 452],
+                    ['state' => 'emr_media_retention_enabled', 'key' => 'emr.media.retention_enabled', 'label' => 'Bật retention class-aware cho hồ ảnh lâm sàng', 'type' => 'boolean', 'default' => config('care.emr_media_retention_enabled', true), 'sort_order' => 453],
+                    ['state' => 'emr_media_retention_days_clinical_operational', 'key' => 'emr.media.retention_days_clinical_operational', 'label' => 'Retention class clinical_operational (ngày)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'clinical_operational', 365), 'sort_order' => 454],
+                    ['state' => 'emr_media_retention_days_temporary', 'key' => 'emr.media.retention_days_temporary', 'label' => 'Retention class temporary (ngày)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'temporary', 30), 'sort_order' => 455],
+                    ['state' => 'emr_media_retention_days_clinical_legal', 'key' => 'emr.media.retention_days_clinical_legal', 'label' => 'Retention class clinical_legal (ngày, 0 = giữ vô hạn)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'clinical_legal', 0), 'sort_order' => 456],
+                    ['state' => 'emr_dicom_enabled', 'key' => 'emr.dicom.enabled', 'label' => 'Bật readiness DICOM/PACS (optional)', 'type' => 'boolean', 'default' => config('care.emr_dicom_enabled', false), 'sort_order' => 457],
+                    ['state' => 'emr_dicom_base_url', 'key' => 'emr.dicom.base_url', 'label' => 'DICOM base URL', 'type' => 'url', 'default' => config('care.emr_dicom_base_url', ''), 'sort_order' => 458],
+                    ['state' => 'emr_dicom_facility_code', 'key' => 'emr.dicom.facility_code', 'label' => 'DICOM facility code', 'type' => 'text', 'default' => config('care.emr_dicom_facility_code', ''), 'sort_order' => 459],
+                    ['state' => 'emr_dicom_timeout_seconds', 'key' => 'emr.dicom.timeout_seconds', 'label' => 'DICOM timeout (giây)', 'type' => 'integer', 'default' => config('care.emr_dicom_timeout_seconds', 10), 'sort_order' => 460],
+                    ['state' => 'emr_dicom_auth_token', 'key' => 'emr.dicom.auth_token', 'label' => 'DICOM auth token', 'type' => 'text', 'default' => config('care.emr_dicom_auth_token', ''), 'is_secret' => true, 'sort_order' => 461],
                 ],
             ],
             [
@@ -131,6 +164,17 @@ class IntegrationSettings extends Page
                     ['state' => 'web_lead_rate_limit_per_minute', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request/phút', 'type' => 'integer', 'default' => config('services.web_lead.rate_limit_per_minute', 60), 'sort_order' => 490],
                     ['state' => 'web_lead_realtime_notification_enabled', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime khi có web lead mới', 'type' => 'boolean', 'default' => false, 'sort_order' => 492],
                     ['state' => 'web_lead_realtime_notification_roles', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime', 'type' => 'roles', 'default' => ['CSKH'], 'options' => $this->roleOptions(), 'sort_order' => 493],
+                ],
+            ],
+            [
+                'group' => 'popup',
+                'title' => 'Popup thông báo nội bộ',
+                'description' => 'Thông báo realtime theo chi nhánh + nhóm quyền. Polling 10s, hiển thị một lần cho mỗi user.',
+                'fields' => [
+                    ['state' => 'popup_enabled', 'key' => 'popup.enabled', 'label' => 'Bật popup thông báo nội bộ', 'type' => 'boolean', 'default' => false, 'sort_order' => 494],
+                    ['state' => 'popup_polling_seconds', 'key' => 'popup.polling_seconds', 'label' => 'Chu kỳ polling (giây)', 'type' => 'integer', 'default' => 10, 'sort_order' => 495],
+                    ['state' => 'popup_retention_days', 'key' => 'popup.retention_days', 'label' => 'Giữ log popup (ngày)', 'type' => 'integer', 'default' => 180, 'sort_order' => 496],
+                    ['state' => 'popup_sender_roles', 'key' => 'popup.sender_roles', 'label' => 'Nhóm quyền được gửi popup toàn hệ thống', 'type' => 'roles', 'default' => ['Admin', 'Manager'], 'options' => $this->roleOptions(), 'sort_order' => 497],
                 ],
             ],
             [
@@ -475,6 +519,52 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
+                if (($field['key'] ?? null) === 'popup.polling_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:5', 'max:60'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'popup.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zalo.webhook_rate_limit_per_minute') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:10', 'max:2000'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zns.request_timeout_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:30'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'emr.media.signed_url_ttl_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:120'];
+
+                    continue;
+                }
+
+                if (in_array(($field['key'] ?? null), [
+                    'emr.media.retention_days_clinical_operational',
+                    'emr.media.retention_days_temporary',
+                    'emr.media.retention_days_clinical_legal',
+                ], true)) {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:0', 'max:36500'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'emr.dicom.timeout_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:120'];
+
+                    continue;
+                }
+
                 if (($field['type'] ?? null) === 'roles') {
                     $rules[$attribute] = ['array'];
                     $rules["{$attribute}.*"] = ['string', Rule::exists('roles', 'name')];
@@ -614,6 +704,37 @@ class IntegrationSettings extends Page
             ->body($body);
 
         (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
+    }
+
+    public function testGoogleCalendarConnection(): void
+    {
+        $result = app(GoogleCalendarIntegrationService::class)->testConnection();
+
+        if (($result['success'] ?? false) === true) {
+            $message = collect([
+                (string) ($result['message'] ?? 'Kết nối thành công.'),
+                filled($result['calendar_id'] ?? null) ? 'Calendar ID: '.(string) $result['calendar_id'] : null,
+                filled($result['account_email'] ?? null) ? 'Google Account: '.(string) $result['account_email'] : null,
+            ])->filter()->implode("\n");
+
+            if (filled($result['account_email'] ?? null)) {
+                $this->settings['google_calendar_account_email'] = (string) $result['account_email'];
+            }
+
+            Notification::make()
+                ->title('Kết nối Google Calendar thành công')
+                ->body($message)
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Kết nối Google Calendar thất bại')
+            ->body((string) ($result['message'] ?? 'Không thể kết nối Google Calendar.'))
+            ->danger()
+            ->send();
     }
 
     public function openEmrConfigUrl(): void
@@ -1021,9 +1142,34 @@ class IntegrationSettings extends Page
 
             $templateAppointment = trim((string) data_get($validated, 'settings.zns_template_appointment', ''));
             $templatePayment = trim((string) data_get($validated, 'settings.zns_template_payment', ''));
+            $sendEndpoint = trim((string) data_get($validated, 'settings.zns_send_endpoint', ''));
 
             if ($templateAppointment === '' && $templatePayment === '') {
                 $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+            }
+
+            if ($sendEndpoint === '') {
+                $errors['settings.zns_send_endpoint'] = 'ZNS send endpoint là bắt buộc khi bật ZNS.';
+            }
+        }
+
+        $googleEnabled = filter_var(data_get($validated, 'settings.google_calendar_enabled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($googleEnabled) {
+            if (trim((string) data_get($validated, 'settings.google_calendar_client_id', '')) === '') {
+                $errors['settings.google_calendar_client_id'] = 'Client ID là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_client_secret', '')) === '') {
+                $errors['settings.google_calendar_client_secret'] = 'Client Secret là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_refresh_token', '')) === '') {
+                $errors['settings.google_calendar_refresh_token'] = 'Refresh Token là bắt buộc khi bật Google Calendar.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.google_calendar_calendar_id', '')) === '') {
+                $errors['settings.google_calendar_calendar_id'] = 'Calendar ID là bắt buộc khi bật Google Calendar.';
             }
         }
 
@@ -1152,6 +1298,27 @@ class IntegrationSettings extends Page
         }
 
         return $baseKey.'_'.$suffix;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function mediaDiskOptions(): array
+    {
+        $disks = array_keys((array) config('filesystems.disks', []));
+        $selectedDisks = collect($disks)
+            ->filter(static fn (mixed $disk): bool => is_string($disk) && trim($disk) !== '')
+            ->mapWithKeys(static fn (string $disk): array => [$disk => strtoupper($disk)])
+            ->all();
+
+        if ($selectedDisks === []) {
+            return [
+                'local' => 'LOCAL',
+                'public' => 'PUBLIC',
+            ];
+        }
+
+        return $selectedDisks;
     }
 
     /**

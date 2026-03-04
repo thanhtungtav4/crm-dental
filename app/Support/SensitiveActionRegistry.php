@@ -99,6 +99,15 @@ class SensitiveActionRegistry
                     ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::EMR_CLINICAL_WRITE'],
                 ],
             ],
+            ActionPermission::EMR_EVIDENCE_OVERRIDE => [
+                'allowed_roles' => ['Admin', 'Manager'],
+                'guard_markers' => [
+                    ['path' => 'app/Services/ClinicalEvidenceGateService.php', 'contains' => 'ActionPermission::EMR_EVIDENCE_OVERRIDE'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::EMR_EVIDENCE_OVERRIDE'],
+                ],
+            ],
             ActionPermission::EMR_RECORD_EXPORT => [
                 'allowed_roles' => ['Admin', 'Manager', 'Doctor'],
                 'guard_markers' => [

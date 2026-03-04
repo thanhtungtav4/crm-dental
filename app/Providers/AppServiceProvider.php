@@ -32,11 +32,15 @@ use App\Observers\PrescriptionObserver;
 use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action as FilamentAction;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -54,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureFilamentActionNotifications();
+        $this->configureFilamentQuickCopy();
 
         RateLimiter::for('web-leads', function (Request $request): Limit {
             $configuredRate = (int) ClinicSetting::getValue(
@@ -66,6 +71,13 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute($perMinute)
                 ->by(sha1($tokenFingerprint.'|'.$request->ip()));
+        });
+
+        RateLimiter::for('zalo-webhook', function (Request $request): Limit {
+            $perMinute = ClinicRuntimeSettings::zaloWebhookRateLimitPerMinute();
+
+            return Limit::perMinute($perMinute)
+                ->by(sha1('zalo-webhook|'.$request->ip()));
         });
 
         RateLimiter::for('api-mobile', function (Request $request): Limit {
@@ -101,6 +113,40 @@ class AppServiceProvider extends ServiceProvider
                 ->unauthorizedNotificationTitle('Bạn không có quyền thực hiện thao tác này.')
                 ->rateLimitedNotificationTitle('Bạn thao tác quá nhanh, vui lòng thử lại sau.');
         });
+    }
+
+    private function configureFilamentQuickCopy(): void
+    {
+        TextColumn::configureUsing(function (TextColumn $column): void {
+            if (! self::shouldEnableQuickCopy($column->getName())) {
+                return;
+            }
+
+            $column
+                ->copyable()
+                ->copyMessage('Đã sao chép')
+                ->copyMessageDuration(1200);
+        });
+
+        TextEntry::configureUsing(function (TextEntry $entry): void {
+            if (! self::shouldEnableQuickCopy($entry->getName())) {
+                return;
+            }
+
+            $entry
+                ->copyable()
+                ->copyMessage('Đã sao chép')
+                ->copyMessageDuration(1200);
+        });
+    }
+
+    private static function shouldEnableQuickCopy(?string $field): bool
+    {
+        if (blank($field)) {
+            return false;
+        }
+
+        return Str::contains($field, ['patient_code', 'phone']);
     }
 
     private static function resolveActionFailureNotificationTitle(FilamentAction $action): string

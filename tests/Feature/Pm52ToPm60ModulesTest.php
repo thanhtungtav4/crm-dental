@@ -25,6 +25,7 @@ use App\Models\WalletLedgerEntry;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -338,6 +339,37 @@ it('enforces factory order state transitions and computes item totals', function
 });
 
 it('runs zns campaign with idempotent deliveries and supports lifecycle completion from failed', function (): void {
+    ClinicSetting::setValue('zns.enabled', true, [
+        'group' => 'zns',
+        'value_type' => 'boolean',
+    ]);
+    ClinicSetting::setValue('zns.access_token', 'zns_access_token_001', [
+        'group' => 'zns',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+    ClinicSetting::setValue('zns.refresh_token', 'zns_refresh_token_001', [
+        'group' => 'zns',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+    ClinicSetting::setValue('zns.template_appointment', 'tpl_appointment_001', [
+        'group' => 'zns',
+        'value_type' => 'text',
+    ]);
+    ClinicSetting::setValue('zns.send_endpoint', 'https://business.openapi.zalo.me/message/template', [
+        'group' => 'zns',
+        'value_type' => 'text',
+    ]);
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => 0,
+            'message' => 'Success',
+            'data' => ['msg_id' => 'msg_123'],
+        ], 200),
+    ]);
+
     $branch = Branch::factory()->create();
     $customer = Customer::factory()->create(['branch_id' => $branch->id]);
     Patient::factory()->create([

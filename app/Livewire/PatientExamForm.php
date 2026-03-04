@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Models\ClinicalMediaAsset;
+use App\Models\ClinicalMediaVersion;
 use App\Models\ClinicalNote;
 use App\Models\Disease;
 use App\Models\ExamSession;
@@ -9,6 +11,7 @@ use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
 use App\Models\ToothCondition;
 use App\Models\User;
+use App\Services\ClinicalMediaAccessService;
 use App\Services\ClinicalNoteVersioningService;
 use App\Services\EncounterService;
 use App\Support\ActionGate;
@@ -466,6 +469,7 @@ class PatientExamForm extends Component
             }
 
             $this->indicationImages[$type][] = $path;
+            $this->persistClinicalMediaAsset($type, $path);
         }
 
         $this->tempUploads[$type] = [];
@@ -483,6 +487,15 @@ class PatientExamForm extends Component
         $path = $this->indicationImages[$normalizedType][$index];
 
         Storage::disk('public')->delete($path);
+        ClinicalMediaAsset::query()
+            ->where('patient_id', $this->patient->id)
+            ->where('exam_session_id', $this->examSession?->id)
+            ->where('storage_disk', 'public')
+            ->where('storage_path', $path)
+            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
+            ->get()
+            ->each
+            ->delete();
         unset($this->indicationImages[$normalizedType][$index]);
         $this->indicationImages[$normalizedType] = array_values($this->indicationImages[$normalizedType]);
 
@@ -634,6 +647,66 @@ class PatientExamForm extends Component
             }
         }
 
+        $mediaAccessService = $this->clinicalMediaAccessService();
+        $mediaAssets = $this->patient->clinicalMediaAssets()
+            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
+            ->latest('captured_at')
+            ->limit(120)
+            ->get();
+        $mediaPhaseSummary = $mediaAssets
+            ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->phase ?: 'unspecified'))
+            ->map(fn ($group): int => $group->count())
+            ->toArray();
+        $mediaTimeline = $mediaAssets
+            ->take(20)
+            ->map(function (ClinicalMediaAsset $asset) use ($mediaAccessService): array {
+                return [
+                    'id' => (int) $asset->id,
+                    'captured_at' => $asset->captured_at?->toDateTimeString(),
+                    'phase' => (string) ($asset->phase ?: 'unspecified'),
+                    'modality' => (string) ($asset->modality ?: ClinicalMediaAsset::MODALITY_PHOTO),
+                    'anatomy_scope' => (string) ($asset->anatomy_scope ?: 'general'),
+                    'exam_session_id' => $asset->exam_session_id ? (int) $asset->exam_session_id : null,
+                    'view_url' => $mediaAccessService->signedViewUrl($asset),
+                    'download_url' => $mediaAccessService->signedDownloadUrl($asset),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $activeSessionMedia = $mediaAssets
+            ->filter(fn (ClinicalMediaAsset $asset): bool => (int) ($asset->exam_session_id ?? 0) === (int) ($this->activeSessionId ?? 0))
+            ->values();
+        $selectedIndications = collect($this->normalizeIndications($this->indications));
+        $missingIndications = $selectedIndications
+            ->filter(function (string $type) use ($activeSessionMedia): bool {
+                $uploadedCount = count((array) ($this->indicationImages[$type] ?? []));
+                $assetCount = $activeSessionMedia
+                    ->filter(fn (ClinicalMediaAsset $asset): bool => strtolower((string) data_get($asset->meta, 'indication_type', '')) === $type)
+                    ->count();
+
+                return ($uploadedCount + $assetCount) <= 0;
+            })
+            ->map(fn (string $type): string => (string) ($this->indicationTypes[$type] ?? strtoupper($type)))
+            ->values()
+            ->all();
+        $requiredEvidenceCount = $selectedIndications->count();
+        $fulfilledEvidenceCount = max(0, $requiredEvidenceCount - count($missingIndications));
+        $evidenceCompletionPercent = $requiredEvidenceCount > 0
+            ? (int) floor(($fulfilledEvidenceCount / $requiredEvidenceCount) * 100)
+            : 100;
+
+        $qualityWarnings = [];
+        if ($activeSessionMedia->whereNull('checksum_sha256')->count() > 0) {
+            $qualityWarnings[] = 'Có ảnh chưa có checksum, cần kiểm tra integrity dữ liệu.';
+        }
+        if ($activeSessionMedia->whereNull('captured_at')->count() > 0) {
+            $qualityWarnings[] = 'Có ảnh thiếu thời gian chụp, nên chuẩn hóa metadata.';
+        }
+        if ($requiredEvidenceCount > 0 && $fulfilledEvidenceCount <= 0) {
+            $qualityWarnings[] = 'Phiếu khám đã chọn chỉ định nhưng chưa có bằng chứng ảnh lâm sàng.';
+        }
+
         return view('livewire.patient-exam-form', [
             'sessions' => $sessions,
             'examiningDoctors' => $this->getDoctors($this->examiningDoctorSearch),
@@ -661,6 +734,15 @@ class PatientExamForm extends Component
                 ])
                 ->values()
                 ->all(),
+            'mediaTimeline' => $mediaTimeline,
+            'mediaPhaseSummary' => $mediaPhaseSummary,
+            'evidenceChecklist' => [
+                'required' => $requiredEvidenceCount,
+                'fulfilled' => $fulfilledEvidenceCount,
+                'completion_percent' => max(0, min(100, $evidenceCompletionPercent)),
+                'missing_labels' => $missingIndications,
+                'quality_warnings' => $qualityWarnings,
+            ],
         ]);
     }
 
@@ -844,6 +926,114 @@ class PatientExamForm extends Component
         };
     }
 
+    protected function persistClinicalMediaAsset(string $indicationType, string $storagePath): void
+    {
+        if (! $this->clinicalNote) {
+            return;
+        }
+
+        $normalizedType = $this->normalizeIndicationKey($indicationType);
+        $existing = ClinicalMediaAsset::query()
+            ->where('patient_id', $this->patient->id)
+            ->where('exam_session_id', $this->examSession?->id)
+            ->where('storage_disk', 'public')
+            ->where('storage_path', $storagePath)
+            ->first();
+
+        if ($existing) {
+            return;
+        }
+
+        $modality = in_array($normalizedType, ['xray', 'panorama', 'cephalometric', '3d', '3d5x5'], true)
+            ? ClinicalMediaAsset::MODALITY_XRAY
+            : ClinicalMediaAsset::MODALITY_PHOTO;
+        $anatomyScope = match ($normalizedType) {
+            'int' => 'intraoral',
+            'ext' => 'extraoral',
+            default => $normalizedType !== '' ? $normalizedType : 'general',
+        };
+
+        $asset = ClinicalMediaAsset::query()->create([
+            'patient_id' => (int) $this->patient->id,
+            'visit_episode_id' => $this->clinicalNote->visit_episode_id ? (int) $this->clinicalNote->visit_episode_id : null,
+            'exam_session_id' => $this->examSession?->id ? (int) $this->examSession->id : null,
+            'branch_id' => $this->clinicalNote->branch_id
+                ? (int) $this->clinicalNote->branch_id
+                : ($this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null),
+            'captured_by' => Auth::id() ?: null,
+            'captured_at' => now(),
+            'modality' => $modality,
+            'anatomy_scope' => $anatomyScope,
+            'phase' => 'pre',
+            'mime_type' => $this->guessMimeTypeFromPath($storagePath),
+            'file_size_bytes' => $this->resolveStoredFileSize($storagePath),
+            'checksum_sha256' => $this->resolveStoredFileChecksum($storagePath),
+            'storage_disk' => 'public',
+            'storage_path' => $storagePath,
+            'status' => ClinicalMediaAsset::STATUS_ACTIVE,
+            'retention_class' => ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
+            'legal_hold' => false,
+            'meta' => [
+                'source_table' => 'clinical_notes.indication_images',
+                'source_id' => (int) $this->clinicalNote->id,
+                'indication_type' => $normalizedType,
+            ],
+        ]);
+
+        ClinicalMediaVersion::query()->create([
+            'clinical_media_asset_id' => (int) $asset->id,
+            'version_number' => 1,
+            'is_original' => true,
+            'mime_type' => $asset->mime_type,
+            'checksum_sha256' => $asset->checksum_sha256,
+            'storage_disk' => $asset->storage_disk,
+            'storage_path' => $asset->storage_path,
+            'created_by' => Auth::id() ?: null,
+        ]);
+    }
+
+    protected function guessMimeTypeFromPath(string $path): ?string
+    {
+        $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+
+        return match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            'pdf' => 'application/pdf',
+            default => null,
+        };
+    }
+
+    protected function resolveStoredFileChecksum(string $path): string
+    {
+        if (Storage::disk('public')->exists($path)) {
+            $stream = Storage::disk('public')->readStream($path);
+
+            if (is_resource($stream)) {
+                $hash = hash_init('sha256');
+                hash_update_stream($hash, $stream);
+                fclose($stream);
+
+                return hash_final($hash);
+            }
+        }
+
+        return hash('sha256', 'public|'.$path);
+    }
+
+    protected function resolveStoredFileSize(string $path): ?int
+    {
+        if (! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $size = Storage::disk('public')->size($path);
+
+        return is_int($size) ? $size : null;
+    }
+
     protected function normalizeIndications(array $indications): array
     {
         return collect($indications)
@@ -904,6 +1094,11 @@ class PatientExamForm extends Component
     protected function encounterService(): EncounterService
     {
         return app(EncounterService::class);
+    }
+
+    protected function clinicalMediaAccessService(): ClinicalMediaAccessService
+    {
+        return app(ClinicalMediaAccessService::class);
     }
 
     protected function clinicalNoteVersioningService(): ClinicalNoteVersioningService

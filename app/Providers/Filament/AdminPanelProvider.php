@@ -28,6 +28,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
 use MarcelWeidum\Passkeys\PasskeysPlugin;
+use SolutionForest\FilamentFirewall\FilamentFirewallPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -59,6 +60,10 @@ class AdminPanelProvider extends PanelProvider
                     e(ClinicRuntimeSettings::brandingButtonTextColor()),
                     e(ClinicRuntimeSettings::brandingLogoUrl()),
                 ))
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.components.popup-announcement-center')->render(),
             )
             ->colors([
                 'primary' => Color::Violet,
@@ -103,6 +108,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                FilamentFirewallPlugin::make(),
                 PasskeysPlugin::make(),
                 BreezyCore::make()
                     ->myProfile(

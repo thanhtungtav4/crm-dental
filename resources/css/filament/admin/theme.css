@@ -514,6 +514,68 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   font-size: 14px;
 }
 
+.crm-copy-inline-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.crm-copy-value-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-copy-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #dbe2ee;
+  background: #ffffff;
+  color: #475467;
+  transition: all 0.2s ease;
+}
+
+.crm-copy-icon-btn:hover {
+  border-color: #c3cfdf;
+  color: #1d4ed8;
+}
+
+.crm-copy-icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.crm-copy-icon-btn.is-light {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.crm-copy-icon-btn.is-light:hover {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.crm-copy-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 70;
+  border-radius: 10px;
+  background: #111827;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.25);
+}
+
 .crm-patient-phone-chip {
   display: inline-flex;
   align-items: center;
@@ -1261,6 +1323,17 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-rel-tab.crm-rel-tab-photos .fi-ta-table {
   min-width: 860px;
+}
+
+.crm-rel-tab.crm-rel-tab-photos .fi-ta-table th.fi-ta-actions-header-cell,
+.crm-rel-tab.crm-rel-tab-photos .fi-ta-table td.fi-ta-actions-cell {
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
+}
+
+.crm-rel-tab.crm-rel-tab-photos .fi-ta-table .fi-ta-actions {
+  justify-content: center;
 }
 
 .crm-payment-tab .fi-ta-table {

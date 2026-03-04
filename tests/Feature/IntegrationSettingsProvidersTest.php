@@ -207,3 +207,23 @@ it('exposes branding provider fields in integration settings', function () {
         ->toContain('branding.button_bg_hover_color')
         ->toContain('branding.button_text_color');
 });
+
+it('exposes popup runtime provider fields in integration settings', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+
+    $popupProvider = $providers->firstWhere('group', 'popup');
+
+    expect($popupProvider)->not->toBeNull();
+
+    $popupKeys = collect($popupProvider['fields'] ?? [])
+        ->pluck('key')
+        ->values()
+        ->all();
+
+    expect($popupKeys)
+        ->toContain('popup.enabled')
+        ->toContain('popup.polling_seconds')
+        ->toContain('popup.retention_days')
+        ->toContain('popup.sender_roles');
+});

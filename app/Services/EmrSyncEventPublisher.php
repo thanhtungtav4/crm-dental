@@ -6,6 +6,7 @@ use App\Models\EmrAuditLog;
 use App\Models\EmrSyncEvent;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
+use Illuminate\Support\Str;
 
 class EmrSyncEventPublisher
 {
@@ -37,24 +38,41 @@ class EmrSyncEventPublisher
 
         $payload = $this->payloadBuilder->build($patient);
         $checksum = $this->payloadBuilder->checksum($payload);
-        $eventKey = $this->eventKey($patient->id, $eventType, $checksum);
-
-        $event = EmrSyncEvent::query()->firstOrCreate(
-            ['event_key' => $eventKey],
-            [
-                'patient_id' => $patient->id,
-                'branch_id' => $patient->first_branch_id,
-                'event_type' => $eventType,
-                'payload' => $payload,
-                'payload_checksum' => $checksum,
-                'status' => EmrSyncEvent::STATUS_PENDING,
-                'next_retry_at' => now(),
-            ],
+        $openDuplicateEvent = $this->findOpenDuplicateEvent(
+            patientId: (int) $patient->id,
+            eventType: $eventType,
+            payloadChecksum: $checksum,
         );
+
+        if ($openDuplicateEvent) {
+            $this->emrAuditLogger->recordSyncEvent(
+                event: $openDuplicateEvent,
+                action: EmrAuditLog::ACTION_DEDUPE,
+                context: [
+                    'event_key' => $openDuplicateEvent->event_key,
+                    'event_type' => $openDuplicateEvent->event_type,
+                    'payload_checksum' => $openDuplicateEvent->payload_checksum,
+                ],
+                actorId: auth()->id(),
+            );
+
+            return $openDuplicateEvent;
+        }
+
+        $event = EmrSyncEvent::query()->create([
+            'event_key' => $this->eventKey($patient->id, $eventType, $checksum),
+            'patient_id' => $patient->id,
+            'branch_id' => $patient->first_branch_id,
+            'event_type' => $eventType,
+            'payload' => $payload,
+            'payload_checksum' => $checksum,
+            'status' => EmrSyncEvent::STATUS_PENDING,
+            'next_retry_at' => now(),
+        ]);
 
         $this->emrAuditLogger->recordSyncEvent(
             event: $event,
-            action: $event->wasRecentlyCreated ? EmrAuditLog::ACTION_PUBLISH : EmrAuditLog::ACTION_DEDUPE,
+            action: EmrAuditLog::ACTION_PUBLISH,
             context: [
                 'event_key' => $event->event_key,
                 'event_type' => $event->event_type,
@@ -66,6 +84,21 @@ class EmrSyncEventPublisher
         return $event;
     }
 
+    protected function findOpenDuplicateEvent(int $patientId, string $eventType, string $payloadChecksum): ?EmrSyncEvent
+    {
+        return EmrSyncEvent::query()
+            ->where('patient_id', $patientId)
+            ->where('event_type', $eventType)
+            ->where('payload_checksum', $payloadChecksum)
+            ->whereIn('status', [
+                EmrSyncEvent::STATUS_PENDING,
+                EmrSyncEvent::STATUS_PROCESSING,
+                EmrSyncEvent::STATUS_FAILED,
+            ])
+            ->latest('id')
+            ->first();
+    }
+
     protected function eventKey(int $patientId, string $eventType, string $checksum): string
     {
         return substr(hash('sha1', implode('|', [
@@ -73,6 +106,8 @@ class EmrSyncEventPublisher
             $patientId,
             $eventType,
             $checksum,
+            now()->format('Uv'),
+            (string) Str::uuid(),
         ])), 0, 40);
     }
 }

@@ -238,6 +238,11 @@ class PlanItem extends Model
         return $this->hasMany(Consent::class);
     }
 
+    public function mediaAssets()
+    {
+        return $this->hasMany(ClinicalMediaAsset::class);
+    }
+
     public function resolveBranchId(): ?int
     {
         $branchId = $this->treatmentPlan?->branch_id

@@ -32,6 +32,7 @@
                     <tr>
                         <th>Răng số</th>
                         <th>Tình trạng răng</th>
+                        <th>Kế hoạch</th>
                         <th>Tên thủ thuật</th>
                         <th class="is-center">KH đồng ý</th>
                         <th class="is-center">S.L</th>
@@ -86,6 +87,21 @@
                         <tr>
                             <td>{{ $toothLabel }}</td>
                             <td>{{ $diagnosisLabels ?: '-' }}</td>
+                            <td>
+                                @if($item->treatmentPlan)
+                                    <a
+                                        href="{{ route('filament.admin.resources.treatment-plans.edit', [
+                                            'record' => $item->treatment_plan_id,
+                                            'return_url' => $returnUrl,
+                                        ]) }}"
+                                        class="text-primary-600 hover:underline"
+                                    >
+                                        {{ $item->treatmentPlan->title ?: ('Kế hoạch #' . $item->treatment_plan_id) }}
+                                    </a>
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td>{{ $item->service?->name ?? $item->name }}</td>
                             <td class="is-center">
                                 <span class="crm-treatment-status {{ $approvalClass }}">
@@ -109,8 +125,10 @@
                                 <a href="{{ route('filament.admin.resources.plan-items.edit', [
                                     'record' => $item->id,
                                     'return_url' => $returnUrl,
+                                    'patient_id' => $patientId,
                                 ]) }}"
                                    class="crm-table-icon-btn"
+                                   title="Sửa hạng mục"
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -125,7 +143,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" class="crm-treatment-empty crm-treatment-empty-bordered">
+                            <td colspan="15" class="crm-treatment-empty crm-treatment-empty-bordered">
                                 Kế hoạch điều trị chưa có item
                             </td>
                         </tr>

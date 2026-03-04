@@ -128,6 +128,11 @@ class RunReleaseGates extends Command
                 'command' => 'security:assert-action-permission-baseline',
                 'arguments' => ['--sync' => true],
             ],
+            [
+                'name' => 'Clinical media reconcile gate',
+                'command' => 'emr:reconcile-clinical-media',
+                'arguments' => ['--strict' => true],
+            ],
         ];
 
         if (in_array($profile, [self::PROFILE_OPS, self::PROFILE_PRODUCTION], true)) {
@@ -160,6 +165,12 @@ class RunReleaseGates extends Command
             $steps[] = [
                 'name' => 'Alert runbook map gate',
                 'command' => 'ops:check-alert-runbook-map',
+                'arguments' => ['--strict' => true],
+            ];
+
+            $steps[] = [
+                'name' => 'DICOM readiness gate (optional)',
+                'command' => 'emr:check-dicom-readiness',
                 'arguments' => ['--strict' => true],
             ];
         }

@@ -4,8 +4,75 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5f890b54d83cf2a4d4d8eac746945c00",
+    "content-hash": "89dceecd1c7d8798de70d21a61092a30",
     "packages": [
+        {
+            "name": "akaunting/laravel-firewall",
+            "version": "2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/akaunting/laravel-firewall.git",
+                "reference": "98e19074c4d32e09d61c90057d5adc54d7f10ffa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/akaunting/laravel-firewall/zipball/98e19074c4d32e09d61c90057d5adc54d7f10ffa",
+                "reference": "98e19074c4d32e09d61c90057d5adc54d7f10ffa",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.8",
+                "jenssegers/agent": "2.6.*",
+                "laravel/framework": "^9.0|^10.0|^11.0|^12.0",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^7.4|^8.0|^9.0|^10.0",
+                "phpunit/phpunit": "^9.5|^10.0|^11.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Akaunting\\Firewall\\Provider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Akaunting\\Firewall\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Denis Duliçi",
+                    "email": "info@akaunting.com",
+                    "homepage": "https://akaunting.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Web Application Firewall (WAF) package for Laravel",
+            "keywords": [
+                "blacklist",
+                "firewall",
+                "laravel",
+                "lfi",
+                "rfi",
+                "security",
+                "sqli",
+                "waf",
+                "xss"
+            ],
+            "support": {
+                "issues": "https://github.com/akaunting/laravel-firewall/issues",
+                "source": "https://github.com/akaunting/laravel-firewall/tree/2.3.0"
+            },
+            "time": "2025-04-09T21:44:10+00:00"
+        },
         {
             "name": "anourvalar/eloquent-serialize",
             "version": "1.3.4",
@@ -6055,6 +6122,83 @@
                 }
             ],
             "time": "2022-12-17T21:53:22+00:00"
+        },
+        {
+            "name": "solution-forest/filament-firewall",
+            "version": "3.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/solutionforest/filament-firewall.git",
+                "reference": "4935226be4ed600b9ef6ec034f5fc3ec19f034f1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/solutionforest/filament-firewall/zipball/4935226be4ed600b9ef6ec034f5fc3ec19f034f1",
+                "reference": "4935226be4ed600b9ef6ec034f5fc3ec19f034f1",
+                "shasum": ""
+            },
+            "require": {
+                "akaunting/laravel-firewall": ">=2.0",
+                "filament/filament": "^4.0",
+                "php": "^8.0",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^8.0",
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-arch": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0",
+                "pestphp/pest-plugin-livewire": "^3.0",
+                "phpstan/extension-installer": "^1.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "rector/rector": "^2.0",
+                "spatie/laravel-ray": "^1.26"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "FilamentFirewall": "SolutionForest\\FilamentFirewall\\Facades\\FilamentFirewall"
+                    },
+                    "providers": [
+                        "SolutionForest\\FilamentFirewall\\FilamentFirewallServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "SolutionForest\\FilamentFirewall\\": "src",
+                    "SolutionForest\\FilamentFirewall\\Database\\Seeders\\": "database/seeders",
+                    "SolutionForest\\FilamentFirewall\\Database\\Factories\\": "database/factories"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carly",
+                    "email": "info@solutionforest.net",
+                    "role": "Developer"
+                }
+            ],
+            "description": "This is a middleware for whitelisting/blacklisting for Filament Admin",
+            "homepage": "https://github.com/solution-forest/filament-firewall",
+            "keywords": [
+                "Solution Forest",
+                "filament-firewall",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/solution-forest/filament-firewall/issues",
+                "source": "https://github.com/solution-forest/filament-firewall"
+            },
+            "time": "2026-02-02T09:56:06+00:00"
         },
         {
             "name": "spatie/invade",

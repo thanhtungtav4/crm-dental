@@ -65,6 +65,129 @@ class ClinicRuntimeSettings
         };
     }
 
+    /**
+     * @return array<string, int>
+     */
+    public static function clinicalEvidenceOrderTypeRequirements(): array
+    {
+        $default = [
+            'xray' => 1,
+            'panorama' => 1,
+            'cephalometric' => 1,
+            '3d' => 1,
+            '3d5x5' => 1,
+            'ext' => 1,
+            'int' => 1,
+            '*' => 0,
+        ];
+
+        $configured = static::get('emr.evidence_gate.order_type_requirements', $default);
+        if (! is_array($configured)) {
+            return $default;
+        }
+
+        $normalized = [];
+        foreach ($configured as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $normalizedKey = strtolower(trim($key));
+            if ($normalizedKey === '') {
+                continue;
+            }
+
+            $normalized[$normalizedKey] = max(0, (int) $value);
+        }
+
+        if (! array_key_exists('*', $normalized)) {
+            $normalized['*'] = 0;
+        }
+
+        return $normalized;
+    }
+
+    public static function clinicalEvidenceSessionProtocolMinMedia(): int
+    {
+        return max(0, static::integer('emr.evidence_gate.session_protocol_min_media', 1));
+    }
+
+    public static function clinicalEvidenceSessionDefaultMinMedia(): int
+    {
+        return max(0, static::integer('emr.evidence_gate.session_default_min_media', 0));
+    }
+
+    public static function clinicalMediaStorageDisk(): string
+    {
+        $disk = trim((string) static::get(
+            'emr.media.storage_disk',
+            (string) config('care.emr_media_storage_disk', 'local'),
+        ));
+
+        return $disk !== '' ? $disk : 'local';
+    }
+
+    public static function clinicalMediaSignedUrlTtlMinutes(): int
+    {
+        return max(
+            1,
+            min(
+                120,
+                static::integer(
+                    'emr.media.signed_url_ttl_minutes',
+                    (int) config('care.emr_media_signed_url_ttl_minutes', 5),
+                ),
+            ),
+        );
+    }
+
+    public static function clinicalMediaRetentionEnabled(): bool
+    {
+        return static::boolean(
+            'emr.media.retention_enabled',
+            (bool) config('care.emr_media_retention_enabled', true),
+        );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public static function clinicalMediaRetentionDaysByClass(): array
+    {
+        $defaults = [
+            'clinical_legal' => (int) data_get(config('care.emr_media_retention_days', []), 'clinical_legal', 0),
+            'clinical_operational' => (int) data_get(config('care.emr_media_retention_days', []), 'clinical_operational', 365),
+            'temporary' => (int) data_get(config('care.emr_media_retention_days', []), 'temporary', 30),
+        ];
+
+        return [
+            'clinical_legal' => max(
+                0,
+                static::integer('emr.media.retention_days_clinical_legal', $defaults['clinical_legal']),
+            ),
+            'clinical_operational' => max(
+                0,
+                static::integer('emr.media.retention_days_clinical_operational', $defaults['clinical_operational']),
+            ),
+            'temporary' => max(
+                0,
+                static::integer('emr.media.retention_days_temporary', $defaults['temporary']),
+            ),
+        ];
+    }
+
+    public static function clinicalMediaRetentionDays(string $retentionClass): int
+    {
+        $map = static::clinicalMediaRetentionDaysByClass();
+        $normalizedClass = strtolower(trim($retentionClass));
+
+        if ($normalizedClass === '') {
+            return 0;
+        }
+
+        return max(0, (int) ($map[$normalizedClass] ?? 0));
+    }
+
     public static function defaultCustomerSourceOptions(): array
     {
         return [
@@ -173,6 +296,81 @@ class ClinicRuntimeSettings
         return collect(is_array($value) ? $value : [])
             ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
             ->map(static fn (string $item): string => trim($item))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function zaloWebhookRateLimitPerMinute(): int
+    {
+        return max(
+            10,
+            min(
+                2000,
+                static::integer('zalo.webhook_rate_limit_per_minute', 120),
+            ),
+        );
+    }
+
+    public static function znsSendEndpoint(): string
+    {
+        $endpoint = trim((string) static::get(
+            'zns.send_endpoint',
+            'https://business.openapi.zalo.me/message/template',
+        ));
+
+        return $endpoint;
+    }
+
+    public static function znsRequestTimeoutSeconds(): int
+    {
+        return max(
+            3,
+            min(
+                30,
+                static::integer('zns.request_timeout_seconds', 15),
+            ),
+        );
+    }
+
+    public static function popupAnnouncementsEnabled(): bool
+    {
+        return static::boolean('popup.enabled', false);
+    }
+
+    public static function popupAnnouncementsPollingSeconds(): int
+    {
+        return max(
+            5,
+            min(
+                60,
+                static::integer('popup.polling_seconds', 10),
+            ),
+        );
+    }
+
+    public static function popupAnnouncementRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('popup.retention_days', 180),
+        );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function popupAnnouncementSenderRoles(): array
+    {
+        $value = static::get('popup.sender_roles', ['Admin', 'Manager']);
+
+        $roles = is_array($value)
+            ? $value
+            : explode(',', (string) $value);
+
+        return collect($roles)
+            ->filter(static fn (mixed $role): bool => is_string($role) && trim($role) !== '')
+            ->map(static fn (string $role): string => trim($role))
             ->unique()
             ->values()
             ->all();
@@ -433,9 +631,58 @@ class ClinicRuntimeSettings
         return static::boolean('google_calendar.enabled', false);
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function googleCalendarSyncModeOptions(): array
+    {
+        return [
+            'two_way' => 'Hai chiều',
+            'one_way_to_google' => 'Một chiều: CRM -> Google',
+            'one_way_to_crm' => 'Một chiều: Google -> CRM',
+        ];
+    }
+
     public static function googleCalendarSyncMode(): string
     {
-        return (string) static::get('google_calendar.sync_mode', 'two_way');
+        $mode = trim((string) static::get('google_calendar.sync_mode', 'two_way'));
+
+        return array_key_exists($mode, static::googleCalendarSyncModeOptions()) ? $mode : 'two_way';
+    }
+
+    public static function googleCalendarClientId(): string
+    {
+        return trim((string) static::get('google_calendar.client_id', ''));
+    }
+
+    public static function googleCalendarClientSecret(): string
+    {
+        return trim((string) static::get('google_calendar.client_secret', ''));
+    }
+
+    public static function googleCalendarRefreshToken(): string
+    {
+        return trim((string) static::get('google_calendar.refresh_token', ''));
+    }
+
+    public static function googleCalendarCalendarId(): string
+    {
+        return trim((string) static::get('google_calendar.calendar_id', ''));
+    }
+
+    public static function googleCalendarAccountEmail(): string
+    {
+        return trim((string) static::get('google_calendar.account_email', ''));
+    }
+
+    public static function googleCalendarAllowsPushToGoogle(): bool
+    {
+        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_google'], true);
+    }
+
+    public static function googleCalendarAllowsPullFromGoogle(): bool
+    {
+        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_crm'], true);
     }
 
     public static function isEmrEnabled(): bool
@@ -461,6 +708,52 @@ class ClinicRuntimeSettings
     public static function emrClinicCode(): string
     {
         return trim((string) static::get('emr.clinic_code', ''));
+    }
+
+    public static function dicomIntegrationEnabled(): bool
+    {
+        return static::boolean(
+            'emr.dicom.enabled',
+            (bool) config('care.emr_dicom_enabled', false),
+        );
+    }
+
+    public static function dicomBaseUrl(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.base_url',
+            (string) config('care.emr_dicom_base_url', ''),
+        ));
+    }
+
+    public static function dicomFacilityCode(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.facility_code',
+            (string) config('care.emr_dicom_facility_code', ''),
+        ));
+    }
+
+    public static function dicomTimeoutSeconds(): int
+    {
+        return max(
+            3,
+            min(
+                120,
+                static::integer(
+                    'emr.dicom.timeout_seconds',
+                    (int) config('care.emr_dicom_timeout_seconds', 10),
+                ),
+            ),
+        );
+    }
+
+    public static function dicomAuthToken(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.auth_token',
+            (string) config('care.emr_dicom_auth_token', ''),
+        ));
     }
 
     public static function isVnpayEnabled(): bool
