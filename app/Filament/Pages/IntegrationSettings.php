@@ -129,6 +129,25 @@ class IntegrationSettings extends Page
                     ['state' => 'emr_base_url', 'key' => 'emr.base_url', 'label' => 'Base URL', 'type' => 'url', 'default' => '', 'sort_order' => 430],
                     ['state' => 'emr_api_key', 'key' => 'emr.api_key', 'label' => 'API Key', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 440],
                     ['state' => 'emr_clinic_code', 'key' => 'emr.clinic_code', 'label' => 'Mã cơ sở', 'type' => 'text', 'default' => '', 'sort_order' => 450],
+                    [
+                        'state' => 'emr_media_storage_disk',
+                        'key' => 'emr.media.storage_disk',
+                        'label' => 'Disk lưu hồ ảnh lâm sàng',
+                        'type' => 'select',
+                        'default' => config('care.emr_media_storage_disk', 'local'),
+                        'options' => $this->mediaDiskOptions(),
+                        'sort_order' => 451,
+                    ],
+                    ['state' => 'emr_media_signed_url_ttl_minutes', 'key' => 'emr.media.signed_url_ttl_minutes', 'label' => 'TTL signed URL hồ ảnh (phút)', 'type' => 'integer', 'default' => config('care.emr_media_signed_url_ttl_minutes', 5), 'sort_order' => 452],
+                    ['state' => 'emr_media_retention_enabled', 'key' => 'emr.media.retention_enabled', 'label' => 'Bật retention class-aware cho hồ ảnh lâm sàng', 'type' => 'boolean', 'default' => config('care.emr_media_retention_enabled', true), 'sort_order' => 453],
+                    ['state' => 'emr_media_retention_days_clinical_operational', 'key' => 'emr.media.retention_days_clinical_operational', 'label' => 'Retention class clinical_operational (ngày)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'clinical_operational', 365), 'sort_order' => 454],
+                    ['state' => 'emr_media_retention_days_temporary', 'key' => 'emr.media.retention_days_temporary', 'label' => 'Retention class temporary (ngày)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'temporary', 30), 'sort_order' => 455],
+                    ['state' => 'emr_media_retention_days_clinical_legal', 'key' => 'emr.media.retention_days_clinical_legal', 'label' => 'Retention class clinical_legal (ngày, 0 = giữ vô hạn)', 'type' => 'integer', 'default' => data_get(config('care.emr_media_retention_days', []), 'clinical_legal', 0), 'sort_order' => 456],
+                    ['state' => 'emr_dicom_enabled', 'key' => 'emr.dicom.enabled', 'label' => 'Bật readiness DICOM/PACS (optional)', 'type' => 'boolean', 'default' => config('care.emr_dicom_enabled', false), 'sort_order' => 457],
+                    ['state' => 'emr_dicom_base_url', 'key' => 'emr.dicom.base_url', 'label' => 'DICOM base URL', 'type' => 'url', 'default' => config('care.emr_dicom_base_url', ''), 'sort_order' => 458],
+                    ['state' => 'emr_dicom_facility_code', 'key' => 'emr.dicom.facility_code', 'label' => 'DICOM facility code', 'type' => 'text', 'default' => config('care.emr_dicom_facility_code', ''), 'sort_order' => 459],
+                    ['state' => 'emr_dicom_timeout_seconds', 'key' => 'emr.dicom.timeout_seconds', 'label' => 'DICOM timeout (giây)', 'type' => 'integer', 'default' => config('care.emr_dicom_timeout_seconds', 10), 'sort_order' => 460],
+                    ['state' => 'emr_dicom_auth_token', 'key' => 'emr.dicom.auth_token', 'label' => 'DICOM auth token', 'type' => 'text', 'default' => config('care.emr_dicom_auth_token', ''), 'is_secret' => true, 'sort_order' => 461],
                 ],
             ],
             [
@@ -505,6 +524,28 @@ class IntegrationSettings extends Page
 
                 if (($field['key'] ?? null) === 'popup.retention_days') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'emr.media.signed_url_ttl_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:120'];
+
+                    continue;
+                }
+
+                if (in_array(($field['key'] ?? null), [
+                    'emr.media.retention_days_clinical_operational',
+                    'emr.media.retention_days_temporary',
+                    'emr.media.retention_days_clinical_legal',
+                ], true)) {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:0', 'max:36500'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'emr.dicom.timeout_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:120'];
 
                     continue;
                 }
@@ -1237,6 +1278,27 @@ class IntegrationSettings extends Page
         }
 
         return $baseKey.'_'.$suffix;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function mediaDiskOptions(): array
+    {
+        $disks = array_keys((array) config('filesystems.disks', []));
+        $selectedDisks = collect($disks)
+            ->filter(static fn (mixed $disk): bool => is_string($disk) && trim($disk) !== '')
+            ->mapWithKeys(static fn (string $disk): array => [$disk => strtoupper($disk)])
+            ->all();
+
+        if ($selectedDisks === []) {
+            return [
+                'local' => 'LOCAL',
+                'public' => 'PUBLIC',
+            ];
+        }
+
+        return $selectedDisks;
     }
 
     /**

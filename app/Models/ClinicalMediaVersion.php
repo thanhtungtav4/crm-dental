@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,7 +54,17 @@ class ClinicalMediaVersion extends Model
             }
 
             if (blank($version->storage_disk)) {
-                $version->storage_disk = 'public';
+                $assetDisk = null;
+
+                if ($version->clinical_media_asset_id) {
+                    $assetDisk = ClinicalMediaAsset::query()
+                        ->whereKey((int) $version->clinical_media_asset_id)
+                        ->value('storage_disk');
+                }
+
+                $version->storage_disk = is_string($assetDisk) && trim($assetDisk) !== ''
+                    ? trim($assetDisk)
+                    : ClinicRuntimeSettings::clinicalMediaStorageDisk();
             }
         });
     }

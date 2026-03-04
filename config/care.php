@@ -24,6 +24,19 @@ return [
     'security_session_idle_timeout_minutes' => (int) env('CARE_SECURITY_SESSION_IDLE_TIMEOUT_MINUTES', 30),
     'security_login_max_attempts' => (int) env('CARE_SECURITY_LOGIN_MAX_ATTEMPTS', 5),
     'security_login_lockout_minutes' => (int) env('CARE_SECURITY_LOGIN_LOCKOUT_MINUTES', 15),
+    'emr_media_storage_disk' => env('CARE_EMR_MEDIA_STORAGE_DISK', 'local'),
+    'emr_media_signed_url_ttl_minutes' => (int) env('CARE_EMR_MEDIA_SIGNED_URL_TTL_MINUTES', 5),
+    'emr_media_retention_enabled' => (bool) env('CARE_EMR_MEDIA_RETENTION_ENABLED', true),
+    'emr_media_retention_days' => [
+        'clinical_legal' => (int) env('CARE_EMR_MEDIA_RETENTION_DAYS_CLINICAL_LEGAL', 0),
+        'clinical_operational' => (int) env('CARE_EMR_MEDIA_RETENTION_DAYS_CLINICAL_OPERATIONAL', 365),
+        'temporary' => (int) env('CARE_EMR_MEDIA_RETENTION_DAYS_TEMPORARY', 30),
+    ],
+    'emr_dicom_enabled' => (bool) env('CARE_EMR_DICOM_ENABLED', false),
+    'emr_dicom_base_url' => env('CARE_EMR_DICOM_BASE_URL', ''),
+    'emr_dicom_facility_code' => env('CARE_EMR_DICOM_FACILITY_CODE', ''),
+    'emr_dicom_timeout_seconds' => (int) env('CARE_EMR_DICOM_TIMEOUT_SECONDS', 10),
+    'emr_dicom_auth_token' => env('CARE_EMR_DICOM_AUTH_TOKEN', ''),
     'security_enforce_in_tests' => (bool) env('CARE_SECURITY_ENFORCE_IN_TESTS', false),
     'ops_alert_runbook' => [
         'backup_health' => [

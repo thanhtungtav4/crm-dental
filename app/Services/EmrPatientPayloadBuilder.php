@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClinicalMediaAsset;
 use App\Models\ClinicalOrder;
 use App\Models\ClinicalResult;
 use App\Models\ExamSession;
@@ -30,7 +31,19 @@ class EmrPatientPayloadBuilder
             'clinicalResults' => fn ($query) => $query->latest('updated_at')->limit(20),
             'prescriptions' => fn ($query) => $query->latest('updated_at')->limit(20),
             'prescriptions.items',
+            'clinicalMediaAssets' => fn ($query) => $query
+                ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
+                ->latest('captured_at')
+                ->limit(250),
+            'clinicalMediaAssets.versions' => fn ($query) => $query
+                ->where('is_original', true)
+                ->latest('id'),
         ]);
+
+        $mediaAssets = $patient->clinicalMediaAssets
+            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
+            ->values();
+        $mediaAssetIndex = $mediaAssets->keyBy('id');
 
         return [
             'patient' => [
@@ -52,13 +65,13 @@ class EmrPatientPayloadBuilder
             'medical_record' => $this->mapMedicalRecord($patient),
             'encounter' => [
                 'records' => $patient->visitEpisodes
-                    ->map(fn (VisitEpisode $episode): array => $this->mapEncounter($episode))
+                    ->map(fn (VisitEpisode $episode): array => $this->mapEncounter($episode, $mediaAssets))
                     ->values()
                     ->all(),
             ],
             'exam_session' => [
                 'records' => $patient->examSessions
-                    ->map(fn (ExamSession $session): array => $this->mapExamSession($session))
+                    ->map(fn (ExamSession $session): array => $this->mapExamSession($session, $mediaAssets))
                     ->values()
                     ->all(),
             ],
@@ -70,25 +83,47 @@ class EmrPatientPayloadBuilder
             ],
             'order' => [
                 'records' => $patient->clinicalOrders
-                    ->map(fn (ClinicalOrder $order): array => $this->mapClinicalOrder($order))
+                    ->map(fn (ClinicalOrder $order): array => $this->mapClinicalOrder($order, $mediaAssets))
                     ->values()
                     ->all(),
             ],
             'result' => [
                 'records' => $patient->clinicalResults
-                    ->map(fn (ClinicalResult $result): array => $this->mapClinicalResult($result))
+                    ->map(fn (ClinicalResult $result): array => $this->mapClinicalResult($result, $mediaAssets))
                     ->values()
                     ->all(),
             ],
             'prescription' => [
                 'records' => $patient->prescriptions
-                    ->map(fn (Prescription $prescription): array => $this->mapPrescription($prescription))
+                    ->map(fn (Prescription $prescription): array => $this->mapPrescription($prescription, $mediaAssets))
                     ->values()
                     ->all(),
+            ],
+            'media' => [
+                'records' => $mediaAssets
+                    ->map(fn (ClinicalMediaAsset $asset): array => $this->mapMediaAsset($asset))
+                    ->values()
+                    ->all(),
+                'timeline' => $this->buildMediaTimeline($mediaAssets),
+                'summary' => [
+                    'total_assets' => $mediaAssets->count(),
+                    'by_modality' => $mediaAssets
+                        ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->modality ?: 'unknown'))
+                        ->map(fn ($group): int => $group->count())
+                        ->toArray(),
+                    'by_phase' => $mediaAssets
+                        ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->phase ?: 'unspecified'))
+                        ->map(fn ($group): int => $group->count())
+                        ->toArray(),
+                    'linked_order_count' => $mediaAssets->whereNotNull('clinical_order_id')->unique('clinical_order_id')->count(),
+                    'linked_result_count' => $mediaAssets->whereNotNull('clinical_result_id')->unique('clinical_result_id')->count(),
+                    'linked_prescription_count' => $mediaAssets->whereNotNull('prescription_id')->unique('prescription_id')->count(),
+                ],
             ],
             'meta' => [
                 'generated_at' => now()->toISOString(),
                 'schema_version' => 'emr.v1',
+                'media_asset_ids' => $mediaAssetIndex->keys()->map(fn ($id): int => (int) $id)->values()->all(),
             ],
         ];
     }
@@ -178,7 +213,7 @@ class EmrPatientPayloadBuilder
     /**
      * @return array<string, mixed>
      */
-    protected function mapPrescription(Prescription $prescription): array
+    protected function mapPrescription(Prescription $prescription, \Illuminate\Support\Collection $mediaAssets): array
     {
         return [
             'id' => (int) $prescription->id,
@@ -190,6 +225,12 @@ class EmrPatientPayloadBuilder
             'treatment_session_id' => $prescription->treatment_session_id ? (int) $prescription->treatment_session_id : null,
             'treatment_date' => $prescription->treatment_date?->toDateString(),
             'notes' => $prescription->notes,
+            'media_ids' => $this->collectMediaIds($mediaAssets, 'prescription_id', (int) $prescription->id),
+            'media_summary' => $this->collectMediaSummaryForRecord(
+                $mediaAssets,
+                'prescription_id',
+                (int) $prescription->id,
+            ),
             'items' => $prescription->items
                 ->map(fn ($item): array => [
                     'id' => (int) $item->id,
@@ -210,7 +251,7 @@ class EmrPatientPayloadBuilder
     /**
      * @return array<string, mixed>
      */
-    protected function mapClinicalOrder(ClinicalOrder $order): array
+    protected function mapClinicalOrder(ClinicalOrder $order, \Illuminate\Support\Collection $mediaAssets): array
     {
         return [
             'id' => (int) $order->id,
@@ -228,6 +269,12 @@ class EmrPatientPayloadBuilder
             'payload' => $order->payload,
             'notes' => $order->notes,
             'result_ids' => $order->results->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            'media_ids' => $this->collectMediaIds($mediaAssets, 'clinical_order_id', (int) $order->id),
+            'media_summary' => $this->collectMediaSummaryForRecord(
+                $mediaAssets,
+                'clinical_order_id',
+                (int) $order->id,
+            ),
             'updated_at' => $order->updated_at?->toISOString(),
         ];
     }
@@ -235,7 +282,7 @@ class EmrPatientPayloadBuilder
     /**
      * @return array<string, mixed>
      */
-    protected function mapClinicalResult(ClinicalResult $result): array
+    protected function mapClinicalResult(ClinicalResult $result, \Illuminate\Support\Collection $mediaAssets): array
     {
         return [
             'id' => (int) $result->id,
@@ -251,6 +298,12 @@ class EmrPatientPayloadBuilder
             'payload' => $result->payload,
             'interpretation' => $result->interpretation,
             'notes' => $result->notes,
+            'media_ids' => $this->collectMediaIds($mediaAssets, 'clinical_result_id', (int) $result->id),
+            'media_summary' => $this->collectMediaSummaryForRecord(
+                $mediaAssets,
+                'clinical_result_id',
+                (int) $result->id,
+            ),
             'updated_at' => $result->updated_at?->toISOString(),
         ];
     }
@@ -258,7 +311,7 @@ class EmrPatientPayloadBuilder
     /**
      * @return array<string, mixed>
      */
-    protected function mapEncounter(VisitEpisode $episode): array
+    protected function mapEncounter(VisitEpisode $episode, \Illuminate\Support\Collection $mediaAssets): array
     {
         return [
             'id' => (int) $episode->id,
@@ -283,6 +336,12 @@ class EmrPatientPayloadBuilder
             'waiting_minutes' => $episode->waiting_minutes !== null
                 ? (int) $episode->waiting_minutes
                 : null,
+            'media_ids' => $this->collectMediaIds($mediaAssets, 'visit_episode_id', (int) $episode->id),
+            'media_summary' => $this->collectMediaSummaryForRecord(
+                $mediaAssets,
+                'visit_episode_id',
+                (int) $episode->id,
+            ),
             'updated_at' => $episode->updated_at?->toISOString(),
         ];
     }
@@ -290,7 +349,7 @@ class EmrPatientPayloadBuilder
     /**
      * @return array<string, mixed>
      */
-    protected function mapExamSession(ExamSession $session): array
+    protected function mapExamSession(ExamSession $session, \Illuminate\Support\Collection $mediaAssets): array
     {
         return [
             'id' => (int) $session->id,
@@ -301,7 +360,125 @@ class EmrPatientPayloadBuilder
             'session_date' => $session->session_date?->toDateString(),
             'status' => (string) $session->status,
             'clinical_note_id' => $session->clinicalNote?->id ? (int) $session->clinicalNote->id : null,
+            'media_ids' => $this->collectMediaIds($mediaAssets, 'exam_session_id', (int) $session->id),
+            'media_summary' => $this->collectMediaSummaryForRecord(
+                $mediaAssets,
+                'exam_session_id',
+                (int) $session->id,
+            ),
             'updated_at' => $session->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapMediaAsset(ClinicalMediaAsset $asset): array
+    {
+        $originalVersion = $asset->versions->firstWhere('is_original', true);
+
+        return [
+            'id' => (int) $asset->id,
+            'patient_id' => $asset->patient_id ? (int) $asset->patient_id : null,
+            'visit_episode_id' => $asset->visit_episode_id ? (int) $asset->visit_episode_id : null,
+            'exam_session_id' => $asset->exam_session_id ? (int) $asset->exam_session_id : null,
+            'plan_item_id' => $asset->plan_item_id ? (int) $asset->plan_item_id : null,
+            'treatment_session_id' => $asset->treatment_session_id ? (int) $asset->treatment_session_id : null,
+            'clinical_order_id' => $asset->clinical_order_id ? (int) $asset->clinical_order_id : null,
+            'clinical_result_id' => $asset->clinical_result_id ? (int) $asset->clinical_result_id : null,
+            'prescription_id' => $asset->prescription_id ? (int) $asset->prescription_id : null,
+            'branch_id' => $asset->branch_id ? (int) $asset->branch_id : null,
+            'captured_by' => $asset->captured_by ? (int) $asset->captured_by : null,
+            'captured_at' => $asset->captured_at?->toISOString(),
+            'modality' => $asset->modality,
+            'anatomy_scope' => $asset->anatomy_scope,
+            'phase' => $asset->phase,
+            'mime_type' => $asset->mime_type,
+            'file_size_bytes' => $asset->file_size_bytes !== null ? (int) $asset->file_size_bytes : null,
+            'checksum_sha256' => $asset->checksum_sha256,
+            'storage_disk' => $asset->storage_disk,
+            'storage_path' => $asset->storage_path,
+            'retention_class' => $asset->retention_class,
+            'legal_hold' => (bool) $asset->legal_hold,
+            'meta' => $asset->meta,
+            'original_version' => $originalVersion ? [
+                'id' => (int) $originalVersion->id,
+                'version_number' => (int) $originalVersion->version_number,
+                'checksum_sha256' => $originalVersion->checksum_sha256,
+                'storage_disk' => $originalVersion->storage_disk,
+                'storage_path' => $originalVersion->storage_path,
+            ] : null,
+            'fhir_like' => [
+                'resource_type' => 'Media',
+                'status' => 'completed',
+                'device_name' => $asset->anatomy_scope,
+                'reason_code' => $asset->phase,
+            ],
+            'updated_at' => $asset->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildMediaTimeline(\Illuminate\Support\Collection $mediaAssets): array
+    {
+        return $mediaAssets
+            ->sortByDesc(fn (ClinicalMediaAsset $asset) => $asset->captured_at?->timestamp ?? 0)
+            ->take(60)
+            ->map(fn (ClinicalMediaAsset $asset): array => [
+                'id' => (int) $asset->id,
+                'captured_at' => $asset->captured_at?->toISOString(),
+                'phase' => $asset->phase,
+                'modality' => $asset->modality,
+                'visit_episode_id' => $asset->visit_episode_id ? (int) $asset->visit_episode_id : null,
+                'exam_session_id' => $asset->exam_session_id ? (int) $asset->exam_session_id : null,
+                'clinical_order_id' => $asset->clinical_order_id ? (int) $asset->clinical_order_id : null,
+                'clinical_result_id' => $asset->clinical_result_id ? (int) $asset->clinical_result_id : null,
+                'prescription_id' => $asset->prescription_id ? (int) $asset->prescription_id : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ClinicalMediaAsset>  $mediaAssets
+     * @return array<int, int>
+     */
+    protected function collectMediaIds(\Illuminate\Support\Collection $mediaAssets, string $field, int $id): array
+    {
+        if ($id <= 0) {
+            return [];
+        }
+
+        return $mediaAssets
+            ->filter(fn (ClinicalMediaAsset $asset): bool => (int) ($asset->{$field} ?? 0) === $id)
+            ->pluck('id')
+            ->map(fn (mixed $assetId): int => (int) $assetId)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ClinicalMediaAsset>  $mediaAssets
+     * @return array{total:int,by_phase:array<string,int>,by_modality:array<string,int>}
+     */
+    protected function collectMediaSummaryForRecord(\Illuminate\Support\Collection $mediaAssets, string $field, int $id): array
+    {
+        $scoped = $mediaAssets
+            ->filter(fn (ClinicalMediaAsset $asset): bool => (int) ($asset->{$field} ?? 0) === $id)
+            ->values();
+
+        return [
+            'total' => $scoped->count(),
+            'by_phase' => $scoped
+                ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->phase ?: 'unspecified'))
+                ->map(fn ($group): int => $group->count())
+                ->toArray(),
+            'by_modality' => $scoped
+                ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->modality ?: 'unknown'))
+                ->map(fn ($group): int => $group->count())
+                ->toArray(),
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\BranchAccess;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -111,7 +112,7 @@ class ClinicalMediaAsset extends Model
             }
 
             if (blank($asset->storage_disk)) {
-                $asset->storage_disk = 'public';
+                $asset->storage_disk = ClinicRuntimeSettings::clinicalMediaStorageDisk();
             }
 
             if (blank($asset->storage_path)) {
@@ -126,6 +127,25 @@ class ClinicalMediaAsset extends Model
                     field: 'branch_id',
                     message: 'Bạn không có quyền thao tác hồ ảnh ở chi nhánh này.',
                 );
+            }
+        });
+
+        static::deleting(function (self $asset): void {
+            if ((bool) $asset->legal_hold) {
+                throw ValidationException::withMessages([
+                    'legal_hold' => 'Không thể xóa hồ ảnh đang bật legal hold.',
+                ]);
+            }
+
+            if ($asset->retention_class === self::RETENTION_CLINICAL_LEGAL) {
+                throw ValidationException::withMessages([
+                    'retention_class' => 'Không thể xóa hồ ảnh thuộc retention class clinical_legal.',
+                ]);
+            }
+
+            if (method_exists($asset, 'isForceDeleting') && ! $asset->isForceDeleting()) {
+                $asset->status = self::STATUS_ARCHIVED;
+                $asset->saveQuietly();
             }
         });
     }

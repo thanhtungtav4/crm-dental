@@ -279,11 +279,13 @@ class VerifyProductionReadinessReport extends Command
             'schema:assert-no-pending-migrations',
             'schema:assert-critical-foreign-keys',
             'security:assert-action-permission-baseline',
+            'emr:reconcile-clinical-media',
             'reports:explain-ops-hotpaths',
             'security:check-automation-actor',
             'ops:check-backup-health',
             'ops:run-restore-drill',
             'ops:check-alert-runbook-map',
+            'emr:check-dicom-readiness',
         ];
 
         if ((bool) ($report['with_finance'] ?? false)) {

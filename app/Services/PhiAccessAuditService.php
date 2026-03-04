@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClinicalMediaAsset;
 use App\Models\EmrAuditLog;
 use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
@@ -47,10 +48,34 @@ class PhiAccessAuditService
     /**
      * @param  array<string, mixed>  $context
      */
+    public function recordClinicalMediaAccess(ClinicalMediaAsset $asset, string $action, array $context = []): void
+    {
+        $asset->loadMissing([
+            'patient:id,first_branch_id',
+            'visitEpisode:id',
+        ]);
+
+        $this->recordRead(
+            entityType: EmrAuditLog::ENTITY_PHI_ACCESS,
+            entityId: (int) $asset->id,
+            patientId: $asset->resolvePatientId() ?? ($asset->patient_id ? (int) $asset->patient_id : null),
+            visitEpisodeId: $asset->visit_episode_id ? (int) $asset->visit_episode_id : null,
+            branchId: $asset->resolveBranchId(),
+            context: array_merge([
+                'resource' => 'clinical_media_asset',
+                'action' => $action,
+                'storage_disk' => $asset->storage_disk,
+            ], $context),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
     protected function recordRead(
         string $entityType,
         int $entityId,
-        int $patientId,
+        ?int $patientId,
         ?int $visitEpisodeId,
         ?int $branchId,
         array $context = [],

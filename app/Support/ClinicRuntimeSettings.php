@@ -117,6 +117,77 @@ class ClinicRuntimeSettings
         return max(0, static::integer('emr.evidence_gate.session_default_min_media', 0));
     }
 
+    public static function clinicalMediaStorageDisk(): string
+    {
+        $disk = trim((string) static::get(
+            'emr.media.storage_disk',
+            (string) config('care.emr_media_storage_disk', 'local'),
+        ));
+
+        return $disk !== '' ? $disk : 'local';
+    }
+
+    public static function clinicalMediaSignedUrlTtlMinutes(): int
+    {
+        return max(
+            1,
+            min(
+                120,
+                static::integer(
+                    'emr.media.signed_url_ttl_minutes',
+                    (int) config('care.emr_media_signed_url_ttl_minutes', 5),
+                ),
+            ),
+        );
+    }
+
+    public static function clinicalMediaRetentionEnabled(): bool
+    {
+        return static::boolean(
+            'emr.media.retention_enabled',
+            (bool) config('care.emr_media_retention_enabled', true),
+        );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public static function clinicalMediaRetentionDaysByClass(): array
+    {
+        $defaults = [
+            'clinical_legal' => (int) data_get(config('care.emr_media_retention_days', []), 'clinical_legal', 0),
+            'clinical_operational' => (int) data_get(config('care.emr_media_retention_days', []), 'clinical_operational', 365),
+            'temporary' => (int) data_get(config('care.emr_media_retention_days', []), 'temporary', 30),
+        ];
+
+        return [
+            'clinical_legal' => max(
+                0,
+                static::integer('emr.media.retention_days_clinical_legal', $defaults['clinical_legal']),
+            ),
+            'clinical_operational' => max(
+                0,
+                static::integer('emr.media.retention_days_clinical_operational', $defaults['clinical_operational']),
+            ),
+            'temporary' => max(
+                0,
+                static::integer('emr.media.retention_days_temporary', $defaults['temporary']),
+            ),
+        ];
+    }
+
+    public static function clinicalMediaRetentionDays(string $retentionClass): int
+    {
+        $map = static::clinicalMediaRetentionDaysByClass();
+        $normalizedClass = strtolower(trim($retentionClass));
+
+        if ($normalizedClass === '') {
+            return 0;
+        }
+
+        return max(0, (int) ($map[$normalizedClass] ?? 0));
+    }
+
     public static function defaultCustomerSourceOptions(): array
     {
         return [
@@ -605,6 +676,52 @@ class ClinicRuntimeSettings
     public static function emrClinicCode(): string
     {
         return trim((string) static::get('emr.clinic_code', ''));
+    }
+
+    public static function dicomIntegrationEnabled(): bool
+    {
+        return static::boolean(
+            'emr.dicom.enabled',
+            (bool) config('care.emr_dicom_enabled', false),
+        );
+    }
+
+    public static function dicomBaseUrl(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.base_url',
+            (string) config('care.emr_dicom_base_url', ''),
+        ));
+    }
+
+    public static function dicomFacilityCode(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.facility_code',
+            (string) config('care.emr_dicom_facility_code', ''),
+        ));
+    }
+
+    public static function dicomTimeoutSeconds(): int
+    {
+        return max(
+            3,
+            min(
+                120,
+                static::integer(
+                    'emr.dicom.timeout_seconds',
+                    (int) config('care.emr_dicom_timeout_seconds', 10),
+                ),
+            ),
+        );
+    }
+
+    public static function dicomAuthToken(): string
+    {
+        return trim((string) static::get(
+            'emr.dicom.auth_token',
+            (string) config('care.emr_dicom_auth_token', ''),
+        ));
     }
 
     public static function isVnpayEnabled(): bool

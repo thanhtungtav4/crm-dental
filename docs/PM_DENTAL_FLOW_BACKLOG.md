@@ -1015,7 +1015,7 @@ Ghi chu:
 - **Title**: Retention class + legal hold + safe delete workflow
 - **Type**: Story (BE + Security + Legal)
 - **Estimate**: 5 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Dinh nghia retention class: `clinical_legal`, `clinical_operational`, `temporary`.
   - Legal hold chan prune/delete khi record dang tranh chap/claim.
@@ -1025,12 +1025,16 @@ Ghi chu:
   1. Prune khong xoa record dang legal hold.
   2. Record class `clinical_legal` khong bi xoa boi retention job thong thuong.
   3. Download file chi qua signed URL hop le.
+- **Status Note**:
+  - Da bo sung runtime retention class-aware cho `clinical_legal/clinical_operational/temporary`.
+  - Da bo sung command `emr:prune-clinical-media` co `--strict`, skip legal hold + skip class clinical_legal.
+  - Da bo sung signed URL view/download/share cho clinical media va test regression.
 
 ### TICKET PM-68 (P1)
 - **Title**: EMR payload expansion cho media dossier + report linkage
 - **Type**: Story (BE + Integration)
 - **Estimate**: 8 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Mo rong `EmrPatientPayloadBuilder` them media dossier theo encounter/session.
   - Link media vao `clinical_orders`, `clinical_results`, `prescriptions` payload context.
@@ -1039,12 +1043,16 @@ Ghi chu:
   1. Payload EMR co media metadata day du theo encounter/session.
   2. Co test schema payload de chan breaking change.
   3. Sync pipeline khong duplicate media event.
+- **Status Note**:
+  - Da mo rong `EmrPatientPayloadBuilder` voi node `media.records`, `media.timeline`, `media.summary`.
+  - Da link `media_ids/media_summary` vao encounter, exam_session, order, result, prescription.
+  - Da them test `EmrPayloadClinicalMediaDossierTest`.
 
 ### TICKET PM-69 (P1)
 - **Title**: Clinical image UX (timeline + completeness bar + quality checklist)
 - **Type**: Story (FE + UX)
 - **Estimate**: 8 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Hien thi timeline anh theo phase: baseline/pre/intra/post/follow-up.
   - Completeness bar theo protocol thu thuat.
@@ -1054,12 +1062,16 @@ Ghi chu:
   1. Nguoi dung nhin duoc muc do hoan tat evidence trong 1 man hinh.
   2. Co canh bao ro khi evidence thieu/khong dat.
   3. Mobile/desktop khong vo layout.
+- **Status Note**:
+  - Da bo sung `Clinical evidence completeness` block trong tab `exam-treatment` (progress bar + missing list + quality warnings).
+  - Da bo sung timeline anh lam sang gan nhat + quick links xem/tai signed URL.
+  - Da mo rong test upload indication de verify clinical media asset/version duoc tao.
 
 ### TICKET PM-70 (P1)
 - **Title**: Media authorization hardening (branch + care-team + PHI read log)
 - **Type**: Story (Security + BE)
 - **Estimate**: 5 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Policy branch-aware cho media CRUD/view/download.
   - Role + care-team scope cho action nhay cam.
@@ -1068,12 +1080,16 @@ Ghi chu:
   1. Cross-branch media access bi chan dung policy.
   2. PHI media read/download co audit log truy vet du.
   3. Co test matrix role-action cho media.
+- **Status Note**:
+  - Da enforce route middleware `can:view,clinicalMediaAsset` + signed middleware cho view/download.
+  - Da them `ClinicalMediaAccessService` ghi immutable `clinical_media_access_logs` cho view/download/share.
+  - Da them PHI read trail qua `PhiAccessAuditService::recordClinicalMediaAccess`.
 
 ### TICKET PM-71 (P1)
 - **Title**: Migration/backfill + reconcile gate cho clinical media
 - **Type**: Story (Data + Ops)
 - **Estimate**: 5 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Backfill anh cu (`patient_photos`, `indication_images`) sang `clinical_media_assets`.
   - Tao command `emr:reconcile-clinical-media` + strict gate.
@@ -1082,12 +1098,16 @@ Ghi chu:
   1. Backfill idempotent, khong duplicate.
   2. Reconcile command detect du orphan/missing link/checksum mismatch.
   3. Release gate chan deploy neu reconcile strict fail.
+- **Status Note**:
+  - Da them command `emr:backfill-clinical-media` (idempotent) cho `patient_photos` + `clinical_notes.indication_images`.
+  - Da them command `emr:reconcile-clinical-media --strict` va gate release (`ops:run-release-gates`, verify strict report).
+  - Da bo sung test command fail-path/pass-path cho backfill/reconcile/prune.
 
 ### TICKET PM-72 (P2)
 - **Title**: DICOM readiness track (optional ext PACS integration)
 - **Type**: Discovery + Story (Integration)
 - **Estimate**: 8 SP
-- **Status**: Open (`Planned`)
+- **Status**: Done (`2026-03-04`)
 - **Scope**:
   - Dinh nghia adapter boundary cho DICOMweb (WADO/STOW) neu co PACS.
   - Mapping branch + patient identity khi dong bo study.
@@ -1096,6 +1116,10 @@ Ghi chu:
   1. Co architecture decision record ro pham vi DICOM.
   2. Co mock integration test cho adapter layer.
   3. Khong block go-live neu chua bat module nay.
+- **Status Note**:
+  - Da them `DicomReadinessService` + command `emr:check-dicom-readiness`.
+  - Da wire gate DICOM vao profile production trong `ops:run-release-gates`.
+  - Strict mode chi fail khi module DICOM dang bat va readiness chua dat.
 
 ## 12) De xuat thu tu trien khai cho cum PM-65..PM-72
 
