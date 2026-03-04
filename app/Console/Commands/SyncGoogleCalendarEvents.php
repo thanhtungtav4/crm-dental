@@ -105,7 +105,74 @@ class SyncGoogleCalendarEvents extends Command
 
     protected function processEvent(int $eventId): string
     {
-        return DB::transaction(function () use ($eventId): string {
+        $claim = DB::transaction(function () use ($eventId): array {
+            $event = GoogleCalendarSyncEvent::query()
+                ->lockForUpdate()
+                ->find($eventId);
+
+            if (! $event) {
+                return [
+                    'claimed' => false,
+                    'status' => GoogleCalendarSyncEvent::STATUS_FAILED,
+                ];
+            }
+
+            if (! in_array($event->status, [GoogleCalendarSyncEvent::STATUS_PENDING, GoogleCalendarSyncEvent::STATUS_FAILED], true)) {
+                return [
+                    'claimed' => false,
+                    'status' => (string) $event->status,
+                ];
+            }
+
+            if ($event->next_retry_at && $event->next_retry_at->isFuture()) {
+                return [
+                    'claimed' => false,
+                    'status' => (string) $event->status,
+                ];
+            }
+
+            $event->markProcessing();
+
+            $googleEventId = GoogleCalendarEventMap::query()
+                ->where('appointment_id', $event->appointment_id)
+                ->value('google_event_id');
+
+            return [
+                'claimed' => true,
+                'event_type' => (string) $event->event_type,
+                'appointment_id' => (int) $event->appointment_id,
+                'google_event_id' => filled($googleEventId) ? (string) $googleEventId : null,
+                'payload' => is_array($event->payload) ? $event->payload : [],
+            ];
+        }, 3);
+
+        if (($claim['claimed'] ?? false) !== true) {
+            return (string) ($claim['status'] ?? GoogleCalendarSyncEvent::STATUS_FAILED);
+        }
+
+        $integrationResult = ($claim['event_type'] ?? null) === GoogleCalendarSyncEvent::EVENT_DELETE
+            ? $this->googleCalendarIntegrationService->deleteEvent((string) ($claim['google_event_id'] ?? ''))
+            : $this->googleCalendarIntegrationService->upsertEvent(
+                googleEventId: $claim['google_event_id'] ?? null,
+                payload: is_array($claim['payload'] ?? null) ? $claim['payload'] : [],
+            );
+
+        $isSuccess = (bool) ($integrationResult['success'] ?? false);
+
+        if (
+            $isSuccess
+            && ($claim['event_type'] ?? null) === GoogleCalendarSyncEvent::EVENT_UPSERT
+            && blank($integrationResult['google_event_id'] ?? null)
+        ) {
+            $integrationResult = [
+                ...$integrationResult,
+                'success' => false,
+                'message' => 'Google API không trả về event id hợp lệ cho thao tác upsert.',
+            ];
+            $isSuccess = false;
+        }
+
+        return DB::transaction(function () use ($eventId, $integrationResult, $isSuccess): string {
             $event = GoogleCalendarSyncEvent::query()
                 ->lockForUpdate()
                 ->find($eventId);
@@ -114,30 +181,10 @@ class SyncGoogleCalendarEvents extends Command
                 return GoogleCalendarSyncEvent::STATUS_FAILED;
             }
 
-            if (! in_array($event->status, [GoogleCalendarSyncEvent::STATUS_PENDING, GoogleCalendarSyncEvent::STATUS_FAILED], true)) {
+            if ($event->status !== GoogleCalendarSyncEvent::STATUS_PROCESSING) {
                 return (string) $event->status;
             }
 
-            if ($event->next_retry_at && $event->next_retry_at->isFuture()) {
-                return (string) $event->status;
-            }
-
-            $event->markProcessing();
-
-            $eventMap = GoogleCalendarEventMap::query()
-                ->where('appointment_id', $event->appointment_id)
-                ->first();
-
-            if ($event->event_type === GoogleCalendarSyncEvent::EVENT_DELETE) {
-                $integrationResult = $this->googleCalendarIntegrationService->deleteEvent((string) ($eventMap?->google_event_id ?? ''));
-            } else {
-                $integrationResult = $this->googleCalendarIntegrationService->upsertEvent(
-                    googleEventId: $eventMap?->google_event_id,
-                    payload: is_array($event->payload) ? $event->payload : [],
-                );
-            }
-
-            $isSuccess = (bool) ($integrationResult['success'] ?? false);
             $httpStatus = isset($integrationResult['status']) ? (int) $integrationResult['status'] : null;
             $responsePayload = is_array($integrationResult['response'] ?? null)
                 ? $integrationResult['response']
@@ -155,6 +202,10 @@ class SyncGoogleCalendarEvents extends Command
             ]);
 
             if ($isSuccess) {
+                $eventMap = GoogleCalendarEventMap::query()
+                    ->where('appointment_id', $event->appointment_id)
+                    ->first();
+
                 $googleEventId = filled($integrationResult['google_event_id'] ?? null)
                     ? (string) $integrationResult['google_event_id']
                     : $eventMap?->google_event_id;
@@ -225,6 +276,6 @@ class SyncGoogleCalendarEvents extends Command
             );
 
             return (string) ($event->fresh()?->status ?? GoogleCalendarSyncEvent::STATUS_FAILED);
-        });
+        }, 3);
     }
 }

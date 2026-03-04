@@ -133,7 +133,13 @@ class EmrPatientPayloadBuilder
      */
     public function checksum(array $payload): string
     {
-        $normalizedPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $normalizedPayloadArray = $payload;
+
+        if (isset($normalizedPayloadArray['meta']) && is_array($normalizedPayloadArray['meta'])) {
+            unset($normalizedPayloadArray['meta']['generated_at']);
+        }
+
+        $normalizedPayload = json_encode($normalizedPayloadArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return hash('sha256', $normalizedPayload ?: '');
     }

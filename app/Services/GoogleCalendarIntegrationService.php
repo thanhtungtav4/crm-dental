@@ -6,6 +6,7 @@ use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Throwable;
 
 class GoogleCalendarIntegrationService
@@ -31,13 +32,15 @@ class GoogleCalendarIntegrationService
             endpoint: '/calendars/'.rawurlencode(ClinicRuntimeSettings::googleCalendarCalendarId()),
         );
 
+        $calendarId = filled(data_get($result['response'], 'id'))
+            ? (string) data_get($result['response'], 'id')
+            : null;
+
         return [
             ...$result,
-            'calendar_id' => filled(data_get($result['response'], 'id'))
-                ? (string) data_get($result['response'], 'id')
-                : null,
-            'account_email' => filled(data_get($result['response'], 'summary'))
-                ? (string) data_get($result['response'], 'summary')
+            'calendar_id' => $calendarId,
+            'account_email' => filled($calendarId) && Str::contains((string) $calendarId, '@')
+                ? (string) $calendarId
                 : null,
         ];
     }
@@ -59,10 +62,22 @@ class GoogleCalendarIntegrationService
                 payload: $payload,
             );
 
+            if (($result['status'] ?? null) === 404) {
+                $result = $this->sendRequest(
+                    method: 'POST',
+                    endpoint: '/calendars/'.rawurlencode(ClinicRuntimeSettings::googleCalendarCalendarId()).'/events',
+                    payload: $payload,
+                );
+            }
+
+            $responseGoogleEventId = filled(data_get($result['response'], 'id'))
+                ? (string) data_get($result['response'], 'id')
+                : null;
+
             return [
                 ...$result,
-                'google_event_id' => filled(data_get($result['response'], 'id'))
-                    ? (string) data_get($result['response'], 'id')
+                'google_event_id' => ($result['success'] ?? false) === true
+                    ? $responseGoogleEventId
                     : trim($googleEventId),
                 'updated' => filled(data_get($result['response'], 'updated'))
                     ? (string) data_get($result['response'], 'updated')

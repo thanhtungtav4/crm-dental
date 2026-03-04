@@ -96,7 +96,54 @@ class SyncEmrEvents extends Command
 
     protected function processEvent(int $eventId): string
     {
-        return DB::transaction(function () use ($eventId): string {
+        $claim = DB::transaction(function () use ($eventId): array {
+            $event = EmrSyncEvent::query()
+                ->lockForUpdate()
+                ->find($eventId);
+
+            if (! $event) {
+                return [
+                    'claimed' => false,
+                    'status' => EmrSyncEvent::STATUS_FAILED,
+                ];
+            }
+
+            if (! in_array($event->status, [EmrSyncEvent::STATUS_PENDING, EmrSyncEvent::STATUS_FAILED], true)) {
+                return [
+                    'claimed' => false,
+                    'status' => (string) $event->status,
+                ];
+            }
+
+            if ($event->next_retry_at && $event->next_retry_at->isFuture()) {
+                return [
+                    'claimed' => false,
+                    'status' => (string) $event->status,
+                ];
+            }
+
+            $event->markProcessing();
+
+            return [
+                'claimed' => true,
+                'event_id' => (int) $event->id,
+            ];
+        }, 3);
+
+        if (($claim['claimed'] ?? false) !== true) {
+            return (string) ($claim['status'] ?? EmrSyncEvent::STATUS_FAILED);
+        }
+
+        $processingEvent = EmrSyncEvent::query()->find((int) $claim['event_id']);
+
+        if (! $processingEvent) {
+            return EmrSyncEvent::STATUS_FAILED;
+        }
+
+        $integrationResult = $this->emrIntegrationService->pushPatientPayload($processingEvent);
+        $isSuccess = (bool) ($integrationResult['success'] ?? false);
+
+        return DB::transaction(function () use ($eventId, $integrationResult, $isSuccess): string {
             $event = EmrSyncEvent::query()
                 ->lockForUpdate()
                 ->find($eventId);
@@ -105,18 +152,10 @@ class SyncEmrEvents extends Command
                 return EmrSyncEvent::STATUS_FAILED;
             }
 
-            if (! in_array($event->status, [EmrSyncEvent::STATUS_PENDING, EmrSyncEvent::STATUS_FAILED], true)) {
+            if ($event->status !== EmrSyncEvent::STATUS_PROCESSING) {
                 return (string) $event->status;
             }
 
-            if ($event->next_retry_at && $event->next_retry_at->isFuture()) {
-                return (string) $event->status;
-            }
-
-            $event->markProcessing();
-
-            $integrationResult = $this->emrIntegrationService->pushPatientPayload($event);
-            $isSuccess = (bool) ($integrationResult['success'] ?? false);
             $httpStatus = isset($integrationResult['status']) ? (int) $integrationResult['status'] : null;
             $responsePayload = is_array($integrationResult['response'] ?? null)
                 ? $integrationResult['response']
@@ -223,6 +262,6 @@ class SyncEmrEvents extends Command
             );
 
             return (string) ($event->fresh()?->status ?? EmrSyncEvent::STATUS_FAILED);
-        });
+        }, 3);
     }
 }

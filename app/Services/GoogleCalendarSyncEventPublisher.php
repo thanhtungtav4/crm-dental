@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Support\ClinicRuntimeSettings;
+use Illuminate\Support\Str;
 
 class GoogleCalendarSyncEventPublisher
 {
@@ -43,11 +44,19 @@ class GoogleCalendarSyncEventPublisher
             : $this->payloadBuilder->build($appointment);
 
         $checksum = $this->payloadBuilder->checksum($payload);
-        $eventKey = $this->eventKey((int) $appointment->id, $resolvedEventType, $checksum);
+        $openDuplicateEvent = $this->findOpenDuplicateEvent(
+            appointmentId: (int) $appointment->id,
+            eventType: $resolvedEventType,
+            payloadChecksum: $checksum,
+        );
 
-        return GoogleCalendarSyncEvent::query()->firstOrCreate(
-            ['event_key' => $eventKey],
+        if ($openDuplicateEvent) {
+            return $openDuplicateEvent;
+        }
+
+        return GoogleCalendarSyncEvent::query()->create(
             [
+                'event_key' => $this->eventKey((int) $appointment->id, $resolvedEventType, $checksum),
                 'appointment_id' => $appointment->id,
                 'branch_id' => $appointment->branch_id,
                 'event_type' => $resolvedEventType,
@@ -57,6 +66,21 @@ class GoogleCalendarSyncEventPublisher
                 'next_retry_at' => now(),
             ],
         );
+    }
+
+    protected function findOpenDuplicateEvent(int $appointmentId, string $eventType, string $payloadChecksum): ?GoogleCalendarSyncEvent
+    {
+        return GoogleCalendarSyncEvent::query()
+            ->where('appointment_id', $appointmentId)
+            ->where('event_type', $eventType)
+            ->where('payload_checksum', $payloadChecksum)
+            ->whereIn('status', [
+                GoogleCalendarSyncEvent::STATUS_PENDING,
+                GoogleCalendarSyncEvent::STATUS_PROCESSING,
+                GoogleCalendarSyncEvent::STATUS_FAILED,
+            ])
+            ->latest('id')
+            ->first();
     }
 
     public function shouldPushToGoogle(): bool
@@ -94,6 +118,8 @@ class GoogleCalendarSyncEventPublisher
             $appointmentId,
             $eventType,
             $checksum,
+            now()->format('Uv'),
+            (string) Str::uuid(),
         ])), 0, 40);
     }
 }
