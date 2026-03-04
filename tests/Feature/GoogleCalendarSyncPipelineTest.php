@@ -226,6 +226,45 @@ it('reclaims stale processing google events and retries them successfully', func
         ->and((string) ($event?->last_error ?? ''))->toBe('');
 });
 
+it('moves stale processing google events to dead when max attempts already reached', function (): void {
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(7),
+        'duration_minutes' => 30,
+    ]);
+
+    configureGoogleCalendarRuntime();
+
+    $event = app(GoogleCalendarSyncEventPublisher::class)->publishForAppointment($appointment->fresh());
+
+    expect($event)->not->toBeNull();
+
+    $event?->forceFill([
+        'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
+        'attempts' => 3,
+        'max_attempts' => 3,
+        'locked_at' => now()->subMinutes(30),
+        'next_retry_at' => now()->addMinutes(10),
+        'last_error' => 'simulated worker crash',
+    ])->save();
+
+    Http::preventStrayRequests();
+
+    $this->artisan('google-calendar:sync-events')
+        ->assertSuccessful();
+
+    $event = $event?->fresh();
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(GoogleCalendarSyncEvent::STATUS_DEAD)
+        ->and((int) $event?->attempts)->toBe(3)
+        ->and($event?->next_retry_at)->toBeNull()
+        ->and($event?->locked_at)->toBeNull()
+        ->and((string) ($event?->last_error ?? ''))->toContain('max attempts');
+
+    Http::assertNothingSent();
+});
+
 it('falls back to create event when google upsert target event is stale', function (): void {
     configureGoogleCalendarRuntime();
 

@@ -152,6 +152,41 @@ it('reclaims stale processing emr events and retries them successfully', functio
         ->and((string) ($event?->last_error ?? ''))->toBe('');
 });
 
+it('moves stale processing emr events to dead when max attempts already reached', function (): void {
+    [$patient] = seedEmrPatientAggregate();
+
+    configureEmrRuntime();
+
+    $event = app(EmrSyncEventPublisher::class)->publishForPatient($patient, 'manual.sync');
+
+    expect($event)->not->toBeNull();
+
+    $event?->forceFill([
+        'status' => EmrSyncEvent::STATUS_PROCESSING,
+        'attempts' => 2,
+        'max_attempts' => 2,
+        'locked_at' => now()->subMinutes(30),
+        'next_retry_at' => now()->addMinutes(10),
+        'last_error' => 'simulated worker crash',
+    ])->save();
+
+    Http::preventStrayRequests();
+
+    $this->artisan('emr:sync-events')
+        ->assertSuccessful();
+
+    $event = $event?->fresh();
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(EmrSyncEvent::STATUS_DEAD)
+        ->and((int) $event?->attempts)->toBe(2)
+        ->and($event?->next_retry_at)->toBeNull()
+        ->and($event?->locked_at)->toBeNull()
+        ->and((string) ($event?->last_error ?? ''))->toContain('max attempts');
+
+    Http::assertNothingSent();
+});
+
 /**
  * @return array{0: Patient, 1: User}
  */

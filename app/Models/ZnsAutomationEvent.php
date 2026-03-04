@@ -170,18 +170,33 @@ class ZnsAutomationEvent extends Model
     {
         $ttlMinutes = max(1, $ttlMinutes);
         $lockedBefore = now()->subMinutes($ttlMinutes);
-
-        return static::query()
+        $now = now();
+        $staleQuery = static::query()
             ->where('status', self::STATUS_PROCESSING)
             ->whereNotNull('locked_at')
-            ->where('locked_at', '<=', $lockedBefore)
+            ->where('locked_at', '<=', $lockedBefore);
+
+        $movedToDead = (clone $staleQuery)
+            ->whereColumn('attempts', '>=', 'max_attempts')
+            ->update([
+                'status' => self::STATUS_DEAD,
+                'next_retry_at' => null,
+                'locked_at' => null,
+                'last_error' => 'Stale processing lock reclaimed after max attempts reached.',
+                'updated_at' => $now,
+            ]);
+
+        $movedToFailed = (clone $staleQuery)
+            ->whereColumn('attempts', '<', 'max_attempts')
             ->update([
                 'status' => self::STATUS_FAILED,
-                'next_retry_at' => now(),
+                'next_retry_at' => $now,
                 'locked_at' => null,
                 'last_error' => 'Stale processing lock reclaimed for retry.',
-                'updated_at' => now(),
+                'updated_at' => $now,
             ]);
+
+        return $movedToDead + $movedToFailed;
     }
 
     protected function resolveNextRetryAt(int $attempt): Carbon
