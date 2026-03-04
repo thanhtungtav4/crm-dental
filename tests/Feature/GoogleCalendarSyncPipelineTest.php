@@ -378,7 +378,7 @@ function configureGoogleCalendarRuntime(): void
         'is_active' => true,
     ]);
 
-    ClinicSetting::setValue('google_calendar.sync_mode', 'two_way', [
+    ClinicSetting::setValue('google_calendar.sync_mode', 'one_way_to_google', [
         'group' => 'google_calendar',
         'label' => 'Chế độ đồng bộ',
         'value_type' => 'text',
