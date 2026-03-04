@@ -104,6 +104,7 @@ class IntegrationSettings extends Page
                     ['state' => 'zns_template_birthday', 'key' => 'zns.template_birthday', 'label' => 'Template chúc mừng sinh nhật', 'type' => 'text', 'default' => '', 'sort_order' => 152],
                     ['state' => 'zns_send_endpoint', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::znsSendEndpoint(), 'sort_order' => 160],
                     ['state' => 'zns_request_timeout_seconds', 'key' => 'zns.request_timeout_seconds', 'label' => 'Timeout gọi ZNS (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsRequestTimeoutSeconds(), 'sort_order' => 170],
+                    ['state' => 'zns_campaign_delivery_max_attempts', 'key' => 'zns.campaign_delivery_max_attempts', 'label' => 'Số lần retry tối đa cho mỗi người nhận campaign', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsCampaignDeliveryMaxAttempts(), 'sort_order' => 171],
                 ],
             ],
             [
@@ -545,6 +546,12 @@ class IntegrationSettings extends Page
 
                 if (($field['key'] ?? null) === 'zns.request_timeout_seconds') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:30'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zns.campaign_delivery_max_attempts') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:10'];
 
                     continue;
                 }

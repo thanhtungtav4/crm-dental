@@ -32,6 +32,7 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'zns', 'key' => 'zns.template_birthday', 'label' => 'Template ID sinh nhật', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 152],
             ['group' => 'zns', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'value' => 'https://business.openapi.zalo.me/message/template', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 160],
             ['group' => 'zns', 'key' => 'zns.request_timeout_seconds', 'label' => 'ZNS request timeout (seconds)', 'value' => 15, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 170],
+            ['group' => 'zns', 'key' => 'zns.campaign_delivery_max_attempts', 'label' => 'Số lần retry tối đa cho mỗi người nhận campaign', 'value' => 5, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 171],
 
             // Google Calendar
             ['group' => 'google_calendar', 'key' => 'google_calendar.enabled', 'label' => 'Bật tích hợp Google Calendar', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 210],

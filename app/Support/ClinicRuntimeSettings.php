@@ -379,6 +379,17 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function znsCampaignDeliveryMaxAttempts(): int
+    {
+        return max(
+            1,
+            min(
+                10,
+                static::integer('zns.campaign_delivery_max_attempts', 5),
+            ),
+        );
+    }
+
     public static function popupAnnouncementsEnabled(): bool
     {
         return static::boolean('popup.enabled', false);

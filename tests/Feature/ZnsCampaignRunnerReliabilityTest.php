@@ -135,6 +135,74 @@ it('keeps 5xx provider failures retryable with scheduled next_retry_at', functio
         ->and($delivery?->next_retry_at?->isFuture())->toBeTrue();
 });
 
+it('stops retrying failed deliveries after reaching campaign max attempts', function (): void {
+    configureZnsCampaignRuntime();
+    ClinicSetting::setValue('zns.campaign_delivery_max_attempts', 2, [
+        'group' => 'zns',
+        'value_type' => 'integer',
+    ]);
+
+    $branch = Branch::factory()->create();
+    Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0907111222',
+    ]);
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Capped retry campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => 500,
+            'message' => 'Temporary upstream error',
+        ], 500),
+    ]);
+
+    $runner = app(ZnsCampaignRunnerService::class);
+    $firstRun = $runner->runCampaign($campaign);
+
+    $delivery = ZnsCampaignDelivery::query()->first();
+
+    expect($firstRun['failed'])->toBe(1)
+        ->and($delivery)->not->toBeNull()
+        ->and((int) $delivery?->attempt_count)->toBe(1)
+        ->and($delivery?->next_retry_at)->not->toBeNull();
+
+    $delivery?->forceFill([
+        'next_retry_at' => now()->subMinute(),
+    ])->save();
+
+    $secondRun = $runner->runCampaign($campaign->fresh());
+    $delivery = $delivery?->fresh();
+
+    expect($secondRun['processed'])->toBe(1)
+        ->and($secondRun['failed'])->toBe(1)
+        ->and((int) $delivery?->attempt_count)->toBe(2)
+        ->and($delivery?->status)->toBe(ZnsCampaignDelivery::STATUS_FAILED)
+        ->and($delivery?->next_retry_at)->toBeNull();
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => 0,
+            'message' => 'Success',
+            'data' => ['msg_id' => 'should-not-send'],
+        ], 200),
+    ]);
+
+    $thirdRun = $runner->runCampaign($campaign->fresh());
+    $delivery = $delivery?->fresh();
+
+    expect($thirdRun['processed'])->toBe(0)
+        ->and($thirdRun['failed'])->toBe(0)
+        ->and($thirdRun['skipped'])->toBe(1)
+        ->and((int) $delivery?->attempt_count)->toBe(2)
+        ->and($delivery?->provider_message_id)->toBeNull();
+});
+
 it('keeps campaign in failed status while retryable deliveries still exist even if some are sent', function (): void {
     configureZnsCampaignRuntime();
 
@@ -279,5 +347,10 @@ function configureZnsCampaignRuntime(): void
     ClinicSetting::setValue('zns.send_endpoint', 'https://business.openapi.zalo.me/message/template', [
         'group' => 'zns',
         'value_type' => 'text',
+    ]);
+
+    ClinicSetting::setValue('zns.campaign_delivery_max_attempts', 5, [
+        'group' => 'zns',
+        'value_type' => 'integer',
     ]);
 }

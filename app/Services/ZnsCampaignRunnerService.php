@@ -58,9 +58,10 @@ class ZnsCampaignRunnerService
         $sent = 0;
         $failed = 0;
         $skipped = 0;
+        $maxDeliveryAttempts = ClinicRuntimeSettings::znsCampaignDeliveryMaxAttempts();
 
         try {
-            DB::transaction(function () use ($campaign, $targets, &$processed, &$sent, &$failed, &$skipped): void {
+            DB::transaction(function () use ($campaign, $targets, $maxDeliveryAttempts, &$processed, &$sent, &$failed, &$skipped): void {
                 $templateId = $this->resolveTemplateId($campaign);
                 if ($templateId === '') {
                     throw ValidationException::withMessages([
@@ -107,7 +108,7 @@ class ZnsCampaignRunnerService
                     if (
                         ! $delivery->wasRecentlyCreated
                         && $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
-                        && $this->shouldSkipFailedDelivery($delivery)
+                        && $this->shouldSkipFailedDelivery($delivery, $maxDeliveryAttempts)
                     ) {
                         $skipped++;
 
@@ -159,6 +160,7 @@ class ZnsCampaignRunnerService
                     $delivery->provider_response = $sendResult['response'] ?? null;
                     $delivery->error_message = $sendResult['error'] ?? 'ZNS provider request failed.';
                     $delivery->next_retry_at = $this->isRetryableProviderFailure($sendResult)
+                        && (int) $delivery->attempt_count < $maxDeliveryAttempts
                         ? now()->addMinutes(15)
                         : null;
                     $delivery->save();
@@ -260,8 +262,12 @@ class ZnsCampaignRunnerService
         return trim($digits);
     }
 
-    protected function shouldSkipFailedDelivery(ZnsCampaignDelivery $delivery): bool
+    protected function shouldSkipFailedDelivery(ZnsCampaignDelivery $delivery, int $maxDeliveryAttempts): bool
     {
+        if ((int) $delivery->attempt_count >= $maxDeliveryAttempts) {
+            return true;
+        }
+
         if ($delivery->next_retry_at === null) {
             return true;
         }
