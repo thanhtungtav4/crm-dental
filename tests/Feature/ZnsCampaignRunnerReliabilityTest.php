@@ -7,6 +7,7 @@ use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 it('does not retry terminal failed deliveries with null next_retry_at on rerun', function (): void {
     configureZnsCampaignRuntime();
@@ -132,6 +133,123 @@ it('keeps 5xx provider failures retryable with scheduled next_retry_at', functio
         ->and($delivery?->status)->toBe(ZnsCampaignDelivery::STATUS_FAILED)
         ->and($delivery?->next_retry_at)->not->toBeNull()
         ->and($delivery?->next_retry_at?->isFuture())->toBeTrue();
+});
+
+it('keeps campaign in failed status while retryable deliveries still exist even if some are sent', function (): void {
+    configureZnsCampaignRuntime();
+
+    $branch = Branch::factory()->create();
+    Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0907000001',
+    ]);
+    Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0907000002',
+    ]);
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Mixed retryable campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    $providerAttempt = 0;
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => function () use (&$providerAttempt) {
+            $providerAttempt++;
+
+            if ($providerAttempt === 1) {
+                return Http::response([
+                    'error' => 0,
+                    'message' => 'Success',
+                    'data' => ['msg_id' => 'mixed-sent-001'],
+                ], 200);
+            }
+
+            if (in_array($providerAttempt, [2, 3, 4], true)) {
+                return Http::response([
+                    'error' => 500,
+                    'message' => 'Temporary upstream error',
+                ], 500);
+            }
+
+            return Http::response([
+                'error' => 0,
+                'message' => 'Success',
+                'data' => ['msg_id' => 'mixed-sent-002'],
+            ], 200);
+        },
+    ]);
+
+    $runner = app(ZnsCampaignRunnerService::class);
+    $firstRun = $runner->runCampaign($campaign);
+    $campaign = $campaign->fresh();
+
+    $failedDelivery = ZnsCampaignDelivery::query()
+        ->where('zns_campaign_id', $campaign?->id)
+        ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+        ->first();
+
+    expect($firstRun['sent'])->toBe(1)
+        ->and($firstRun['failed'])->toBe(1)
+        ->and($campaign)->not->toBeNull()
+        ->and($campaign?->status)->toBe(ZnsCampaign::STATUS_FAILED)
+        ->and((int) $campaign?->sent_count)->toBe(1)
+        ->and((int) $campaign?->failed_count)->toBe(1)
+        ->and($failedDelivery)->not->toBeNull()
+        ->and($failedDelivery?->next_retry_at)->not->toBeNull();
+
+    $failedDelivery?->forceFill([
+        'next_retry_at' => now()->subMinute(),
+    ])->save();
+
+    $secondRun = $runner->runCampaign($campaign?->fresh() ?? $campaign);
+    $campaign = $campaign?->fresh();
+
+    expect($secondRun['processed'])->toBe(1)
+        ->and($secondRun['sent'])->toBe(1)
+        ->and($secondRun['failed'])->toBe(0)
+        ->and($campaign)->not->toBeNull()
+        ->and($campaign?->status)->toBe(ZnsCampaign::STATUS_COMPLETED)
+        ->and((int) $campaign?->sent_count)->toBe(2)
+        ->and((int) $campaign?->failed_count)->toBe(0);
+});
+
+it('marks campaign as failed when template validation fails before delivery processing', function (): void {
+    configureZnsCampaignRuntime();
+    ClinicSetting::setValue('zns.template_payment', '', [
+        'group' => 'zns',
+        'value_type' => 'text',
+    ]);
+
+    $branch = Branch::factory()->create();
+    Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0907333444',
+    ]);
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Template missing campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_key' => 'payment',
+        'template_id' => '',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake();
+
+    expect(fn (): array => app(ZnsCampaignRunnerService::class)->runCampaign($campaign))
+        ->toThrow(ValidationException::class);
+
+    $campaign = $campaign->fresh();
+
+    expect($campaign)->not->toBeNull()
+        ->and($campaign?->status)->toBe(ZnsCampaign::STATUS_FAILED)
+        ->and($campaign?->finished_at)->not->toBeNull()
+        ->and(ZnsCampaignDelivery::query()->where('zns_campaign_id', $campaign?->id)->count())->toBe(0);
 });
 
 function configureZnsCampaignRuntime(): void

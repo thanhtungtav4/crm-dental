@@ -107,6 +107,60 @@ it('picks failed campaigns only when they have due retry deliveries', function (
         ->and($terminalCampaign?->started_at)->toBeNull();
 });
 
+it('continues processing other campaigns when one campaign fails validation', function (): void {
+    configureZnsCommandRuntime();
+    ClinicSetting::setValue('zns.template_payment', '', [
+        'group' => 'zns',
+        'value_type' => 'text',
+    ]);
+
+    $branch = Branch::factory()->create();
+    Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0903333444',
+    ]);
+
+    $invalidCampaign = ZnsCampaign::query()->create([
+        'name' => 'Invalid template campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_key' => 'payment',
+        'template_id' => '',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    $validCampaign = ZnsCampaign::query()->create([
+        'name' => 'Valid template campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_id' => 'tpl_zns_valid_001',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => 0,
+            'message' => 'Success',
+            'data' => ['msg_id' => 'zns-valid-campaign-001'],
+        ], 200),
+    ]);
+
+    $this->artisan('zns:run-campaigns')
+        ->assertFailed();
+
+    Http::assertSentCount(1);
+
+    $invalidCampaign = $invalidCampaign->fresh();
+    $validCampaign = $validCampaign->fresh();
+
+    expect($invalidCampaign)->not->toBeNull()
+        ->and($invalidCampaign?->status)->toBe(ZnsCampaign::STATUS_FAILED)
+        ->and($validCampaign)->not->toBeNull()
+        ->and($validCampaign?->status)->toBe(ZnsCampaign::STATUS_COMPLETED)
+        ->and((int) $validCampaign?->sent_count)->toBe(1)
+        ->and((int) ZnsCampaignDelivery::query()->where('zns_campaign_id', $validCampaign?->id)->count())->toBe(1);
+});
+
 function configureZnsCommandRuntime(): void
 {
     ClinicSetting::setValue('zns.enabled', true, [

@@ -59,119 +59,134 @@ class ZnsCampaignRunnerService
         $failed = 0;
         $skipped = 0;
 
-        DB::transaction(function () use ($campaign, $targets, &$processed, &$sent, &$failed, &$skipped): void {
-            $templateId = $this->resolveTemplateId($campaign);
-            if ($templateId === '') {
-                throw ValidationException::withMessages([
-                    'template_id' => 'Campaign chưa có template_id hợp lệ để gửi ZNS.',
-                ]);
-            }
+        try {
+            DB::transaction(function () use ($campaign, $targets, &$processed, &$sent, &$failed, &$skipped): void {
+                $templateId = $this->resolveTemplateId($campaign);
+                if ($templateId === '') {
+                    throw ValidationException::withMessages([
+                        'template_id' => 'Campaign chưa có template_id hợp lệ để gửi ZNS.',
+                    ]);
+                }
 
-            foreach ($targets as $target) {
-                $normalizedPhone = $target['normalized_phone'];
-                $idempotencyKey = hash('sha256', implode('|', [
-                    'zns-v2',
-                    $campaign->id,
-                    $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
-                    $templateId,
-                ]));
+                foreach ($targets as $target) {
+                    $normalizedPhone = $target['normalized_phone'];
+                    $idempotencyKey = hash('sha256', implode('|', [
+                        'zns-v2',
+                        $campaign->id,
+                        $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
+                        $templateId,
+                    ]));
 
-                $delivery = ZnsCampaignDelivery::query()->firstOrCreate(
-                    ['idempotency_key' => $idempotencyKey],
-                    [
-                        'zns_campaign_id' => $campaign->id,
-                        'patient_id' => $target['patient_id'] ?? null,
-                        'customer_id' => $target['customer_id'] ?? null,
-                        'branch_id' => $campaign->branch_id,
-                        'phone' => $target['phone'],
-                        'normalized_phone' => $normalizedPhone,
-                        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
-                        'attempt_count' => 0,
-                        'payload' => [
-                            'template_key' => $campaign->template_key,
-                            'template_id' => $templateId,
-                            'message' => $campaign->message_payload,
+                    $delivery = ZnsCampaignDelivery::query()->firstOrCreate(
+                        ['idempotency_key' => $idempotencyKey],
+                        [
+                            'zns_campaign_id' => $campaign->id,
+                            'patient_id' => $target['patient_id'] ?? null,
+                            'customer_id' => $target['customer_id'] ?? null,
+                            'branch_id' => $campaign->branch_id,
+                            'phone' => $target['phone'],
+                            'normalized_phone' => $normalizedPhone,
+                            'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+                            'attempt_count' => 0,
+                            'payload' => [
+                                'template_key' => $campaign->template_key,
+                                'template_id' => $templateId,
+                                'message' => $campaign->message_payload,
+                            ],
+                            'template_key_snapshot' => $campaign->template_key,
+                            'template_id_snapshot' => $templateId,
                         ],
-                        'template_key_snapshot' => $campaign->template_key,
-                        'template_id_snapshot' => $templateId,
-                    ],
-                );
+                    );
 
-                if (! $delivery->wasRecentlyCreated && in_array($delivery->status, [ZnsCampaignDelivery::STATUS_SENT, ZnsCampaignDelivery::STATUS_SKIPPED], true)) {
-                    $skipped++;
+                    if (! $delivery->wasRecentlyCreated && in_array($delivery->status, [ZnsCampaignDelivery::STATUS_SENT, ZnsCampaignDelivery::STATUS_SKIPPED], true)) {
+                        $skipped++;
 
-                    continue;
-                }
+                        continue;
+                    }
 
-                if (
-                    ! $delivery->wasRecentlyCreated
-                    && $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
-                    && $this->shouldSkipFailedDelivery($delivery)
-                ) {
-                    $skipped++;
+                    if (
+                        ! $delivery->wasRecentlyCreated
+                        && $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
+                        && $this->shouldSkipFailedDelivery($delivery)
+                    ) {
+                        $skipped++;
 
-                    continue;
-                }
+                        continue;
+                    }
 
-                $processed++;
-                $delivery->attempt_count = (int) $delivery->attempt_count + 1;
+                    $processed++;
+                    $delivery->attempt_count = (int) $delivery->attempt_count + 1;
 
-                if ($normalizedPhone === '') {
+                    if ($normalizedPhone === '') {
+                        $delivery->status = ZnsCampaignDelivery::STATUS_FAILED;
+                        $delivery->error_message = 'Thiếu số điện thoại nhận ZNS.';
+                        $delivery->provider_message_id = null;
+                        $delivery->provider_status_code = 'validation_missing_phone';
+                        $delivery->provider_response = null;
+                        $delivery->next_retry_at = null;
+                        $delivery->save();
+                        $failed++;
+
+                        continue;
+                    }
+
+                    $providerPayload = $this->buildProviderPayload(
+                        campaign: $campaign,
+                        templateId: $templateId,
+                        target: $target,
+                        idempotencyKey: $idempotencyKey,
+                    );
+
+                    $sendResult = $this->providerClient->sendTemplate($providerPayload);
+
+                    if (($sendResult['success'] ?? false) === true) {
+                        $delivery->status = ZnsCampaignDelivery::STATUS_SENT;
+                        $delivery->sent_at = now();
+                        $delivery->provider_message_id = $sendResult['provider_message_id'];
+                        $delivery->provider_status_code = $sendResult['provider_status_code'];
+                        $delivery->provider_response = $sendResult['response'];
+                        $delivery->error_message = null;
+                        $delivery->next_retry_at = null;
+                        $delivery->save();
+                        $sent++;
+
+                        continue;
+                    }
+
                     $delivery->status = ZnsCampaignDelivery::STATUS_FAILED;
-                    $delivery->error_message = 'Thiếu số điện thoại nhận ZNS.';
                     $delivery->provider_message_id = null;
-                    $delivery->provider_status_code = 'validation_missing_phone';
-                    $delivery->provider_response = null;
-                    $delivery->next_retry_at = null;
+                    $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
+                    $delivery->provider_response = $sendResult['response'] ?? null;
+                    $delivery->error_message = $sendResult['error'] ?? 'ZNS provider request failed.';
+                    $delivery->next_retry_at = $this->isRetryableProviderFailure($sendResult)
+                        ? now()->addMinutes(15)
+                        : null;
                     $delivery->save();
                     $failed++;
-
-                    continue;
                 }
 
-                $providerPayload = $this->buildProviderPayload(
-                    campaign: $campaign,
-                    templateId: $templateId,
-                    target: $target,
-                    idempotencyKey: $idempotencyKey,
-                );
+                $campaign->sent_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_SENT)->count();
+                $campaign->failed_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_FAILED)->count();
 
-                $sendResult = $this->providerClient->sendTemplate($providerPayload);
+                $hasRetryableFailures = $campaign->deliveries()
+                    ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+                    ->whereNotNull('next_retry_at')
+                    ->exists();
 
-                if (($sendResult['success'] ?? false) === true) {
-                    $delivery->status = ZnsCampaignDelivery::STATUS_SENT;
-                    $delivery->sent_at = now();
-                    $delivery->provider_message_id = $sendResult['provider_message_id'];
-                    $delivery->provider_status_code = $sendResult['provider_status_code'];
-                    $delivery->provider_response = $sendResult['response'];
-                    $delivery->error_message = null;
-                    $delivery->next_retry_at = null;
-                    $delivery->save();
-                    $sent++;
-
-                    continue;
-                }
-
-                $delivery->status = ZnsCampaignDelivery::STATUS_FAILED;
-                $delivery->provider_message_id = null;
-                $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
-                $delivery->provider_response = $sendResult['response'] ?? null;
-                $delivery->error_message = $sendResult['error'] ?? 'ZNS provider request failed.';
-                $delivery->next_retry_at = $this->isRetryableProviderFailure($sendResult)
-                    ? now()->addMinutes(15)
-                    : null;
-                $delivery->save();
-                $failed++;
-            }
-
-            $campaign->sent_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_SENT)->count();
-            $campaign->failed_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_FAILED)->count();
-            $campaign->status = $campaign->failed_count > 0 && $campaign->sent_count === 0
-                ? ZnsCampaign::STATUS_FAILED
-                : ZnsCampaign::STATUS_COMPLETED;
+                $campaign->status = $hasRetryableFailures || ($campaign->failed_count > 0 && $campaign->sent_count === 0)
+                    ? ZnsCampaign::STATUS_FAILED
+                    : ZnsCampaign::STATUS_COMPLETED;
+                $campaign->finished_at = now();
+                $campaign->save();
+            }, 3);
+        } catch (ValidationException $exception) {
+            $campaign->refresh();
+            $campaign->status = ZnsCampaign::STATUS_FAILED;
             $campaign->finished_at = now();
             $campaign->save();
-        }, 3);
+
+            throw $exception;
+        }
 
         return [
             'processed' => $processed,

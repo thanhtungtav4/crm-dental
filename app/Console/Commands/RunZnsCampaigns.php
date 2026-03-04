@@ -30,6 +30,7 @@ class RunZnsCampaigns extends Command
     public function handle(ZnsCampaignRunnerService $runner): int
     {
         $campaignId = $this->option('campaign_id');
+        $hasValidationFailure = false;
 
         $query = ZnsCampaign::query()
             ->when(
@@ -72,13 +73,19 @@ class RunZnsCampaigns extends Command
             try {
                 $result = $runner->runCampaign($campaign);
             } catch (ValidationException $exception) {
+                $hasValidationFailure = true;
+                $message = collect($exception->errors())
+                    ->flatten()
+                    ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+                    ->implode(' ');
+
                 $this->error(sprintf(
                     '[%s] skipped: %s',
                     $campaign->code ?? 'N/A',
-                    $exception->getMessage(),
+                    $message !== '' ? $message : $exception->getMessage(),
                 ));
 
-                return self::FAILURE;
+                continue;
             }
 
             $this->info(sprintf(
@@ -91,6 +98,6 @@ class RunZnsCampaigns extends Command
             ));
         }
 
-        return self::SUCCESS;
+        return $hasValidationFailure ? self::FAILURE : self::SUCCESS;
     }
 }
