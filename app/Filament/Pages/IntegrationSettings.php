@@ -83,6 +83,7 @@ class IntegrationSettings extends Page
                     ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
                     ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
                     ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
+                    ['state' => 'zalo_webhook_rate_limit_per_minute', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook/phút', 'type' => 'integer', 'default' => 120, 'sort_order' => 55],
                 ],
             ],
             [
@@ -95,6 +96,8 @@ class IntegrationSettings extends Page
                     ['state' => 'zns_refresh_token', 'key' => 'zns.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 130],
                     ['state' => 'zns_template_appointment', 'key' => 'zns.template_appointment', 'label' => 'Template nhắc lịch hẹn', 'type' => 'text', 'default' => '', 'sort_order' => 140],
                     ['state' => 'zns_template_payment', 'key' => 'zns.template_payment', 'label' => 'Template nhắc thanh toán', 'type' => 'text', 'default' => '', 'sort_order' => 150],
+                    ['state' => 'zns_send_endpoint', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::znsSendEndpoint(), 'sort_order' => 160],
+                    ['state' => 'zns_request_timeout_seconds', 'key' => 'zns.request_timeout_seconds', 'label' => 'Timeout gọi ZNS (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsRequestTimeoutSeconds(), 'sort_order' => 170],
                 ],
             ],
             [
@@ -524,6 +527,18 @@ class IntegrationSettings extends Page
 
                 if (($field['key'] ?? null) === 'popup.retention_days') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zalo.webhook_rate_limit_per_minute') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:10', 'max:2000'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zns.request_timeout_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:30'];
 
                     continue;
                 }
@@ -1127,9 +1142,14 @@ class IntegrationSettings extends Page
 
             $templateAppointment = trim((string) data_get($validated, 'settings.zns_template_appointment', ''));
             $templatePayment = trim((string) data_get($validated, 'settings.zns_template_payment', ''));
+            $sendEndpoint = trim((string) data_get($validated, 'settings.zns_send_endpoint', ''));
 
             if ($templateAppointment === '' && $templatePayment === '') {
                 $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+            }
+
+            if ($sendEndpoint === '') {
+                $errors['settings.zns_send_endpoint'] = 'ZNS send endpoint là bắt buộc khi bật ZNS.';
             }
         }
 

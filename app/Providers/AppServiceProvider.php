@@ -32,6 +32,7 @@ use App\Observers\PrescriptionObserver;
 use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
+use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action as FilamentAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\TextColumn;
@@ -70,6 +71,13 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute($perMinute)
                 ->by(sha1($tokenFingerprint.'|'.$request->ip()));
+        });
+
+        RateLimiter::for('zalo-webhook', function (Request $request): Limit {
+            $perMinute = ClinicRuntimeSettings::zaloWebhookRateLimitPerMinute();
+
+            return Limit::perMinute($perMinute)
+                ->by(sha1('zalo-webhook|'.$request->ip()));
         });
 
         RateLimiter::for('api-mobile', function (Request $request): Limit {

@@ -301,6 +301,38 @@ class ClinicRuntimeSettings
             ->all();
     }
 
+    public static function zaloWebhookRateLimitPerMinute(): int
+    {
+        return max(
+            10,
+            min(
+                2000,
+                static::integer('zalo.webhook_rate_limit_per_minute', 120),
+            ),
+        );
+    }
+
+    public static function znsSendEndpoint(): string
+    {
+        $endpoint = trim((string) static::get(
+            'zns.send_endpoint',
+            'https://business.openapi.zalo.me/message/template',
+        ));
+
+        return $endpoint;
+    }
+
+    public static function znsRequestTimeoutSeconds(): int
+    {
+        return max(
+            3,
+            min(
+                30,
+                static::integer('zns.request_timeout_seconds', 15),
+            ),
+        );
+    }
+
     public static function popupAnnouncementsEnabled(): bool
     {
         return static::boolean('popup.enabled', false);

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ZnsCampaign;
 use App\Services\ZnsCampaignRunnerService;
 use Illuminate\Console\Command;
+use Illuminate\Validation\ValidationException;
 
 class RunZnsCampaigns extends Command
 {
@@ -51,7 +52,18 @@ class RunZnsCampaigns extends Command
         }
 
         foreach ($campaigns as $campaign) {
-            $result = $runner->runCampaign($campaign);
+            try {
+                $result = $runner->runCampaign($campaign);
+            } catch (ValidationException $exception) {
+                $this->error(sprintf(
+                    '[%s] skipped: %s',
+                    $campaign->code ?? 'N/A',
+                    $exception->getMessage(),
+                ));
+
+                return self::FAILURE;
+            }
+
             $this->info(sprintf(
                 '[%s] processed=%d sent=%d failed=%d skipped=%d',
                 $campaign->code,

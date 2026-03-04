@@ -6,6 +6,11 @@ use App\Services\ZaloIntegrationService;
 use Livewire\Livewire;
 
 it('rejects zalo webhook verification when token does not match', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+
     ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
         'group' => 'zalo',
         'value_type' => 'text',
@@ -17,6 +22,11 @@ it('rejects zalo webhook verification when token does not match', function (): v
 });
 
 it('returns challenge when zalo webhook verification succeeds', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+
     ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
         'group' => 'zalo',
         'value_type' => 'text',
@@ -29,6 +39,11 @@ it('returns challenge when zalo webhook verification succeeds', function (): voi
 });
 
 it('accepts webhook payload with valid verify token', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+
     ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
         'group' => 'zalo',
         'value_type' => 'text',
@@ -40,7 +55,43 @@ it('accepts webhook payload with valid verify token', function (): void {
         'event_name' => 'user_send_text',
         'timestamp' => 1735689600,
     ])->assertSuccessful()
-        ->assertJsonPath('ok', true);
+        ->assertJsonPath('ok', true)
+        ->assertJsonPath('duplicate', false);
+});
+
+it('ignores duplicated webhook payload by idempotent fingerprint', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+
+    ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
+        'group' => 'zalo',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+
+    $payload = [
+        'verify_token' => 'secure-token-12345678901234567890',
+        'event_id' => 'event_001',
+        'event_name' => 'user_send_text',
+        'timestamp' => 1735689600,
+    ];
+
+    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertSuccessful()
+        ->assertJsonPath('duplicate', false);
+
+    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertSuccessful()
+        ->assertJsonPath('duplicate', true);
+});
+
+it('applies throttle middleware to zalo webhook endpoint', function (): void {
+    $route = app('router')->getRoutes()->getByName('api.v1.integrations.zalo.webhook');
+
+    expect($route)->not->toBeNull()
+        ->and($route?->middleware())->toContain('throttle:zalo-webhook');
 });
 
 it('validates required zalo fields when enabling zalo oa', function (): void {
@@ -66,11 +117,13 @@ it('validates zns tokens and templates when zns is enabled', function (): void {
         ->set('settings.zns_refresh_token', '')
         ->set('settings.zns_template_appointment', '')
         ->set('settings.zns_template_payment', '')
+        ->set('settings.zns_send_endpoint', '')
         ->call('save')
         ->assertHasErrors([
             'settings.zns_access_token',
             'settings.zns_refresh_token',
             'settings.zns_template_appointment',
+            'settings.zns_send_endpoint',
         ]);
 });
 

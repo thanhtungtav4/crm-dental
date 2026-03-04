@@ -17,6 +17,7 @@ Route::prefix('v1')
     });
 
 Route::match(['get', 'post'], '/v1/integrations/zalo/webhook', ZaloWebhookController::class)
+    ->middleware('throttle:zalo-webhook')
     ->name('api.v1.integrations.zalo.webhook');
 
 Route::prefix('v1/emr/internal')
