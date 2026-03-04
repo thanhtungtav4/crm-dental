@@ -42,8 +42,8 @@ class SyncGoogleCalendarEvents extends Command
             return self::SUCCESS;
         }
 
-        if (! in_array(ClinicRuntimeSettings::googleCalendarSyncMode(), ['two_way', 'one_way_to_google'], true)) {
-            $this->warn('Google Calendar sync mode không cho phép đẩy CRM -> Google. Bỏ qua.');
+        if (! ClinicRuntimeSettings::googleCalendarAllowsPushToGoogle()) {
+            $this->warn('Google Calendar sync mode hiện không hỗ trợ CRM -> Google. Bỏ qua.');
 
             return self::SUCCESS;
         }

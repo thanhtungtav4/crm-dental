@@ -683,17 +683,19 @@ class ClinicRuntimeSettings
     public static function googleCalendarSyncModeOptions(): array
     {
         return [
-            'two_way' => 'Hai chiều (Google -> CRM: coming soon)',
             'one_way_to_google' => 'Một chiều: CRM -> Google (đã hỗ trợ)',
-            'one_way_to_crm' => 'Một chiều: Google -> CRM (coming soon)',
         ];
     }
 
     public static function googleCalendarSyncMode(): string
     {
-        $mode = trim((string) static::get('google_calendar.sync_mode', 'two_way'));
+        $mode = trim((string) static::get('google_calendar.sync_mode', 'one_way_to_google'));
 
-        return array_key_exists($mode, static::googleCalendarSyncModeOptions()) ? $mode : 'two_way';
+        return match ($mode) {
+            'one_way_to_google' => 'one_way_to_google',
+            'two_way', 'one_way_to_crm' => 'one_way_to_google',
+            default => 'one_way_to_google',
+        };
     }
 
     public static function googleCalendarClientId(): string
@@ -723,12 +725,12 @@ class ClinicRuntimeSettings
 
     public static function googleCalendarAllowsPushToGoogle(): bool
     {
-        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_google'], true);
+        return static::googleCalendarSyncMode() === 'one_way_to_google';
     }
 
     public static function googleCalendarAllowsPullFromGoogle(): bool
     {
-        return in_array(static::googleCalendarSyncMode(), ['two_way', 'one_way_to_crm'], true);
+        return false;
     }
 
     public static function isEmrEnabled(): bool

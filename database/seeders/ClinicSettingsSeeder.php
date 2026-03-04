@@ -40,7 +40,7 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'google_calendar', 'key' => 'google_calendar.refresh_token', 'label' => 'Refresh Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 235],
             ['group' => 'google_calendar', 'key' => 'google_calendar.account_email', 'label' => 'Google Account Email', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 238],
             ['group' => 'google_calendar', 'key' => 'google_calendar.calendar_id', 'label' => 'Calendar ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 240],
-            ['group' => 'google_calendar', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'value' => 'two_way', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 250],
+            ['group' => 'google_calendar', 'key' => 'google_calendar.sync_mode', 'label' => 'Chế độ đồng bộ', 'value' => 'one_way_to_google', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 250],
 
             // VNPay
             ['group' => 'vnpay', 'key' => 'vnpay.enabled', 'label' => 'Bật tích hợp VNPay', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 310],

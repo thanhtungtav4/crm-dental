@@ -101,13 +101,8 @@ class GoogleCalendarSyncEventPublisher
 
     public function shouldPushToGoogle(): bool
     {
-        if (! ClinicRuntimeSettings::isGoogleCalendarEnabled()) {
-            return false;
-        }
-
-        $mode = ClinicRuntimeSettings::googleCalendarSyncMode();
-
-        return in_array($mode, ['two_way', 'one_way_to_google'], true);
+        return ClinicRuntimeSettings::isGoogleCalendarEnabled()
+            && ClinicRuntimeSettings::googleCalendarAllowsPushToGoogle();
     }
 
     protected function resolveEventType(Appointment $appointment): string

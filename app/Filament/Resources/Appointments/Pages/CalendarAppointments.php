@@ -49,8 +49,9 @@ class CalendarAppointments extends Page
     public function getGoogleCalendarSyncModeLabel(): string
     {
         $options = ClinicRuntimeSettings::googleCalendarSyncModeOptions();
+        $fallback = reset($options);
 
-        return $options[ClinicRuntimeSettings::googleCalendarSyncMode()] ?? $options['two_way'];
+        return $options[ClinicRuntimeSettings::googleCalendarSyncMode()] ?? (is_string($fallback) ? $fallback : '');
     }
 
     /**

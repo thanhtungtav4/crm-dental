@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\IntegrationSettings;
 use App\Models\ClinicSetting;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 
@@ -226,4 +227,23 @@ it('exposes popup runtime provider fields in integration settings', function ():
         ->toContain('popup.polling_seconds')
         ->toContain('popup.retention_days')
         ->toContain('popup.sender_roles');
+});
+
+it('exposes only supported google calendar sync mode options in integration settings', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+    $googleCalendarProvider = $providers->firstWhere('group', 'google_calendar');
+
+    expect($googleCalendarProvider)->not->toBeNull();
+
+    $googleCalendarFields = collect($googleCalendarProvider['fields'] ?? [])
+        ->keyBy('key');
+    $modeField = $googleCalendarFields->get('google_calendar.sync_mode');
+
+    expect($modeField)->toBeArray()
+        ->and(array_keys($modeField['options'] ?? []))->toBe(['one_way_to_google'])
+        ->and($modeField['default'] ?? null)->toBe('one_way_to_google')
+        ->and(ClinicRuntimeSettings::googleCalendarSyncModeOptions())->toBe([
+            'one_way_to_google' => 'Một chiều: CRM -> Google (đã hỗ trợ)',
+        ]);
 });

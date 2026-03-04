@@ -122,7 +122,7 @@ class IntegrationSettings extends Page
                         'key' => 'google_calendar.sync_mode',
                         'label' => 'Chế độ đồng bộ',
                         'type' => 'select',
-                        'default' => 'two_way',
+                        'default' => 'one_way_to_google',
                         'options' => ClinicRuntimeSettings::googleCalendarSyncModeOptions(),
                         'sort_order' => 250,
                     ],
@@ -986,6 +986,30 @@ class IntegrationSettings extends Page
                 ->map(static fn (string $item): string => trim($item))
                 ->values()
                 ->all();
+        }
+
+        if (($field['type'] ?? null) === 'select') {
+            $options = is_array($field['options'] ?? null)
+                ? $field['options']
+                : [];
+
+            if ($options === []) {
+                return $value;
+            }
+
+            $optionKeys = array_map(static fn (mixed $key): string => (string) $key, array_keys($options));
+            $normalizedValue = filled($value) ? (string) $value : '';
+
+            if ($normalizedValue !== '' && in_array($normalizedValue, $optionKeys, true)) {
+                return $normalizedValue;
+            }
+
+            $defaultValue = filled($field['default'] ?? null) ? (string) $field['default'] : '';
+            if ($defaultValue !== '' && in_array($defaultValue, $optionKeys, true)) {
+                return $defaultValue;
+            }
+
+            return $optionKeys[0] ?? null;
         }
 
         return $value;
