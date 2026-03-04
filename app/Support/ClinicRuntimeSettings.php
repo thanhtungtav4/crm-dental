@@ -333,6 +333,52 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function znsTemplateLeadWelcome(): string
+    {
+        return trim((string) static::get('zns.template_lead_welcome', ''));
+    }
+
+    public static function znsTemplateAppointment(): string
+    {
+        return trim((string) static::get('zns.template_appointment', ''));
+    }
+
+    public static function znsTemplatePayment(): string
+    {
+        return trim((string) static::get('zns.template_payment', ''));
+    }
+
+    public static function znsTemplateBirthday(): string
+    {
+        return trim((string) static::get('zns.template_birthday', ''));
+    }
+
+    public static function znsAutoSendLeadWelcome(): bool
+    {
+        return static::boolean('zns.auto_send_lead_welcome', false);
+    }
+
+    public static function znsAutoSendAppointmentReminder(): bool
+    {
+        return static::boolean('zns.auto_send_appointment_reminder', false);
+    }
+
+    public static function znsAutoSendBirthdayGreeting(): bool
+    {
+        return static::boolean('zns.auto_send_birthday', false);
+    }
+
+    public static function znsAppointmentReminderDefaultHours(): int
+    {
+        return max(
+            1,
+            min(
+                168,
+                static::integer('zns.appointment_reminder_default_hours', 24),
+            ),
+        );
+    }
+
     public static function popupAnnouncementsEnabled(): bool
     {
         return static::boolean('popup.enabled', false);

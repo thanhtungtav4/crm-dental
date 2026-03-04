@@ -8,6 +8,7 @@ use App\Services\CareTicketService;
 use App\Services\GoogleCalendarSyncEventPublisher;
 use App\Services\PatientConversionService;
 use App\Services\VisitEpisodeService;
+use App\Services\ZnsAutomationEventPublisher;
 
 class AppointmentObserver
 {
@@ -16,6 +17,7 @@ class AppointmentObserver
         protected CareTicketService $careTicketService,
         protected VisitEpisodeService $visitEpisodeService,
         protected GoogleCalendarSyncEventPublisher $googleCalendarSyncEventPublisher,
+        protected ZnsAutomationEventPublisher $znsAutomationEventPublisher,
     ) {}
 
     /**
@@ -30,6 +32,7 @@ class AppointmentObserver
         $this->careTicketService->syncAppointment($appointment);
         $this->visitEpisodeService->syncFromAppointment($appointment, true);
         $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
+        $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
     }
 
     /**
@@ -56,6 +59,7 @@ class AppointmentObserver
             $this->careTicketService->syncAppointment($appointment);
             $this->visitEpisodeService->syncFromAppointment($appointment, $statusChanged);
             $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
+            $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
         }
     }
 
@@ -156,6 +160,10 @@ class AppointmentObserver
         $this->careTicketService->cancelBySource(Appointment::class, $appointment->id, 'appointment_reminder');
         $this->visitEpisodeService->markAppointmentDeleted($appointment);
         $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
+        $this->znsAutomationEventPublisher->cancelAppointmentReminder(
+            appointmentId: (int) $appointment->id,
+            reason: 'Lịch hẹn đã bị xóa.',
+        );
     }
 
     /**
@@ -164,6 +172,7 @@ class AppointmentObserver
     public function restored(Appointment $appointment): void
     {
         $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
+        $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
     }
 
     /**

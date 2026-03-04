@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Services\ZnsAutomationEventPublisher;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -17,7 +18,7 @@ class GenerateBirthdayCareTickets extends Command
 
     protected $description = 'Tạo ticket CSKH sinh nhật theo ngày hiện tại.';
 
-    public function handle(): int
+    public function handle(ZnsAutomationEventPublisher $znsAutomationEventPublisher): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -42,6 +43,13 @@ class GenerateBirthdayCareTickets extends Command
         $skipped = 0;
 
         foreach ($patients as $patient) {
+            if (! $this->option('dry-run')) {
+                $znsAutomationEventPublisher->publishBirthdayGreeting(
+                    patient: $patient,
+                    asOfDate: $date,
+                );
+            }
+
             $exists = Note::query()
                 ->where('care_type', 'birthday_care')
                 ->where('source_type', Patient::class)

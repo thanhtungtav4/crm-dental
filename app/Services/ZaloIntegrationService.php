@@ -65,8 +65,13 @@ class ZaloIntegrationService
         $enabled = ClinicRuntimeSettings::boolean('zns.enabled', false);
         $accessToken = trim((string) ClinicRuntimeSettings::get('zns.access_token', ''));
         $refreshToken = trim((string) ClinicRuntimeSettings::get('zns.refresh_token', ''));
-        $templateAppointment = trim((string) ClinicRuntimeSettings::get('zns.template_appointment', ''));
-        $templatePayment = trim((string) ClinicRuntimeSettings::get('zns.template_payment', ''));
+        $templateLeadWelcome = ClinicRuntimeSettings::znsTemplateLeadWelcome();
+        $templateAppointment = ClinicRuntimeSettings::znsTemplateAppointment();
+        $templatePayment = ClinicRuntimeSettings::znsTemplatePayment();
+        $templateBirthday = ClinicRuntimeSettings::znsTemplateBirthday();
+        $autoLeadWelcome = ClinicRuntimeSettings::znsAutoSendLeadWelcome();
+        $autoAppointmentReminder = ClinicRuntimeSettings::znsAutoSendAppointmentReminder();
+        $autoBirthdayGreeting = ClinicRuntimeSettings::znsAutoSendBirthdayGreeting();
         $sendEndpoint = trim((string) ClinicRuntimeSettings::znsSendEndpoint());
         $timeoutSeconds = ClinicRuntimeSettings::znsRequestTimeoutSeconds();
 
@@ -86,8 +91,13 @@ class ZaloIntegrationService
             $issues[] = 'Thiếu Refresh Token.';
         }
 
-        if ($templateAppointment === '' && $templatePayment === '') {
-            $issues[] = 'Thiếu template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+        if (
+            $templateLeadWelcome === ''
+            && $templateAppointment === ''
+            && $templatePayment === ''
+            && $templateBirthday === ''
+        ) {
+            $issues[] = 'Thiếu template ZNS (lead welcome/nhắc lịch/nhắc thanh toán/sinh nhật).';
         }
 
         if ($sendEndpoint === '') {
@@ -98,8 +108,24 @@ class ZaloIntegrationService
             $issues[] = 'Timeout gọi ZNS ngoài phạm vi an toàn (3-30 giây).';
         }
 
+        if ($autoLeadWelcome && $templateLeadWelcome === '') {
+            $issues[] = 'Đã bật auto gửi lead welcome nhưng chưa cấu hình template lead welcome.';
+        }
+
+        if ($autoAppointmentReminder && $templateAppointment === '') {
+            $issues[] = 'Đã bật auto gửi nhắc lịch hẹn nhưng chưa cấu hình template appointment.';
+        }
+
+        if ($autoBirthdayGreeting && $templateBirthday === '') {
+            $issues[] = 'Đã bật auto gửi chúc mừng sinh nhật nhưng chưa cấu hình template birthday.';
+        }
+
         if ($enabled && $accessToken !== '' && $refreshToken !== '' && $sendEndpoint !== '') {
             $recommendations[] = 'Thiết lập quy trình xoay vòng token định kỳ và giám sát hạn token.';
+        }
+
+        if ($enabled && ! $autoLeadWelcome && ! $autoAppointmentReminder && ! $autoBirthdayGreeting) {
+            $recommendations[] = 'Bật ít nhất một luồng automation ZNS (lead welcome/nhắc hẹn/sinh nhật) để khai thác kênh chăm sóc tự động.';
         }
 
         return [

@@ -127,6 +127,26 @@ it('validates zns tokens and templates when zns is enabled', function (): void {
         ]);
 });
 
+it('validates zns automation templates when corresponding toggles are enabled', function (): void {
+    Livewire::test(IntegrationSettings::class)
+        ->set('settings.zns_enabled', true)
+        ->set('settings.zns_access_token', 'zns_access_token_001')
+        ->set('settings.zns_refresh_token', 'zns_refresh_token_001')
+        ->set('settings.zns_send_endpoint', 'https://business.openapi.zalo.me/message/template')
+        ->set('settings.zns_auto_send_lead_welcome', true)
+        ->set('settings.zns_template_lead_welcome', '')
+        ->set('settings.zns_auto_send_appointment_reminder', true)
+        ->set('settings.zns_template_appointment', '')
+        ->set('settings.zns_auto_send_birthday', true)
+        ->set('settings.zns_template_birthday', '')
+        ->call('save')
+        ->assertHasErrors([
+            'settings.zns_template_lead_welcome',
+            'settings.zns_template_appointment',
+            'settings.zns_template_birthday',
+        ]);
+});
+
 it('produces zalo readiness report with webhook endpoint', function (): void {
     ClinicSetting::setValue('zalo.enabled', true, ['group' => 'zalo', 'value_type' => 'boolean']);
     ClinicSetting::setValue('zalo.oa_id', 'oa_001', ['group' => 'zalo', 'value_type' => 'text']);

@@ -44,6 +44,7 @@ $scheduleAutomation('emr:reconcile-integrity')->hourlyAt(40);
 $scheduleAutomation('emr:reconcile-clinical-media')->hourlyAt(45);
 $scheduleAutomation('google-calendar:sync-events')->everyTenMinutes();
 $scheduleAutomation('zns:run-campaigns')->everyTenMinutes();
+$scheduleAutomation('zns:sync-automation-events')->everyFiveMinutes();
 $scheduleAutomation('popups:dispatch-due')->everyMinute();
 $scheduleAutomation('popups:prune')->dailyAt('03:30');
 $scheduleAutomation('photos:prune')->dailyAt('03:10');

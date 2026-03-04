@@ -17,6 +17,7 @@ class WebLeadIngestionService
 {
     public function __construct(
         protected WebLeadRealtimeNotificationService $webLeadRealtimeNotificationService,
+        protected ZnsAutomationEventPublisher $znsAutomationEventPublisher,
     ) {}
 
     /**
@@ -182,6 +183,13 @@ class WebLeadIngestionService
                 customer: $customer,
                 created: $created,
             );
+
+            if ($created) {
+                $this->znsAutomationEventPublisher->publishLeadWelcomeForWebLead(
+                    customer: $customer,
+                    requestId: $requestId,
+                );
+            }
 
             return [
                 'ingestion' => $ingestion,

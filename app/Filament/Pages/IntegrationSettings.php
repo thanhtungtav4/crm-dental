@@ -94,8 +94,14 @@ class IntegrationSettings extends Page
                     ['state' => 'zns_enabled', 'key' => 'zns.enabled', 'label' => 'Bật tích hợp ZNS', 'type' => 'boolean', 'default' => false, 'sort_order' => 110],
                     ['state' => 'zns_access_token', 'key' => 'zns.access_token', 'label' => 'Access Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 120],
                     ['state' => 'zns_refresh_token', 'key' => 'zns.refresh_token', 'label' => 'Refresh Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 130],
+                    ['state' => 'zns_auto_send_lead_welcome', 'key' => 'zns.auto_send_lead_welcome', 'label' => 'Tự gửi tin chào mừng khi có lead mới từ web', 'type' => 'boolean', 'default' => false, 'sort_order' => 135],
+                    ['state' => 'zns_template_lead_welcome', 'key' => 'zns.template_lead_welcome', 'label' => 'Template chào mừng lead mới', 'type' => 'text', 'default' => '', 'sort_order' => 136],
+                    ['state' => 'zns_auto_send_appointment_reminder', 'key' => 'zns.auto_send_appointment_reminder', 'label' => 'Tự gửi ZNS nhắc lịch hẹn', 'type' => 'boolean', 'default' => false, 'sort_order' => 137],
+                    ['state' => 'zns_appointment_reminder_default_hours', 'key' => 'zns.appointment_reminder_default_hours', 'label' => 'Số giờ nhắc hẹn mặc định trước giờ hẹn', 'type' => 'integer', 'default' => 24, 'sort_order' => 138],
                     ['state' => 'zns_template_appointment', 'key' => 'zns.template_appointment', 'label' => 'Template nhắc lịch hẹn', 'type' => 'text', 'default' => '', 'sort_order' => 140],
                     ['state' => 'zns_template_payment', 'key' => 'zns.template_payment', 'label' => 'Template nhắc thanh toán', 'type' => 'text', 'default' => '', 'sort_order' => 150],
+                    ['state' => 'zns_auto_send_birthday', 'key' => 'zns.auto_send_birthday', 'label' => 'Tự gửi ZNS chúc mừng sinh nhật', 'type' => 'boolean', 'default' => false, 'sort_order' => 151],
+                    ['state' => 'zns_template_birthday', 'key' => 'zns.template_birthday', 'label' => 'Template chúc mừng sinh nhật', 'type' => 'text', 'default' => '', 'sort_order' => 152],
                     ['state' => 'zns_send_endpoint', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::znsSendEndpoint(), 'sort_order' => 160],
                     ['state' => 'zns_request_timeout_seconds', 'key' => 'zns.request_timeout_seconds', 'label' => 'Timeout gọi ZNS (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsRequestTimeoutSeconds(), 'sort_order' => 170],
                 ],
@@ -539,6 +545,12 @@ class IntegrationSettings extends Page
 
                 if (($field['key'] ?? null) === 'zns.request_timeout_seconds') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:30'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zns.appointment_reminder_default_hours') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:168'];
 
                     continue;
                 }
@@ -1140,12 +1152,34 @@ class IntegrationSettings extends Page
                 $errors['settings.zns_refresh_token'] = 'Refresh Token là bắt buộc khi bật ZNS.';
             }
 
+            $templateLeadWelcome = trim((string) data_get($validated, 'settings.zns_template_lead_welcome', ''));
             $templateAppointment = trim((string) data_get($validated, 'settings.zns_template_appointment', ''));
             $templatePayment = trim((string) data_get($validated, 'settings.zns_template_payment', ''));
+            $templateBirthday = trim((string) data_get($validated, 'settings.zns_template_birthday', ''));
+            $autoLeadWelcome = filter_var(data_get($validated, 'settings.zns_auto_send_lead_welcome', false), FILTER_VALIDATE_BOOLEAN);
+            $autoAppointmentReminder = filter_var(data_get($validated, 'settings.zns_auto_send_appointment_reminder', false), FILTER_VALIDATE_BOOLEAN);
+            $autoBirthday = filter_var(data_get($validated, 'settings.zns_auto_send_birthday', false), FILTER_VALIDATE_BOOLEAN);
             $sendEndpoint = trim((string) data_get($validated, 'settings.zns_send_endpoint', ''));
 
-            if ($templateAppointment === '' && $templatePayment === '') {
-                $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (nhắc lịch hoặc nhắc thanh toán).';
+            if (
+                $templateLeadWelcome === ''
+                && $templateAppointment === ''
+                && $templatePayment === ''
+                && $templateBirthday === ''
+            ) {
+                $errors['settings.zns_template_appointment'] = 'Cần ít nhất một template ZNS (lead welcome/nhắc lịch/nhắc thanh toán/sinh nhật).';
+            }
+
+            if ($autoLeadWelcome && $templateLeadWelcome === '') {
+                $errors['settings.zns_template_lead_welcome'] = 'Cần template lead welcome khi bật tự động gửi lead mới.';
+            }
+
+            if ($autoAppointmentReminder && $templateAppointment === '') {
+                $errors['settings.zns_template_appointment'] = 'Cần template nhắc lịch hẹn khi bật tự động gửi nhắc hẹn.';
+            }
+
+            if ($autoBirthday && $templateBirthday === '') {
+                $errors['settings.zns_template_birthday'] = 'Cần template sinh nhật khi bật tự động gửi chúc mừng sinh nhật.';
             }
 
             if ($sendEndpoint === '') {
