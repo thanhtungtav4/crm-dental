@@ -12,8 +12,15 @@ Artisan::command('inspire', function () {
 
 $scheduleLockTtlMinutes = ClinicRuntimeSettings::schedulerLockExpiresAfterMinutes();
 
-$scheduleAutomation = function (string $targetCommand) use ($scheduleLockTtlMinutes) {
-    return Schedule::command(RunScheduledCommand::class, [$targetCommand])
+$scheduleAutomation = function (string $targetCommand, array $targetArgs = []) use ($scheduleLockTtlMinutes) {
+    $arguments = array_merge(
+        [$targetCommand],
+        collect($targetArgs)
+            ->map(static fn (string $arg): string => '--target-args='.$arg)
+            ->all(),
+    );
+
+    return Schedule::command(RunScheduledCommand::class, $arguments)
         ->name("automation:{$targetCommand}")
         ->withoutOverlapping($scheduleLockTtlMinutes)
         ->onOneServer();
@@ -39,12 +46,13 @@ $scheduleAutomation('reports:check-snapshot-sla')->dailyAt('10:00');
 $scheduleAutomation('ops:create-backup-artifact')->dailyAt('01:50');
 $scheduleAutomation('ops:run-restore-drill')->dailyAt('02:10');
 $scheduleAutomation('ops:check-alert-runbook-map')->dailyAt('02:20');
-$scheduleAutomation('emr:sync-events')->hourlyAt(15);
+$scheduleAutomation('ops:check-observability-health', ['--strict'])->dailyAt('02:25');
+$scheduleAutomation('emr:sync-events', ['--strict-exit'])->hourlyAt(15);
 $scheduleAutomation('emr:reconcile-integrity')->hourlyAt(40);
 $scheduleAutomation('emr:reconcile-clinical-media')->hourlyAt(45);
-$scheduleAutomation('google-calendar:sync-events')->everyTenMinutes();
+$scheduleAutomation('google-calendar:sync-events', ['--strict-exit'])->everyTenMinutes();
 $scheduleAutomation('zns:run-campaigns')->everyTenMinutes();
-$scheduleAutomation('zns:sync-automation-events')->everyFiveMinutes();
+$scheduleAutomation('zns:sync-automation-events', ['--strict-exit'])->everyFiveMinutes();
 $scheduleAutomation('popups:dispatch-due')->everyMinute();
 $scheduleAutomation('popups:prune')->dailyAt('03:30');
 $scheduleAutomation('photos:prune')->dailyAt('03:10');
