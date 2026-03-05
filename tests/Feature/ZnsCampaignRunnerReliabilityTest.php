@@ -203,6 +203,105 @@ it('stops retrying failed deliveries after reaching campaign max attempts', func
         ->and($delivery?->provider_message_id)->toBeNull();
 });
 
+it('processes entire audience when campaign has more than 500 eligible patients', function (): void {
+    configureZnsCampaignRuntime();
+
+    $branch = Branch::factory()->create();
+
+    for ($index = 1; $index <= 520; $index++) {
+        Patient::factory()->create([
+            'first_branch_id' => $branch->id,
+            'phone' => '09'.str_pad((string) $index, 8, '0', STR_PAD_LEFT),
+        ]);
+    }
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Large audience campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_id' => 'tpl_large_audience_001',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => 0,
+            'message' => 'Success',
+            'data' => ['msg_id' => 'bulk-sent'],
+        ], 200),
+    ]);
+
+    $result = app(ZnsCampaignRunnerService::class)->runCampaign($campaign);
+    $campaign = $campaign->fresh();
+
+    expect($result['processed'])->toBe(520)
+        ->and($result['sent'])->toBe(520)
+        ->and($result['failed'])->toBe(0)
+        ->and($campaign)->not->toBeNull()
+        ->and($campaign?->status)->toBe(ZnsCampaign::STATUS_COMPLETED)
+        ->and((int) $campaign?->sent_count)->toBe(520)
+        ->and((int) $campaign?->failed_count)->toBe(0)
+        ->and((int) ZnsCampaignDelivery::query()->where('zns_campaign_id', $campaign?->id)->count())->toBe(520);
+
+    Http::assertSentCount(520);
+});
+
+it('skips delivery that is actively claimed by another worker', function (): void {
+    configureZnsCampaignRuntime();
+
+    $branch = Branch::factory()->create();
+    $patient = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0908999888',
+    ]);
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Concurrent claim campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_id' => 'tpl_concurrent_001',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    $normalizedPhone = preg_replace('/[^0-9]/', '', (string) $patient->phone);
+    $normalizedPhone = is_string($normalizedPhone) ? trim($normalizedPhone) : '';
+
+    ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => $campaign->id,
+        'patient_id' => $patient->id,
+        'customer_id' => $patient->customer_id,
+        'branch_id' => $branch->id,
+        'phone' => (string) $patient->phone,
+        'normalized_phone' => $normalizedPhone,
+        'idempotency_key' => znsCampaignDeliveryIdempotencyKeyForReliability($campaign->id, $normalizedPhone, 'tpl_concurrent_001'),
+        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+        'processing_token' => 'worker-active-token',
+        'locked_at' => now(),
+        'attempt_count' => 1,
+        'payload' => ['template_id' => 'tpl_concurrent_001'],
+        'template_key_snapshot' => 'appointment',
+        'template_id_snapshot' => 'tpl_concurrent_001',
+    ]);
+
+    Http::fake();
+
+    $result = app(ZnsCampaignRunnerService::class)->runCampaign($campaign);
+    $campaign = $campaign->fresh();
+    $delivery = ZnsCampaignDelivery::query()->first();
+
+    expect($result['processed'])->toBe(0)
+        ->and($result['sent'])->toBe(0)
+        ->and($result['failed'])->toBe(0)
+        ->and($result['skipped'])->toBe(1)
+        ->and($campaign)->not->toBeNull()
+        ->and($campaign?->status)->toBe(ZnsCampaign::STATUS_RUNNING)
+        ->and($campaign?->finished_at)->toBeNull()
+        ->and($delivery)->not->toBeNull()
+        ->and($delivery?->processing_token)->toBe('worker-active-token');
+
+    Http::assertNothingSent();
+});
+
 it('keeps campaign in failed status while retryable deliveries still exist even if some are sent', function (): void {
     configureZnsCampaignRuntime();
 
@@ -353,4 +452,14 @@ function configureZnsCampaignRuntime(): void
         'group' => 'zns',
         'value_type' => 'integer',
     ]);
+}
+
+function znsCampaignDeliveryIdempotencyKeyForReliability(int $campaignId, string $normalizedPhone, string $templateId): string
+{
+    return hash('sha256', implode('|', [
+        'zns-v2',
+        $campaignId,
+        $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
+        $templateId,
+    ]));
 }

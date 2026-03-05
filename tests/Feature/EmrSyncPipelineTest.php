@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\Customer;
@@ -79,6 +80,47 @@ it('moves emr outbox event to dead letter after max attempts', function () {
         ->and($event?->last_error)->toContain('remote error')
         ->and($log)->not->toBeNull()
         ->and($log?->status)->toBe(EmrSyncEvent::STATUS_FAILED);
+});
+
+it('fails strict exit and records dead-letter alert when emr sync has dead letters', function (): void {
+    [$patient] = seedEmrPatientAggregate();
+
+    configureEmrRuntime();
+
+    $event = app(EmrSyncEventPublisher::class)->publishForPatient($patient, 'manual.sync');
+
+    expect($event)->not->toBeNull();
+
+    $event?->update([
+        'max_attempts' => 1,
+    ]);
+
+    Http::fake([
+        'https://emr.example.test/api/emr/patients/sync' => Http::response([
+            'message' => 'strict dead-letter',
+        ], 500),
+    ]);
+
+    $this->artisan('emr:sync-events', [
+        '--strict-exit' => true,
+    ])
+        ->expectsOutputToContain('STRICT_EXIT_STATUS: FAIL')
+        ->assertFailed();
+
+    $event = $event?->fresh();
+
+    $deadLetterAlert = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
+        ->where('action', AuditLog::ACTION_FAIL)
+        ->latest('id')
+        ->get()
+        ->first(fn (AuditLog $log): bool => data_get($log->metadata, 'channel') === 'sync_dead_letter_alert'
+            && data_get($log->metadata, 'command') === 'emr:sync-events');
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(EmrSyncEvent::STATUS_DEAD)
+        ->and($deadLetterAlert)->not->toBeNull()
+        ->and((int) data_get($deadLetterAlert?->metadata, 'dead_backlog', 0))->toBeGreaterThanOrEqual(1);
 });
 
 it('keeps deterministic idempotency key for repeated emr publish attempts and requeues after synced', function (): void {

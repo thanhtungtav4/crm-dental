@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\Customer;
@@ -200,6 +201,57 @@ it('moves stale processing zns automation events to dead when max attempts alrea
         ->and((string) ($event?->last_error ?? ''))->toContain('max attempts');
 
     Http::assertNothingSent();
+});
+
+it('fails strict exit and records dead-letter alert when zns automation sync has dead letters', function (): void {
+    configureZnsAutomationRuntime(
+        autoAppointmentReminder: true,
+        templateAppointment: 'tpl_appointment_strict_dead',
+    );
+
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(2),
+        'reminder_hours' => 1,
+    ]);
+
+    $event = ZnsAutomationEvent::query()
+        ->where('appointment_id', $appointment->id)
+        ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
+        ->firstOrFail();
+
+    $event->update([
+        'max_attempts' => 1,
+        'next_retry_at' => now()->subMinute(),
+    ]);
+
+    Http::fake([
+        'https://business.openapi.zalo.me/*' => Http::response([
+            'error' => -1,
+            'message' => 'strict dead-letter',
+        ], 500),
+    ]);
+
+    $this->artisan('zns:sync-automation-events', [
+        '--strict-exit' => true,
+    ])
+        ->expectsOutputToContain('STRICT_EXIT_STATUS: FAIL')
+        ->assertFailed();
+
+    $event = $event->fresh();
+
+    $deadLetterAlert = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
+        ->where('action', AuditLog::ACTION_FAIL)
+        ->latest('id')
+        ->get()
+        ->first(fn (AuditLog $log): bool => data_get($log->metadata, 'channel') === 'sync_dead_letter_alert'
+            && data_get($log->metadata, 'command') === 'zns:sync-automation-events');
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(ZnsAutomationEvent::STATUS_DEAD)
+        ->and($deadLetterAlert)->not->toBeNull()
+        ->and((int) data_get($deadLetterAlert?->metadata, 'dead_backlog', 0))->toBeGreaterThanOrEqual(1);
 });
 
 it('publishes birthday greeting event from birthday automation and deduplicates by year', function (): void {

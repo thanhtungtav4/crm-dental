@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\ClinicSetting;
 use App\Models\GoogleCalendarEventMap;
 use App\Models\GoogleCalendarSyncEvent;
@@ -100,6 +101,59 @@ it('moves google calendar outbox event to dead letter after max attempts', funct
         ->and((string) $event?->last_error)->toContain('remote error')
         ->and($log)->not->toBeNull()
         ->and($log?->status)->toBe(GoogleCalendarSyncEvent::STATUS_FAILED);
+});
+
+it('fails strict exit and records dead-letter alert when google sync has dead letters', function (): void {
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(3),
+        'duration_minutes' => 30,
+    ]);
+
+    configureGoogleCalendarRuntime();
+
+    $event = app(GoogleCalendarSyncEventPublisher::class)->publishForAppointment($appointment->fresh());
+
+    expect($event)->not->toBeNull();
+
+    $event?->update([
+        'max_attempts' => 1,
+    ]);
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://oauth2.googleapis.com/token' => Http::response([
+            'access_token' => 'gcal-test-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*/events' => Http::response([
+            'error' => [
+                'message' => 'strict dead-letter',
+            ],
+        ], 500),
+    ]);
+
+    $this->artisan('google-calendar:sync-events', [
+        '--strict-exit' => true,
+    ])
+        ->expectsOutputToContain('STRICT_EXIT_STATUS: FAIL')
+        ->assertFailed();
+
+    $event = $event?->fresh();
+
+    $deadLetterAlert = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
+        ->where('action', AuditLog::ACTION_FAIL)
+        ->latest('id')
+        ->get()
+        ->first(fn (AuditLog $log): bool => data_get($log->metadata, 'channel') === 'sync_dead_letter_alert'
+            && data_get($log->metadata, 'command') === 'google-calendar:sync-events');
+
+    expect($event)->not->toBeNull()
+        ->and($event?->status)->toBe(GoogleCalendarSyncEvent::STATUS_DEAD)
+        ->and($deadLetterAlert)->not->toBeNull()
+        ->and((int) data_get($deadLetterAlert?->metadata, 'dead_backlog', 0))->toBeGreaterThanOrEqual(1);
 });
 
 it('publishes google calendar outbox event from appointment observer on create', function (): void {

@@ -19,7 +19,8 @@ class SyncGoogleCalendarEvents extends Command
     protected $signature = 'google-calendar:sync-events
         {--limit=100 : Số lượng event tối đa mỗi lần chạy}
         {--appointment_id= : Chỉ sync cho một lịch hẹn}
-        {--dry-run : Chỉ preview, không ghi dữ liệu}';
+        {--dry-run : Chỉ preview, không ghi dữ liệu}
+        {--strict-exit : Trả về exit code lỗi nếu vẫn còn failed/dead-letter sau khi chạy}';
 
     protected $description = 'Đồng bộ outbox Google Calendar (CRM -> Google) theo cơ chế retry + dead-letter.';
 
@@ -57,6 +58,7 @@ class SyncGoogleCalendarEvents extends Command
         $limit = max(1, (int) $this->option('limit'));
         $appointmentId = $this->option('appointment_id') ? (int) $this->option('appointment_id') : null;
         $dryRun = (bool) $this->option('dry-run');
+        $strictExit = (bool) $this->option('strict-exit');
 
         if (! $dryRun) {
             $reclaimed = GoogleCalendarSyncEvent::reclaimStaleProcessing();
@@ -78,6 +80,21 @@ class SyncGoogleCalendarEvents extends Command
 
         if ($events->isEmpty()) {
             $this->info('Không có event Google Calendar nào sẵn sàng để xử lý.');
+
+            if (! $dryRun) {
+                $deadBacklog = $this->countDeadLetters($appointmentId);
+                $this->recordDeadLetterAlertIfNeeded(
+                    deadBacklog: $deadBacklog,
+                    deadInBatch: 0,
+                    scopeMetadata: ['appointment_id' => $appointmentId],
+                );
+
+                if ($strictExit && $deadBacklog > 0) {
+                    $this->error("STRICT_EXIT_STATUS: FAIL. Google Calendar outbox còn {$deadBacklog} dead-letter event.");
+
+                    return self::FAILURE;
+                }
+            }
 
             return self::SUCCESS;
         }
@@ -107,7 +124,74 @@ class SyncGoogleCalendarEvents extends Command
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] Google Calendar sync processed. synced={$synced}, failed={$failed}, dead={$dead}");
 
+        $deadBacklog = 0;
+
+        if (! $dryRun) {
+            $deadBacklog = $this->countDeadLetters($appointmentId);
+
+            $this->recordDeadLetterAlertIfNeeded(
+                deadBacklog: $deadBacklog,
+                deadInBatch: $dead,
+                scopeMetadata: ['appointment_id' => $appointmentId],
+            );
+        }
+
+        if ($strictExit && ! $dryRun && ($failed > 0 || $dead > 0 || $deadBacklog > 0)) {
+            $this->error(
+                "STRICT_EXIT_STATUS: FAIL. Google Calendar sync còn failed={$failed}, dead_in_batch={$dead}, dead_backlog={$deadBacklog}.",
+            );
+
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
+    }
+
+    protected function countDeadLetters(?int $appointmentId): int
+    {
+        return GoogleCalendarSyncEvent::query()
+            ->when($appointmentId !== null, fn ($query) => $query->where('appointment_id', $appointmentId))
+            ->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)
+            ->count();
+    }
+
+    /**
+     * @param  array<string, mixed>  $scopeMetadata
+     */
+    protected function recordDeadLetterAlertIfNeeded(int $deadBacklog, int $deadInBatch, array $scopeMetadata = []): void
+    {
+        if (! ClinicRuntimeSettings::syncDeadLetterAlertEnabled()) {
+            return;
+        }
+
+        $threshold = ClinicRuntimeSettings::syncDeadLetterAlertThreshold();
+
+        if ($deadBacklog < $threshold) {
+            return;
+        }
+
+        $runbookCategory = 'google_calendar_dead_letter';
+        $runbook = (string) data_get(ClinicRuntimeSettings::opsAlertRunbookMap(), "{$runbookCategory}.runbook", '');
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: 0,
+            action: AuditLog::ACTION_FAIL,
+            actorId: auth()->id(),
+            metadata: array_merge([
+                'channel' => 'sync_dead_letter_alert',
+                'command' => 'google-calendar:sync-events',
+                'runbook_category' => $runbookCategory,
+                'runbook' => $runbook,
+                'dead_backlog' => $deadBacklog,
+                'dead_in_batch' => $deadInBatch,
+                'threshold' => $threshold,
+            ], $scopeMetadata),
+        );
+
+        $this->warn(
+            "DEAD_LETTER_ALERT: Google Calendar dead_backlog={$deadBacklog} (threshold={$threshold}).",
+        );
     }
 
     protected function processEvent(int $eventId): string

@@ -285,6 +285,7 @@ class VerifyProductionReadinessReport extends Command
             'ops:check-backup-health',
             'ops:run-restore-drill',
             'ops:check-alert-runbook-map',
+            'ops:check-observability-health',
             'emr:check-dicom-readiness',
         ];
 

@@ -1085,6 +1085,91 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function syncDeadLetterAlertEnabled(): bool
+    {
+        return static::boolean(
+            'sync.dead_letter_alert_enabled',
+            (bool) config('care.sync_dead_letter_alert_enabled', true),
+        );
+    }
+
+    public static function syncDeadLetterAlertThreshold(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'sync.dead_letter_alert_threshold',
+                (int) config('care.sync_dead_letter_alert_threshold', 1),
+            ),
+        );
+    }
+
+    public static function observabilityWindowHours(): int
+    {
+        return max(
+            1,
+            static::integer(
+                'observability.window_hours',
+                (int) config('care.observability_window_hours', 24),
+            ),
+        );
+    }
+
+    public static function observabilityDeadLetterErrorBudget(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'observability.dead_letter_error_budget',
+                (int) config('care.observability_dead_letter_error_budget', 0),
+            ),
+        );
+    }
+
+    public static function observabilityRetryableFailureErrorBudget(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'observability.retryable_failure_error_budget',
+                (int) config('care.observability_retryable_failure_error_budget', 5),
+            ),
+        );
+    }
+
+    public static function observabilityOpenKpiAlertErrorBudget(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'observability.open_kpi_alert_error_budget',
+                (int) config('care.observability_open_kpi_alert_error_budget', 5),
+            ),
+        );
+    }
+
+    public static function observabilitySnapshotSlaErrorBudget(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'observability.snapshot_sla_error_budget',
+                (int) config('care.observability_snapshot_sla_error_budget', 0),
+            ),
+        );
+    }
+
+    public static function observabilityRecentAutomationFailureErrorBudget(): int
+    {
+        return max(
+            0,
+            static::integer(
+                'observability.recent_automation_failure_error_budget',
+                (int) config('care.observability_recent_automation_failure_error_budget', 20),
+            ),
+        );
+    }
+
     public static function schedulerAutomationActorUserId(): ?int
     {
         $value = static::get(

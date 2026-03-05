@@ -24,6 +24,21 @@ it('rejects web lead ingestion when token is invalid', function (): void {
         ->assertJsonPath('message', 'Token không hợp lệ.');
 });
 
+it('rejects web lead ingestion when phone is not valid vietnam mobile format', function (): void {
+    configureWebLeadApi(enabled: true, token: 'web-token');
+
+    $response = $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Invalid Phone Lead',
+        'phone' => '001234567',
+    ], [
+        'Authorization' => 'Bearer web-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonPath('errors.phone.0', 'Số điện thoại phải là số di động Việt Nam hợp lệ.');
+});
+
 it('creates a new lead from web payload and stores ingestion log', function (): void {
     $branch = Branch::factory()->create([
         'code' => 'BR-WEB-HCM',

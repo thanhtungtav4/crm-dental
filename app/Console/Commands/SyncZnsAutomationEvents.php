@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
 use App\Services\ZnsProviderClient;
@@ -16,7 +17,8 @@ class SyncZnsAutomationEvents extends Command
     protected $signature = 'zns:sync-automation-events
         {--limit=100 : Số lượng event tối đa mỗi lần chạy}
         {--event_type= : Chỉ xử lý một event_type cụ thể}
-        {--dry-run : Chỉ preview, không ghi dữ liệu}';
+        {--dry-run : Chỉ preview, không ghi dữ liệu}
+        {--strict-exit : Trả về exit code lỗi nếu vẫn còn failed/dead-letter sau khi chạy}';
 
     protected $description = 'Xử lý outbox ZNS automation (lead welcome / appointment reminder / birthday) với retry + reclaim.';
 
@@ -54,6 +56,7 @@ class SyncZnsAutomationEvents extends Command
         $limit = max(1, (int) $this->option('limit'));
         $eventType = trim((string) $this->option('event_type'));
         $dryRun = (bool) $this->option('dry-run');
+        $strictExit = (bool) $this->option('strict-exit');
 
         if (! $dryRun) {
             $reclaimed = ZnsAutomationEvent::reclaimStaleProcessing();
@@ -75,6 +78,21 @@ class SyncZnsAutomationEvents extends Command
 
         if ($events->isEmpty()) {
             $this->info('Không có event ZNS automation nào sẵn sàng để xử lý.');
+
+            if (! $dryRun) {
+                $deadBacklog = $this->countDeadLetters($eventType);
+                $this->recordDeadLetterAlertIfNeeded(
+                    deadBacklog: $deadBacklog,
+                    deadInBatch: 0,
+                    scopeMetadata: ['event_type_filter' => $eventType !== '' ? $eventType : null],
+                );
+
+                if ($strictExit && $deadBacklog > 0) {
+                    $this->error("STRICT_EXIT_STATUS: FAIL. ZNS automation outbox còn {$deadBacklog} dead-letter event.");
+
+                    return self::FAILURE;
+                }
+            }
 
             return self::SUCCESS;
         }
@@ -104,7 +122,74 @@ class SyncZnsAutomationEvents extends Command
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] ZNS automation sync processed. sent={$sent}, failed={$failed}, dead={$dead}");
 
+        $deadBacklog = 0;
+
+        if (! $dryRun) {
+            $deadBacklog = $this->countDeadLetters($eventType);
+
+            $this->recordDeadLetterAlertIfNeeded(
+                deadBacklog: $deadBacklog,
+                deadInBatch: $dead,
+                scopeMetadata: ['event_type_filter' => $eventType !== '' ? $eventType : null],
+            );
+        }
+
+        if ($strictExit && ! $dryRun && ($failed > 0 || $dead > 0 || $deadBacklog > 0)) {
+            $this->error(
+                "STRICT_EXIT_STATUS: FAIL. ZNS automation sync còn failed={$failed}, dead_in_batch={$dead}, dead_backlog={$deadBacklog}.",
+            );
+
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
+    }
+
+    protected function countDeadLetters(string $eventType): int
+    {
+        return ZnsAutomationEvent::query()
+            ->when($eventType !== '', fn ($query) => $query->where('event_type', $eventType))
+            ->where('status', ZnsAutomationEvent::STATUS_DEAD)
+            ->count();
+    }
+
+    /**
+     * @param  array<string, mixed>  $scopeMetadata
+     */
+    protected function recordDeadLetterAlertIfNeeded(int $deadBacklog, int $deadInBatch, array $scopeMetadata = []): void
+    {
+        if (! ClinicRuntimeSettings::syncDeadLetterAlertEnabled()) {
+            return;
+        }
+
+        $threshold = ClinicRuntimeSettings::syncDeadLetterAlertThreshold();
+
+        if ($deadBacklog < $threshold) {
+            return;
+        }
+
+        $runbookCategory = 'zns_automation_dead_letter';
+        $runbook = (string) data_get(ClinicRuntimeSettings::opsAlertRunbookMap(), "{$runbookCategory}.runbook", '');
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: 0,
+            action: AuditLog::ACTION_FAIL,
+            actorId: auth()->id(),
+            metadata: array_merge([
+                'channel' => 'sync_dead_letter_alert',
+                'command' => 'zns:sync-automation-events',
+                'runbook_category' => $runbookCategory,
+                'runbook' => $runbook,
+                'dead_backlog' => $deadBacklog,
+                'dead_in_batch' => $deadInBatch,
+                'threshold' => $threshold,
+            ], $scopeMetadata),
+        );
+
+        $this->warn(
+            "DEAD_LETTER_ALERT: ZNS automation dead_backlog={$deadBacklog} (threshold={$threshold}).",
+        );
     }
 
     protected function processEvent(int $eventId): string

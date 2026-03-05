@@ -9,12 +9,19 @@ use App\Models\ZnsCampaignDelivery;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ZnsCampaignRunnerService
 {
+    protected const DELIVERY_CHUNK_SIZE = 200;
+
+    protected const DELIVERY_RETRY_DELAY_MINUTES = 15;
+
+    protected const DELIVERY_LOCK_TTL_MINUTES = 15;
+
     public function __construct(
         private readonly ZnsProviderClient $providerClient,
     ) {}
@@ -46,13 +53,7 @@ class ZnsCampaignRunnerService
             return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
-        if (in_array($campaign->status, [ZnsCampaign::STATUS_DRAFT, ZnsCampaign::STATUS_SCHEDULED, ZnsCampaign::STATUS_FAILED], true)) {
-            $campaign->status = ZnsCampaign::STATUS_RUNNING;
-            $campaign->started_at = $campaign->started_at ?? now();
-            $campaign->save();
-        }
-
-        $targets = $this->resolveTargets($campaign);
+        $this->markCampaignRunning($campaign);
 
         $processed = 0;
         $sent = 0;
@@ -61,126 +62,53 @@ class ZnsCampaignRunnerService
         $maxDeliveryAttempts = ClinicRuntimeSettings::znsCampaignDeliveryMaxAttempts();
 
         try {
-            DB::transaction(function () use ($campaign, $targets, $maxDeliveryAttempts, &$processed, &$sent, &$failed, &$skipped): void {
-                $templateId = $this->resolveTemplateId($campaign);
-                if ($templateId === '') {
-                    throw ValidationException::withMessages([
-                        'template_id' => 'Campaign chưa có template_id hợp lệ để gửi ZNS.',
-                    ]);
+            $templateId = $this->resolveTemplateId($campaign);
+
+            if ($templateId === '') {
+                throw ValidationException::withMessages([
+                    'template_id' => 'Campaign chưa có template_id hợp lệ để gửi ZNS.',
+                ]);
+            }
+
+            $this->reclaimStaleProcessingDeliveries($campaign, $maxDeliveryAttempts);
+
+            $skipped += $this->prepareDeliveriesForAudience(
+                campaign: $campaign,
+                templateId: $templateId,
+                maxDeliveryAttempts: $maxDeliveryAttempts,
+            );
+
+            while (true) {
+                $claim = $this->claimNextDelivery($campaign, $maxDeliveryAttempts);
+
+                if ($claim === null) {
+                    break;
                 }
 
-                foreach ($targets as $target) {
-                    $normalizedPhone = $target['normalized_phone'];
-                    $idempotencyKey = hash('sha256', implode('|', [
-                        'zns-v2',
-                        $campaign->id,
-                        $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
-                        $templateId,
-                    ]));
+                $processed++;
 
-                    $delivery = ZnsCampaignDelivery::query()->firstOrCreate(
-                        ['idempotency_key' => $idempotencyKey],
-                        [
-                            'zns_campaign_id' => $campaign->id,
-                            'patient_id' => $target['patient_id'] ?? null,
-                            'customer_id' => $target['customer_id'] ?? null,
-                            'branch_id' => $campaign->branch_id,
-                            'phone' => $target['phone'],
-                            'normalized_phone' => $normalizedPhone,
-                            'status' => ZnsCampaignDelivery::STATUS_QUEUED,
-                            'attempt_count' => 0,
-                            'payload' => [
-                                'template_key' => $campaign->template_key,
-                                'template_id' => $templateId,
-                                'message' => $campaign->message_payload,
-                            ],
-                            'template_key_snapshot' => $campaign->template_key,
-                            'template_id_snapshot' => $templateId,
-                        ],
-                    );
+                $deliveryResult = $this->processClaimedDelivery(
+                    campaign: $campaign,
+                    claim: $claim,
+                    maxDeliveryAttempts: $maxDeliveryAttempts,
+                );
 
-                    if (! $delivery->wasRecentlyCreated && in_array($delivery->status, [ZnsCampaignDelivery::STATUS_SENT, ZnsCampaignDelivery::STATUS_SKIPPED], true)) {
-                        $skipped++;
+                if ($deliveryResult === ZnsCampaignDelivery::STATUS_SENT) {
+                    $sent++;
 
-                        continue;
-                    }
+                    continue;
+                }
 
-                    if (
-                        ! $delivery->wasRecentlyCreated
-                        && $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
-                        && $this->shouldSkipFailedDelivery($delivery, $maxDeliveryAttempts)
-                    ) {
-                        $skipped++;
-
-                        continue;
-                    }
-
-                    $processed++;
-                    $delivery->attempt_count = (int) $delivery->attempt_count + 1;
-
-                    if ($normalizedPhone === '') {
-                        $delivery->status = ZnsCampaignDelivery::STATUS_FAILED;
-                        $delivery->error_message = 'Thiếu số điện thoại nhận ZNS.';
-                        $delivery->provider_message_id = null;
-                        $delivery->provider_status_code = 'validation_missing_phone';
-                        $delivery->provider_response = null;
-                        $delivery->next_retry_at = null;
-                        $delivery->save();
-                        $failed++;
-
-                        continue;
-                    }
-
-                    $providerPayload = $this->buildProviderPayload(
-                        campaign: $campaign,
-                        templateId: $templateId,
-                        target: $target,
-                        idempotencyKey: $idempotencyKey,
-                    );
-
-                    $sendResult = $this->providerClient->sendTemplate($providerPayload);
-
-                    if (($sendResult['success'] ?? false) === true) {
-                        $delivery->status = ZnsCampaignDelivery::STATUS_SENT;
-                        $delivery->sent_at = now();
-                        $delivery->provider_message_id = $sendResult['provider_message_id'];
-                        $delivery->provider_status_code = $sendResult['provider_status_code'];
-                        $delivery->provider_response = $sendResult['response'];
-                        $delivery->error_message = null;
-                        $delivery->next_retry_at = null;
-                        $delivery->save();
-                        $sent++;
-
-                        continue;
-                    }
-
-                    $delivery->status = ZnsCampaignDelivery::STATUS_FAILED;
-                    $delivery->provider_message_id = null;
-                    $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
-                    $delivery->provider_response = $sendResult['response'] ?? null;
-                    $delivery->error_message = $sendResult['error'] ?? 'ZNS provider request failed.';
-                    $delivery->next_retry_at = $this->isRetryableProviderFailure($sendResult)
-                        && (int) $delivery->attempt_count < $maxDeliveryAttempts
-                        ? now()->addMinutes(15)
-                        : null;
-                    $delivery->save();
+                if ($deliveryResult === ZnsCampaignDelivery::STATUS_FAILED) {
                     $failed++;
+
+                    continue;
                 }
 
-                $campaign->sent_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_SENT)->count();
-                $campaign->failed_count = (int) $campaign->deliveries()->where('status', ZnsCampaignDelivery::STATUS_FAILED)->count();
+                $skipped++;
+            }
 
-                $hasRetryableFailures = $campaign->deliveries()
-                    ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                    ->whereNotNull('next_retry_at')
-                    ->exists();
-
-                $campaign->status = $hasRetryableFailures || ($campaign->failed_count > 0 && $campaign->sent_count === 0)
-                    ? ZnsCampaign::STATUS_FAILED
-                    : ZnsCampaign::STATUS_COMPLETED;
-                $campaign->finished_at = now();
-                $campaign->save();
-            }, 3);
+            $this->refreshCampaignSummary($campaign);
         } catch (ValidationException $exception) {
             $campaign->refresh();
             $campaign->status = ZnsCampaign::STATUS_FAILED;
@@ -198,16 +126,112 @@ class ZnsCampaignRunnerService
         ];
     }
 
-    /**
-     * @return array<int, array{patient_id:int|null,customer_id:int|null,phone:string,normalized_phone:string}>
-     */
-    protected function resolveTargets(ZnsCampaign $campaign): array
+    protected function markCampaignRunning(ZnsCampaign $campaign): void
+    {
+        if (! in_array($campaign->status, [ZnsCampaign::STATUS_DRAFT, ZnsCampaign::STATUS_SCHEDULED, ZnsCampaign::STATUS_FAILED], true)) {
+            return;
+        }
+
+        $campaign->status = ZnsCampaign::STATUS_RUNNING;
+        $campaign->started_at = $campaign->started_at ?? now();
+        $campaign->save();
+    }
+
+    protected function prepareDeliveriesForAudience(ZnsCampaign $campaign, string $templateId, int $maxDeliveryAttempts): int
+    {
+        $skipped = 0;
+
+        $this->audienceQuery($campaign)->chunkById(
+            self::DELIVERY_CHUNK_SIZE,
+            function (Collection $patients) use ($campaign, $templateId, $maxDeliveryAttempts, &$skipped): void {
+                foreach ($patients as $patient) {
+                    $rawPhone = trim((string) ($patient->phone ?? ''));
+                    $normalizedPhone = $this->normalizePhone($rawPhone);
+                    $idempotencyKey = $this->deliveryIdempotencyKey(
+                        campaignId: (int) $campaign->id,
+                        normalizedPhone: $normalizedPhone,
+                        templateId: $templateId,
+                    );
+
+                    $delivery = ZnsCampaignDelivery::query()->firstOrCreate(
+                        ['idempotency_key' => $idempotencyKey],
+                        [
+                            'zns_campaign_id' => $campaign->id,
+                            'patient_id' => (int) $patient->id,
+                            'customer_id' => $patient->customer_id ? (int) $patient->customer_id : null,
+                            'branch_id' => $campaign->branch_id,
+                            'phone' => $rawPhone,
+                            'normalized_phone' => $normalizedPhone,
+                            'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+                            'processing_token' => null,
+                            'locked_at' => null,
+                            'attempt_count' => 0,
+                            'payload' => [
+                                'template_key' => $campaign->template_key,
+                                'template_id' => $templateId,
+                                'message' => $campaign->message_payload,
+                            ],
+                            'template_key_snapshot' => $campaign->template_key,
+                            'template_id_snapshot' => $templateId,
+                        ],
+                    );
+
+                    if ($delivery->wasRecentlyCreated) {
+                        continue;
+                    }
+
+                    if (in_array($delivery->status, [ZnsCampaignDelivery::STATUS_SENT, ZnsCampaignDelivery::STATUS_SKIPPED], true)) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    if ($delivery->processing_token !== null && ! $this->isDeliveryLockExpired($delivery)) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    if (
+                        $delivery->status === ZnsCampaignDelivery::STATUS_FAILED
+                        && $this->shouldSkipFailedDelivery($delivery, $maxDeliveryAttempts)
+                    ) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    $delivery->forceFill([
+                        'zns_campaign_id' => $campaign->id,
+                        'patient_id' => (int) $patient->id,
+                        'customer_id' => $patient->customer_id ? (int) $patient->customer_id : null,
+                        'branch_id' => $campaign->branch_id,
+                        'phone' => $rawPhone,
+                        'normalized_phone' => $normalizedPhone,
+                        'payload' => [
+                            'template_key' => $campaign->template_key,
+                            'template_id' => $templateId,
+                            'message' => $campaign->message_payload,
+                        ],
+                        'template_key_snapshot' => $campaign->template_key,
+                        'template_id_snapshot' => $templateId,
+                    ])->save();
+                }
+            },
+            column: 'patients.id',
+            alias: 'id',
+        );
+
+        return $skipped;
+    }
+
+    protected function audienceQuery(ZnsCampaign $campaign): Builder
     {
         $latestAppointmentSubquery = Appointment::query()
             ->selectRaw('patient_id, MAX(date) as latest_appointment_date')
             ->groupBy('patient_id');
 
-        $patientQuery = Patient::query()
+        return Patient::query()
             ->from('patients')
             ->leftJoinSub($latestAppointmentSubquery, 'latest_appointments', function (JoinClause $join): void {
                 $join->on('latest_appointments.patient_id', '=', 'patients.id');
@@ -222,39 +246,230 @@ class ZnsCampaignRunnerService
             ])
             ->when($campaign->branch_id, fn (Builder $query) => $query->where('patients.first_branch_id', (int) $campaign->branch_id))
             ->when($campaign->audience_source, fn (Builder $query) => $query->where('customers.source', (string) $campaign->audience_source))
-            ->when($campaign->audience_last_visit_before_days, function ($query) use ($campaign): void {
+            ->when($campaign->audience_last_visit_before_days, function (Builder $query) use ($campaign): void {
                 $cutoff = now()->subDays((int) $campaign->audience_last_visit_before_days);
                 $query->where(function (Builder $innerQuery) use ($cutoff): void {
                     $innerQuery->whereNull('latest_appointments.latest_appointment_date')
                         ->orWhere('latest_appointments.latest_appointment_date', '<=', $cutoff);
                 });
             })
-            ->orderByDesc('patients.id')
-            ->limit(500);
+            ->orderBy('patients.id');
+    }
 
-        $patients = $patientQuery->get();
+    /**
+     * @param  array{delivery_id:int,processing_token:string,idempotency_key:string,phone:string,normalized_phone:string,template_id:string,attempt_count:int,payload:array<string,mixed>}  $claim
+     */
+    protected function processClaimedDelivery(ZnsCampaign $campaign, array $claim, int $maxDeliveryAttempts): string
+    {
+        $providerPayload = null;
+        $retryable = true;
+        $sendResult = [
+            'success' => false,
+            'status' => null,
+            'provider_message_id' => null,
+            'provider_status_code' => null,
+            'error' => null,
+            'response' => null,
+        ];
 
-        return $patients
-            ->map(function (Patient $patient): array {
-                $rawPhone = trim((string) ($patient->phone ?? ''));
+        if ($claim['template_id'] === '') {
+            $retryable = false;
+            $sendResult['provider_status_code'] = 'validation_missing_template';
+            $sendResult['error'] = 'Campaign chưa có template_id hợp lệ để gửi ZNS.';
+        } elseif ($claim['normalized_phone'] === '') {
+            $retryable = false;
+            $sendResult['provider_status_code'] = 'validation_missing_phone';
+            $sendResult['error'] = 'Thiếu số điện thoại nhận ZNS.';
+        } else {
+            $providerPayload = $this->buildProviderPayload(
+                campaign: $campaign,
+                templateId: $claim['template_id'],
+                normalizedPhone: $claim['normalized_phone'],
+                idempotencyKey: $claim['idempotency_key'],
+                messagePayload: is_array(data_get($claim['payload'], 'message'))
+                    ? data_get($claim['payload'], 'message')
+                    : [],
+            );
 
-                return [
-                    'patient_id' => $patient->id,
-                    'customer_id' => $patient->customer_id ? (int) $patient->customer_id : null,
-                    'phone' => $rawPhone,
-                    'normalized_phone' => $this->normalizePhone($rawPhone),
-                ];
+            $sendResult = $this->providerClient->sendTemplate($providerPayload);
+            $retryable = $this->isRetryableProviderFailure($sendResult);
+        }
+
+        if (($sendResult['success'] ?? false) === true) {
+            $persisted = $this->finalizeClaimedDelivery(
+                deliveryId: $claim['delivery_id'],
+                processingToken: $claim['processing_token'],
+                providerPayload: $providerPayload,
+                sendResult: $sendResult,
+                status: ZnsCampaignDelivery::STATUS_SENT,
+                nextRetryAt: null,
+            );
+
+            return $persisted ? ZnsCampaignDelivery::STATUS_SENT : ZnsCampaignDelivery::STATUS_SKIPPED;
+        }
+
+        $nextRetryAt = null;
+        if ($retryable) {
+            $deliveryAttempt = (int) ($claim['attempt_count'] ?? $maxDeliveryAttempts);
+
+            if ($deliveryAttempt < $maxDeliveryAttempts) {
+                $nextRetryAt = now()->addMinutes(self::DELIVERY_RETRY_DELAY_MINUTES);
+            }
+        }
+
+        $persisted = $this->finalizeClaimedDelivery(
+            deliveryId: $claim['delivery_id'],
+            processingToken: $claim['processing_token'],
+            providerPayload: $providerPayload,
+            sendResult: $sendResult,
+            status: ZnsCampaignDelivery::STATUS_FAILED,
+            nextRetryAt: $nextRetryAt,
+        );
+
+        return $persisted ? ZnsCampaignDelivery::STATUS_FAILED : ZnsCampaignDelivery::STATUS_SKIPPED;
+    }
+
+    /**
+     * @return array{delivery_id:int,processing_token:string,idempotency_key:string,phone:string,normalized_phone:string,template_id:string,attempt_count:int,payload:array<string,mixed>}|null
+     */
+    protected function claimNextDelivery(ZnsCampaign $campaign, int $maxDeliveryAttempts): ?array
+    {
+        return DB::transaction(function () use ($campaign, $maxDeliveryAttempts): ?array {
+            $delivery = ZnsCampaignDelivery::query()
+                ->where('zns_campaign_id', $campaign->id)
+                ->whereNull('processing_token')
+                ->where(function (Builder $statusQuery) use ($maxDeliveryAttempts): void {
+                    $statusQuery
+                        ->where('status', ZnsCampaignDelivery::STATUS_QUEUED)
+                        ->orWhere(function (Builder $failedQuery) use ($maxDeliveryAttempts): void {
+                            $failedQuery
+                                ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+                                ->whereNotNull('next_retry_at')
+                                ->where('next_retry_at', '<=', now())
+                                ->where('attempt_count', '<', $maxDeliveryAttempts);
+                        });
+                })
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $delivery instanceof ZnsCampaignDelivery) {
+                return null;
+            }
+
+            $token = (string) Str::uuid();
+
+            $delivery->processing_token = $token;
+            $delivery->locked_at = now();
+            $delivery->attempt_count = (int) $delivery->attempt_count + 1;
+            $delivery->save();
+
+            return [
+                'delivery_id' => (int) $delivery->id,
+                'processing_token' => $token,
+                'idempotency_key' => (string) $delivery->idempotency_key,
+                'phone' => trim((string) ($delivery->phone ?? '')),
+                'normalized_phone' => trim((string) ($delivery->normalized_phone ?: $delivery->phone ?: '')),
+                'template_id' => trim((string) ($delivery->template_id_snapshot ?? '')),
+                'attempt_count' => (int) $delivery->attempt_count,
+                'payload' => is_array($delivery->payload) ? $delivery->payload : [],
+            ];
+        }, 3);
+    }
+
+    protected function refreshCampaignSummary(ZnsCampaign $campaign): void
+    {
+        $campaign->refresh();
+
+        $campaign->sent_count = (int) $campaign->deliveries()
+            ->where('status', ZnsCampaignDelivery::STATUS_SENT)
+            ->count();
+        $campaign->failed_count = (int) $campaign->deliveries()
+            ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+            ->count();
+
+        $hasRetryableFailures = $campaign->deliveries()
+            ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
+            ->whereNotNull('next_retry_at')
+            ->exists();
+
+        $hasOutstandingQueuedOrLocked = $campaign->deliveries()
+            ->where(function (Builder $query): void {
+                $query->where('status', ZnsCampaignDelivery::STATUS_QUEUED)
+                    ->orWhereNotNull('processing_token');
             })
-            ->unique(static fn (array $target): string => $target['normalized_phone'] !== ''
-                ? $target['normalized_phone']
-                : 'missing-'.$target['patient_id'])
-            ->values()
-            ->all();
+            ->exists();
+
+        if ($hasOutstandingQueuedOrLocked) {
+            $campaign->status = ZnsCampaign::STATUS_RUNNING;
+            $campaign->finished_at = null;
+            $campaign->save();
+
+            return;
+        }
+
+        $campaign->status = $hasRetryableFailures || ($campaign->failed_count > 0 && $campaign->sent_count === 0)
+            ? ZnsCampaign::STATUS_FAILED
+            : ZnsCampaign::STATUS_COMPLETED;
+        $campaign->finished_at = now();
+        $campaign->save();
+    }
+
+    protected function reclaimStaleProcessingDeliveries(ZnsCampaign $campaign, int $maxDeliveryAttempts): int
+    {
+        $now = now();
+        $lockedBefore = now()->subMinutes(self::DELIVERY_LOCK_TTL_MINUTES);
+
+        $staleQuery = ZnsCampaignDelivery::query()
+            ->where('zns_campaign_id', $campaign->id)
+            ->whereNotNull('processing_token')
+            ->where(function (Builder $query) use ($lockedBefore): void {
+                $query->whereNull('locked_at')
+                    ->orWhere('locked_at', '<=', $lockedBefore);
+            });
+
+        $terminal = (clone $staleQuery)
+            ->where('attempt_count', '>=', $maxDeliveryAttempts)
+            ->update([
+                'status' => ZnsCampaignDelivery::STATUS_FAILED,
+                'next_retry_at' => null,
+                'processing_token' => null,
+                'locked_at' => null,
+                'error_message' => 'Stale processing lock reclaimed after max attempts reached.',
+                'updated_at' => $now,
+            ]);
+
+        $retryable = (clone $staleQuery)
+            ->where('attempt_count', '<', $maxDeliveryAttempts)
+            ->update([
+                'status' => ZnsCampaignDelivery::STATUS_FAILED,
+                'next_retry_at' => $now,
+                'processing_token' => null,
+                'locked_at' => null,
+                'error_message' => 'Stale processing lock reclaimed for retry.',
+                'updated_at' => $now,
+            ]);
+
+        return $terminal + $retryable;
+    }
+
+    protected function isDeliveryLockExpired(ZnsCampaignDelivery $delivery): bool
+    {
+        if ($delivery->processing_token === null) {
+            return true;
+        }
+
+        if ($delivery->locked_at === null) {
+            return true;
+        }
+
+        return $delivery->locked_at->lte(now()->subMinutes(self::DELIVERY_LOCK_TTL_MINUTES));
     }
 
     protected function normalizePhone(string $phone): string
     {
         $digits = preg_replace('/[^0-9]/', '', $phone);
+
         if (! is_string($digits)) {
             return '';
         }
@@ -296,6 +511,7 @@ class ZnsCampaignRunnerService
     protected function assertZnsReadyForRun(): void
     {
         $enabled = ClinicRuntimeSettings::boolean('zns.enabled', false);
+
         if (! $enabled) {
             throw ValidationException::withMessages([
                 'zns' => 'ZNS đang tắt, không thể chạy campaign.',
@@ -303,6 +519,7 @@ class ZnsCampaignRunnerService
         }
 
         $readinessReport = app(ZaloIntegrationService::class)->auditZnsReadiness();
+
         if (($readinessReport['score'] ?? 0) < 80) {
             throw ValidationException::withMessages([
                 'zns' => 'ZNS chưa sẵn sàng: '.implode(' ', $readinessReport['issues'] ?? []),
@@ -313,6 +530,7 @@ class ZnsCampaignRunnerService
     protected function resolveTemplateId(ZnsCampaign $campaign): string
     {
         $templateId = trim((string) ($campaign->template_id ?? ''));
+
         if ($templateId !== '') {
             return $templateId;
         }
@@ -327,21 +545,86 @@ class ZnsCampaignRunnerService
     }
 
     /**
-     * @param  array{patient_id:int|null,customer_id:int|null,phone:string,normalized_phone:string}  $target
+     * @param  array<string, mixed>  $messagePayload
      * @return array<string, mixed>
      */
     protected function buildProviderPayload(
         ZnsCampaign $campaign,
         string $templateId,
-        array $target,
+        string $normalizedPhone,
         string $idempotencyKey,
+        array $messagePayload,
     ): array {
         return [
-            'phone' => $target['normalized_phone'],
+            'phone' => $normalizedPhone,
             'template_id' => $templateId,
-            'template_data' => is_array($campaign->message_payload) ? $campaign->message_payload : [],
+            'template_data' => $messagePayload,
             'tracking_id' => $idempotencyKey,
             'campaign_code' => (string) $campaign->code,
         ];
+    }
+
+    protected function deliveryIdempotencyKey(int $campaignId, string $normalizedPhone, string $templateId): string
+    {
+        return hash('sha256', implode('|', [
+            'zns-v2',
+            $campaignId,
+            $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
+            $templateId,
+        ]));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $providerPayload
+     * @param  array<string, mixed>  $sendResult
+     */
+    protected function finalizeClaimedDelivery(
+        int $deliveryId,
+        string $processingToken,
+        ?array $providerPayload,
+        array $sendResult,
+        string $status,
+        mixed $nextRetryAt,
+    ): bool {
+        return DB::transaction(function () use (
+            $deliveryId,
+            $processingToken,
+            $providerPayload,
+            $sendResult,
+            $status,
+            $nextRetryAt,
+        ): bool {
+            $delivery = ZnsCampaignDelivery::query()
+                ->whereKey($deliveryId)
+                ->where('processing_token', $processingToken)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $delivery instanceof ZnsCampaignDelivery) {
+                return false;
+            }
+
+            $delivery->status = $status;
+            $delivery->provider_message_id = $status === ZnsCampaignDelivery::STATUS_SENT
+                ? ($sendResult['provider_message_id'] ?? null)
+                : null;
+            $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
+            $delivery->provider_response = $sendResult['response'] ?? null;
+            $delivery->error_message = $status === ZnsCampaignDelivery::STATUS_SENT
+                ? null
+                : (string) ($sendResult['error'] ?? 'ZNS provider request failed.');
+            $delivery->next_retry_at = $nextRetryAt;
+            $delivery->sent_at = $status === ZnsCampaignDelivery::STATUS_SENT ? now() : $delivery->sent_at;
+            $delivery->payload = $providerPayload === null
+                ? $delivery->payload
+                : array_merge(is_array($delivery->payload) ? $delivery->payload : [], [
+                    'provider_request' => $providerPayload,
+                ]);
+            $delivery->processing_token = null;
+            $delivery->locked_at = null;
+            $delivery->save();
+
+            return true;
+        }, 3);
     }
 }

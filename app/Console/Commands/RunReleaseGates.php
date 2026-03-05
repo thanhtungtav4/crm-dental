@@ -169,6 +169,12 @@ class RunReleaseGates extends Command
             ];
 
             $steps[] = [
+                'name' => 'Cross-module observability gate',
+                'command' => 'ops:check-observability-health',
+                'arguments' => ['--strict' => true],
+            ];
+
+            $steps[] = [
                 'name' => 'DICOM readiness gate (optional)',
                 'command' => 'emr:check-dicom-readiness',
                 'arguments' => ['--strict' => true],

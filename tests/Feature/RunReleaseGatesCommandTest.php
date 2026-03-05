@@ -21,6 +21,7 @@ it('shows planned steps in dry-run production profile', function (): void {
         ->expectsOutputToContain('ops:check-backup-health')
         ->expectsOutputToContain('ops:run-restore-drill')
         ->expectsOutputToContain('ops:check-alert-runbook-map')
+        ->expectsOutputToContain('ops:check-observability-health')
         ->expectsOutputToContain('emr:check-dicom-readiness')
         ->expectsOutputToContain('finance:reconcile-branch-attribution')
         ->expectsOutputToContain('--strict')

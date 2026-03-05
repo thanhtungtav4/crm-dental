@@ -17,7 +17,11 @@ use Illuminate\Support\Facades\DB;
 
 class SyncEmrEvents extends Command
 {
-    protected $signature = 'emr:sync-events {--limit=100 : Số lượng event tối đa mỗi lần chạy} {--patient_id= : Chỉ sync cho một bệnh nhân} {--dry-run : Chỉ preview, không ghi dữ liệu}';
+    protected $signature = 'emr:sync-events
+        {--limit=100 : Số lượng event tối đa mỗi lần chạy}
+        {--patient_id= : Chỉ sync cho một bệnh nhân}
+        {--dry-run : Chỉ preview, không ghi dữ liệu}
+        {--strict-exit : Trả về exit code lỗi nếu vẫn còn failed/dead-letter sau khi chạy}';
 
     protected $description = 'Đồng bộ outbox EMR (CRM -> EMR) theo cơ chế retry + dead-letter.';
 
@@ -48,6 +52,7 @@ class SyncEmrEvents extends Command
         $limit = max(1, (int) $this->option('limit'));
         $patientId = $this->option('patient_id') ? (int) $this->option('patient_id') : null;
         $dryRun = (bool) $this->option('dry-run');
+        $strictExit = (bool) $this->option('strict-exit');
 
         if (! $dryRun) {
             $reclaimed = EmrSyncEvent::reclaimStaleProcessing();
@@ -69,6 +74,21 @@ class SyncEmrEvents extends Command
 
         if ($events->isEmpty()) {
             $this->info('Không có event EMR nào sẵn sàng để xử lý.');
+
+            if (! $dryRun) {
+                $deadBacklog = $this->countDeadLetters($patientId);
+                $this->recordDeadLetterAlertIfNeeded(
+                    deadBacklog: $deadBacklog,
+                    deadInBatch: 0,
+                    scopeMetadata: ['patient_id' => $patientId],
+                );
+
+                if ($strictExit && $deadBacklog > 0) {
+                    $this->error("STRICT_EXIT_STATUS: FAIL. EMR outbox còn {$deadBacklog} dead-letter event.");
+
+                    return self::FAILURE;
+                }
+            }
 
             return self::SUCCESS;
         }
@@ -98,7 +118,74 @@ class SyncEmrEvents extends Command
         $mode = $dryRun ? 'DRY RUN' : 'APPLY';
         $this->info("[{$mode}] EMR sync processed. synced={$synced}, failed={$failed}, dead={$dead}");
 
+        $deadBacklog = 0;
+
+        if (! $dryRun) {
+            $deadBacklog = $this->countDeadLetters($patientId);
+
+            $this->recordDeadLetterAlertIfNeeded(
+                deadBacklog: $deadBacklog,
+                deadInBatch: $dead,
+                scopeMetadata: ['patient_id' => $patientId],
+            );
+        }
+
+        if ($strictExit && ! $dryRun && ($failed > 0 || $dead > 0 || $deadBacklog > 0)) {
+            $this->error(
+                "STRICT_EXIT_STATUS: FAIL. EMR sync còn failed={$failed}, dead_in_batch={$dead}, dead_backlog={$deadBacklog}.",
+            );
+
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
+    }
+
+    protected function countDeadLetters(?int $patientId): int
+    {
+        return EmrSyncEvent::query()
+            ->when($patientId !== null, fn ($query) => $query->where('patient_id', $patientId))
+            ->where('status', EmrSyncEvent::STATUS_DEAD)
+            ->count();
+    }
+
+    /**
+     * @param  array<string, mixed>  $scopeMetadata
+     */
+    protected function recordDeadLetterAlertIfNeeded(int $deadBacklog, int $deadInBatch, array $scopeMetadata = []): void
+    {
+        if (! ClinicRuntimeSettings::syncDeadLetterAlertEnabled()) {
+            return;
+        }
+
+        $threshold = ClinicRuntimeSettings::syncDeadLetterAlertThreshold();
+
+        if ($deadBacklog < $threshold) {
+            return;
+        }
+
+        $runbookCategory = 'emr_dead_letter';
+        $runbook = (string) data_get(ClinicRuntimeSettings::opsAlertRunbookMap(), "{$runbookCategory}.runbook", '');
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: 0,
+            action: AuditLog::ACTION_FAIL,
+            actorId: auth()->id(),
+            metadata: array_merge([
+                'channel' => 'sync_dead_letter_alert',
+                'command' => 'emr:sync-events',
+                'runbook_category' => $runbookCategory,
+                'runbook' => $runbook,
+                'dead_backlog' => $deadBacklog,
+                'dead_in_batch' => $deadInBatch,
+                'threshold' => $threshold,
+            ], $scopeMetadata),
+        );
+
+        $this->warn(
+            "DEAD_LETTER_ALERT: EMR dead_backlog={$deadBacklog} (threshold={$threshold}).",
+        );
     }
 
     protected function processEvent(int $eventId): string

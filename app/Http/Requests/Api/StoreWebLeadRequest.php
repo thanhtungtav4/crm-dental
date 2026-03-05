@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreWebLeadRequest extends FormRequest
 {
@@ -32,7 +33,7 @@ class StoreWebLeadRequest extends FormRequest
         return [
             'idempotency_key' => ['required', 'string', 'max:120'],
             'full_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'min:8', 'max:20', 'regex:/^[0-9+()\\-\\s.]+$/'],
+            'phone' => ['required', 'string', 'min:8', 'max:25', 'regex:/^[0-9+()\\-\\s.]+$/'],
             'branch_code' => [
                 'nullable',
                 'string',
@@ -53,5 +54,31 @@ class StoreWebLeadRequest extends FormRequest
             'phone.regex' => 'Số điện thoại không đúng định dạng.',
             'branch_code.exists' => 'Chi nhánh không hợp lệ hoặc không hoạt động.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $normalizedPhone = $this->normalizeVietnamPhone((string) $this->input('phone', ''));
+
+            if ($normalizedPhone === '' || preg_match('/^(03|05|07|08|09)\d{8}$/', $normalizedPhone) !== 1) {
+                $validator->errors()->add('phone', 'Số điện thoại phải là số di động Việt Nam hợp lệ.');
+            }
+        });
+    }
+
+    protected function normalizeVietnamPhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '84')) {
+            $digits = '0'.substr($digits, 2);
+        }
+
+        return $digits;
     }
 }

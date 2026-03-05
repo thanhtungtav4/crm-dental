@@ -24,6 +24,8 @@ class ZnsCampaignDelivery extends Model
         'normalized_phone',
         'idempotency_key',
         'status',
+        'processing_token',
+        'locked_at',
         'attempt_count',
         'provider_message_id',
         'provider_status_code',
@@ -49,6 +51,7 @@ class ZnsCampaignDelivery extends Model
             'attempt_count' => 'integer',
             'sent_at' => 'datetime',
             'next_retry_at' => 'datetime',
+            'locked_at' => 'datetime',
             'payload' => 'array',
             'provider_response' => 'array',
         ];

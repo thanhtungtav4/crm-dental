@@ -27,6 +27,10 @@ class CheckAlertRunbookMap extends Command
             'backup_health',
             'restore_drill',
             'scheduler_runtime',
+            'google_calendar_dead_letter',
+            'emr_dead_letter',
+            'zns_automation_dead_letter',
+            'cross_module_observability',
             'kpi_snapshot_sla',
             'security_login_lockout',
         ];
