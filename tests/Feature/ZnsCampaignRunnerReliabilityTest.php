@@ -263,8 +263,7 @@ it('skips delivery that is actively claimed by another worker', function (): voi
         'scheduled_at' => now()->subMinute(),
     ]);
 
-    $normalizedPhone = preg_replace('/[^0-9]/', '', (string) $patient->phone);
-    $normalizedPhone = is_string($normalizedPhone) ? trim($normalizedPhone) : '';
+    $normalizedPhone = normalizePhoneForZnsCampaignReliabilityTest((string) $patient->phone);
 
     ZnsCampaignDelivery::query()->create([
         'zns_campaign_id' => $campaign->id,
@@ -462,4 +461,38 @@ function znsCampaignDeliveryIdempotencyKeyForReliability(int $campaignId, string
         $normalizedPhone !== '' ? $normalizedPhone : 'missing-phone',
         $templateId,
     ]));
+}
+
+function normalizePhoneForZnsCampaignReliabilityTest(string $phone): string
+{
+    $digits = preg_replace('/[^0-9]/', '', $phone);
+    if (! is_string($digits)) {
+        return '';
+    }
+
+    $digits = trim($digits);
+    if ($digits === '') {
+        return '';
+    }
+
+    if (str_starts_with($digits, '00')) {
+        $digits = ltrim(substr($digits, 2), '0');
+    }
+
+    if (str_starts_with($digits, '0')) {
+        $digits = '84'.substr($digits, 1);
+    } elseif (str_starts_with($digits, '84')) {
+        $digits = '84'.ltrim(substr($digits, 2), '0');
+    }
+
+    if (! str_starts_with($digits, '84')) {
+        return '';
+    }
+
+    $length = strlen($digits);
+    if ($length < 10 || $length > 12) {
+        return '';
+    }
+
+    return $digits;
 }

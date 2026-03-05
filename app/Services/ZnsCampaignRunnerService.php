@@ -474,7 +474,32 @@ class ZnsCampaignRunnerService
             return '';
         }
 
-        return trim($digits);
+        $digits = trim($digits);
+        if ($digits === '') {
+            return '';
+        }
+
+        if (Str::startsWith($digits, '00')) {
+            $digits = ltrim(substr($digits, 2), '0');
+        }
+
+        if (Str::startsWith($digits, '0')) {
+            $digits = '84'.substr($digits, 1);
+        } elseif (Str::startsWith($digits, '84')) {
+            $digits = '84'.ltrim(substr($digits, 2), '0');
+        }
+
+        if (! Str::startsWith($digits, '84')) {
+            return '';
+        }
+
+        $length = strlen($digits);
+
+        if ($length < 10 || $length > 12) {
+            return '';
+        }
+
+        return $digits;
     }
 
     protected function shouldSkipFailedDelivery(ZnsCampaignDelivery $delivery, int $maxDeliveryAttempts): bool

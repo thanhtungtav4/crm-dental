@@ -49,6 +49,7 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_DRAFT => 'gray',
                         PopupAnnouncement::STATUS_SCHEDULED => 'warning',
                         PopupAnnouncement::STATUS_PUBLISHED => 'success',
+                        PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT => 'danger',
                         PopupAnnouncement::STATUS_CANCELLED => 'danger',
                         PopupAnnouncement::STATUS_EXPIRED => 'gray',
                         default => 'gray',
@@ -111,6 +112,7 @@ class PopupAnnouncementsTable
                     ->visible(fn (PopupAnnouncement $record): bool => in_array($record->status, [
                         PopupAnnouncement::STATUS_DRAFT,
                         PopupAnnouncement::STATUS_SCHEDULED,
+                        PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
                     ->requiresConfirmation()
                     ->action(function (PopupAnnouncement $record): void {
@@ -136,6 +138,7 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_DRAFT,
                         PopupAnnouncement::STATUS_SCHEDULED,
                         PopupAnnouncement::STATUS_PUBLISHED,
+                        PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
                     ->requiresConfirmation()
                     ->action(function (PopupAnnouncement $record): void {

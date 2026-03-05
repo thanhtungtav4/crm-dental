@@ -21,6 +21,8 @@ class PopupAnnouncement extends Model
 
     public const STATUS_PUBLISHED = 'published';
 
+    public const STATUS_FAILED_NO_RECIPIENT = 'failed_no_recipient';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const STATUS_EXPIRED = 'expired';
@@ -35,8 +37,9 @@ class PopupAnnouncement extends Model
 
     protected const STATUS_TRANSITIONS = [
         self::STATUS_DRAFT => [self::STATUS_SCHEDULED, self::STATUS_PUBLISHED, self::STATUS_CANCELLED],
-        self::STATUS_SCHEDULED => [self::STATUS_PUBLISHED, self::STATUS_CANCELLED],
-        self::STATUS_PUBLISHED => [self::STATUS_CANCELLED, self::STATUS_EXPIRED],
+        self::STATUS_SCHEDULED => [self::STATUS_PUBLISHED, self::STATUS_FAILED_NO_RECIPIENT, self::STATUS_CANCELLED],
+        self::STATUS_PUBLISHED => [self::STATUS_FAILED_NO_RECIPIENT, self::STATUS_CANCELLED, self::STATUS_EXPIRED],
+        self::STATUS_FAILED_NO_RECIPIENT => [self::STATUS_SCHEDULED, self::STATUS_PUBLISHED, self::STATUS_CANCELLED],
         self::STATUS_CANCELLED => [],
         self::STATUS_EXPIRED => [],
     ];
@@ -221,6 +224,7 @@ class PopupAnnouncement extends Model
             static::STATUS_DRAFT => 'Nháp',
             static::STATUS_SCHEDULED => 'Đã lên lịch',
             static::STATUS_PUBLISHED => 'Đang phát',
+            static::STATUS_FAILED_NO_RECIPIENT => 'Không có người nhận',
             static::STATUS_CANCELLED => 'Đã hủy',
             static::STATUS_EXPIRED => 'Hết hiệu lực',
         ];

@@ -454,11 +454,15 @@ it('runs zns campaign with idempotent deliveries and supports lifecycle completi
 
     $firstRun = $service->runCampaign($scheduledCampaign);
     $scheduledCampaign->refresh();
+    $firstDelivery = ZnsCampaignDelivery::query()
+        ->where('zns_campaign_id', $scheduledCampaign->id)
+        ->first();
 
     expect($firstRun['sent'])->toBe(1)
         ->and($scheduledCampaign->status)->toBe(ZnsCampaign::STATUS_COMPLETED)
         ->and($scheduledCampaign->sent_count)->toBe(1)
-        ->and(ZnsCampaignDelivery::query()->count())->toBe(1);
+        ->and(ZnsCampaignDelivery::query()->count())->toBe(1)
+        ->and($firstDelivery?->normalized_phone)->toBe('84901111222');
 
     $failedCampaign = ZnsCampaign::query()->create([
         'name' => 'Campaign failed',

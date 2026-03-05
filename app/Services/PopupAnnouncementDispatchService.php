@@ -6,6 +6,7 @@ use App\Models\PopupAnnouncement;
 use App\Models\PopupAnnouncementDelivery;
 use App\Models\User;
 use App\Support\ClinicRuntimeSettings;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -72,10 +73,9 @@ class PopupAnnouncementDispatchService
         $recipients = $this->resolveRecipients($announcement);
 
         if ($recipients->isEmpty()) {
-            if ($announcement->status === PopupAnnouncement::STATUS_SCHEDULED) {
+            if (in_array($announcement->status, [PopupAnnouncement::STATUS_SCHEDULED, PopupAnnouncement::STATUS_PUBLISHED], true)) {
                 $announcement->forceFill([
-                    'status' => PopupAnnouncement::STATUS_PUBLISHED,
-                    'published_at' => $announcement->published_at ?? now(),
+                    'status' => PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                 ])->save();
             }
 
@@ -141,28 +141,20 @@ class PopupAnnouncementDispatchService
             $query->where('status', true);
         }
 
-        return $query->get()
-            ->filter(fn (User $user): bool => $this->canReceiveForBranches($user, $targetBranchIds))
-            ->values();
-    }
-
-    /**
-     * @param  array<int, int>  $targetBranchIds
-     */
-    protected function canReceiveForBranches(User $user, array $targetBranchIds): bool
-    {
-        if ($targetBranchIds === []) {
-            return true;
+        if ($targetBranchIds !== []) {
+            $query->where(function (Builder $branchQuery) use ($targetBranchIds): void {
+                $branchQuery
+                    ->whereIn('users.branch_id', $targetBranchIds)
+                    ->orWhereHas('activeDoctorBranchAssignments', function (Builder $assignmentQuery) use ($targetBranchIds): void {
+                        $assignmentQuery->whereIn('branch_id', $targetBranchIds);
+                    })
+                    ->orWhereHas('roles', function (Builder $roleQuery): void {
+                        $roleQuery->where('name', 'Admin');
+                    });
+            });
         }
 
-        if ($user->hasRole('Admin')) {
-            return true;
-        }
-
-        $accessibleBranchIds = $user->accessibleBranchIds();
-
-        return collect($targetBranchIds)
-            ->contains(fn (int $branchId): bool => in_array($branchId, $accessibleBranchIds, true));
+        return $query->get();
     }
 
     /**

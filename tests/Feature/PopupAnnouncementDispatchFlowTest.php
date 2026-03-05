@@ -92,3 +92,37 @@ it('trims popup message content before save', function (): void {
 
     expect($announcement->message)->toBe("<p>Dòng 1</p>\n<p>Dòng 2</p>");
 });
+
+it('marks popup as failed when there are no eligible recipients', function (): void {
+    ClinicSetting::setValue('popup.enabled', true, [
+        'group' => 'popup',
+        'value_type' => 'boolean',
+    ]);
+
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $sender = User::factory()->create(['branch_id' => $branchA->id]);
+    $sender->assignRole('Manager');
+    $this->actingAs($sender);
+
+    $recipientAtOtherBranch = User::factory()->create(['branch_id' => $branchB->id]);
+    $recipientAtOtherBranch->assignRole('CSKH');
+
+    $announcement = PopupAnnouncement::query()->create([
+        'title' => 'Popup không có người nhận hợp lệ',
+        'message' => 'Nội dung test no recipient',
+        'priority' => PopupAnnouncement::PRIORITY_INFO,
+        'status' => PopupAnnouncement::STATUS_SCHEDULED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [$branchA->id],
+        'starts_at' => now()->subMinute(),
+    ]);
+
+    $service = app(PopupAnnouncementDispatchService::class);
+    $report = $service->dispatchDueAnnouncements();
+
+    expect($report['deliveries_created'])->toBe(0)
+        ->and($announcement->refresh()->status)->toBe(PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT)
+        ->and(PopupAnnouncementDelivery::query()->count())->toBe(0);
+});

@@ -5,7 +5,8 @@ use App\Models\ClinicSetting;
 use App\Services\ZaloIntegrationService;
 use Livewire\Livewire;
 
-it('rejects zalo webhook verification when token does not match', function (): void {
+function configureZaloWebhookRuntime(): void
+{
     ClinicSetting::setValue('zalo.enabled', true, [
         'group' => 'zalo',
         'value_type' => 'boolean',
@@ -16,22 +17,50 @@ it('rejects zalo webhook verification when token does not match', function (): v
         'value_type' => 'text',
         'is_secret' => true,
     ]);
+
+    ClinicSetting::setValue('zalo.app_secret', 'app_secret_for_webhook_signature_001', [
+        'group' => 'zalo',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+}
+
+/**
+ * @param  array<string, mixed>  $payload
+ */
+function signZaloWebhookPayload(array $payload): string
+{
+    $normalize = static function (mixed $value) use (&$normalize): mixed {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $child) {
+            $value[$key] = $normalize($child);
+        }
+
+        ksort($value);
+
+        return $value;
+    };
+
+    $payloadJson = json_encode($normalize($payload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (! is_string($payloadJson) || trim($payloadJson) === '') {
+        $payloadJson = '{}';
+    }
+
+    return hash_hmac('sha256', $payloadJson, 'app_secret_for_webhook_signature_001');
+}
+
+it('rejects zalo webhook verification when token does not match', function (): void {
+    configureZaloWebhookRuntime();
 
     $this->getJson('/api/v1/integrations/zalo/webhook?hub_verify_token=invalid&hub_challenge=abc')
         ->assertForbidden();
 });
 
 it('returns challenge when zalo webhook verification succeeds', function (): void {
-    ClinicSetting::setValue('zalo.enabled', true, [
-        'group' => 'zalo',
-        'value_type' => 'boolean',
-    ]);
-
-    ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
-        'group' => 'zalo',
-        'value_type' => 'text',
-        'is_secret' => true,
-    ]);
+    configureZaloWebhookRuntime();
 
     $this->get('/api/v1/integrations/zalo/webhook?hub_verify_token=secure-token-12345678901234567890&hub_challenge=hello-zalo')
         ->assertOk()
@@ -39,52 +68,101 @@ it('returns challenge when zalo webhook verification succeeds', function (): voi
 });
 
 it('accepts webhook payload with valid verify token', function (): void {
-    ClinicSetting::setValue('zalo.enabled', true, [
-        'group' => 'zalo',
-        'value_type' => 'boolean',
-    ]);
+    configureZaloWebhookRuntime();
 
-    ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
-        'group' => 'zalo',
-        'value_type' => 'text',
-        'is_secret' => true,
-    ]);
-
-    $this->postJson('/api/v1/integrations/zalo/webhook', [
+    $payload = [
         'verify_token' => 'secure-token-12345678901234567890',
         'event_name' => 'user_send_text',
         'timestamp' => 1735689600,
-    ])->assertSuccessful()
+        'sender' => ['id' => 'sender_001'],
+        'message' => ['text' => 'Xin chào'],
+    ];
+
+    $this->withHeaders([
+        'X-Zalo-Signature' => signZaloWebhookPayload($payload),
+    ])->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertSuccessful()
         ->assertJsonPath('ok', true)
         ->assertJsonPath('duplicate', false);
 });
 
 it('ignores duplicated webhook payload by idempotent fingerprint', function (): void {
-    ClinicSetting::setValue('zalo.enabled', true, [
-        'group' => 'zalo',
-        'value_type' => 'boolean',
-    ]);
-
-    ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
-        'group' => 'zalo',
-        'value_type' => 'text',
-        'is_secret' => true,
-    ]);
+    configureZaloWebhookRuntime();
 
     $payload = [
         'verify_token' => 'secure-token-12345678901234567890',
         'event_id' => 'event_001',
         'event_name' => 'user_send_text',
         'timestamp' => 1735689600,
+        'sender' => ['id' => 'sender_001'],
+        'message' => ['text' => 'Nội dung A'],
     ];
 
-    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+    $this->withHeaders([
+        'X-Zalo-Signature' => signZaloWebhookPayload($payload),
+    ])->postJson('/api/v1/integrations/zalo/webhook', $payload)
         ->assertSuccessful()
         ->assertJsonPath('duplicate', false);
 
-    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+    $this->withHeaders([
+        'X-Zalo-Signature' => signZaloWebhookPayload($payload),
+    ])->postJson('/api/v1/integrations/zalo/webhook', $payload)
         ->assertSuccessful()
         ->assertJsonPath('duplicate', true);
+});
+
+it('rejects webhook payload when signature is missing or invalid', function (): void {
+    configureZaloWebhookRuntime();
+
+    $payload = [
+        'event_name' => 'user_send_text',
+        'timestamp' => 1735689600,
+        'sender' => ['id' => 'sender_001'],
+        'message' => ['text' => 'Test chữ ký'],
+    ];
+
+    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Missing webhook signature.');
+
+    $this->withHeaders([
+        'X-Zalo-Signature' => 'invalid-signature',
+    ])->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Invalid webhook signature.');
+});
+
+it('does not collide fingerprint when same timestamp but different payload content', function (): void {
+    configureZaloWebhookRuntime();
+
+    $basePayload = [
+        'event_name' => 'user_send_text',
+        'timestamp' => 1735689600,
+        'oa_id' => 'oa_001',
+        'sender' => ['id' => 'sender_001'],
+    ];
+
+    $firstPayload = [
+        ...$basePayload,
+        'message' => ['text' => 'Nội dung 1'],
+    ];
+
+    $secondPayload = [
+        ...$basePayload,
+        'message' => ['text' => 'Nội dung 2'],
+    ];
+
+    $this->withHeaders([
+        'X-Zalo-Signature' => signZaloWebhookPayload($firstPayload),
+    ])->postJson('/api/v1/integrations/zalo/webhook', $firstPayload)
+        ->assertSuccessful()
+        ->assertJsonPath('duplicate', false);
+
+    $this->withHeaders([
+        'X-Zalo-Signature' => signZaloWebhookPayload($secondPayload),
+    ])->postJson('/api/v1/integrations/zalo/webhook', $secondPayload)
+        ->assertSuccessful()
+        ->assertJsonPath('duplicate', false);
 });
 
 it('applies throttle middleware to zalo webhook endpoint', function (): void {

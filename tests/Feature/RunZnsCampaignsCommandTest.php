@@ -194,8 +194,35 @@ function configureZnsCommandRuntime(): void
 function normalizePhoneForZnsCampaignTest(string $phone): string
 {
     $digits = preg_replace('/[^0-9]/', '', $phone);
+    if (! is_string($digits)) {
+        return '';
+    }
 
-    return is_string($digits) ? trim($digits) : '';
+    $digits = trim($digits);
+    if ($digits === '') {
+        return '';
+    }
+
+    if (str_starts_with($digits, '00')) {
+        $digits = ltrim(substr($digits, 2), '0');
+    }
+
+    if (str_starts_with($digits, '0')) {
+        $digits = '84'.substr($digits, 1);
+    } elseif (str_starts_with($digits, '84')) {
+        $digits = '84'.ltrim(substr($digits, 2), '0');
+    }
+
+    if (! str_starts_with($digits, '84')) {
+        return '';
+    }
+
+    $length = strlen($digits);
+    if ($length < 10 || $length > 12) {
+        return '';
+    }
+
+    return $digits;
 }
 
 function znsCampaignDeliveryIdempotencyKey(int $campaignId, string $normalizedPhone, string $templateId): string
