@@ -176,7 +176,7 @@
 - Dependencies:
   - `INV`, `GOV`
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-006`
 
 ## [SUP-007] Bao cao labo dang query sai datasource
@@ -229,7 +229,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 4
+- Open high count: 3
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: fix `SUP-002` de khoa patient/branch/doctor consistency, sau do chot `SUP-003` va `SUP-004`.
+- Next recommended action: chot `SUP-003` de dua supplier vao canonical identity cua factory orders, sau do fix `SUP-004` cho race condition `order_no`.

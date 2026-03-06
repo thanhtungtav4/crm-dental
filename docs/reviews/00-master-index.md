@@ -37,7 +37,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Clean Baseline Reached | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | B | Khong con open blocker baseline; tiep tuc theo doi drift giua finance, inventory va KPI bang full-suite regression | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Clean Baseline Reached | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | B | Khong con open code blocker baseline; follow-up van hanh la chay migrate + schema gate inventory tren DB dang drift | GOV, TRT, FIN, SUP, KPI |
-| SUP | Suppliers / Factory Orders | In Fix | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | D | Branch consistency, supplier canonical link va order number race van con mo | INV, FIN, GOV |
+| SUP | Suppliers / Factory Orders | In Fix | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | D | Supplier canonical link, order number race va workflow mutation surfaces van con mo | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Pending Review | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | TBD | TODO | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Pending Review | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | TBD | TODO | GOV, APPT, CLIN, ZNS, OPS |
@@ -64,7 +64,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `SUP` - dang active fix; batch tiep theo la `TASK-SUP-002`.
+- `SUP` - dang active fix; batch tiep theo la `TASK-SUP-003`.
 
 # 6. Modules needing re-audit
 
@@ -76,4 +76,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `SUP` - tiep tuc `TASK-SUP-002` de khoa patient/branch/doctor consistency.
+- `SUP` - tiep tuc `TASK-SUP-003` de dua supplier master thanh canonical identity cua factory orders.

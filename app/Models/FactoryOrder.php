@@ -84,11 +84,30 @@ class FactoryOrder extends Model
                 $order->branch_id = $patientBranchId;
             }
 
+            if ($patientBranchId === null) {
+                throw ValidationException::withMessages([
+                    'patient_id' => 'Bệnh nhân chưa có chi nhánh gốc để tạo lệnh labo.',
+                ]);
+            }
+
+            if ((int) $order->branch_id !== (int) $patientBranchId) {
+                throw ValidationException::withMessages([
+                    'branch_id' => 'Chi nhánh của lệnh labo phải trùng với chi nhánh gốc của bệnh nhân.',
+                ]);
+            }
+
             if (is_numeric($order->branch_id)) {
                 BranchAccess::assertCanAccessBranch(
                     branchId: (int) $order->branch_id,
                     field: 'branch_id',
                     message: 'Bạn không có quyền thao tác lệnh labo ở chi nhánh này.',
+                );
+            }
+
+            if (is_numeric($order->doctor_id) && is_numeric($order->branch_id)) {
+                app(DoctorBranchAssignmentService::class)->ensureDoctorCanWorkAtBranch(
+                    doctorId: (int) $order->doctor_id,
+                    branchId: (int) $order->branch_id,
                 );
             }
 

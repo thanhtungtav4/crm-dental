@@ -408,9 +408,12 @@ it('posts material issue note and records inventory transactions', function (): 
 });
 
 it('enforces factory order state transitions and computes item totals', function (): void {
+    $branch = Branch::factory()->create(['active' => true]);
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+
     $order = FactoryOrder::query()->create([
-        'patient_id' => Patient::factory()->create()->id,
-        'branch_id' => Branch::factory()->create()->id,
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
         'status' => FactoryOrder::STATUS_DRAFT,
         'priority' => 'normal',
     ]);

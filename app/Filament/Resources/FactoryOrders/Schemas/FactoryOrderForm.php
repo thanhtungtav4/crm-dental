@@ -3,11 +3,17 @@
 namespace App\Filament\Resources\FactoryOrders\Schemas;
 
 use App\Models\FactoryOrder;
+use App\Models\Patient;
+use App\Models\User;
+use App\Services\FactoryOrderAuthorizer;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -28,7 +34,37 @@ class FactoryOrderForm
                     ->preload()
                     ->default(fn (): ?int => request()->integer('patient_id') ?: null)
                     ->required()
-                    ->live(),
+                    ->live()
+                    ->afterStateUpdated(function ($state, Set $set, Get $get): void {
+                        $patientId = is_numeric($state) ? (int) $state : null;
+
+                        if ($patientId === null) {
+                            return;
+                        }
+
+                        $patientBranchId = Patient::query()
+                            ->whereKey($patientId)
+                            ->value('first_branch_id');
+
+                        if (is_numeric($patientBranchId)) {
+                            $set('branch_id', (int) $patientBranchId);
+                        }
+
+                        $doctorId = $get('doctor_id');
+                        if (! filled($doctorId)) {
+                            return;
+                        }
+
+                        $isAllowed = app(PatientAssignmentAuthorizer::class)->scopeAssignableDoctors(
+                            User::query()->whereKey((int) $doctorId),
+                            auth()->user(),
+                            is_numeric($patientBranchId) ? (int) $patientBranchId : null,
+                        )->exists();
+
+                        if (! $isAllowed) {
+                            $set('doctor_id', null);
+                        }
+                    }),
 
                 Select::make('branch_id')
                     ->label('Chi nhánh')
@@ -40,15 +76,39 @@ class FactoryOrderForm
                     ->searchable()
                     ->preload()
                     ->required()
-                    ->default(fn (): ?int => request()->integer('branch_id') ?: BranchAccess::defaultBranchIdForCurrentUser()),
+                    ->live()
+                    ->default(fn (): ?int => request()->integer('branch_id') ?: BranchAccess::defaultBranchIdForCurrentUser())
+                    ->afterStateUpdated(function (Get $get, Set $set, $state): void {
+                        $branchId = filled($state) ? (int) $state : null;
+                        $doctorId = $get('doctor_id');
+
+                        if (! filled($doctorId)) {
+                            return;
+                        }
+
+                        $isAllowed = app(PatientAssignmentAuthorizer::class)->scopeAssignableDoctors(
+                            User::query()->whereKey((int) $doctorId),
+                            auth()->user(),
+                            $branchId,
+                        )->exists();
+
+                        if (! $isAllowed) {
+                            $set('doctor_id', null);
+                        }
+                    }),
 
                 Select::make('doctor_id')
                     ->label('Bác sĩ phụ trách')
-                    ->relationship('doctor', 'name', fn (Builder $query): Builder => $query->role('Doctor'))
+                    ->options(fn (Get $get): array => app(FactoryOrderAuthorizer::class)
+                        ->assignableDoctorOptions(
+                            actor: auth()->user(),
+                            branchId: filled($get('branch_id')) ? (int) $get('branch_id') : null,
+                        ))
                     ->searchable()
                     ->preload()
                     ->default(fn (): ?int => request()->integer('doctor_id') ?: null)
-                    ->nullable(),
+                    ->nullable()
+                    ->helperText('Chi hien thi bac si thuoc chi nhanh dang chon.'),
 
                 TextInput::make('order_no')
                     ->label('Mã lệnh labo')
