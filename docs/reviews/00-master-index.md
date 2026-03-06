@@ -31,7 +31,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | Module code | Module name | Current status | Review file | Issue file | Plan file | Current verdict | Top open risks | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GOV | Governance / Branches / RBAC / Audit | Clean Baseline Reached | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | B | Khong con open blocker baseline; follow-up van hanh la sync permission baseline tren DB da seed truoc day va formalize governance delegation matrix neu can | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
-| PAT | Customers / Patients / MPI | In Fix | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | D | Customer->patient conversion con race window; doctor/owner/assignee select chua branch-scoped; unified customer/patient identity contract chua hoan tat | GOV, APPT, CLIN, FIN, CARE, ZNS |
+| PAT | Customers / Patients / MPI | In Fix | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | D | Patient model van auto-create customer trong model event; MPI duplicate review chua co operator workflow; regression coverage cho onboarding/MPI van chua dong het | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Pending Review | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | TBD | TODO | GOV, PAT, CLIN, TRT, INT, ZNS |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Pending Review | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | TBD | TODO | PAT, APPT, CLIN, INV, FIN |
@@ -47,7 +47,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 # 3. Cross-module risks
 
 - GOV da dat clean baseline, khong con la blocker chinh cho PAT/APPT/CLIN/FIN o phase hien tai.
-- PAT dang lo nguy co PII plaintext tren `customers`, conversion race-condition va MPI/customer ownership inconsistency.
+- PAT da dong cac risk `Critical/High` chinh, nhung van con onboarding side effect trong model event va thieu UI nghiep vu cho MPI duplicate review.
 - Cac module sau `APPT`, `CLIN`, `FIN` van phu thuoc ket qua review PAT de khoa ownership va patient identity boundary.
 
 # 4. Priority overview
@@ -59,7 +59,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `PAT` - dang deep fix; `TASK-PAT-001` da xong, san sang tiep tuc `TASK-PAT-002`.
+- `PAT` - dang deep fix; `TASK-PAT-001` den `TASK-PAT-004` da xong va da pass full suite, con `TASK-PAT-005` va `TASK-PAT-006`.
 
 # 6. Modules needing re-audit
 
@@ -71,4 +71,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `PAT` - tiep tuc `TASK-PAT-002`, sau do `TASK-PAT-003`, truoc khi sang APPT/CLIN/FIN.
+- `PAT` - tiep tuc `TASK-PAT-005`, sau do `TASK-PAT-006`, truoc khi chot re-audit module.

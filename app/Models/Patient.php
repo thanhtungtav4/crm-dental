@@ -6,11 +6,11 @@ use App\Casts\NullableEncrypted;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\PatientCodeGenerator;
+use App\Support\PatientIdentityNormalizer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class Patient extends Model
 {
@@ -325,48 +325,21 @@ class Patient extends Model
 
     public static function phoneSearchHash(?string $phone): ?string
     {
-        $normalized = static::normalizePhoneForSearch($phone);
-
-        return $normalized === null
-            ? null
-            : hash('sha256', 'patient-phone|'.$normalized);
+        return PatientIdentityNormalizer::patientPhoneSearchHash($phone);
     }
 
     public static function emailSearchHash(?string $email): ?string
     {
-        $normalized = static::normalizeEmailForSearch($email);
-
-        return $normalized === null
-            ? null
-            : hash('sha256', 'patient-email|'.$normalized);
+        return PatientIdentityNormalizer::patientEmailSearchHash($email);
     }
 
     public static function normalizePhoneForSearch(?string $phone): ?string
     {
-        if ($phone === null || trim($phone) === '') {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $phone) ?: '';
-        if ($digits === '') {
-            return null;
-        }
-
-        if (Str::startsWith($digits, '84')) {
-            return '0'.substr($digits, 2);
-        }
-
-        return $digits;
+        return PatientIdentityNormalizer::normalizePhone($phone);
     }
 
     public static function normalizeEmailForSearch(?string $email): ?string
     {
-        if ($email === null) {
-            return null;
-        }
-
-        $normalized = Str::lower(trim($email));
-
-        return $normalized !== '' ? $normalized : null;
+        return PatientIdentityNormalizer::normalizeEmail($email);
     }
 }

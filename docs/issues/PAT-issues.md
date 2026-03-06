@@ -73,7 +73,7 @@
 - Dependencies:
   - APPT
 - Suggested order: 2
-- Current status: Partial
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-002`
 
 ## [PAT-003] Staff/doctor selector trong customer/patient form chua branch-scoped
@@ -101,7 +101,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-003`
 
 ## [PAT-004] Customer va Patient dang dung 2 chien luoc identity khac nhau
@@ -132,7 +132,7 @@
 - Dependencies:
   - PAT-001
 - Suggested order: 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-001`, `TASK-PAT-004`
 
 ## [PAT-005] Conversion dedupe fallback scan toan bo patient trong branch bang PHP
@@ -158,7 +158,7 @@
 - Dependencies:
   - PAT-001, PAT-004
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-004`
 
 ## [PAT-006] Patient model auto-create Customer trong model event
@@ -186,7 +186,7 @@
 - Dependencies:
   - PAT-002
 - Suggested order: 6
-- Current status: Open
+- Current status: Partial
 - Linked task IDs: `TASK-PAT-005`
 
 ## [PAT-007] MPI duplicate review workflow chua co UI nghiep vu ro rang
@@ -246,8 +246,8 @@
 
 # Summary
 
-- Open critical count: 1
-- Open high count: 3
-- Open medium count: 3
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 2
 - Open low count: 0
-- Next recommended action: tiep tuc ngay `TASK-PAT-002`, sau do khoa `TASK-PAT-003`, va chua mo deep-fix cho `APPT/CLIN/FIN` truoc khi 2 task nay on dinh.
+- Next recommended action: tiep tuc `TASK-PAT-005` de dua patient onboarding side effects ve service boundary, sau do lam `TASK-PAT-006` cho MPI review workflow operator-friendly.

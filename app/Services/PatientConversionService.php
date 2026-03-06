@@ -5,11 +5,11 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Patient;
+use App\Support\PatientIdentityNormalizer;
 use Filament\Notifications\Notification;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class PatientConversionService
 {
@@ -118,7 +118,7 @@ class PatientConversionService
     {
         $phoneHash = Patient::phoneSearchHash($phone);
 
-        $exactMatch = $phoneHash !== null
+        return $phoneHash !== null
             ? Patient::query()
                 ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
                 ->where('phone_search_hash', $phoneHash)
@@ -126,42 +126,11 @@ class PatientConversionService
                 ->orderBy('id')
                 ->first()
             : null;
-
-        if ($exactMatch) {
-            return $exactMatch;
-        }
-
-        $normalizedPhone = $this->normalizePhone($phone);
-        if ($normalizedPhone === null) {
-            return null;
-        }
-
-        $candidates = Patient::query()
-            ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
-            ->whereNotNull('phone')
-            ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
-            ->get();
-
-        return $candidates->first(function (Patient $patient) use ($normalizedPhone): bool {
-            return $this->normalizePhone($patient->phone) === $normalizedPhone;
-        });
     }
 
     protected function normalizePhone(?string $phone): ?string
     {
-        if (! $phone) {
-            return null;
-        }
-
-        $normalized = preg_replace('/\D+/', '', $phone);
-
-        if (! $normalized) {
-            return null;
-        }
-
-        return Str::startsWith($normalized, '84')
-            ? '0'.substr($normalized, 2)
-            : $normalized;
+        return PatientIdentityNormalizer::normalizePhone($phone);
     }
 
     protected function sendSuccessNotification(Customer $customer, Patient $patient): void

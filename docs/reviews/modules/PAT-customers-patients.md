@@ -263,13 +263,13 @@
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
 | PAT-001 | Critical | Security | Customer PII dang luu plaintext va searchable tren cot raw | Resolved | `Customer` da duoc harden voi encrypted cast + search hash; lookup/validation da tach khoi cot raw. |
-| PAT-002 | Critical | Concurrency | Customer->Patient conversion khong idempotent duoi concurrent traffic | Open | `convert()` check-then-create truoc transaction, co the tao duplicate patient hoac va cham unique khong duoc xu ly nghiep vu. |
-| PAT-003 | High | Security | Staff/doctor selector trong customer/patient form chua branch-scoped | Open | Co the gan doctor/owner/assignee ngoai branch duoc phep. |
-| PAT-004 | High | Data Integrity | Customer va Patient dang dung 2 chien luoc identity khac nhau | Partial | Nen encryption/hash cho `Customer` da duoc dat, nhung unified identity contract va hot-path dedupe van chua dong bo hoan toan. |
-| PAT-005 | High | Performance | Conversion dedupe fallback scan toan bo patient trong branch bang PHP | Open | Khong scale khi record patient tang va co chi phi decrypt tren hot path. |
+| PAT-002 | Critical | Concurrency | Customer->Patient conversion khong idempotent duoi concurrent traffic | Resolved | Conversion da vao transaction + row lock + idempotent retry path cho same customer va duplicate leads cung identity. |
+| PAT-003 | High | Security | Staff/doctor selector trong customer/patient form chua branch-scoped | Resolved | Form options va save guards da scope theo branch cho assignee/owner/doctor, request forged cung bi chan. |
+| PAT-004 | High | Data Integrity | Customer va Patient dang dung 2 chien luoc identity khac nhau | Resolved | Customer, Patient, MPI va web lead ingestion da dung chung normalizer/hash contract cho identity hot path. |
+| PAT-005 | High | Performance | Conversion dedupe fallback scan toan bo patient trong branch bang PHP | Resolved | Hot path conversion da bo full-scan bang PHP, chi con hash/index lookup. |
 | PAT-006 | Medium | Maintainability | Patient model auto-create Customer trong model event | Open | Side effect onboarding nam o model layer, kho audit transaction boundary va kho test rollback/orphan path. |
 | PAT-007 | Medium | Domain Logic | MPI duplicate review workflow chua co UI nghiep vu ro rang | Open | Hien chi thay command/service, de tao do tre van hanh va kho xu ly queue duplicate cho user khong ky thuat. |
-| PAT-008 | Medium | Maintainability | Test coverage chua khoa regression cho PII, conversion race va branch-scoped selectors | Open | Happy path da co, nhung thieu test cho weird/concurrent path quan trong nhat. |
+| PAT-008 | Medium | Maintainability | Test coverage chua khoa regression cho PII, conversion race va branch-scoped selectors | Partial | Regression da khoa cho PII, conversion, branch-scoped assignment va shared normalizer; onboarding/MPI UI flow van chua co coverage day du. |
 
 # Dependencies
 
@@ -288,9 +288,9 @@
 
 # Recommended Next Steps
 
-- `TASK-PAT-001` da xong va da pass full suite; tiep tuc ngay `TASK-PAT-002` de khoa race-condition customer->patient conversion.
-- Theo sau `TASK-PAT-002` la `TASK-PAT-003` de dong branch-scoped assignment boundary truoc khi review/fix `APPT`.
-- Chua nen fix sau `CLIN`, `FIN`, `CARE`, `ZNS` truoc khi chot baseline `PAT`.
+- `TASK-PAT-001` den `TASK-PAT-004` da pass full suite; tiep tuc `TASK-PAT-005` de dua patient onboarding ve service boundary ro rang.
+- Sau do lam `TASK-PAT-006` de co MPI review workflow cho operator truoc khi goi PAT la clean baseline.
+- Co the bat dau review `APPT` song song, nhung chua nen re-audit chot PAT truoc khi xong `TASK-PAT-005` va `TASK-PAT-006`.
 
 # Current Status
 

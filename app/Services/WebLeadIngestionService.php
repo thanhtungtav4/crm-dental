@@ -9,6 +9,7 @@ use App\Models\ClinicSetting;
 use App\Models\Customer;
 use App\Models\WebLeadIngestion;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\PatientIdentityNormalizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -217,17 +218,7 @@ class WebLeadIngestionService
 
     protected function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if ($digits === '') {
-            return '';
-        }
-
-        if (str_starts_with($digits, '84')) {
-            $digits = '0'.substr($digits, 2);
-        }
-
-        return $digits;
+        return PatientIdentityNormalizer::normalizePhone($phone) ?? '';
     }
 
     protected function appendWebNote(?string $existingNote, string $incomingNote, ?string $branchCode): string
