@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\BranchAccess;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -108,6 +110,96 @@ class AuditLog extends Model
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole('Admin')) {
+            return $query;
+        }
+
+        if (! $user->can('ViewAny:AuditLog')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user);
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $query) use ($branchIds): void {
+            $hasCondition = false;
+
+            foreach (static::branchScopeMetadataKeys() as $metadataKey) {
+                foreach ($branchIds as $branchId) {
+                    if ($hasCondition) {
+                        $query->orWhere("metadata->{$metadataKey}", $branchId);
+                    } else {
+                        $query->where("metadata->{$metadataKey}", $branchId);
+                        $hasCondition = true;
+                    }
+                }
+            }
+
+            if (! $hasCondition) {
+                $query->whereRaw('1 = 0');
+            }
+        });
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (! $user->can('View:AuditLog')) {
+            return false;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user);
+
+        if ($branchIds === []) {
+            return false;
+        }
+
+        foreach (static::branchScopeMetadataKeys() as $metadataKey) {
+            $branchId = data_get($this->metadata, $metadataKey);
+
+            if (is_numeric($branchId) && in_array((int) $branchId, $branchIds, true)) {
+                return true;
+            }
+        }
+
+        $patientId = data_get($this->metadata, 'patient_id');
+
+        if (! is_numeric($patientId)) {
+            return false;
+        }
+
+        $patientBranchId = Patient::query()
+            ->whereKey((int) $patientId)
+            ->value('first_branch_id');
+
+        return is_numeric($patientBranchId) && in_array((int) $patientBranchId, $branchIds, true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function branchScopeMetadataKeys(): array
+    {
+        return [
+            'branch_id',
+            'from_branch_id',
+            'to_branch_id',
+            'source_branch_id',
+        ];
     }
 
     /**

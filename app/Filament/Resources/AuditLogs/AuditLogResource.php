@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditLogResource extends Resource
@@ -53,6 +54,13 @@ class AuditLogResource extends Resource
     public static function table(Table $table): Table
     {
         return AuditLogsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['actor'])
+            ->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array

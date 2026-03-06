@@ -104,7 +104,7 @@
 - Dependencies:
   - OPS
 - Suggested order: 3
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-GOV-003`
 
 ## [GOV-004] AuditLog thuong chua immutable va thieu structured context
@@ -260,8 +260,8 @@
 
 # Summary
 
-- Open critical count: 1
+- Open critical count: 0
 - Open high count: 4
 - Open medium count: 1
 - Open low count: 0
-- Next recommended action: re-audit `TASK-GOV-001` va `TASK-GOV-002`, sau do chuyen sang `TASK-GOV-003` de khoa audit log visibility.
+- Next recommended action: hoan tat `TASK-GOV-003`, sau do re-audit `TASK-GOV-001` va `TASK-GOV-002` de gom batch GOV dang fix.

@@ -104,6 +104,9 @@ class AuditLogsTable
                         AuditLog::ACTION_PRINT => 'Print',
                         AuditLog::ACTION_EXPORT => 'Export',
                     ]),
+                SelectFilter::make('actor_id')
+                    ->label('Người thực hiện')
+                    ->relationship('actor', 'name'),
             ])
             ->recordActions([
                 ViewAction::make()

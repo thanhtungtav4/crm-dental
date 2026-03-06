@@ -231,7 +231,7 @@
 | --- | --- | --- | --- | --- | --- |
 | GOV-001 | Critical | Security | Manager co the leo thang dac quyen qua User/Role/Branch | In Fix | Seeder baseline da duoc siet lai, can tiep tuc re-audit sau khi rollout. |
 | GOV-002 | Critical | Security | User form cho phep gan role/permission va branch khong gioi han | In Fix | Authorizer + form/page guard da duoc noi vao code, can re-audit sau khi rollout. |
-| GOV-003 | Critical | Security | Audit log bi lo cho role nghiep vu do thieu policy va scope | Open | `doctor` co the `canViewAny()` tren AuditLogResource. |
+| GOV-003 | Critical | Security | Audit log bi lo cho role nghiep vu do thieu policy va scope | In Fix | `doctor` co the `canViewAny()` tren AuditLogResource; dang khoa bang policy + query scope. |
 | GOV-004 | High | Data Integrity | AuditLog thuong chua immutable va thieu structured context | Open | Chua co guard model va schema traceability day du. |
 | GOV-005 | High | Concurrency | Tao request chuyen chi nhanh chua an toan truoc race-condition | Open | `exists()` roi `create()` ngoai transaction. |
 | GOV-006 | High | Maintainability | BranchLog dang la system log nhung van co edit/delete surface | Open | Resource va model branch log chua read-only. |
