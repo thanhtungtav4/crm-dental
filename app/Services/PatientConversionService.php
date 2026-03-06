@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Patient;
 use Filament\Notifications\Notification;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,75 +21,48 @@ class PatientConversionService
      */
     public function convert(Customer $customer, ?Appointment $appointment = null): ?Patient
     {
-        $targetBranchId = $appointment?->branch_id
-            ?? $customer->branch_id
-            ?? auth()->user()?->branch_id;
+        $targetBranchId = $this->resolveTargetBranchId($customer, $appointment);
 
-        // 1. Basic validation
-        if ($customer->patient) {
-            // Already has a patient record linked
-            return $this->handleExistingPatient($customer, $customer->patient, $appointment, $targetBranchId);
-        }
+        try {
+            return DB::transaction(function () use ($customer, $appointment, $targetBranchId): Patient {
+                $lockedCustomer = Customer::query()
+                    ->lockForUpdate()
+                    ->findOrFail($customer->getKey());
 
-        // 2. Check if a patient already exists by customer identity first
-        $existingPatient = Patient::where('customer_id', $customer->id)->first();
+                $lockedAppointment = $this->lockAppointment($appointment);
+                $resolvedBranchId = $lockedAppointment?->branch_id ?? $targetBranchId;
 
-        // 3. Dedupe by phone + clinic before creating new patient
-        if (! $existingPatient && ! empty($customer->phone)) {
-            $existingPatient = $this->findByPhoneAndClinic($customer->phone, $targetBranchId);
-        }
+                $existingPatient = $this->findExistingPatientForLockedCustomer($lockedCustomer, $resolvedBranchId);
 
-        if ($existingPatient) {
-            return $this->handleExistingPatient($customer, $existingPatient, $appointment, $targetBranchId);
-        }
-
-        return DB::transaction(function () use ($customer, $appointment) {
-            try {
-                // 4. Create Patient
-                $patient = Patient::create([
-                    'customer_id' => $customer->id,
-                    'first_branch_id' => $appointment?->branch_id ?? $customer->branch_id ?? auth()->user()?->branch_id,
-                    'full_name' => $customer->full_name,
-                    'phone' => $customer->phone,
-                    'email' => $customer->email,
-                    'gender' => $customer->gender ?? 'other', // Assuming gender might be on customer or default
-                    'birthday' => $customer->birthday ?? null,
-                    'address' => $customer->address ?? null,
-                    'customer_group_id' => $customer->customer_group_id,
-                    'promotion_group_id' => $customer->promotion_group_id,
-                    'owner_staff_id' => $customer->assigned_to,
-                    'created_by' => auth()->id() ?? $customer->created_by,
-                    'updated_by' => auth()->id() ?? $customer->updated_by,
-                ]);
-
-                // 5. Update Customer status
-                $customer->status = 'converted';
-                $customer->save();
-
-                // 6. Link Appointment if exists
-                if ($appointment) {
-                    $appointment->patient_id = $patient->id;
-                    $appointment->customer_id = $appointment->customer_id ?: $customer->id;
-                    $appointment->saveQuietly();
+                if ($existingPatient) {
+                    return $this->handleExistingPatient($lockedCustomer, $existingPatient, $lockedAppointment, $resolvedBranchId);
                 }
 
-                // 7. Notify
-                $this->sendSuccessNotification($customer, $patient);
+                $this->lockPeerCustomersForIdentity($lockedCustomer);
 
-                return $patient;
+                $existingPatient = $this->findExistingPatientForLockedCustomer($lockedCustomer, $resolvedBranchId);
 
-            } catch (\Exception $e) {
-                Log::error("Failed to convert customer {$customer->id} to patient: ".$e->getMessage());
+                if ($existingPatient) {
+                    return $this->handleExistingPatient($lockedCustomer, $existingPatient, $lockedAppointment, $resolvedBranchId);
+                }
 
-                Notification::make()
-                    ->title('Lỗi chuyển đổi dữ liệu')
-                    ->body('Không thể tạo hồ sơ bệnh nhân. Vui lòng thử lại.')
-                    ->danger()
-                    ->send();
+                return $this->createPatientFromCustomer(
+                    customer: $lockedCustomer,
+                    appointment: $lockedAppointment,
+                    targetBranchId: $resolvedBranchId,
+                );
+            }, attempts: 5);
+        } catch (\Throwable $exception) {
+            Log::error("Failed to convert customer {$customer->id} to patient: ".$exception->getMessage());
 
-                throw $e; // Re-throw to rollback transaction
-            }
-        });
+            Notification::make()
+                ->title('Lỗi chuyển đổi dữ liệu')
+                ->body('Không thể tạo hồ sơ bệnh nhân. Vui lòng thử lại.')
+                ->danger()
+                ->send();
+
+            throw $exception;
+        }
     }
 
     /**
@@ -140,7 +114,7 @@ class PatientConversionService
         return $patient;
     }
 
-    protected function findByPhoneAndClinic(string $phone, ?int $branchId): ?Patient
+    protected function findByPhoneAndClinic(string $phone, ?int $branchId, bool $lockForUpdate = false): ?Patient
     {
         $phoneHash = Patient::phoneSearchHash($phone);
 
@@ -148,6 +122,8 @@ class PatientConversionService
             ? Patient::query()
                 ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
                 ->where('phone_search_hash', $phoneHash)
+                ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
+                ->orderBy('id')
                 ->first()
             : null;
 
@@ -163,6 +139,7 @@ class PatientConversionService
         $candidates = Patient::query()
             ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
             ->whereNotNull('phone')
+            ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
             ->get();
 
         return $candidates->first(function (Patient $patient) use ($normalizedPhone): bool {
@@ -211,5 +188,111 @@ class PatientConversionService
                 ->warning()
                 ->sendToDatabase($recipient);
         }
+    }
+
+    protected function resolveTargetBranchId(Customer $customer, ?Appointment $appointment): ?int
+    {
+        return $appointment?->branch_id
+            ?? $customer->branch_id
+            ?? auth()->user()?->branch_id;
+    }
+
+    protected function lockAppointment(?Appointment $appointment): ?Appointment
+    {
+        if (! $appointment?->exists) {
+            return $appointment;
+        }
+
+        return Appointment::query()
+            ->lockForUpdate()
+            ->find($appointment->getKey());
+    }
+
+    protected function findExistingPatientForLockedCustomer(Customer $customer, ?int $targetBranchId): ?Patient
+    {
+        $existingByCustomer = Patient::query()
+            ->where('customer_id', $customer->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if ($existingByCustomer) {
+            return $existingByCustomer;
+        }
+
+        if (! filled($customer->phone)) {
+            return null;
+        }
+
+        return $this->findByPhoneAndClinic((string) $customer->phone, $targetBranchId, true);
+    }
+
+    protected function lockPeerCustomersForIdentity(Customer $customer): void
+    {
+        if (! filled($customer->phone_search_hash)) {
+            return;
+        }
+
+        Customer::query()
+            ->where('phone_search_hash', (string) $customer->phone_search_hash)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id']);
+    }
+
+    protected function createPatientFromCustomer(
+        Customer $customer,
+        ?Appointment $appointment,
+        ?int $targetBranchId,
+    ): Patient {
+        try {
+            $patient = Patient::query()->create([
+                'customer_id' => $customer->id,
+                'first_branch_id' => $targetBranchId,
+                'full_name' => $customer->full_name,
+                'phone' => $customer->phone,
+                'email' => $customer->email,
+                'gender' => $customer->gender ?? 'other',
+                'birthday' => $customer->birthday ?? null,
+                'address' => $customer->address ?? null,
+                'customer_group_id' => $customer->customer_group_id,
+                'promotion_group_id' => $customer->promotion_group_id,
+                'owner_staff_id' => $customer->assigned_to,
+                'created_by' => auth()->id() ?? $customer->created_by,
+                'updated_by' => auth()->id() ?? $customer->updated_by,
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $existingPatient = Patient::query()
+                ->where('customer_id', $customer->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingPatient) {
+                return $this->handleExistingPatient($customer, $existingPatient, $appointment, $targetBranchId);
+            }
+
+            throw $exception;
+        }
+
+        $customer->status = 'converted';
+        $customer->save();
+
+        if ($appointment) {
+            $appointment->patient_id = $patient->id;
+            $appointment->customer_id = $appointment->customer_id ?: $customer->id;
+            $appointment->saveQuietly();
+        }
+
+        $this->sendSuccessNotification($customer, $patient);
+
+        return $patient;
+    }
+
+    protected function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) $exception->getCode(), ['23000', '23505'], true);
     }
 }

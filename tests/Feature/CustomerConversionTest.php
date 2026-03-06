@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\User;
 use App\Services\PatientConversionService;
+use Illuminate\Support\Facades\Concurrency;
 
 it('converts a customer to a patient and updates status', function () {
     $customer = Customer::factory()->create([
@@ -109,6 +110,100 @@ it('links appointment to existing deduped patient during conversion', function (
     expect($resolvedPatient)->not->toBeNull()
         ->and($resolvedPatient->id)->toBe($existingPatient->id)
         ->and($appointment->fresh()->patient_id)->toBe($existingPatient->id);
+});
+
+it('keeps customer conversion idempotent under repeated attempts for the same customer', function () {
+    $customer = Customer::factory()->create([
+        'status' => 'lead',
+    ]);
+
+    $tasks = [];
+
+    for ($attempt = 0; $attempt < 20; $attempt++) {
+        $tasks[] = static fn (): int => (int) app(PatientConversionService::class)
+            ->convert(Customer::query()->findOrFail($customer->id))
+            ->id;
+    }
+
+    $results = Concurrency::driver('sync')->run($tasks);
+
+    expect(collect($results)->unique()->count())->toBe(1)
+        ->and(Patient::query()->where('customer_id', $customer->id)->count())->toBe(1)
+        ->and($customer->fresh()->status)->toBe('converted');
+});
+
+it('reuses a single patient when duplicate leads in the same branch are converted repeatedly', function () {
+    $branch = Branch::factory()->create();
+
+    $primaryCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '0900555666',
+        'status' => 'lead',
+    ]);
+
+    $duplicateCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '+84 900 555 666',
+        'status' => 'lead',
+    ]);
+
+    $tasks = [
+        static fn (): int => (int) app(PatientConversionService::class)
+            ->convert(Customer::query()->findOrFail($primaryCustomer->id))
+            ->id,
+        static fn (): int => (int) app(PatientConversionService::class)
+            ->convert(Customer::query()->findOrFail($duplicateCustomer->id))
+            ->id,
+        static fn (): int => (int) app(PatientConversionService::class)
+            ->convert(Customer::query()->findOrFail($primaryCustomer->id))
+            ->id,
+        static fn (): int => (int) app(PatientConversionService::class)
+            ->convert(Customer::query()->findOrFail($duplicateCustomer->id))
+            ->id,
+    ];
+
+    $results = Concurrency::driver('sync')->run($tasks);
+    $patientIds = collect($results)->unique()->values();
+    $primaryPatient = Patient::query()->where('customer_id', $primaryCustomer->id)->first();
+
+    expect($patientIds)->toHaveCount(1)
+        ->and($primaryPatient)->not->toBeNull()
+        ->and((int) $patientIds->first())->toBe((int) $primaryPatient->id)
+        ->and(Patient::query()
+            ->where('first_branch_id', $branch->id)
+            ->where('phone_search_hash', Patient::phoneSearchHash('0900555666'))
+            ->count())->toBe(1)
+        ->and($primaryCustomer->fresh()->status)->toBe('converted')
+        ->and($duplicateCustomer->fresh()->status)->toBe('lead');
+});
+
+it('keeps appointment linking idempotent when conversion is retried after a manual success', function () {
+    $branch = Branch::factory()->create();
+
+    $doctor = User::factory()->create(['branch_id' => $branch->id]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '0900123456',
+        'status' => 'lead',
+    ]);
+
+    $appointment = Appointment::create([
+        'customer_id' => $customer->id,
+        'patient_id' => null,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay(),
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    $firstPatient = app(PatientConversionService::class)->convert($customer);
+    $secondPatient = app(PatientConversionService::class)->convert($customer->fresh(), $appointment->fresh());
+
+    expect($secondPatient->id)->toBe($firstPatient->id)
+        ->and($appointment->fresh()->patient_id)->toBe($firstPatient->id)
+        ->and(Patient::query()->where('customer_id', $customer->id)->count())->toBe(1);
 });
 
 it('auto creates a lead customer with valid source when creating patient directly', function () {
