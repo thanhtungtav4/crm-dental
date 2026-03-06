@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\User;
 use App\Services\PatientConversionService;
+use App\Services\PatientOnboardingService;
 use Illuminate\Support\Facades\Concurrency;
 
 it('converts a customer to a patient and updates status', function () {
@@ -207,7 +208,7 @@ it('keeps appointment linking idempotent when conversion is retried after a manu
 });
 
 it('auto creates a lead customer with valid source when creating patient directly', function () {
-    $patient = Patient::create([
+    $patient = app(PatientOnboardingService::class)->create([
         'full_name' => 'Patient Created Directly',
         'phone' => '0900777999',
         'email' => 'direct.patient@example.com',

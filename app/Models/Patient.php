@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class Patient extends Model
 {
@@ -274,23 +275,12 @@ class Patient extends Model
                 );
             }
 
-            // If no customer selected, create a lead automatically from patient info
             if (empty($patient->customer_id)) {
-                $customer = new Customer;
-                $customer->branch_id = $patient->first_branch_id;
-                $customer->full_name = $patient->full_name;
-                $customer->phone = $patient->phone;
-                $customer->email = $patient->email ?? null;
-                $customer->source = ClinicRuntimeSettings::defaultCustomerSource();
-                $customer->customer_group_id = $patient->customer_group_id ?? null;
-                $customer->promotion_group_id = $patient->promotion_group_id ?? null;
-                $customer->status = ClinicRuntimeSettings::defaultCustomerStatus();
-                $customer->notes = $patient->note ?: ($patient->first_visit_reason ?: 'Auto-created from Patient');
-                $customer->assigned_to = $patient->owner_staff_id ?? null;
-                $customer->save();
-
-                $patient->customer_id = $customer->id;
+                throw ValidationException::withMessages([
+                    'customer_id' => 'Phải tạo bệnh nhân qua luồng onboarding để liên kết khách hàng.',
+                ]);
             }
+
             if (! empty($patient->patient_code)) {
                 return;
             }
