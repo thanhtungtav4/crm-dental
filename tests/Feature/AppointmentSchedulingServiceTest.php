@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\BranchOverbookingPolicy;
 use App\Models\Customer;
@@ -71,6 +72,7 @@ it('blocks calendar-style reschedule conflicts unless force is requested', funct
         appointment: $target,
         startAt: now()->addDay()->setTime(9, 20),
         force: false,
+        reason: 'Khach xin doi lich do trung gio cong viec',
     ))->toThrow(ValidationException::class, 'Khung giờ bị trùng lịch');
 });
 
@@ -117,11 +119,61 @@ it('allows force reschedule through scheduling service for authorized override a
         appointment: $target,
         startAt: now()->addDay()->setTime(9, 20),
         force: true,
+        reason: 'Can chen lich khan de giu slot cho benh nhan',
     );
 
     expect($rescheduled->date?->format('H:i'))->toBe('09:20')
         ->and($rescheduled->is_overbooked)->toBeTrue()
         ->and((string) $rescheduled->overbooking_reason)->toContain('Override');
+});
+
+it('requires a reason and records audit metadata when rescheduling appointments', function () {
+    [$branch, $doctor, $customer, $patient] = makeAppointmentSchedulingContext();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $appointment = Appointment::query()->create([
+        'customer_id' => $customer->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(15, 0),
+        'duration_minutes' => 30,
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    $this->actingAs($manager);
+
+    expect(fn () => app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $appointment,
+        startAt: now()->addDay()->setTime(15, 30),
+        force: false,
+        reason: '   ',
+    ))->toThrow(ValidationException::class, 'Vui lòng nhập lý do đổi lịch');
+
+    $rescheduled = app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $appointment,
+        startAt: now()->addDay()->setTime(15, 30),
+        force: false,
+        reason: 'Khach xin doi sang cuoi gio chieu',
+    );
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_APPOINTMENT)
+        ->where('entity_id', $appointment->id)
+        ->where('action', AuditLog::ACTION_RESCHEDULE)
+        ->latest('id')
+        ->first();
+
+    expect($rescheduled->date?->format('H:i'))->toBe('15:30')
+        ->and($auditLog)->not->toBeNull()
+        ->and(data_get($auditLog?->metadata, 'from_at'))->toContain('15:00:00')
+        ->and(data_get($auditLog?->metadata, 'to_at'))->toContain('15:30:00')
+        ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Khach xin doi sang cuoi gio chieu')
+        ->and(data_get($auditLog?->metadata, 'source'))->toBe('calendar');
 });
 
 function makeAppointmentSchedulingContext(): array

@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Appointments\Tables;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
-use App\Models\Patient;
+use App\Services\AppointmentSearchService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
@@ -43,24 +43,8 @@ class AppointmentsTable
 
                         return '-';
                     })
-                    ->searchable(query: function ($query, $search) {
-                        $patientPhoneHash = Patient::phoneSearchHash((string) $search);
-
-                        return $query->where(function ($q) use ($search, $patientPhoneHash) {
-                            $q->whereHas('customer', function ($query) use ($search) {
-                                $query->where('full_name', 'like', "%{$search}%")
-                                    ->orWhere('phone', 'like', "%{$search}%");
-                            })
-                                ->orWhereHas('patient', function ($query) use ($search, $patientPhoneHash) {
-                                    $query->where('full_name', 'like', "%{$search}%")
-                                        ->orWhere('patient_code', 'like', "%{$search}%");
-
-                                    if ($patientPhoneHash !== null) {
-                                        $query->orWhere('phone_search_hash', $patientPhoneHash);
-                                    }
-                                });
-                        });
-                    })
+                    ->searchable(query: fn ($query, $search) => app(AppointmentSearchService::class)
+                        ->applyAppointmentParticipantSearch($query, (string) $search))
                     ->badge()
                     ->color(fn ($record) => $record->customer_id && ! $record->patient_id ? 'warning' : 'success')
                     ->icon(fn ($record) => $record->customer_id && ! $record->patient_id ? 'heroicon-o-user' : 'heroicon-o-check-circle')

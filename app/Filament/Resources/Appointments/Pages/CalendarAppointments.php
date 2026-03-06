@@ -143,8 +143,12 @@ class CalendarAppointments extends Page
     /**
      * @return array{ok:bool,message:string}
      */
-    public function rescheduleAppointmentFromCalendar(int $appointmentId, string $startAtIso, bool $force = false): array
-    {
+    public function rescheduleAppointmentFromCalendar(
+        int $appointmentId,
+        string $startAtIso,
+        bool $force = false,
+        ?string $reason = null,
+    ): array {
         $appointment = Appointment::query()->findOrFail($appointmentId);
         $this->authorize('update', $appointment);
 
@@ -157,6 +161,7 @@ class CalendarAppointments extends Page
                 appointment: $appointment,
                 startAt: $startAt,
                 force: $force,
+                reason: $reason,
             );
         } catch (ValidationException $exception) {
             return [

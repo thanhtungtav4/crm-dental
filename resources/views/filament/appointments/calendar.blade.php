@@ -186,7 +186,16 @@ function calendar() {
                     }
                 },
                 eventDrop: async (info) => {
-                    const result = await this.callReschedule(info.event, false)
+                    const reason = window.prompt('Nhap ly do doi lich hen:', '')
+
+                    if (!reason || !reason.trim()) {
+                        window.alert('Vui long nhap ly do doi lich hen.')
+                        info.revert()
+                        return
+                    }
+
+                    const normalizedReason = reason.trim()
+                    const result = await this.callReschedule(info.event, false, normalizedReason)
 
                     if (result?.ok) {
                         this.calendar.refetchEvents()
@@ -195,7 +204,7 @@ function calendar() {
 
                     const conflictMessage = String(result?.message || '')
                     if (conflictMessage.includes('trùng lịch') && window.confirm(`${conflictMessage}\n\nBạn có muốn override để lưu lịch?`)) {
-                        const forcedResult = await this.callReschedule(info.event, true)
+                        const forcedResult = await this.callReschedule(info.event, true, normalizedReason)
                         if (forcedResult?.ok) {
                             this.calendar.refetchEvents()
                             return
@@ -239,7 +248,7 @@ function calendar() {
 
             return await component.call('getCalendarEvents', startAtIso, endAtIso, this.filters)
         },
-        async callReschedule(event, force) {
+        async callReschedule(event, force, reason) {
             const component = window.Livewire?.find(this.componentId)
             if (!component) {
                 return { ok: false, message: 'Không thể kết nối tới phiên làm việc.' }
@@ -250,6 +259,7 @@ function calendar() {
                 Number(event.id),
                 event.startStr,
                 force,
+                reason,
             )
         },
         applyFilters() {

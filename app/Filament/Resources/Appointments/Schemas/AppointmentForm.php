@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Appointments\Schemas;
 
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Services\AppointmentSearchService;
 use App\Services\DoctorBranchAssignmentService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -34,48 +35,10 @@ class AppointmentForm
                             ->whereKey($patientId)
                             ->value('customer_id');
                     })
-                    ->getSearchResultsUsing(function (string $search): array {
-                        $query = \App\Models\Customer::query()
-                            ->where(function ($q) use ($search) {
-                                $q->where('full_name', 'like', "%{$search}%")
-                                    ->orWhere('phone', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                            });
-
-                        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
-
-                        return $query
-                            ->orderBy('full_name')
-                            ->limit(50)
-                            ->get()
-                            ->mapWithKeys(function ($c) {
-                                $phone = $c->phone ? " — {$c->phone}" : '';
-                                $status = $c->status ? " [{$c->status}]" : '';
-
-                                return [$c->id => $c->full_name.$phone.$status];
-                            })
-                            ->toArray();
-                    })
-                    ->getOptionLabelUsing(function ($value): ?string {
-                        if (! $value) {
-                            return null;
-                        }
-
-                        $query = \App\Models\Customer::query()
-                            ->whereKey((int) $value);
-
-                        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
-
-                        $c = $query->first();
-                        if (! $c) {
-                            return null;
-                        }
-
-                        $phone = $c->phone ? " — {$c->phone}" : '';
-                        $status = $c->status ? " [{$c->status}]" : '';
-
-                        return $c->full_name.$phone.$status;
-                    })
+                    ->getSearchResultsUsing(fn (string $search): array => app(AppointmentSearchService::class)->customerOptionsForSearch($search))
+                    ->getOptionLabelUsing(fn ($value): ?string => app(AppointmentSearchService::class)->customerOptionLabel(
+                        $value ? (int) $value : null,
+                    ))
                     ->afterStateHydrated(function ($state, $set, $record) {
                         // Khi load form edit, nếu có patient mà không có customer_id
                         // thì tự động fill customer_id từ patient

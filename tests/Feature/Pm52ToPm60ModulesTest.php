@@ -162,6 +162,7 @@ it('returns conflict warning and supports force reschedule from calendar', funct
         $appointment->id,
         now()->addDay()->setTime(8, 20)->toIso8601String(),
         false,
+        'Khach xin doi lich tu calendar',
     );
 
     expect($conflictResult['ok'])->toBeFalse()
@@ -171,6 +172,7 @@ it('returns conflict warning and supports force reschedule from calendar', funct
         $appointment->id,
         now()->addDay()->setTime(8, 20)->toIso8601String(),
         true,
+        'Khach xin doi lich tu calendar',
     );
 
     $appointment->refresh();
@@ -233,6 +235,7 @@ it('keeps overlap guard enforced when rescheduling from calendar under disabled 
         $toMove->id,
         now()->addDay()->setTime(8, 10)->toIso8601String(),
         true,
+        'Can doi lich nhung policy khong cho phep',
     );
 
     $toMove->refresh();

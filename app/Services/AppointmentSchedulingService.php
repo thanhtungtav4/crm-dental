@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -33,11 +34,24 @@ class AppointmentSchedulingService
         }, 5);
     }
 
-    public function reschedule(Appointment $appointment, CarbonInterface|string $startAt, bool $force = false): Appointment
-    {
-        return DB::transaction(function () use ($appointment, $startAt, $force): Appointment {
+    public function reschedule(
+        Appointment $appointment,
+        CarbonInterface|string $startAt,
+        bool $force = false,
+        ?string $reason = null,
+    ): Appointment {
+        return DB::transaction(function () use ($appointment, $startAt, $force, $reason): Appointment {
             $lockedAppointment = $this->lockAppointment($appointment);
             $normalizedStartAt = $this->normalizeDateTime($startAt);
+            $reason = trim((string) $reason);
+
+            if ($reason === '') {
+                throw ValidationException::withMessages([
+                    'reschedule_reason' => 'Vui lòng nhập lý do đổi lịch.',
+                ]);
+            }
+
+            $originalStartAt = $lockedAppointment->date?->copy();
             $hasConflict = $this->hasDoctorConflict($lockedAppointment, $normalizedStartAt, true);
 
             if ($hasConflict && ! $force) {
@@ -58,6 +72,13 @@ class AppointmentSchedulingService
 
             $lockedAppointment->fill($payload);
             $lockedAppointment->save();
+            $this->recordRescheduleAudit(
+                appointment: $lockedAppointment,
+                originalStartAt: $originalStartAt,
+                newStartAt: $normalizedStartAt,
+                reason: $reason,
+                force: $force,
+            );
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
         }, 5);
@@ -113,5 +134,43 @@ class AppointmentSchedulingService
             : Carbon::parse($value))
             ->setTimezone(config('app.timezone'))
             ->seconds(0);
+    }
+
+    protected function recordRescheduleAudit(
+        Appointment $appointment,
+        ?CarbonInterface $originalStartAt,
+        CarbonInterface $newStartAt,
+        string $reason,
+        bool $force,
+    ): void {
+        if (($originalStartAt?->format('Y-m-d H:i:s')) === $newStartAt->format('Y-m-d H:i:s')) {
+            return;
+        }
+
+        $actorId = auth()->id();
+
+        if (! $actorId) {
+            return;
+        }
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_APPOINTMENT,
+            entityId: (int) $appointment->id,
+            action: AuditLog::ACTION_RESCHEDULE,
+            actorId: $actorId,
+            branchId: $appointment->branch_id ? (int) $appointment->branch_id : null,
+            patientId: $appointment->patient_id ? (int) $appointment->patient_id : null,
+            metadata: [
+                'patient_id' => $appointment->patient_id,
+                'customer_id' => $appointment->customer_id,
+                'doctor_id' => $appointment->doctor_id,
+                'branch_id' => $appointment->branch_id,
+                'from_at' => $originalStartAt?->format('Y-m-d H:i:s'),
+                'to_at' => $newStartAt->format('Y-m-d H:i:s'),
+                'reason' => $reason,
+                'force' => $force,
+                'source' => 'calendar',
+            ],
+        );
     }
 }
