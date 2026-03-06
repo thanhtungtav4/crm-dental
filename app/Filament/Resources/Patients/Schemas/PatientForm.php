@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\Patients\Schemas;
 
 use App\Models\Patient;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -92,6 +95,41 @@ class PatientForm
                 ->searchable()
                 ->preload()
                 ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
+                ->live()
+                ->afterStateUpdated(function (Get $get, Set $set, $state): void {
+                    $branchId = filled($state) ? (int) $state : null;
+                    $authorizer = app(PatientAssignmentAuthorizer::class);
+
+                    $ownerStaffId = $get('owner_staff_id');
+                    if (filled($ownerStaffId)) {
+                        $ownerStillAllowed = $authorizer
+                            ->scopeAssignableStaff(
+                                query: \App\Models\User::query()->whereKey((int) $ownerStaffId),
+                                actor: auth()->user(),
+                                branchId: $branchId,
+                            )
+                            ->exists();
+
+                        if (! $ownerStillAllowed) {
+                            $set('owner_staff_id', null);
+                        }
+                    }
+
+                    $doctorId = $get('primary_doctor_id');
+                    if (filled($doctorId)) {
+                        $doctorStillAllowed = $authorizer
+                            ->scopeAssignableDoctors(
+                                query: \App\Models\User::query()->whereKey((int) $doctorId),
+                                actor: auth()->user(),
+                                branchId: $branchId,
+                            )
+                            ->exists();
+
+                        if (! $doctorStillAllowed) {
+                            $set('primary_doctor_id', null);
+                        }
+                    }
+                })
                 ->nullable(),
 
             Forms\Components\TextInput::make('full_name')
@@ -202,17 +240,27 @@ class PatientForm
                 ->nullable(),
 
             Forms\Components\Select::make('primary_doctor_id')
-                ->relationship('primaryDoctor', 'name', fn ($query) => $query->role('Doctor'))
+                ->options(fn (Get $get): array => app(PatientAssignmentAuthorizer::class)
+                    ->assignableDoctorOptions(
+                        actor: auth()->user(),
+                        branchId: filled($get('first_branch_id')) ? (int) $get('first_branch_id') : null,
+                    ))
                 ->label('Bác sĩ phụ trách')
                 ->searchable()
                 ->preload()
+                ->helperText('Chỉ hiển thị bác sĩ đang thuộc phạm vi chi nhánh của hồ sơ.')
                 ->nullable(),
 
             Forms\Components\Select::make('owner_staff_id')
-                ->relationship('ownerStaff', 'name')
+                ->options(fn (Get $get): array => app(PatientAssignmentAuthorizer::class)
+                    ->assignableStaffOptions(
+                        actor: auth()->user(),
+                        branchId: filled($get('first_branch_id')) ? (int) $get('first_branch_id') : null,
+                    ))
                 ->label('Nhân viên phụ trách')
                 ->searchable()
                 ->preload()
+                ->helperText('Chỉ hiển thị nhân sự thuộc phạm vi chi nhánh của hồ sơ.')
                 ->nullable(),
 
             Forms\Components\TextInput::make('address')
