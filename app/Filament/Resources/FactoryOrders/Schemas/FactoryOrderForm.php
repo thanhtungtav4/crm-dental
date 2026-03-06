@@ -110,6 +110,20 @@ class FactoryOrderForm
                     ->nullable()
                     ->helperText('Chi hien thi bac si thuoc chi nhanh dang chon.'),
 
+                Select::make('supplier_id')
+                    ->label('Nhà cung cấp labo')
+                    ->relationship(
+                        name: 'supplier',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => $query
+                            ->where('active', true)
+                            ->orderBy('name'),
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->helperText('Lệnh labo mới phải gắn với nhà cung cấp chuẩn để giữ traceability và đối soát.'),
+
                 TextInput::make('order_no')
                     ->label('Mã lệnh labo')
                     ->disabled()
@@ -133,10 +147,6 @@ class FactoryOrderForm
                     ])
                     ->default('normal')
                     ->required(),
-
-                TextInput::make('vendor_name')
-                    ->label('Labo/Nhà cung cấp')
-                    ->maxLength(255),
 
                 DateTimePicker::make('ordered_at')
                     ->label('Ngày đặt')

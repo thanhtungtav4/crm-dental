@@ -60,6 +60,11 @@ class Supplier extends Model
         return $this->hasMany(MaterialBatch::class);
     }
 
+    public function factoryOrders(): HasMany
+    {
+        return $this->hasMany(FactoryOrder::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

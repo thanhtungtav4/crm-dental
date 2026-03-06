@@ -11,6 +11,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class FactoryOrdersTable
 {
@@ -30,6 +31,10 @@ class FactoryOrdersTable
                     ->searchable(),
                 TextColumn::make('doctor.name')
                     ->label('Bác sĩ')
+                    ->toggleable(),
+                TextColumn::make('supplier.name')
+                    ->label('Nhà cung cấp')
+                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('status')
                     ->label('Trạng thái')
@@ -55,6 +60,15 @@ class FactoryOrdersTable
                 SelectFilter::make('status')
                     ->label('Trạng thái')
                     ->options(FactoryOrder::statusOptions()),
+                SelectFilter::make('supplier_id')
+                    ->label('Nhà cung cấp')
+                    ->relationship(
+                        name: 'supplier',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'),
+                    )
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),

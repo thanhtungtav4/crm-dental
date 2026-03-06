@@ -37,6 +37,7 @@ class FactoryOrder extends Model
         'patient_id',
         'branch_id',
         'doctor_id',
+        'supplier_id',
         'requested_by',
         'status',
         'priority',
@@ -56,6 +57,7 @@ class FactoryOrder extends Model
             'patient_id' => 'integer',
             'branch_id' => 'integer',
             'doctor_id' => 'integer',
+            'supplier_id' => 'integer',
             'requested_by' => 'integer',
             'ordered_at' => 'datetime',
             'due_at' => 'datetime',
@@ -76,6 +78,26 @@ class FactoryOrder extends Model
         });
 
         static::saving(function (self $order): void {
+            $supplier = is_numeric($order->supplier_id)
+                ? Supplier::query()
+                    ->select(['id', 'name', 'active'])
+                    ->find((int) $order->supplier_id)
+                : null;
+
+            if (! $supplier instanceof Supplier) {
+                throw ValidationException::withMessages([
+                    'supplier_id' => 'Vui lòng chọn nhà cung cấp cho lệnh labo.',
+                ]);
+            }
+
+            if (! $supplier->active && (! $order->exists || $order->isDirty('supplier_id'))) {
+                throw ValidationException::withMessages([
+                    'supplier_id' => 'Chỉ được chọn nhà cung cấp đang hoạt động.',
+                ]);
+            }
+
+            $order->vendor_name = trim((string) $supplier->name);
+
             $patientBranchId = Patient::query()
                 ->whereKey((int) $order->patient_id)
                 ->value('first_branch_id');
@@ -147,6 +169,11 @@ class FactoryOrder extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'doctor_id');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function requester(): BelongsTo

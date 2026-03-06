@@ -91,7 +91,7 @@
 - Dependencies:
   - `INV`, `FIN`
 - Suggested order: 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-003`
 
 ## [SUP-004] Sinh order number dang race-prone voi unique index
@@ -229,7 +229,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 3
+- Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: chot `SUP-003` de dua supplier vao canonical identity cua factory orders, sau do fix `SUP-004` cho race condition `order_no`.
+- Next recommended action: fix `SUP-004` de khoa race condition `order_no`, sau do chot `SUP-005` cho workflow mutation boundary cua order/item.

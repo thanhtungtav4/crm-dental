@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FactoryOrder;
 use App\Models\Patient;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -78,6 +79,15 @@ class FactoryOrderAuthorizer
 
         $data['patient_id'] = $patient->id;
         $data['branch_id'] = $branchId;
+        $supplier = $this->resolveSupplier(
+            supplierId: isset($data['supplier_id']) && filled($data['supplier_id'])
+                ? (int) $data['supplier_id']
+                : ($record?->supplier_id !== null ? (int) $record->supplier_id : null),
+            record: $record,
+        );
+
+        $data['supplier_id'] = (int) $supplier->id;
+        $data['vendor_name'] = trim((string) $supplier->name);
 
         $data['doctor_id'] = $this->patientAssignmentAuthorizer->assertAssignableDoctorId(
             actor: $actor,
@@ -87,5 +97,32 @@ class FactoryOrderAuthorizer
         );
 
         return $data;
+    }
+
+    protected function resolveSupplier(?int $supplierId, ?FactoryOrder $record = null): Supplier
+    {
+        if ($supplierId === null) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'Vui lòng chọn nhà cung cấp cho lệnh labo.',
+            ]);
+        }
+
+        $supplier = Supplier::query()
+            ->select(['id', 'name', 'active'])
+            ->find($supplierId);
+
+        if (! $supplier instanceof Supplier) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'Không tìm thấy nhà cung cấp đã chọn.',
+            ]);
+        }
+
+        if (! $supplier->active && ((int) ($record?->supplier_id ?? 0) !== (int) $supplier->id)) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'Chỉ được chọn nhà cung cấp đang hoạt động.',
+            ]);
+        }
+
+        return $supplier;
     }
 }

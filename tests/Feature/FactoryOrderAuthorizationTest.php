@@ -4,6 +4,7 @@ use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
 use App\Models\Branch;
 use App\Models\FactoryOrder;
 use App\Models\Patient;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
 
@@ -19,10 +20,17 @@ it('locks factory order resource access to admin and manager with branch scoped 
 
     $admin = User::factory()->create(['branch_id' => $accessibleBranch->id]);
     $admin->assignRole('Admin');
+    $supplier = Supplier::query()->create([
+        'name' => 'Labo Auth',
+        'code' => 'LABAUTH',
+        'payment_terms' => '30_days',
+        'active' => true,
+    ]);
 
     $visibleOrder = FactoryOrder::query()->create([
         'patient_id' => Patient::factory()->create(['first_branch_id' => $accessibleBranch->id])->id,
         'branch_id' => $accessibleBranch->id,
+        'supplier_id' => $supplier->id,
         'status' => FactoryOrder::STATUS_DRAFT,
         'priority' => 'normal',
     ]);
@@ -30,6 +38,7 @@ it('locks factory order resource access to admin and manager with branch scoped 
     $hiddenOrder = FactoryOrder::query()->create([
         'patient_id' => Patient::factory()->create(['first_branch_id' => $hiddenBranch->id])->id,
         'branch_id' => $hiddenBranch->id,
+        'supplier_id' => $supplier->id,
         'status' => FactoryOrder::STATUS_DRAFT,
         'priority' => 'normal',
     ]);

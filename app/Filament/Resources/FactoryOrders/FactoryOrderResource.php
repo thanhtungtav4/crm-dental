@@ -50,7 +50,7 @@ class FactoryOrderResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['patient', 'branch', 'doctor'])
+            ->with(['patient', 'branch', 'doctor', 'supplier'])
             ->withCount('items');
         $authUser = auth()->user();
 

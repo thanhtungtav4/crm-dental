@@ -21,6 +21,7 @@ use App\Models\PatientContact;
 use App\Models\PatientPhoto;
 use App\Models\PatientWallet;
 use App\Models\Payment;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Models\WalletLedgerEntry;
 use App\Models\ZnsCampaign;
@@ -410,10 +411,17 @@ it('posts material issue note and records inventory transactions', function (): 
 it('enforces factory order state transitions and computes item totals', function (): void {
     $branch = Branch::factory()->create(['active' => true]);
     $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $supplier = Supplier::query()->create([
+        'name' => 'Labo PM60',
+        'code' => 'LABPM60',
+        'payment_terms' => '30_days',
+        'active' => true,
+    ]);
 
     $order = FactoryOrder::query()->create([
         'patient_id' => $patient->id,
         'branch_id' => $branch->id,
+        'supplier_id' => $supplier->id,
         'status' => FactoryOrder::STATUS_DRAFT,
         'priority' => 'normal',
     ]);

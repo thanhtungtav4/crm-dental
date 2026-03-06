@@ -242,7 +242,7 @@
 | --- | --- | --- | --- | --- | --- |
 | SUP-001 | Critical | Security | FactoryOrderResource thieu policy va mo quyen qua rong | Resolved | policy + branch-scoped record binding da khoa create/update/delete surface cua doctor tren resource |
 | SUP-002 | High | Domain Logic | Factory order khong enforce consistency giua patient, branch va doctor | Resolved | payload server-side da duoc sanitize; patient branch va doctor scope deu bi khoa o form/page/model |
-| SUP-003 | High | Data Integrity | Supplier master khong la canonical identity cho factory orders | Open | order chi luu `vendor_name` free text, khong co `supplier_id` |
+| SUP-003 | High | Data Integrity | Supplier master khong la canonical identity cho factory orders | Resolved | `factory_orders` da co `supplier_id`, migration backfill canonical supplier, va form/resource da doi sang selector chuan |
 | SUP-004 | High | Concurrency | Sinh `order_no` dang race-prone voi unique index | Open | query-last-then-increment co the sinh duplicate khi create dong thoi |
 | SUP-005 | High | Domain Logic / UX | Order va item mutation surfaces mo sau khi qua phase editable | Open | relation manager va table actions cho mutate raw, khong qua workflow service |
 | SUP-006 | High | Data Integrity / Security | Supplier destructive surfaces mo va co the cat dut procurement provenance | Resolved | delete/force-delete/restore surfaces da bi go; policy + model layer deu hard-deny |
@@ -264,8 +264,8 @@
 
 # Recommended Next Steps
 
-- Tiep tuc `SUP-003` de dua supplier master thanh canonical identity cua factory orders.
-- Sau do chot `SUP-003` va `SUP-004` de dua supplier ve canonical identity va khoa race `order_no`.
+- Tiep tuc `SUP-004` de khoa race condition sinh `order_no` va dua create boundary ve transaction-safe service.
+- Sau do chot `SUP-005` de khoa mutation surfaces cua order/item theo editable phases.
 - Chi chuyen sang report/workflow re-audit sau khi branch invariants va create boundary da on dinh.
 
 # Current Status
