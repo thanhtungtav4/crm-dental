@@ -64,13 +64,20 @@ class ZnsCampaignForm
                     ->label('Trạng thái')
                     ->options(ZnsCampaign::statusOptions())
                     ->default(ZnsCampaign::STATUS_DRAFT)
-                    ->required(),
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->visibleOn('edit')
+                    ->helperText('Trạng thái campaign chỉ thay đổi qua action workflow.'),
 
                 DateTimePicker::make('scheduled_at')
                     ->label('Thời gian chạy')
                     ->native(false)
                     ->seconds(false)
-                    ->nullable(),
+                    ->nullable()
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->visibleOn('edit')
+                    ->helperText('Dùng action "Lên lịch" để cập nhật thời gian chạy.'),
 
                 Textarea::make('message_payload')
                     ->label('Message payload (JSON)')

@@ -162,7 +162,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-006`
 
 ## [ZNS-007] Filament UX cho ZNS de thao tac sai va thieu triage view
@@ -215,8 +215,8 @@
 
 # Summary
 
-- Open critical count: 2
+- Open critical count: 1
 - Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-ZNS-002` va `TASK-ZNS-003` ngay sau batch auth boundary, vi workflow canonical va cancel-processing race van la 2 blocker lon nhat cua module.
+- Next recommended action: tiep tuc `TASK-ZNS-003`, sau do khoa `TASK-ZNS-004` va `TASK-ZNS-005` truoc khi re-audit module.

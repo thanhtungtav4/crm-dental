@@ -24,6 +24,7 @@ class ZnsCampaignRunnerService
 
     public function __construct(
         private readonly ZnsProviderClient $providerClient,
+        private readonly ZnsCampaignWorkflowService $workflowService,
     ) {}
 
     /**
@@ -53,7 +54,7 @@ class ZnsCampaignRunnerService
             return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
-        $this->markCampaignRunning($campaign);
+        $campaign = $this->workflowService->markRunning($campaign);
 
         $processed = 0;
         $sent = 0;
@@ -110,10 +111,10 @@ class ZnsCampaignRunnerService
 
             $this->refreshCampaignSummary($campaign);
         } catch (ValidationException $exception) {
-            $campaign->refresh();
-            $campaign->status = ZnsCampaign::STATUS_FAILED;
-            $campaign->finished_at = now();
-            $campaign->save();
+            $this->workflowService->markFailed(
+                campaign: $campaign,
+                reason: $exception->getMessage(),
+            );
 
             throw $exception;
         }
@@ -124,17 +125,6 @@ class ZnsCampaignRunnerService
             'failed' => $failed,
             'skipped' => $skipped,
         ];
-    }
-
-    protected function markCampaignRunning(ZnsCampaign $campaign): void
-    {
-        if (! in_array($campaign->status, [ZnsCampaign::STATUS_DRAFT, ZnsCampaign::STATUS_SCHEDULED, ZnsCampaign::STATUS_FAILED], true)) {
-            return;
-        }
-
-        $campaign->status = ZnsCampaign::STATUS_RUNNING;
-        $campaign->started_at = $campaign->started_at ?? now();
-        $campaign->save();
     }
 
     protected function prepareDeliveriesForAudience(ZnsCampaign $campaign, string $templateId, int $maxDeliveryAttempts): int
@@ -381,10 +371,10 @@ class ZnsCampaignRunnerService
     {
         $campaign->refresh();
 
-        $campaign->sent_count = (int) $campaign->deliveries()
+        $sentCount = (int) $campaign->deliveries()
             ->where('status', ZnsCampaignDelivery::STATUS_SENT)
             ->count();
-        $campaign->failed_count = (int) $campaign->deliveries()
+        $failedCount = (int) $campaign->deliveries()
             ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
             ->count();
 
@@ -400,19 +390,13 @@ class ZnsCampaignRunnerService
             })
             ->exists();
 
-        if ($hasOutstandingQueuedOrLocked) {
-            $campaign->status = ZnsCampaign::STATUS_RUNNING;
-            $campaign->finished_at = null;
-            $campaign->save();
-
-            return;
-        }
-
-        $campaign->status = $hasRetryableFailures || ($campaign->failed_count > 0 && $campaign->sent_count === 0)
-            ? ZnsCampaign::STATUS_FAILED
-            : ZnsCampaign::STATUS_COMPLETED;
-        $campaign->finished_at = now();
-        $campaign->save();
+        $this->workflowService->syncSummaryStatus(
+            campaign: $campaign,
+            sentCount: $sentCount,
+            failedCount: $failedCount,
+            hasOutstandingQueuedOrLocked: $hasOutstandingQueuedOrLocked,
+            hasRetryableFailures: $hasRetryableFailures,
+        );
     }
 
     protected function reclaimStaleProcessingDeliveries(ZnsCampaign $campaign, int $maxDeliveryAttempts): int

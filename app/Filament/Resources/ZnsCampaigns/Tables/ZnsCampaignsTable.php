@@ -4,11 +4,11 @@ namespace App\Filament\Resources\ZnsCampaigns\Tables;
 
 use App\Models\ZnsCampaign;
 use App\Services\ZnsCampaignRunnerService;
+use App\Services\ZnsCampaignWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -75,13 +75,16 @@ class ZnsCampaignsTable
                             ->native(false)
                             ->seconds(false)
                             ->required(),
+                        Textarea::make('reason')
+                            ->label('Ghi chú vận hành')
+                            ->rows(3),
                     ])
                     ->action(function (ZnsCampaign $record, array $data): void {
-                        $record->forceFill([
-                            'status' => ZnsCampaign::STATUS_SCHEDULED,
-                            'scheduled_at' => $data['scheduled_at'] ?? now()->addMinutes(5),
-                            'finished_at' => null,
-                        ])->save();
+                        app(ZnsCampaignWorkflowService::class)->schedule(
+                            campaign: $record,
+                            scheduledAt: $data['scheduled_at'] ?? null,
+                            reason: $data['reason'] ?? null,
+                        );
                     }),
                 Action::make('runNow')
                     ->label('Chạy ngay')
@@ -90,35 +93,43 @@ class ZnsCampaignsTable
                     ->visible(fn (ZnsCampaign $record): bool => in_array($record->status, [
                         ZnsCampaign::STATUS_DRAFT,
                         ZnsCampaign::STATUS_SCHEDULED,
-                        ZnsCampaign::STATUS_RUNNING,
                         ZnsCampaign::STATUS_FAILED,
                     ], true))
-                    ->requiresConfirmation()
-                    ->action(function (ZnsCampaign $record): void {
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do chạy ngay')
+                            ->rows(3),
+                    ])
+                    ->action(function (ZnsCampaign $record, array $data): void {
+                        app(ZnsCampaignWorkflowService::class)->runNow(
+                            campaign: $record,
+                            reason: $data['reason'] ?? null,
+                        );
+
                         app(ZnsCampaignRunnerService::class)->runCampaign($record);
                     }),
                 Action::make('cancel')
                     ->label('Huỷ campaign')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->requiresConfirmation()
                     ->visible(fn (ZnsCampaign $record): bool => in_array($record->status, [
                         ZnsCampaign::STATUS_DRAFT,
                         ZnsCampaign::STATUS_SCHEDULED,
                         ZnsCampaign::STATUS_RUNNING,
                         ZnsCampaign::STATUS_FAILED,
                     ], true))
-                    ->action(function (ZnsCampaign $record): void {
-                        $record->forceFill([
-                            'status' => ZnsCampaign::STATUS_CANCELLED,
-                            'finished_at' => now(),
-                        ])->save();
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do huỷ')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function (ZnsCampaign $record, array $data): void {
+                        app(ZnsCampaignWorkflowService::class)->cancel(
+                            campaign: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

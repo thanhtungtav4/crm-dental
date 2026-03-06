@@ -15,6 +15,8 @@ class ZnsCampaign extends Model
 {
     use SoftDeletes;
 
+    protected static int $managedWorkflowDepth = 0;
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_SCHEDULED = 'scheduled';
@@ -103,31 +105,46 @@ class ZnsCampaign extends Model
                 );
             }
 
-            if ($campaign->status === static::STATUS_SCHEDULED && blank($campaign->scheduled_at)) {
-                $campaign->scheduled_at = now()->addMinutes(5);
+            $campaign->status = static::normalizeStatusValue($campaign->status) ?? static::STATUS_DRAFT;
+
+            if (! $campaign->exists || ! $campaign->isDirty('status')) {
+                static::assertWorkflowControlledFields($campaign);
+
+                return;
             }
 
-            if ($campaign->status === static::STATUS_RUNNING && blank($campaign->started_at)) {
-                $campaign->started_at = now();
+            if (! static::isManagedWorkflow()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Trang thai campaign ZNS chi duoc thay doi qua ZnsCampaignWorkflowService.',
+                ]);
             }
 
-            if (
-                in_array($campaign->status, [static::STATUS_COMPLETED, static::STATUS_FAILED, static::STATUS_CANCELLED], true)
-                && blank($campaign->finished_at)
-            ) {
-                $campaign->finished_at = now();
+            $fromStatus = static::normalizeStatusValue($campaign->getOriginal('status')) ?? static::STATUS_DRAFT;
+            $toStatus = static::normalizeStatusValue($campaign->status) ?? static::STATUS_DRAFT;
+
+            if (! static::canTransitionStatus($fromStatus, $toStatus)) {
+                throw ValidationException::withMessages([
+                    'status' => sprintf(
+                        'Khong the chuyen campaign ZNS tu "%s" sang "%s".',
+                        static::statusLabel($fromStatus),
+                        static::statusLabel($toStatus),
+                    ),
+                ]);
             }
 
-            if ($campaign->exists && $campaign->isDirty('status')) {
-                $fromStatus = (string) ($campaign->getOriginal('status') ?? static::STATUS_DRAFT);
-                $toStatus = (string) $campaign->status;
+            static::assertWorkflowControlledFields($campaign);
+        });
 
-                if (! static::canTransitionStatus($fromStatus, $toStatus)) {
-                    throw ValidationException::withMessages([
-                        'status' => sprintf('Không thể chuyển campaign từ "%s" sang "%s".', $fromStatus, $toStatus),
-                    ]);
-                }
-            }
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'campaign' => 'Campaign ZNS khong ho tro xoa. Vui long huy campaign qua workflow.',
+            ]);
+        });
+
+        static::restoring(function (): void {
+            throw ValidationException::withMessages([
+                'campaign' => 'Campaign ZNS khong ho tro khoi phuc tu thao tac xoa.',
+            ]);
         });
     }
 
@@ -164,6 +181,31 @@ class ZnsCampaign extends Model
             static::STATUS_FAILED => 'Thất bại',
             static::STATUS_CANCELLED => 'Đã hủy',
         ];
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        $normalizedStatus = static::normalizeStatusValue($status);
+
+        return static::statusOptions()[$normalizedStatus] ?? (string) $status;
+    }
+
+    public static function normalizeStatusValue(mixed $status): ?string
+    {
+        $normalized = strtolower(trim((string) $status));
+
+        return array_key_exists($normalized, static::statusOptions()) ? $normalized : null;
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        static::$managedWorkflowDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            static::$managedWorkflowDepth = max(0, static::$managedWorkflowDepth - 1);
+        }
     }
 
     public static function generateCode(): string
@@ -216,7 +258,7 @@ class ZnsCampaign extends Model
         return in_array((int) $this->branch_id, $authUser->accessibleBranchIds(), true);
     }
 
-    protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool
+    public static function canTransitionStatus(string $fromStatus, string $toStatus): bool
     {
         if ($fromStatus === $toStatus) {
             return true;
@@ -227,5 +269,25 @@ class ZnsCampaign extends Model
             static::STATUS_TRANSITIONS[$fromStatus] ?? [],
             true,
         );
+    }
+
+    protected static function isManagedWorkflow(): bool
+    {
+        return static::$managedWorkflowDepth > 0;
+    }
+
+    protected static function assertWorkflowControlledFields(self $campaign): void
+    {
+        if (static::isManagedWorkflow()) {
+            return;
+        }
+
+        foreach (['scheduled_at', 'started_at', 'finished_at', 'sent_count', 'failed_count'] as $field) {
+            if ($campaign->exists && $campaign->isDirty($field)) {
+                throw ValidationException::withMessages([
+                    $field => 'Workflow campaign ZNS chi duoc cap nhat qua ZnsCampaignWorkflowService.',
+                ]);
+            }
+        }
     }
 }
