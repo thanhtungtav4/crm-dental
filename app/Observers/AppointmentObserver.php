@@ -4,22 +4,10 @@ namespace App\Observers;
 
 use App\Models\Appointment;
 use App\Models\AuditLog;
-use App\Services\CareTicketService;
-use App\Services\GoogleCalendarSyncEventPublisher;
-use App\Services\PatientConversionService;
-use App\Services\VisitEpisodeService;
-use App\Services\ZnsAutomationEventPublisher;
+use App\Services\SyncAppointmentLifecycleSideEffects;
 
 class AppointmentObserver
 {
-    public function __construct(
-        protected PatientConversionService $conversionService,
-        protected CareTicketService $careTicketService,
-        protected VisitEpisodeService $visitEpisodeService,
-        protected GoogleCalendarSyncEventPublisher $googleCalendarSyncEventPublisher,
-        protected ZnsAutomationEventPublisher $znsAutomationEventPublisher,
-    ) {}
-
     /**
      * Handle the Appointment "created" event.
      */
@@ -29,10 +17,12 @@ class AppointmentObserver
             $this->logOverbookingChange($appointment);
         }
 
-        $this->careTicketService->syncAppointment($appointment);
-        $this->visitEpisodeService->syncFromAppointment($appointment, true);
-        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
-        $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
+        SyncAppointmentLifecycleSideEffects::dispatch(
+            (int) $appointment->id,
+            SyncAppointmentLifecycleSideEffects::MODE_UPSERT,
+            true,
+            true,
+        );
     }
 
     /**
@@ -50,16 +40,28 @@ class AppointmentObserver
             $this->logOverbookingChange($appointment);
         }
 
-        // Tự động chuyển Customer thành Patient khi appointment hoàn thành
-        if ($statusChanged && $appointment->status === Appointment::STATUS_COMPLETED) {
-            $this->handleConversion($appointment);
-        }
+        $shouldAttemptLeadConversion = $statusChanged
+            && $appointment->status === Appointment::STATUS_COMPLETED;
 
-        if ($appointment->wasChanged(['status', 'date', 'duration_minutes', 'assigned_to', 'doctor_id', 'patient_id', 'branch_id', 'note'])) {
-            $this->careTicketService->syncAppointment($appointment);
-            $this->visitEpisodeService->syncFromAppointment($appointment, $statusChanged);
-            $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
-            $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
+        $shouldSyncOperationalArtifacts = $appointment->wasChanged([
+            'status',
+            'date',
+            'duration_minutes',
+            'assigned_to',
+            'doctor_id',
+            'patient_id',
+            'branch_id',
+            'note',
+        ]);
+
+        if ($shouldAttemptLeadConversion || $shouldSyncOperationalArtifacts) {
+            SyncAppointmentLifecycleSideEffects::dispatch(
+                (int) $appointment->id,
+                SyncAppointmentLifecycleSideEffects::MODE_UPSERT,
+                $statusChanged,
+                $shouldSyncOperationalArtifacts,
+                $shouldAttemptLeadConversion,
+            );
         }
     }
 
@@ -129,41 +131,11 @@ class AppointmentObserver
     }
 
     /**
-     * Convert Customer to Patient via Service
-     */
-    protected function handleConversion(Appointment $appointment): void
-    {
-        // Nếu đã có patient_id rồi thì skip
-        if ($appointment->patient_id) {
-            return;
-        }
-
-        // Nếu không có customer_id thì skip
-        if (! $appointment->customer_id) {
-            return;
-        }
-
-        $customer = $appointment->customer;
-        if (! $customer) {
-            return;
-        }
-
-        // Delegate to Service
-        $this->conversionService->convert($customer, $appointment);
-    }
-
-    /**
      * Handle the Appointment "deleted" event.
      */
     public function deleted(Appointment $appointment): void
     {
-        $this->careTicketService->cancelBySource(Appointment::class, $appointment->id, 'appointment_reminder');
-        $this->visitEpisodeService->markAppointmentDeleted($appointment);
-        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
-        $this->znsAutomationEventPublisher->cancelAppointmentReminder(
-            appointmentId: (int) $appointment->id,
-            reason: 'Lịch hẹn đã bị xóa.',
-        );
+        SyncAppointmentLifecycleSideEffects::dispatch((int) $appointment->id, SyncAppointmentLifecycleSideEffects::MODE_DELETED);
     }
 
     /**
@@ -171,8 +143,7 @@ class AppointmentObserver
      */
     public function restored(Appointment $appointment): void
     {
-        $this->googleCalendarSyncEventPublisher->publishForAppointment($appointment);
-        $this->znsAutomationEventPublisher->publishAppointmentReminder($appointment);
+        SyncAppointmentLifecycleSideEffects::dispatch((int) $appointment->id, SyncAppointmentLifecycleSideEffects::MODE_RESTORED);
     }
 
     /**
