@@ -496,6 +496,18 @@ class Appointment extends Model
 
     protected static function assertOverbookingPolicy(self $appointment): void
     {
+        $slotAffectingFieldsDirty = ! $appointment->exists || $appointment->isDirty([
+            'doctor_id',
+            'branch_id',
+            'date',
+            'duration_minutes',
+            'status',
+        ]);
+
+        if (! $slotAffectingFieldsDirty) {
+            return;
+        }
+
         if (
             ! $appointment->doctor_id
             || ! $appointment->branch_id
@@ -546,10 +558,20 @@ class Appointment extends Model
             ? max(1, (int) $policy->max_parallel_per_doctor)
             : 1;
 
+        if ($projectedParallel > 1) {
+            ActionGate::authorize(
+                ActionPermission::APPOINTMENT_OVERRIDE,
+                'Bạn không có quyền override vận hành lịch hẹn.',
+            );
+        }
+
         if ($projectedParallel <= $allowedParallel) {
             $appointment->is_overbooked = $projectedParallel > 1;
 
-            if (! $appointment->is_overbooked) {
+            if ($appointment->is_overbooked) {
+                $appointment->overbooking_override_at = $appointment->overbooking_override_at ?? now();
+                $appointment->overbooking_override_by = $appointment->overbooking_override_by ?? auth()->id();
+            } else {
                 $appointment->overbooking_reason = null;
                 $appointment->overbooking_override_at = null;
                 $appointment->overbooking_override_by = null;

@@ -2,36 +2,251 @@
 
 - Module code: `APPT`
 - Module name: `Appointments / Calendar`
-- Current status: `Pending Review`
-- Current verdict: `TBD`
+- Current status: `In Fix`
+- Current verdict: `C`
 - Issue ID prefix: `APPT-`
 - Task ID prefix: `TASK-APPT-`
 - Review file: `docs/reviews/modules/APPT-appointments-calendar.md`
 - Plan file: `docs/planning/APPT-plan.md`
-- Dependencies: `GOV, PAT, CLIN, TRT, INT, ZNS`
-- Last updated: `TBD`
+- Dependencies: `GOV, PAT, CLIN, TRT, CARE, ZNS, INT`
+- Last updated: `2026-03-06`
 
 # Issue Backlog
 
-## [APPT-001] [TODO]
-- Severity: TODO
-- Category: TODO
+## [APPT-001] [Overbooking co the bypass Action:AppointmentOverride]
+- Severity: Critical
+- Category: Security
 - Module: APPT
 - Description:
+  - Overbooking hien tai co mot duong bypass sensitive action gate. `assertOperationalOverridePermission()` khong cover `is_overbooked`, `overbooking_override_by`, `overbooking_override_at`, trong khi `assertOverbookingPolicy()` set cac truong nay sau do.
 - Why it matters:
+  - User co quyen tao/sua lich hen co the chen lich cho bac si ma khong can quyen `Action:AppointmentOverride` neu policy chi nhanh khong bat buoc nhap ly do. Day la sensitive action bypass dung nghia.
 - Evidence:
+  - `app/Models/Appointment.php`
+  - `tests/Feature/AppointmentOverbookingPolicyTest.php`
+  - `tests/Feature/P1OpsPlatformAndRbacTest.php`
 - Suggested fix:
+  - Buoc overbooking phai qua service/action explicit.
+  - Gate `Action:AppointmentOverride` phai duoc kiem tra tai thoi diem xac dinh `projectedParallel > allowedParallel`, khong phu thuoc vao viec field `overbooking_reason` co dirty hay khong.
 - Affected areas:
+  - Appointment model
+  - create/edit/calendar scheduling flow
+  - action security tests
 - Tests needed:
+  - unauthorized user khong the tao overbook khi `require_override_reason = false`
+  - authorized role van overbook duoc theo policy branch
 - Dependencies:
+  - GOV
 - Suggested order:
+  - 1
+- Current status: In Fix
+- Linked task IDs:
+  - TASK-APPT-002
+
+## [APPT-002] [Scheduling chua co service boundary transaction tap trung]
+- Severity: High
+- Category: Concurrency
+- Module: APPT
+- Description:
+  - Create/edit/calendar reschedule dang chia logic giua model va page. Conflict detection va scheduling mutation chua duoc dong goi thanh mot service boundary transaction duy nhat.
+- Why it matters:
+  - Kho kiem soat race-condition, kho audit, kho test dong thoi, va moi page co nguy co drift logic scheduling rieng.
+- Evidence:
+  - `app/Models/Appointment.php`
+  - `app/Filament/Resources/Appointments/Pages/CalendarAppointments.php`
+  - `tests/Feature/Pm52ToPm60ModulesTest.php`
+  - `tests/Feature/ConcurrencyHardeningStressTest.php`
+- Suggested fix:
+  - Tao `AppointmentSchedulingService` gom create/update/reschedule/force-overbook va chot transaction boundary tai service do.
+- Affected areas:
+  - Appointment model
+  - Filament create/edit/calendar
+  - mobile/API flow neu co mutate sau nay
+- Tests needed:
+  - concurrency test cho hai request cung tao/doi cung slot
+  - regression test cho create/edit/calendar dung chung service
+- Dependencies:
+  - APPT-001
+- Suggested order:
+  - 2
+- Current status: In Fix
+- Linked task IDs:
+  - TASK-APPT-001
+
+## [APPT-003] [Calendar reschedule thieu reason va audit trail co cau truc]
+- Severity: High
+- Category: Data Integrity
+- Module: APPT
+- Description:
+  - Calendar drag/drop doi `date` truc tiep, nhung khong bat buoc `reschedule_reason` va khong tao audit event reschedule neu `status` khong doi.
+- Why it matters:
+  - Mat traceability van hanh, kho truy vet tranh chap, va lam audit trail scheduling khong day du.
+- Evidence:
+  - `app/Filament/Resources/Appointments/Pages/CalendarAppointments.php`
+  - `app/Observers/AppointmentObserver.php`
+  - `tests/Feature/AppointmentAuditLogTest.php`
+- Suggested fix:
+  - Reschedule tu calendar phai dung service co input `reason`, `from_at`, `to_at`, `force` va ghi `AuditLog` co cau truc.
+- Affected areas:
+  - Calendar page
+  - Audit logging
+  - appointment timeline / integrations
+- Tests needed:
+  - calendar reschedule ghi audit log dung metadata
+  - reschedule without reason bi chan
+- Dependencies:
+  - APPT-002
+- Suggested order:
+  - 3
 - Current status: Open
 - Linked task IDs:
+  - TASK-APPT-003
+
+## [APPT-004] [Search customer trong appointment bi regression sau PAT PII hardening]
+- Severity: High
+- Category: UX
+- Module: APPT
+- Description:
+  - Appointment form/table van search `customer.phone` va `customer.email` bang `LIKE`, nhung cac truong nay da duoc ma hoa o module PAT.
+- Why it matters:
+  - Le tan tim lead theo phone/email se fail ngam hoac ket qua khong day du, gay nghen flow dat lich va chuyen lead.
+- Evidence:
+  - `app/Filament/Resources/Appointments/Schemas/AppointmentForm.php`
+  - `app/Filament/Resources/Appointments/Tables/AppointmentsTable.php`
+  - `app/Models/Customer.php`
+- Suggested fix:
+  - Search theo ten partial, phone/email hash-aware exact/normalized lookup, va render option label tu record da resolve.
+- Affected areas:
+  - Appointment form
+  - Appointment table search
+  - lead booking UX
+- Tests needed:
+  - search lead/customer bang phone/email van tim duoc sau ma hoa
+  - table search khong phu thuoc plaintext phone
+- Dependencies:
+  - PAT
+- Suggested order:
+  - 4
+- Current status: Open
+- Linked task IDs:
+  - TASK-APPT-004
+
+## [APPT-005] [AppointmentObserver fan-out qua nhieu side-effect dong bo]
+- Severity: High
+- Category: Maintainability
+- Module: APPT
+- Description:
+  - Observer appointment dong bo goi care ticket, visit episode, Google Calendar outbox, ZNS automation va patient conversion.
+- Why it matters:
+  - Lam giao dich save lich hen nang va de deadlock/regression khi mot side-effect thay doi logic module khac.
+- Evidence:
+  - `app/Observers/AppointmentObserver.php`
+  - `app/Services/CareTicketService.php`
+  - `app/Services/VisitEpisodeService.php`
+  - `app/Services/GoogleCalendarSyncEventPublisher.php`
+- Suggested fix:
+  - Chuyen sang domain event / after-commit dispatch, observer chi giu coordination mong.
+- Affected areas:
+  - appointment persistence
+  - care ticket
+  - visit episode
+  - integrations
+- Tests needed:
+  - side-effects van chay sau commit
+  - failure isolation test cho integration outbox
+- Dependencies:
+  - CARE, CLIN, ZNS, INT
+- Suggested order:
+  - 5
+- Current status: Open
+- Linked task IDs:
+  - TASK-APPT-005
+
+## [APPT-006] [Resource/table chua eager load ro rang cho relation access]
+- Severity: Medium
+- Category: Performance
+- Module: APPT
+- Description:
+  - Appointments table dung nhieu closure truy cap relation ma resource query khong eager load ro rang, de gay N+1 khi danh sach lon.
+- Why it matters:
+  - Lich hen la man hinh van hanh hot-path; query phat sinh thua se rat de cham khi du lieu tang theo chi nhanh / bac si.
+- Evidence:
+  - `app/Filament/Resources/Appointments/AppointmentResource.php`
+  - `app/Filament/Resources/Appointments/Tables/AppointmentsTable.php`
+- Suggested fix:
+  - Eager load explicit cho `customer`, `patient`, `doctor`, `branch`, `overbookingOverrideBy`, `operationOverrideBy` va review lai search/filter query.
+- Affected areas:
+  - Appointment list
+  - relation manager
+  - calendar summary
+- Tests needed:
+  - feature test query shape co eager load expected
+- Dependencies:
+  - none
+- Suggested order:
+  - 6
+- Current status: Open
+- Linked task IDs:
+  - TASK-APPT-006
+
+## [APPT-007] [State transition va UI status select qua rong]
+- Severity: Medium
+- Category: Domain Logic
+- Module: APPT
+- Description:
+  - State machine co guard co ban, nhung UI van cho phep doi `status` bang select truc tiep va cho mot so transition rong chua ro SOP.
+- Why it matters:
+  - Nguoi dung van hanh khong ky thuat de thao tac sai, du lieu timeline kham/coi den/hoan thanh de mat tinh nhat quan.
+- Evidence:
+  - `app/Models/Appointment.php`
+  - `app/Filament/Resources/Appointments/Schemas/AppointmentForm.php`
+  - `tests/Feature/AppointmentStateMachineTest.php`
+- Suggested fix:
+  - Dung guided actions cho cancel/no_show/reschedule/complete, kem confirm modal va ly do bat buoc khi can.
+- Affected areas:
+  - Appointment form
+  - table actions
+  - visit episode semantics
+- Tests needed:
+  - UI/feature tests cho transition duoc phep / bi chan
+- Dependencies:
+  - CLIN
+- Suggested order:
+  - 7
+- Current status: Open
+- Linked task IDs:
+  - TASK-APPT-007
+
+## [APPT-008] [Coverage con thieu cho auth bypass, search regression va concurrent reschedule]
+- Severity: Medium
+- Category: Maintainability
+- Module: APPT
+- Description:
+  - Test hien tai cover state machine, overbooking policy, calendar force move va outbox integration, nhung chua cover cac regression moi nguy hiem nhat cua module.
+- Why it matters:
+  - Sau moi lan refactor scheduling, issue security/race/UX co the quay lai ma khong bi chan.
+- Evidence:
+  - `tests/Feature/AppointmentStateMachineTest.php`
+  - `tests/Feature/AppointmentOverbookingPolicyTest.php`
+  - `tests/Feature/Pm52ToPm60ModulesTest.php`
+- Suggested fix:
+  - Them bo regression test cho unauthorized overbook, encrypted lead search, concurrent create/reschedule, reschedule audit reason, eager loading hot-path.
+- Affected areas:
+  - tests/Feature
+- Tests needed:
+  - backlog nay chinh la task testing
+- Dependencies:
+  - APPT-001, APPT-002, APPT-003, APPT-004
+- Suggested order:
+  - 8
+- Current status: Open
+- Linked task IDs:
+  - TASK-APPT-008
 
 # Summary
 
-- Open critical count: TODO
-- Open high count: TODO
-- Open medium count: TODO
-- Open low count: TODO
-- Next recommended action: TODO
+- Open critical count: 1
+- Open high count: 4
+- Open medium count: 3
+- Open low count: 0
+- Next recommended action: Chot batch `TASK-APPT-001` va `TASK-APPT-002`, sau do sang `TASK-APPT-003` (audit trail reschedule) va `TASK-APPT-004` (encrypted lead search).

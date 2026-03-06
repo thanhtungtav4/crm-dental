@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
+use App\Services\AppointmentSchedulingService;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateAppointment extends CreateRecord
 {
@@ -21,5 +23,10 @@ class CreateAppointment extends CreateRecord
         }
 
         return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        return app(AppointmentSchedulingService::class)->create($data);
     }
 }

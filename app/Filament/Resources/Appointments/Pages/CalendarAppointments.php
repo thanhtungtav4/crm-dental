@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Appointments\Pages;
 use App\Filament\Resources\Appointments\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
@@ -150,42 +151,13 @@ class CalendarAppointments extends Page
         $startAt = Carbon::parse($startAtIso)
             ->setTimezone(config('app.timezone'))
             ->seconds(0);
-        $duration = max(1, (int) ($appointment->duration_minutes ?? 30));
-        $endAt = $startAt->copy()->addMinutes($duration);
-
-        $hasConflict = Appointment::query()
-            ->where('id', '!=', $appointment->id)
-            ->where('doctor_id', $appointment->doctor_id)
-            ->where('branch_id', $appointment->branch_id)
-            ->whereIn('status', Appointment::statusesForQuery(Appointment::statusesOccupyingCapacity()))
-            ->where('date', '<', $endAt->format('Y-m-d H:i:s'))
-            ->where('date', '>=', $startAt->copy()->subDay()->format('Y-m-d H:i:s'))
-            ->get(['id', 'date', 'duration_minutes'])
-            ->contains(function (Appointment $existing) use ($startAt): bool {
-                if (! $existing->date) {
-                    return false;
-                }
-
-                $existingStart = $existing->date->copy();
-                $existingEnd = $existingStart->copy()->addMinutes(max(1, (int) ($existing->duration_minutes ?? 30)));
-
-                return $existingEnd->gt($startAt);
-            });
-
-        if ($hasConflict && ! $force) {
-            return [
-                'ok' => false,
-                'message' => 'Khung giờ bị trùng lịch bác sĩ. Xác nhận override để tiếp tục.',
-            ];
-        }
 
         try {
-            $appointment->forceFill([
-                'date' => $startAt,
-                'overbooking_reason' => $hasConflict ? 'Override từ màn hình calendar' : $appointment->overbooking_reason,
-                'overbooking_override_by' => $hasConflict ? auth()->id() : $appointment->overbooking_override_by,
-                'overbooking_override_at' => $hasConflict ? now() : $appointment->overbooking_override_at,
-            ])->save();
+            app(AppointmentSchedulingService::class)->reschedule(
+                appointment: $appointment,
+                startAt: $startAt,
+                force: $force,
+            );
         } catch (ValidationException $exception) {
             return [
                 'ok' => false,
