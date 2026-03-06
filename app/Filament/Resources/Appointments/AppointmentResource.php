@@ -46,7 +46,14 @@ class AppointmentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with([
+            'branch',
+            'customer',
+            'doctor',
+            'operationOverrideBy',
+            'overbookingOverrideBy',
+            'patient',
+        ]);
         $authUser = auth()->user();
 
         if (! $authUser instanceof User || $authUser->hasRole('Admin')) {

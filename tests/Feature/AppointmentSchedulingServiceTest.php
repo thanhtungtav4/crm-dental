@@ -169,11 +169,92 @@ it('requires a reason and records audit metadata when rescheduling appointments'
         ->first();
 
     expect($rescheduled->date?->format('H:i'))->toBe('15:30')
+        ->and($rescheduled->status)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and($rescheduled->reschedule_reason)->toBe('Khach xin doi sang cuoi gio chieu')
         ->and($auditLog)->not->toBeNull()
         ->and(data_get($auditLog?->metadata, 'from_at'))->toContain('15:00:00')
         ->and(data_get($auditLog?->metadata, 'to_at'))->toContain('15:30:00')
         ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Khach xin doi sang cuoi gio chieu')
         ->and(data_get($auditLog?->metadata, 'source'))->toBe('calendar');
+});
+
+it('requires a reason and records form audit metadata when updating appointment slot', function () {
+    [$branch, $doctor, $customer, $patient] = makeAppointmentSchedulingContext();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $appointment = Appointment::query()->create([
+        'customer_id' => $customer->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(10, 0),
+        'duration_minutes' => 30,
+        'status' => Appointment::STATUS_CONFIRMED,
+    ]);
+
+    $this->actingAs($manager);
+
+    expect(fn () => app(AppointmentSchedulingService::class)->update($appointment, [
+        'date' => now()->addDay()->setTime(10, 45),
+    ]))->toThrow(ValidationException::class, 'Vui lòng nhập lý do đổi lịch');
+
+    $updated = app(AppointmentSchedulingService::class)->update($appointment, [
+        'date' => now()->addDay()->setTime(10, 45),
+        'reschedule_reason' => 'Benh nhan xin doi sang ca muon hon',
+    ]);
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_APPOINTMENT)
+        ->where('entity_id', $appointment->id)
+        ->where('action', AuditLog::ACTION_RESCHEDULE)
+        ->latest('id')
+        ->first();
+
+    expect($updated->date?->format('H:i'))->toBe('10:45')
+        ->and($updated->status)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'source'))->toBe('form')
+        ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Benh nhan xin doi sang ca muon hon');
+});
+
+it('transitions appointment status through the scheduling service with guided payloads', function () {
+    [$branch, $doctor, $customer, $patient] = makeAppointmentSchedulingContext();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $appointment = Appointment::query()->create([
+        'customer_id' => $customer->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(11, 0),
+        'duration_minutes' => 30,
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    $this->actingAs($manager);
+
+    $confirmed = app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_CONFIRMED,
+    );
+
+    $cancelled = app(AppointmentSchedulingService::class)->transitionStatus(
+        $confirmed,
+        Appointment::STATUS_CANCELLED,
+        ['reason' => 'Benh nhan xin huy lich'],
+    );
+
+    expect($confirmed->status)->toBe(Appointment::STATUS_CONFIRMED)
+        ->and($confirmed->confirmed_at)->not->toBeNull()
+        ->and($cancelled->status)->toBe(Appointment::STATUS_CANCELLED)
+        ->and($cancelled->cancellation_reason)->toBe('Benh nhan xin huy lich');
 });
 
 function makeAppointmentSchedulingContext(): array

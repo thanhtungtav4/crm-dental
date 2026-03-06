@@ -12,6 +12,7 @@ use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class AppointmentForm
 {
@@ -252,9 +253,16 @@ class AppointmentForm
 
                 Forms\Components\Select::make('status')
                     ->label('Trạng thái')
-                    ->options(Appointment::statusOptions())
+                    ->options(fn (?Model $record): array => $record
+                        ? Appointment::statusOptions()
+                        : [Appointment::STATUS_SCHEDULED => Appointment::statusLabel(Appointment::STATUS_SCHEDULED)])
                     ->default(Appointment::STATUS_SCHEDULED)
                     ->required()
+                    ->disabled(fn (?Model $record): bool => $record !== null)
+                    ->dehydrated(fn (?Model $record): bool => $record === null)
+                    ->helperText(fn (?Model $record): ?string => $record instanceof Appointment
+                        ? 'Đổi trạng thái bằng các action chuyên biệt để lưu đúng lý do và audit trail.'
+                        : null)
                     ->live(),
 
                 Forms\Components\Textarea::make('cancellation_reason')
@@ -267,8 +275,9 @@ class AppointmentForm
                 Forms\Components\Textarea::make('reschedule_reason')
                     ->label('Lý do đổi lịch')
                     ->rows(2)
-                    ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
-                    ->required(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
+                    ->visible(fn (callable $get, ?Model $record) => self::shouldShowRescheduleReason($get('date'), $get('status'), $record))
+                    ->required(fn (callable $get, ?Model $record) => self::shouldShowRescheduleReason($get('date'), $get('status'), $record))
+                    ->helperText('Bắt buộc khi đổi ngày giờ lịch hẹn hoặc đánh dấu hẹn lại.')
                     ->columnSpanFull(),
 
                 Forms\Components\Textarea::make('overbooking_reason')
@@ -309,5 +318,21 @@ class AppointmentForm
                     ->columnSpanFull()
                     ->placeholder('Các ghi chú khác về lịch hẹn...'),
             ]);
+    }
+
+    protected static function shouldShowRescheduleReason(mixed $date, mixed $status, ?Model $record): bool
+    {
+        if (Appointment::normalizeStatus(is_scalar($status) ? (string) $status : null) === Appointment::STATUS_RESCHEDULED) {
+            return true;
+        }
+
+        if (! $record instanceof Appointment || ! $record->date || blank($date)) {
+            return false;
+        }
+
+        return \Carbon\Carbon::parse((string) $date)
+            ->setTimezone(config('app.timezone'))
+            ->seconds(0)
+            ->ne($record->date->copy()->setTimezone(config('app.timezone'))->seconds(0));
     }
 }

@@ -178,7 +178,8 @@ it('returns conflict warning and supports force reschedule from calendar', funct
     $appointment->refresh();
 
     expect($forceResult['ok'])->toBeTrue()
-        ->and($appointment->status)->toBe(Appointment::STATUS_SCHEDULED)
+        ->and($appointment->status)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and($appointment->reschedule_reason)->toBe('Khach xin doi lich tu calendar')
         ->and($appointment->is_overbooked)->toBeTrue()
         ->and((string) $appointment->overbooking_reason)->toContain('Override');
 });

@@ -2,8 +2,8 @@
 
 - Module code: `APPT`
 - Module name: `Appointments / Calendar`
-- Current status: `In Fix`
-- Current verdict: `C`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-APPT-`
 - Source review: `docs/reviews/modules/APPT-appointments-calendar.md`
 - Source issues: `docs/issues/APPT-issues.md`
@@ -15,6 +15,7 @@
 - Lam sach boundary scheduling / calendar cho CRM phong nha.
 - Dong sensitive action bypass cua overbooking.
 - Chuan hoa scheduling mutation, audit trail, search lead va regression protection truoc khi deep-fix `CLIN` va `TRT`.
+- Trang thai hien tai: tat ca task APPT baseline da duoc implement, test, va re-audit.
 
 # Foundation fixes
 

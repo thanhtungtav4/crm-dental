@@ -32,7 +32,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GOV | Governance / Branches / RBAC / Audit | Clean Baseline Reached | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | B | Khong con open blocker baseline; follow-up van hanh la sync permission baseline tren DB da seed truoc day va formalize governance delegation matrix neu can | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
 | PAT | Customers / Patients / MPI | Clean Baseline Reached | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la SOP/aging dashboard cho MPI queue neu van hanh can | GOV, APPT, CLIN, FIN, CARE, ZNS |
-| APPT | Appointments / Calendar | In Fix | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | C | Dang fix scheduling boundary + overbooking auth bypass; open tiep theo la reschedule audit trail va encrypted lead search | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
+| APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Pending Review | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | TBD | TODO | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Pending Review | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, INV, KPI |
@@ -48,19 +48,20 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 - GOV da dat clean baseline va tiep tuc la nen cho governance/RBAC toan he thong.
 - PAT da dat clean baseline, khoa patient identity boundary, customer->patient conversion idempotency va MPI operator workflow.
-- `APPT` da duoc review va dang o phase in fix; blocker lon nhat hien tai la scheduling override, calendar traceability va regression cross-module voi PII da ma hoa.
-- Cac module sau `CLIN`, `FIN` gio co the duoc review/fix tren patient ownership boundary on dinh hon sau khi APPT duoc dong scheduling baseline.
+- `APPT` da dat clean baseline; scheduling, overbooking auth, reschedule audit, encrypted search va observer side-effects da duoc khoa bang regression test.
+- Cac module sau `CLIN`, `TRT`, `FIN` gio co the duoc review/fix tren patient ownership va scheduling boundary on dinh hon.
 
 # 4. Priority overview
 
 - Critical modules: Chua co module nao con `Critical` blocker sau GOV + PAT baseline.
-- High priority modules: `APPT`, `CLIN`, `FIN`, `INV`
+- High priority modules: `CLIN`, `FIN`, `INV`, `TRT`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `TRT`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `APPT` - dang deep-fix scheduling boundary va overbooking authorization.
+- `CLIN` - dependency scheduling/patient boundary da on dinh, co the deep-fix consent + clinical record lifecycle.
+- `TRT` - da co nen APPT/PAT/GOV on dinh de review tiep session/material usage boundary.
 
 # 6. Modules needing re-audit
 
@@ -68,8 +69,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `CLIN` - sau khi APPT on dinh batch scheduling dau tien, module tiep theo nen review la clinical records / consent.
+- `CLIN` - clinical records / consent la module ke tiep co rui ro nghiep vu cao nhat tren nen APPT/PAT/GOV da sach.
 
 # 8. Suggested next module to fix
 
-- `APPT` - tiep tuc deep-fix voi reschedule audit trail va encrypted lead search sau batch dau tien.
+- `CLIN` - sau khi review xong, day la module hop ly nhat de deep-fix tiep.

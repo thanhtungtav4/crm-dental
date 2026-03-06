@@ -27,8 +27,40 @@ class AppointmentSchedulingService
     {
         return DB::transaction(function () use ($appointment, $data): Appointment {
             $lockedAppointment = $this->lockAppointment($appointment);
+            $normalizedStartAt = $this->extractNormalizedStartAt($data);
+            $originalStartAt = $lockedAppointment->date?->copy();
+            $isSlotChanged = $normalizedStartAt !== null
+                && ($originalStartAt?->format('Y-m-d H:i:s') !== $normalizedStartAt->format('Y-m-d H:i:s'));
+
+            if ($normalizedStartAt !== null) {
+                $data['date'] = $normalizedStartAt;
+            }
+
+            $reason = trim((string) ($data['reschedule_reason'] ?? ''));
+
+            if ($isSlotChanged && $reason === '') {
+                throw ValidationException::withMessages([
+                    'reschedule_reason' => 'Vui lòng nhập lý do đổi lịch.',
+                ]);
+            }
+
+            if ($isSlotChanged) {
+                $data['status'] = Appointment::STATUS_RESCHEDULED;
+            }
+
             $lockedAppointment->fill($data);
             $lockedAppointment->save();
+
+            if ($isSlotChanged && $normalizedStartAt !== null) {
+                $this->recordRescheduleAudit(
+                    appointment: $lockedAppointment,
+                    originalStartAt: $originalStartAt,
+                    newStartAt: $normalizedStartAt,
+                    reason: $reason,
+                    force: false,
+                    source: 'form',
+                );
+            }
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
         }, 5);
@@ -62,6 +94,8 @@ class AppointmentSchedulingService
 
             $payload = [
                 'date' => $normalizedStartAt,
+                'status' => Appointment::STATUS_RESCHEDULED,
+                'reschedule_reason' => $reason,
             ];
 
             if ($hasConflict) {
@@ -78,7 +112,51 @@ class AppointmentSchedulingService
                 newStartAt: $normalizedStartAt,
                 reason: $reason,
                 force: $force,
+                source: 'calendar',
             );
+
+            return $lockedAppointment->fresh() ?? $lockedAppointment;
+        }, 5);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function transitionStatus(Appointment $appointment, string $status, array $context = []): Appointment
+    {
+        return DB::transaction(function () use ($appointment, $status, $context): Appointment {
+            $lockedAppointment = $this->lockAppointment($appointment);
+            $normalizedStatus = Appointment::normalizeStatus($status);
+
+            if ($normalizedStatus === null) {
+                throw ValidationException::withMessages([
+                    'status' => 'Trạng thái lịch hẹn không hợp lệ.',
+                ]);
+            }
+
+            $payload = [
+                'status' => $normalizedStatus,
+            ];
+
+            if ($normalizedStatus === Appointment::STATUS_CONFIRMED) {
+                $payload['confirmed_at'] = $context['confirmed_at'] ?? ($lockedAppointment->confirmed_at ?: now());
+                $payload['confirmed_by'] = $context['confirmed_by'] ?? (auth()->id() ?: $lockedAppointment->confirmed_by);
+            }
+
+            if ($normalizedStatus === Appointment::STATUS_CANCELLED) {
+                $payload['cancellation_reason'] = trim((string) ($context['reason'] ?? ''));
+            }
+
+            if (array_key_exists('note', $context)) {
+                $payload['note'] = $this->appendOperationalNote(
+                    currentNote: $lockedAppointment->note,
+                    prefix: (string) ($context['note_prefix'] ?? ''),
+                    appendedNote: trim((string) ($context['note'] ?? '')),
+                );
+            }
+
+            $lockedAppointment->fill($payload);
+            $lockedAppointment->save();
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
         }, 5);
@@ -136,12 +214,38 @@ class AppointmentSchedulingService
             ->seconds(0);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function extractNormalizedStartAt(array $data): ?Carbon
+    {
+        if (! array_key_exists('date', $data) || blank($data['date'])) {
+            return null;
+        }
+
+        return $this->normalizeDateTime($data['date']);
+    }
+
+    protected function appendOperationalNote(?string $currentNote, string $prefix, string $appendedNote): ?string
+    {
+        if ($appendedNote === '') {
+            return $currentNote;
+        }
+
+        $normalizedPrefix = trim($prefix);
+        $line = $normalizedPrefix !== '' ? $normalizedPrefix.': '.$appendedNote : $appendedNote;
+        $existing = trim((string) $currentNote);
+
+        return $existing === '' ? $line : $existing.PHP_EOL.$line;
+    }
+
     protected function recordRescheduleAudit(
         Appointment $appointment,
         ?CarbonInterface $originalStartAt,
         CarbonInterface $newStartAt,
         string $reason,
         bool $force,
+        string $source,
     ): void {
         if (($originalStartAt?->format('Y-m-d H:i:s')) === $newStartAt->format('Y-m-d H:i:s')) {
             return;
@@ -169,7 +273,7 @@ class AppointmentSchedulingService
                 'to_at' => $newStartAt->format('Y-m-d H:i:s'),
                 'reason' => $reason,
                 'force' => $force,
-                'source' => 'calendar',
+                'source' => $source,
             ],
         );
     }

@@ -2,8 +2,8 @@
 
 - Module code: `APPT`
 - Module name: `Appointments / Calendar`
-- Current status: `In Fix`
-- Current verdict: `C`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/APPT-appointments-calendar.md`
 - Issue file: `docs/issues/APPT-issues.md`
 - Plan file: `docs/planning/APPT-plan.md`
@@ -27,16 +27,24 @@
 - Evidence duoc tong hop tu `Appointment`, `AppointmentObserver`, `AppointmentPolicy`, Filament resource/page/schema/table, migrations lien quan va test scheduling / overbooking / audit / Google Calendar.
 - Thong tin con thieu lam giam do chinh xac review: chua co SOP nghiep vu chinh thuc cho state flow `scheduled -> completed`, chua co quy tac van hanh ro rang ve viec ai duoc phep overbook khi branch policy `require_override_reason = false`.
 
+# Re-audit Summary
+
+- `AppointmentSchedulingService` da tro thanh boundary scheduling chung cho create, edit, calendar reschedule va status transition quan trong.
+- Overbooking da di qua `Action:AppointmentOverride` dung diem conflict thay vi phu thuoc dirty-check.
+- Reschedule tu calendar va form deu bat buoc ly do, ghi audit trail co cau truc, va dong bo `status = rescheduled`.
+- Search lead/customer trong APPT da chuyen sang hash-aware lookup tuong thich PAT PII hardening.
+- `AppointmentObserver` da duoc lam mong, chi con dispatch mot orchestration job after-commit thay vi fan-out truc tiep.
+- Hot-path query cua `AppointmentResource` da eager load ro rang, UI status khong con sua thang ma dung guided actions.
+- Re-audit code + regression suite + full suite deu xanh.
+
 # Executive Summary
 
-- Muc do an toan hien tai: `Trung binh`
-- Muc do rui ro nghiep vu: `Cao`
-- Muc do san sang production: `Trung binh - kem`, module co nhieu guard tot nhung van con blocker ve scheduling override, race window va traceability.
+- Muc do an toan hien tai: `Tot`
+- Muc do rui ro nghiep vu: `Trung binh thap`
+- Muc do san sang production: `Tot`, da dat clean baseline cho scheduling, auditability va hot-path APPT.
 - Cac canh bao nghiem trong:
-  - Overbooking co the bypass `Action:AppointmentOverride` khi policy chi nhanh khong bat buoc nhap ly do.
-  - Create/reschedule flow chua co service boundary tap trung cho conflict locking, va coverage concurrency thuc su cho calendar/create van thieu.
-  - Calendar drag/drop doi gio hen nhung khong yeu cau ly do va khong tao audit event reschedule co cau truc.
-  - Search lead/customer theo phone/email trong luong appointment van dung `LIKE` tren PII da ma hoa tu module `PAT`.
+  - Khong con open blocker baseline cho module APPT.
+  - Residual risk van hanh can theo doi: queue worker health cho orchestration side-effects sau commit.
 
 # Architecture Findings
 
@@ -227,14 +235,14 @@
 
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
-| APPT-001 | Critical | Security | Overbooking co the bypass Action:AppointmentOverride | In Fix | Da co scheduling service + overbooking auth guard moi; cho re-audit |
-| APPT-002 | High | Concurrency | Scheduling chua co service boundary transaction tap trung | In Fix | Create/edit/calendar da bat dau dung service chung; con can audit tiep |
-| APPT-003 | High | Data Integrity | Calendar reschedule thieu reason va audit trail co cau truc | Open | Drag/drop doi gio hen ma traceability yeu |
-| APPT-004 | High | UX | Search customer trong appointment bi regression sau PAT PII hardening | Open | Van dung LIKE tren phone/email da ma hoa |
-| APPT-005 | High | Maintainability | Observer appointment fan-out qua nhieu side-effect dong bo | Open | Tang transaction time va regression risk |
-| APPT-006 | Medium | Performance | Resource/table chua eager load ro rang cho closure-based relation access | Open | Nguy co N+1 khi danh sach lich hen lon |
-| APPT-007 | Medium | Domain Logic | State transition va UI status select qua rong | Open | De thao tac sai va kho enforce SOP |
-| APPT-008 | Medium | Maintainability | Test coverage con thieu cho auth bypass, search regression va concurrent reschedule | Open | Regression rat de quay lai |
+| APPT-001 | Critical | Security | Overbooking co the bypass Action:AppointmentOverride | Resolved | Gate override da duoc chot tai scheduling boundary va co regression test |
+| APPT-002 | High | Concurrency | Scheduling chua co service boundary transaction tap trung | Resolved | Create/edit/calendar da di qua service chung co transaction boundary |
+| APPT-003 | High | Data Integrity | Calendar reschedule thieu reason va audit trail co cau truc | Resolved | Calendar va form deu bat buoc reason, ghi audit co cau truc, dong bo status |
+| APPT-004 | High | UX | Search customer trong appointment bi regression sau PAT PII hardening | Resolved | APPT da search hash-aware theo phone/email va name partial |
+| APPT-005 | High | Maintainability | Observer appointment fan-out qua nhieu side-effect dong bo | Resolved | Observer dispatch mot orchestration job after-commit, side-effects giu nguyen semantics |
+| APPT-006 | Medium | Performance | Resource/table chua eager load ro rang cho closure-based relation access | Resolved | Resource query da eager load hot relations va co test guard |
+| APPT-007 | Medium | Domain Logic | State transition va UI status select qua rong | Resolved | Status form bi khoa o edit, table/page dung guided actions chuyen trang thai |
+| APPT-008 | Medium | Maintainability | Test coverage con thieu cho auth bypass, search regression va concurrent reschedule | Resolved | Regression suite APPT da cover scheduling/auth/search/audit/query/observer |
 
 # Dependencies
 
@@ -254,9 +262,9 @@
 
 # Recommended Next Steps
 
-- Fix `APPT-001` truoc de dong sensitive action bypass.
-- Tao `AppointmentSchedulingService` truoc khi tiep tuc sua create/edit/calendar tung cho.
-- Bo sung search hash-aware cho customer/lead trong APPT ngay sau do vi day la regression cross-module da xay ra sau PAT.
+- Khong con fix blocker trong APPT baseline.
+- Tiep tuc sang `CLIN` de review/fix consent + clinical record boundary tren nen scheduling da on dinh.
+- Theo doi queue worker health va do tre orchestration side-effect trong production rollout dau tien.
 
 # Current Status
 

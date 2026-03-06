@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use App\Filament\Resources\Appointments\AppointmentStatusActions;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
@@ -171,6 +172,11 @@ class AppointmentsTable
             ])
             ->recordActions([
                 EditAction::make(),
+                AppointmentStatusActions::confirm(),
+                AppointmentStatusActions::start(),
+                AppointmentStatusActions::complete(),
+                AppointmentStatusActions::markNoShow(),
+                AppointmentStatusActions::cancel(),
                 Action::make('mark_late_arrival')
                     ->label('Đánh dấu trễ giờ')
                     ->icon('heroicon-o-clock')

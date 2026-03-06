@@ -2,8 +2,8 @@
 
 - Module code: `APPT`
 - Module name: `Appointments / Calendar`
-- Current status: `In Fix`
-- Current verdict: `C`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `APPT-`
 - Task ID prefix: `TASK-APPT-`
 - Review file: `docs/reviews/modules/APPT-appointments-calendar.md`
@@ -39,7 +39,7 @@
   - GOV
 - Suggested order:
   - 1
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-002
 
@@ -69,7 +69,7 @@
   - APPT-001
 - Suggested order:
   - 2
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-001
 
@@ -98,7 +98,7 @@
   - APPT-002
 - Suggested order:
   - 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-003
 
@@ -127,7 +127,7 @@
   - PAT
 - Suggested order:
   - 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-004
 
@@ -158,7 +158,7 @@
   - CARE, CLIN, ZNS, INT
 - Suggested order:
   - 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-005
 
@@ -185,7 +185,7 @@
   - none
 - Suggested order:
   - 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-006
 
@@ -213,7 +213,7 @@
   - CLIN
 - Suggested order:
   - 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-007
 
@@ -239,14 +239,14 @@
   - APPT-001, APPT-002, APPT-003, APPT-004
 - Suggested order:
   - 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs:
   - TASK-APPT-008
 
 # Summary
 
-- Open critical count: 1
-- Open high count: 4
-- Open medium count: 3
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: Chot batch `TASK-APPT-001` va `TASK-APPT-002`, sau do sang `TASK-APPT-003` (audit trail reschedule) va `TASK-APPT-004` (encrypted lead search).
+- Next recommended action: Chuyen APPT sang clean baseline va bat dau module `CLIN`.
