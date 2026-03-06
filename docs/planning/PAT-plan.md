@@ -2,8 +2,8 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-PAT-`
 - Source review: `docs/reviews/modules/PAT-customers-patients.md`
 - Source issues: `docs/issues/PAT-issues.md`
@@ -282,3 +282,9 @@
   - `TASK-PAT-006`
   - `TASK-PAT-007`
   - Re-audit PAT
+
+# Execution outcome
+
+- `TASK-PAT-001` den `TASK-PAT-007` da hoan tat.
+- PAT da pass full suite sau khi chot onboarding service boundary va MPI duplicate review workflow.
+- Module dat `Clean Baseline Reached`; buoc tiep theo la review `APPT`.

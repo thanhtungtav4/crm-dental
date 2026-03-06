@@ -2,8 +2,8 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/PAT-customers-patients.md`
 - Issue file: `docs/issues/PAT-issues.md`
 - Plan file: `docs/planning/PAT-plan.md`
@@ -267,9 +267,9 @@
 | PAT-003 | High | Security | Staff/doctor selector trong customer/patient form chua branch-scoped | Resolved | Form options va save guards da scope theo branch cho assignee/owner/doctor, request forged cung bi chan. |
 | PAT-004 | High | Data Integrity | Customer va Patient dang dung 2 chien luoc identity khac nhau | Resolved | Customer, Patient, MPI va web lead ingestion da dung chung normalizer/hash contract cho identity hot path. |
 | PAT-005 | High | Performance | Conversion dedupe fallback scan toan bo patient trong branch bang PHP | Resolved | Hot path conversion da bo full-scan bang PHP, chi con hash/index lookup. |
-| PAT-006 | Medium | Maintainability | Patient model auto-create Customer trong model event | Open | Side effect onboarding nam o model layer, kho audit transaction boundary va kho test rollback/orphan path. |
-| PAT-007 | Medium | Domain Logic | MPI duplicate review workflow chua co UI nghiep vu ro rang | Open | Hien chi thay command/service, de tao do tre van hanh va kho xu ly queue duplicate cho user khong ky thuat. |
-| PAT-008 | Medium | Maintainability | Test coverage chua khoa regression cho PII, conversion race va branch-scoped selectors | Partial | Regression da khoa cho PII, conversion, branch-scoped assignment va shared normalizer; onboarding/MPI UI flow van chua co coverage day du. |
+| PAT-006 | Medium | Maintainability | Patient model auto-create Customer trong model event | Resolved | Onboarding da duoc dua ve `PatientOnboardingService`, `Patient` model chi giu invariant va test rollback da khoa orphan path. |
+| PAT-007 | Medium | Domain Logic | MPI duplicate review workflow chua co UI nghiep vu ro rang | Resolved | Da co Filament resource queue `MasterPatientDuplicate` voi branch-aware auth, action merge/ignore/rollback va infolist review. |
+| PAT-008 | Medium | Maintainability | Test coverage chua khoa regression cho PII, conversion race va branch-scoped selectors | Resolved | PAT regression suite da khoa PII hardening, conversion idempotency, branch-scoped assignment, onboarding rollback va MPI queue workflow. |
 
 # Dependencies
 
@@ -283,15 +283,15 @@
 
 - Sau khi lead bi dedupe vao patient da ton tai, nghiep vu muon lead do chuyen thanh status nao?
 - Co can unique patient identity theo toan he thong hay theo branch trong tung giai doan?
-- Co muon MPI duplicate review co Filament UI rieng hay tiep tuc giu command-only cho admin?
+- Co can them dashboard aging/SLA cho MPI duplicate queue sau baseline hay chi can queue review co ban?
 - Customer PII co can cung muc do ma hoa/hardening nhu patient ngay tu lead stage hay co policy khac?
 
 # Recommended Next Steps
 
 - `TASK-PAT-001` den `TASK-PAT-004` da pass full suite; tiep tuc `TASK-PAT-005` de dua patient onboarding ve service boundary ro rang.
-- Sau do lam `TASK-PAT-006` de co MPI review workflow cho operator truoc khi goi PAT la clean baseline.
-- Co the bat dau review `APPT` song song, nhung chua nen re-audit chot PAT truoc khi xong `TASK-PAT-005` va `TASK-PAT-006`.
+- PAT da dat clean baseline cho patient identity boundary; uu tien tiep theo la review `APPT` tren baseline moi nay.
+- Neu phat sinh workload MPI lon, follow-up sau baseline la them queue aging dashboard va SOP cho reviewer, khong con la blocker code/module.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

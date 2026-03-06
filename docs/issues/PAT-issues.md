@@ -2,8 +2,8 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `PAT-`
 - Task ID prefix: `TASK-PAT-`
 - Review file: `docs/reviews/modules/PAT-customers-patients.md`
@@ -186,7 +186,7 @@
 - Dependencies:
   - PAT-002
 - Suggested order: 6
-- Current status: Partial
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-005`
 
 ## [PAT-007] MPI duplicate review workflow chua co UI nghiep vu ro rang
@@ -216,7 +216,7 @@
 - Dependencies:
   - GOV, CLIN, FIN
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-006`
 
 ## [PAT-008] Test coverage chua khoa regression cho PII, conversion race va branch-scoped selectors
@@ -241,13 +241,13 @@
 - Dependencies:
   - PAT-001, PAT-002, PAT-003, PAT-006, PAT-007
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-007`
 
 # Summary
 
 - Open critical count: 0
 - Open high count: 0
-- Open medium count: 2
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-PAT-005` de dua patient onboarding side effects ve service boundary, sau do lam `TASK-PAT-006` cho MPI review workflow operator-friendly.
+- Next recommended action: chuyen sang review `APPT` tren patient identity baseline da on dinh cua `PAT`.
