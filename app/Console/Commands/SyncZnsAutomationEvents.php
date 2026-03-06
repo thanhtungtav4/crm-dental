@@ -11,6 +11,7 @@ use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SyncZnsAutomationEvents extends Command
 {
@@ -194,7 +195,21 @@ class SyncZnsAutomationEvents extends Command
 
     protected function processEvent(int $eventId): string
     {
-        $claim = DB::transaction(function () use ($eventId): array {
+        $claim = $this->claimEvent($eventId);
+
+        if (($claim['claimed'] ?? false) !== true) {
+            return (string) ($claim['status'] ?? ZnsAutomationEvent::STATUS_FAILED);
+        }
+
+        return $this->processClaimedEvent($claim);
+    }
+
+    /**
+     * @return array{claimed:bool,status?:string,event_id?:int,event_key?:string,event_type?:string,phone?:string,template_id?:string,payload?:array<string,mixed>,processing_token?:string}
+     */
+    protected function claimEvent(int $eventId): array
+    {
+        return DB::transaction(function () use ($eventId): array {
             $event = ZnsAutomationEvent::query()
                 ->lockForUpdate()
                 ->find($eventId);
@@ -220,7 +235,8 @@ class SyncZnsAutomationEvents extends Command
                 ];
             }
 
-            $event->markProcessing();
+            $processingToken = (string) Str::uuid();
+            $event->markProcessing($processingToken);
 
             return [
                 'claimed' => true,
@@ -230,11 +246,23 @@ class SyncZnsAutomationEvents extends Command
                 'phone' => trim((string) ($event->normalized_phone ?: $event->phone ?: '')),
                 'template_id' => trim((string) $event->template_id_snapshot),
                 'payload' => is_array($event->payload) ? $event->payload : [],
+                'processing_token' => $processingToken,
             ];
         }, 3);
+    }
 
-        if (($claim['claimed'] ?? false) !== true) {
-            return (string) ($claim['status'] ?? ZnsAutomationEvent::STATUS_FAILED);
+    /**
+     * @param  array{claimed:bool,event_id:int,event_key:string,event_type:string,phone:string,template_id:string,payload:array<string,mixed>,processing_token:string}  $claim
+     */
+    protected function processClaimedEvent(array $claim): string
+    {
+        $preSendStatus = $this->abortIfClaimNoLongerProcessable(
+            eventId: (int) $claim['event_id'],
+            processingToken: (string) $claim['processing_token'],
+        );
+
+        if (is_string($preSendStatus)) {
+            return $preSendStatus;
         }
 
         $providerPayload = null;
@@ -280,7 +308,7 @@ class SyncZnsAutomationEvents extends Command
             : null;
 
         return DB::transaction(function () use (
-            $eventId,
+            $claim,
             $providerPayload,
             $sendResult,
             $isSuccess,
@@ -290,10 +318,12 @@ class SyncZnsAutomationEvents extends Command
         ): string {
             $event = ZnsAutomationEvent::query()
                 ->lockForUpdate()
-                ->find($eventId);
+                ->whereKey((int) $claim['event_id'])
+                ->where('processing_token', (string) $claim['processing_token'])
+                ->first();
 
             if (! $event) {
-                return ZnsAutomationEvent::STATUS_FAILED;
+                return (string) (ZnsAutomationEvent::query()->find((int) $claim['event_id'])?->status ?? ZnsAutomationEvent::STATUS_FAILED);
             }
 
             if ($event->status !== ZnsAutomationEvent::STATUS_PROCESSING) {
@@ -331,6 +361,28 @@ class SyncZnsAutomationEvents extends Command
             );
 
             return (string) ($event->fresh()?->status ?? ZnsAutomationEvent::STATUS_FAILED);
+        }, 3);
+    }
+
+    protected function abortIfClaimNoLongerProcessable(int $eventId, string $processingToken): ?string
+    {
+        return DB::transaction(function () use ($eventId, $processingToken): ?string {
+            $event = ZnsAutomationEvent::query()
+                ->lockForUpdate()
+                ->find($eventId);
+
+            if (! $event) {
+                return ZnsAutomationEvent::STATUS_FAILED;
+            }
+
+            if (
+                $event->status !== ZnsAutomationEvent::STATUS_PROCESSING
+                || (string) ($event->processing_token ?? '') !== $processingToken
+            ) {
+                return (string) $event->status;
+            }
+
+            return null;
         }, 3);
     }
 }

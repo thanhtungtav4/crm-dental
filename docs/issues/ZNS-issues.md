@@ -88,7 +88,7 @@
 - Dependencies:
   - APPT, CARE
 - Suggested order: 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-003`
 
 ## [ZNS-004] Outbox/delivery/log dang luu phone va payload ZNS plaintext
@@ -215,8 +215,8 @@
 
 # Summary
 
-- Open critical count: 1
+- Open critical count: 0
 - Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-ZNS-003`, sau do khoa `TASK-ZNS-004` va `TASK-ZNS-005` truoc khi re-audit module.
+- Next recommended action: tiep tuc `TASK-ZNS-004`, sau do khoa `TASK-ZNS-005` va `TASK-ZNS-007` truoc khi re-audit module.

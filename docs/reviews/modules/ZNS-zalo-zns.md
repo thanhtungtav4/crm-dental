@@ -253,7 +253,7 @@
 | --- | --- | --- | --- | --- | --- |
 | ZNS-001 | Critical | Security | ZNS page/resource khong co auth boundary dung | Resolved | `ZnsCampaignPolicy` + `ZaloZns::canAccess()` da khoa `Doctor` khoi page/resource |
 | ZNS-002 | Critical | Domain Logic | Campaign workflow dang mutate status truc tiep, khong qua service canonical | Resolved | `ZnsCampaignWorkflowService` da khoa form/page/table va bo delete surface |
-| ZNS-003 | Critical | Concurrency | Appointment reminder cancel co the race voi worker dang processing va van gui tin | Open | `cancelAppointmentReminder()` va `processEvent()` khong co pre-send coordination |
+| ZNS-003 | Critical | Concurrency | Appointment reminder cancel co the race voi worker dang processing va van gui tin | Resolved | Claim da co `processing_token`, cancel/supersede xoa token va worker co pre-send guard truoc khi goi provider |
 | ZNS-004 | High | Security | Outbox/delivery/log dang luu phone va payload ZNS plaintext | Open | PII va payload provider hien dang luu raw o 3 bang van hanh |
 | ZNS-005 | High | Concurrency | Campaign runner chua co campaign-level lock | Open | Hai worker co the cung scan audience va flap campaign summary |
 | ZNS-006 | High | Security | `RunZnsCampaigns` khong duoc bao ve bang action permission | Resolved | Command da duoc khoa bang `ActionGate::authorize(ActionPermission::AUTOMATION_RUN)` |
@@ -277,8 +277,8 @@
 # Recommended Next Steps
 
 1. Sinh issue file canonical cho module.
-2. Tiep tuc `TASK-ZNS-003` de khoa cancel-vs-processing race cho appointment reminder.
-3. Sau do lam `TASK-ZNS-004` va `TASK-ZNS-005` truoc khi re-audit module.
+2. Tiep tuc `TASK-ZNS-004` de giam PII/payload plaintext trong outbox va log.
+3. Sau do lam `TASK-ZNS-005` de khoa campaign-level lock truoc khi re-audit module.
 
 # Current Status
 

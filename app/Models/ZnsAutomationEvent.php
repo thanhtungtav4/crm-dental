@@ -46,6 +46,7 @@ class ZnsAutomationEvent extends Model
         'max_attempts',
         'next_retry_at',
         'locked_at',
+        'processing_token',
         'processed_at',
         'last_http_status',
         'last_error',
@@ -111,12 +112,13 @@ class ZnsAutomationEvent extends Model
             });
     }
 
-    public function markProcessing(): void
+    public function markProcessing(string $processingToken): void
     {
         $this->forceFill([
             'status' => self::STATUS_PROCESSING,
             'attempts' => (int) $this->attempts + 1,
             'locked_at' => now(),
+            'processing_token' => $processingToken,
             'last_error' => null,
         ])->save();
     }
@@ -135,6 +137,7 @@ class ZnsAutomationEvent extends Model
             'processed_at' => now(),
             'next_retry_at' => null,
             'locked_at' => null,
+            'processing_token' => null,
             'last_http_status' => $httpStatus,
             'last_error' => null,
             'provider_message_id' => $providerMessageId,
@@ -159,6 +162,7 @@ class ZnsAutomationEvent extends Model
             'status' => $shouldDeadLetter ? self::STATUS_DEAD : self::STATUS_FAILED,
             'next_retry_at' => $shouldDeadLetter ? null : $this->resolveNextRetryAt((int) $this->attempts),
             'locked_at' => null,
+            'processing_token' => null,
             'last_http_status' => $httpStatus,
             'last_error' => mb_substr($message, 0, 1000),
             'provider_status_code' => $providerStatusCode,
@@ -182,6 +186,7 @@ class ZnsAutomationEvent extends Model
                 'status' => self::STATUS_DEAD,
                 'next_retry_at' => null,
                 'locked_at' => null,
+                'processing_token' => null,
                 'last_error' => 'Stale processing lock reclaimed after max attempts reached.',
                 'updated_at' => $now,
             ]);
@@ -192,6 +197,7 @@ class ZnsAutomationEvent extends Model
                 'status' => self::STATUS_FAILED,
                 'next_retry_at' => $now,
                 'locked_at' => null,
+                'processing_token' => null,
                 'last_error' => 'Stale processing lock reclaimed for retry.',
                 'updated_at' => $now,
             ]);
