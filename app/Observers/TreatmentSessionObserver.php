@@ -7,8 +7,9 @@ use App\Services\CareTicketService;
 use App\Services\EmrSyncEventPublisher;
 use App\Services\ExamSessionLifecycleService;
 use App\Services\TreatmentProgressSyncService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class TreatmentSessionObserver
+class TreatmentSessionObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         protected CareTicketService $careTicketService,
