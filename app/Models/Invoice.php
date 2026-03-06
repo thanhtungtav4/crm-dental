@@ -200,6 +200,18 @@ class Invoice extends Model
                 ]
             );
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'invoice' => 'Hoa don tai chinh khong ho tro xoa. Vui long huy hoa don qua workflow.',
+            ]);
+        });
+
+        static::restoring(function (): void {
+            throw ValidationException::withMessages([
+                'invoice' => 'Hoa don tai chinh khong ho tro khoi phuc tu thao tac xoa.',
+            ]);
+        });
     }
 
     public static function statusOptions(): array

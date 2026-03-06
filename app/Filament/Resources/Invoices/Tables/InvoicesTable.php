@@ -9,8 +9,6 @@ use App\Models\Invoice;
 use App\Services\InvoiceWorkflowService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -365,11 +363,6 @@ class InvoicesTable
                     ->color('gray')
                     ->url(fn ($record) => route('invoices.print', $record))
                     ->openUrlInNewTab(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('Chưa có hóa đơn')

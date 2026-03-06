@@ -142,7 +142,7 @@
 - Dependencies:
   - FIN-002
 - Suggested order: 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-004`
 
 ## [FIN-005] `received_by` chua branch-scoped va chua sanitize server-side
@@ -233,7 +233,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 2
+- Open high count: 1
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: vao `TASK-FIN-004`, `TASK-FIN-005`, `TASK-FIN-006` truoc khi fix sau hon `INV`.
+- Next recommended action: vao `TASK-FIN-005`, `TASK-FIN-006`, `TASK-FIN-007` truoc khi fix sau hon `INV`.

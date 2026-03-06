@@ -34,27 +34,27 @@ class InvoicePolicy
 
     public function delete(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Delete:Invoice') && $this->canAccessInvoice($authUser, $invoice);
+        return false;
     }
 
     public function restore(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('Restore:Invoice') && $this->canAccessInvoice($authUser, $invoice);
+        return false;
     }
 
     public function forceDelete(User $authUser, Invoice $invoice): bool
     {
-        return $authUser->can('ForceDelete:Invoice') && $this->canAccessInvoice($authUser, $invoice);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Invoice') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Invoice') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, Invoice $invoice): bool

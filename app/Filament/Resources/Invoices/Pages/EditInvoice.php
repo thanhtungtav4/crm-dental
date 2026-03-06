@@ -6,7 +6,6 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Invoice;
 use App\Services\InvoiceWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Pages\EditRecord;
 
@@ -54,8 +53,6 @@ class EditInvoice extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => route('invoices.print', $this->record))
                 ->openUrlInNewTab(),
-
-            DeleteAction::make(),
         ];
     }
 }
