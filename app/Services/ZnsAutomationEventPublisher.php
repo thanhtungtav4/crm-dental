@@ -24,7 +24,7 @@ class ZnsAutomationEventPublisher
             return null;
         }
 
-        $phone = trim((string) ($customer->phone_normalized ?: $customer->phone ?: ''));
+        $phone = trim((string) ($customer->phone ?: ''));
         $sourceIdentifier = $customer->exists
             ? 'customer:'.$customer->getKey()
             : 'customer-phone:'.$this->normalizePhone($phone);

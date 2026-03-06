@@ -2,8 +2,10 @@
 
 namespace App\Filament\Schemas;
 
+use App\Models\Customer;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class SharedSchemas
 {
@@ -24,14 +26,29 @@ class SharedSchemas
             Forms\Components\TextInput::make('phone')
                 ->label('Số điện thoại')
                 ->tel()
-                // Required status depends on context, but usually required for contact
-                // We keep it flexible or make it required by default
                 ->maxLength(20)
                 ->placeholder('VD: 0901234567')
-                ->unique('customers', 'phone', ignoreRecord: true) // Table is customers
-                ->validationMessages([
-                    'unique' => 'Số điện thoại này đã tồn tại.',
-                ])
+                ->rule(function ($record): \Closure {
+                    return function (string $attribute, mixed $value, \Closure $fail) use ($record): void {
+                        if (! is_string($value) || trim($value) === '') {
+                            return;
+                        }
+
+                        $phoneHash = Customer::phoneSearchHash($value);
+                        if ($phoneHash === null) {
+                            return;
+                        }
+
+                        $exists = Customer::query()
+                            ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
+                            ->where('phone_search_hash', $phoneHash)
+                            ->exists();
+
+                        if ($exists) {
+                            $fail('Số điện thoại này đã tồn tại.');
+                        }
+                    };
+                })
                 ->columnSpan(1),
 
             Forms\Components\TextInput::make('email')

@@ -2,7 +2,7 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Issue ID prefix: `PAT-`
 - Task ID prefix: `TASK-PAT-`
@@ -41,7 +41,7 @@
 - Dependencies:
   - CARE, ZNS
 - Suggested order: 1
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-PAT-001`
 
 ## [PAT-002] Customer->Patient conversion khong idempotent duoi concurrent traffic
@@ -73,7 +73,7 @@
 - Dependencies:
   - APPT
 - Suggested order: 2
-- Current status: Open
+- Current status: Partial
 - Linked task IDs: `TASK-PAT-002`
 
 ## [PAT-003] Staff/doctor selector trong customer/patient form chua branch-scoped
@@ -246,8 +246,8 @@
 
 # Summary
 
-- Open critical count: 2
+- Open critical count: 1
 - Open high count: 3
 - Open medium count: 3
 - Open low count: 0
-- Next recommended action: bat dau `TASK-PAT-001`, tiep tuc ngay `TASK-PAT-002`, va chua mo deep-fix cho `APPT/CLIN/FIN` truoc khi 2 task nay on dinh.
+- Next recommended action: tiep tuc ngay `TASK-PAT-002`, sau do khoa `TASK-PAT-003`, va chua mo deep-fix cho `APPT/CLIN/FIN` truoc khi 2 task nay on dinh.

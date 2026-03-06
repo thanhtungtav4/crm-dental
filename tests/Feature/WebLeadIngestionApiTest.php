@@ -73,7 +73,10 @@ it('creates a new lead from web payload and stores ingestion log', function (): 
     expect($customer->full_name)->toBe('Tran Thi B')
         ->and($customer->source)->toBe('other')
         ->and($customer->source_detail)->toBe('website')
-        ->and($customer->phone_normalized)->toBe('0901234567')
+        ->and($customer->phone)->toBe('0901234567')
+        ->and($customer->phone_search_hash)->toBe(Customer::phoneSearchHash('0901234567'))
+        ->and($customer->phone_normalized)->toBeNull()
+        ->and($customer->getRawOriginal('phone'))->not->toBe('0901234567')
         ->and((int) $customer->branch_id)->toBe($branch->id)
         ->and($customer->last_web_contact_at)->not->toBeNull();
 
@@ -151,7 +154,6 @@ it('merges lead by normalized phone when request id changes', function (): void 
     $existing = Customer::factory()->create([
         'full_name' => 'Existing Lead',
         'phone' => '0909 888 777',
-        'phone_normalized' => '0909888777',
         'source' => 'facebook',
         'status' => 'lead',
     ]);
@@ -171,7 +173,9 @@ it('merges lead by normalized phone when request id changes', function (): void 
 
     $existing->refresh();
 
-    expect($existing->phone_normalized)->toBe('0909888777')
+    expect($existing->phone)->toBe('+84 909 888 777')
+        ->and($existing->phone_search_hash)->toBe(Customer::phoneSearchHash('0909888777'))
+        ->and($existing->phone_normalized)->toBeNull()
         ->and($existing->source_detail)->toBe('website')
         ->and($existing->last_web_contact_at)->not->toBeNull();
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Customers\Tables;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Services\DoctorBranchAssignmentService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -44,7 +45,15 @@ class CustomersTable
                         : null),
                 TextColumn::make('phone')
                     ->label('Điện thoại')
-                    ->searchable(),
+                    ->searchable(query: function ($query, string $search) {
+                        $phoneHash = Customer::phoneSearchHash($search);
+
+                        if ($phoneHash === null) {
+                            return $query->whereRaw('1 = 0');
+                        }
+
+                        return $query->where('phone_search_hash', $phoneHash);
+                    }),
                 TextColumn::make('email')
                     ->label('Email')
                     ->toggleable(),

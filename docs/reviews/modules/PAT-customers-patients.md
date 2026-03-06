@@ -2,7 +2,7 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Review file: `docs/reviews/modules/PAT-customers-patients.md`
 - Issue file: `docs/issues/PAT-issues.md`
@@ -262,10 +262,10 @@
 
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
-| PAT-001 | Critical | Security | Customer PII dang luu plaintext va searchable tren cot raw | Open | `Customer` chua harden nhu `Patient`, gay lech boundary privacy cua module. |
+| PAT-001 | Critical | Security | Customer PII dang luu plaintext va searchable tren cot raw | Resolved | `Customer` da duoc harden voi encrypted cast + search hash; lookup/validation da tach khoi cot raw. |
 | PAT-002 | Critical | Concurrency | Customer->Patient conversion khong idempotent duoi concurrent traffic | Open | `convert()` check-then-create truoc transaction, co the tao duplicate patient hoac va cham unique khong duoc xu ly nghiep vu. |
 | PAT-003 | High | Security | Staff/doctor selector trong customer/patient form chua branch-scoped | Open | Co the gan doctor/owner/assignee ngoai branch duoc phep. |
-| PAT-004 | High | Data Integrity | Customer va Patient dang dung 2 chien luoc identity khac nhau | Open | Customer dung raw/normalized, patient dung encrypted + hash, de gay drift integrity va dedupe khong nhat quan. |
+| PAT-004 | High | Data Integrity | Customer va Patient dang dung 2 chien luoc identity khac nhau | Partial | Nen encryption/hash cho `Customer` da duoc dat, nhung unified identity contract va hot-path dedupe van chua dong bo hoan toan. |
 | PAT-005 | High | Performance | Conversion dedupe fallback scan toan bo patient trong branch bang PHP | Open | Khong scale khi record patient tang va co chi phi decrypt tren hot path. |
 | PAT-006 | Medium | Maintainability | Patient model auto-create Customer trong model event | Open | Side effect onboarding nam o model layer, kho audit transaction boundary va kho test rollback/orphan path. |
 | PAT-007 | Medium | Domain Logic | MPI duplicate review workflow chua co UI nghiep vu ro rang | Open | Hien chi thay command/service, de tao do tre van hanh va kho xu ly queue duplicate cho user khong ky thuat. |
@@ -288,10 +288,10 @@
 
 # Recommended Next Steps
 
-- Bat dau `TASK-PAT-001` de harden customer PII va chot identity strategy nen.
-- Tiep tuc ngay `TASK-PAT-002` de khoa race-condition customer->patient conversion truoc khi review/fix `APPT`.
+- `TASK-PAT-001` da xong va da pass full suite; tiep tuc ngay `TASK-PAT-002` de khoa race-condition customer->patient conversion.
+- Theo sau `TASK-PAT-002` la `TASK-PAT-003` de dong branch-scoped assignment boundary truoc khi review/fix `APPT`.
 - Chua nen fix sau `CLIN`, `FIN`, `CARE`, `ZNS` truoc khi chot baseline `PAT`.
 
 # Current Status
 
-- Planning
+- In Fix

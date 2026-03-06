@@ -53,6 +53,7 @@ class WebLeadIngestionService
             }
 
             $normalizedPhone = $this->normalizePhone((string) ($payload['phone'] ?? ''));
+            $phoneSearchHash = Customer::phoneSearchHash((string) ($payload['phone'] ?? ''));
             $branch = $this->resolveBranch($payload['branch_code'] ?? null);
             $branchCode = $branch?->code ?? (filled($payload['branch_code'] ?? null) ? (string) $payload['branch_code'] : null);
 
@@ -106,16 +107,12 @@ class WebLeadIngestionService
                 $ingestion = $lockedIngestion;
             }
 
-            $customer = Customer::query()
-                ->where(function ($query) use ($normalizedPhone, $payload): void {
-                    if ($normalizedPhone !== '') {
-                        $query->orWhere('phone_normalized', $normalizedPhone);
-                    }
-
-                    $query->orWhere('phone', (string) ($payload['phone'] ?? ''));
-                })
-                ->latest('id')
-                ->first();
+            $customer = $phoneSearchHash === null
+                ? null
+                : Customer::query()
+                    ->where('phone_search_hash', $phoneSearchHash)
+                    ->latest('id')
+                    ->first();
 
             $created = false;
 
@@ -127,7 +124,6 @@ class WebLeadIngestionService
                 $customer->fill([
                     'full_name' => $customer->full_name ?: (string) ($payload['full_name'] ?? ''),
                     'phone' => (string) ($payload['phone'] ?? ''),
-                    'phone_normalized' => $normalizedPhone,
                     'source' => $customer->source ?: ClinicRuntimeSettings::defaultWebLeadCustomerSource(),
                     'source_detail' => 'website',
                     'last_contacted_at' => now(),
@@ -140,7 +136,6 @@ class WebLeadIngestionService
                     'branch_id' => $branch?->id,
                     'full_name' => (string) ($payload['full_name'] ?? ''),
                     'phone' => (string) ($payload['phone'] ?? ''),
-                    'phone_normalized' => $normalizedPhone,
                     'source' => ClinicRuntimeSettings::defaultWebLeadCustomerSource(),
                     'source_detail' => 'website',
                     'status' => ClinicRuntimeSettings::defaultCustomerStatus(),

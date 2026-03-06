@@ -31,7 +31,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | Module code | Module name | Current status | Review file | Issue file | Plan file | Current verdict | Top open risks | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GOV | Governance / Branches / RBAC / Audit | Clean Baseline Reached | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | B | Khong con open blocker baseline; follow-up van hanh la sync permission baseline tren DB da seed truoc day va formalize governance delegation matrix neu can | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
-| PAT | Customers / Patients / MPI | Planning | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | D | Customer PII dang luu plaintext; flow convert customer->patient co race window; doctor/owner/assignee select chua branch-scoped | GOV, APPT, CLIN, FIN, CARE, ZNS |
+| PAT | Customers / Patients / MPI | In Fix | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | D | Customer->patient conversion con race window; doctor/owner/assignee select chua branch-scoped; unified customer/patient identity contract chua hoan tat | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Pending Review | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | TBD | TODO | GOV, PAT, CLIN, TRT, INT, ZNS |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Pending Review | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | TBD | TODO | PAT, APPT, CLIN, INV, FIN |
@@ -59,7 +59,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `PAT` - da co review, issue backlog va implementation plan; san sang vao deep fix tu `TASK-PAT-001`.
+- `PAT` - dang deep fix; `TASK-PAT-001` da xong, san sang tiep tuc `TASK-PAT-002`.
 
 # 6. Modules needing re-audit
 
@@ -71,4 +71,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `PAT` - bat dau tu `TASK-PAT-001`, sau do `TASK-PAT-002` truoc khi sang APPT/CLIN/FIN.
+- `PAT` - tiep tuc `TASK-PAT-002`, sau do `TASK-PAT-003`, truoc khi sang APPT/CLIN/FIN.

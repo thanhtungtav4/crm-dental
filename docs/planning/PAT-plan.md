@@ -2,7 +2,7 @@
 
 - Module code: `PAT`
 - Module name: `Customers / Patients / MPI`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Task ID prefix: `TASK-PAT-`
 - Source review: `docs/reviews/modules/PAT-customers-patients.md`
