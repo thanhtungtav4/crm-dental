@@ -2,8 +2,8 @@
 
 - Module code: `TRT`
 - Module name: `Treatment Plans / Sessions / Materials usage`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-TRT-`
 - Source review: `docs/reviews/modules/TRT-treatment.md`
 - Source issues: `docs/issues/TRT-issues.md`
@@ -18,6 +18,12 @@
   - treatment progress sync idempotency
   - destructive delete surface va branch-scoped staff assignment
 - Bao dam `TRT` khong mo lai regression cho `CLIN`, dong thoi khong gay drift sang `INV` va `FIN`.
+
+## Execution outcome
+
+- Toan bo task `TASK-TRT-001` den `TASK-TRT-007` da duoc hoan thanh.
+- Re-audit da xac nhan cac issue `TRT-001` den `TRT-008` deu `Resolved`.
+- Module hien dat `Clean Baseline Reached` voi verdict `B`.
 
 # Foundation fixes
 

@@ -2,8 +2,8 @@
 
 - Module code: `TRT`
 - Module name: `Treatment Plans / Sessions / Materials usage`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `TRT-`
 - Task ID prefix: `TASK-TRT-`
 - Review file: `docs/reviews/modules/TRT-treatment.md`
@@ -173,7 +173,7 @@
 - Dependencies:
   - FIN, INV, CLIN
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-005`
 
 ## [TRT-006] Legacy relation managers trung lap va yeu hon tao drift behavior
@@ -202,7 +202,7 @@
 - Dependencies:
   - TRT-004, TRT-005
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-006`
 
 ## [TRT-007] Treatment material edit UX sai vi page ton tai du model cam update
@@ -228,7 +228,7 @@
 - Dependencies:
   - TRT-001, TRT-005
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-005`
 
 ## [TRT-008] Regression suite chua khoa batch usage, state bypass va delete guard
@@ -256,13 +256,13 @@
 - Dependencies:
   - TRT-001, TRT-002, TRT-003, TRT-004, TRT-005, TRT-007
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-007`
 
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
-- Open medium count: 3
+- Open high count: 0
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: vao `TASK-TRT-005` de khoa delete boundary truoc khi mo rong sang `FIN`/`INV`.
+- Next recommended action: module da dat clean baseline; co the chuyen sang `FIN` hoac `INV`.

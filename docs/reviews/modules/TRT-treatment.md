@@ -2,8 +2,8 @@
 
 - Module code: `TRT`
 - Module name: `Treatment Plans / Sessions / Materials usage`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/TRT-treatment.md`
 - Issue file: `docs/issues/TRT-issues.md`
 - Plan file: `docs/planning/TRT-plan.md`
@@ -290,10 +290,25 @@
 | TRT-002 | Critical | Domain Logic | Treatment plan approval boundary bi bypass khi tao va khi table action mutate truc tiep | Resolved | Create payload da bi khoa ve `draft`; actions approve/start/complete/cancel da qua workflow service |
 | TRT-003 | High | Concurrency | Treatment progress sync bypass provisioning service transactional | Resolved | Da reuse `ExamSessionProvisioningService`, bao `TreatmentSession -> ProgressDay/Item` trong transaction va observer sau commit |
 | TRT-004 | High | Security | Staff selectors trong treatment flow chua branch-scoped | Resolved | Doctor/assistant options da scope theo branch, payload duoc sanitize server-side, `used_by` tro thanh server-owned |
-| TRT-005 | High | Data Integrity | Delete/force delete surfaces va FK permissive de mo duong orphan treatment data | Open | Plan/item/session/material van co delete surface rong |
-| TRT-006 | Medium | Maintainability | Ton tai legacy relation managers yeu hon va de drift behavior | Open | `TreatmentPlans/Relations/*` trung lap voi bo chinh |
-| TRT-007 | Medium | UX | Treatment material co edit page du model cam update | Open | UX dan nguoi dung vao luong se fail khi save |
-| TRT-008 | Medium | Maintainability | Regression suite chua khoa batch usage, state bypass va delete guard | Open | Chua thay test cho cac bug nghiem trong nhat cua TRT |
+| TRT-005 | High | Data Integrity | Delete/force delete surfaces va FK permissive de mo duong orphan treatment data | Resolved | Da khoa delete surface bang guard service, policy va UI gating |
+| TRT-006 | Medium | Maintainability | Ton tai legacy relation managers yeu hon va de drift behavior | Resolved | Legacy relation managers da bi loai bo, canonical surface da duoc chot |
+| TRT-007 | Medium | UX | Treatment material co edit page du model cam update | Resolved | Edit surface da duoc go bo, flow usage giu immutable boundary |
+| TRT-008 | Medium | Maintainability | Regression suite chua khoa batch usage, state bypass va delete guard | Resolved | Regression suite TRT da bao phu state, sync, assignment, delete guard va material usage |
+
+# Re-audit Update
+
+- TRT da hoan thanh full lifecycle `review -> issues -> plan -> fix -> regression -> re-audit`.
+- Code boundary da duoc khoa lai o 4 diem quan trong nhat:
+  - material usage transaction-safe va traceable theo batch
+  - treatment plan workflow khong con bypass state machine
+  - treatment progress sync idempotent va reuse provisioning service cua `CLIN`
+  - delete/force delete surface cua treatment core da bi khoa theo downstream linkage
+- Full suite tren snapshot sau TRT dat:
+  - `598 passed`
+  - `3260 assertions`
+  - `185.96s`
+- Verdict duoc nang tu `D` len `B`.
+- Module dat `Clean Baseline Reached`.
 
 # Dependencies
 
@@ -312,10 +327,10 @@
 
 # Recommended Next Steps
 
-- Vao `TASK-TRT-005` de khoa delete/force delete boundary cho treatment core
-- Sau do xu ly `TASK-TRT-006` de loai bo legacy relation managers gay drift
-- Chot `TASK-TRT-007` sau khi delete surface va relation surface cua TRT da on dinh
+- Chuyen sang `FIN` de review va fix boundary thanh toan/hoa don khi `TRT` da on dinh.
+- Sau `FIN`, review tiep `INV` de doi chieu them inventory side-effects tu treatment.
+- Giu lai TRT regression suite trong cac full-suite run de chan drift cheo module.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

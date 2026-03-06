@@ -34,7 +34,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | PAT | Customers / Patients / MPI | Clean Baseline Reached | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la SOP/aging dashboard cho MPI queue neu van hanh can | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
 | CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
-| TRT | Treatment Plans / Sessions / Materials usage | In Fix | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | D | Delete surfaces van qua rong; legacy relation managers van tao drift; TRT chua re-audit sau batch sync va assignment hardening | PAT, APPT, CLIN, INV, FIN |
+| TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Pending Review | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Pending Review | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | TBD | TODO | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
@@ -50,20 +50,20 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - PAT da dat clean baseline, khoa patient identity boundary, customer->patient conversion idempotency va MPI operator workflow.
 - `APPT` da dat clean baseline; scheduling, overbooking auth, reschedule audit, encrypted search va observer side-effects da duoc khoa bang regression test.
 - `CLIN` da dat clean baseline; EMR PHI, consent lifecycle, session idempotency, branch-scoped doctor assignment va audit timeline reader da duoc khoa bang regression test.
-- `TRT` da co review + issue + plan; open blockers cua module nay nam o batch-safe material usage, treatment workflow state machine va destructive delete boundary.
-- `FIN` va `INV` khong nen fix sau vao hot path dieu tri truoc khi `TRT` dong xong 3 boundary tren.
+- `TRT` da dat clean baseline; batch-safe material usage, workflow state machine, branch-scoped assignment va destructive guard da duoc khoa bang regression test.
+- `FIN` va `INV` hien la 2 module tiep theo can review/fix sau de dong boundary thanh toan va ton kho quanh hot path dieu tri.
 
 # 4. Priority overview
 
-- Critical modules: `TRT`
+- Critical modules: Chua co module critical dang mo sau khi `TRT` dat baseline
 - High priority modules: `FIN`, `INV`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `TRT` - da co review va plan day du; day la module nen tiep theo de fix sau `CLIN`.
-- `FIN` - co the vao sau `TRT` khi treatment state/material usage boundary da on dinh hon.
+- `FIN` - payment, invoice, wallet va installment boundary hien la diem rui ro nghiep vu lon nhat tiep theo.
+- `INV` - inventory batch/stock tiep tuc la module phu thuoc gan nhat sau khi `TRT` da on dinh.
 
 # 6. Modules needing re-audit
 
@@ -71,8 +71,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `FIN` - neu muon tiep tuc review song song trong luc `TRT` dang fix.
+- `FIN` - module co impact nghiep vu cao nhat tiep theo va phu thuoc truc tiep vao `TRT`.
 
 # 8. Suggested next module to fix
 
-- `TRT` - vao `TASK-TRT-005` de khoa delete boundary truoc khi mo rong sang `FIN` va `INV`.
+- `FIN` - vao review/issue/plan truoc, sau do fix payment idempotency va invoice integrity.
