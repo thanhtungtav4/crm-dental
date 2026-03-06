@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentPlans\Pages;
 
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Services\TreatmentPlanWorkflowService;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
@@ -44,6 +45,8 @@ class CreateTreatmentPlan extends CreateRecord
                 message: 'Bạn không thể tạo kế hoạch điều trị ở chi nhánh ngoài phạm vi được phân quyền.',
             );
         }
+
+        $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentPlanFormData(auth()->user(), $data);
 
         return app(TreatmentPlanWorkflowService::class)->prepareCreatePayload($data);
     }

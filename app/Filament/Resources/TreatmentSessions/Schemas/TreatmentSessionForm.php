@@ -4,6 +4,7 @@ namespace App\Filament\Resources\TreatmentSessions\Schemas;
 
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use Filament\Forms;
 use Filament\Schemas\Components\Utilities\Get;
@@ -34,17 +35,36 @@ class TreatmentSessionForm
                     ->afterStateUpdated(function ($state, Set $set, Get $get): void {
                         $planId = is_numeric($state) ? (int) $state : null;
                         $set('plan_item_id', null);
+                        $branchId = self::resolveTreatmentPlanBranchId($planId);
+                        $authorizer = app(TreatmentAssignmentAuthorizer::class);
 
                         if (! $planId) {
+                            $set('doctor_id', null);
+                            $set('assistant_id', null);
+
                             return;
                         }
 
                         $plan = TreatmentPlan::query()
-                            ->select(['id', 'doctor_id'])
+                            ->select(['id', 'doctor_id', 'branch_id'])
                             ->find($planId);
 
-                        if ($plan && ! is_numeric($get('doctor_id'))) {
-                            $set('doctor_id', $plan->doctor_id);
+                        if ($plan && ! is_numeric($get('doctor_id')) && is_numeric($plan->doctor_id)) {
+                            $planDoctorId = (int) $plan->doctor_id;
+
+                            if ($authorizer->isAssignableDoctorId(auth()->user(), $planDoctorId, $branchId)) {
+                                $set('doctor_id', $planDoctorId);
+                            }
+                        }
+
+                        $selectedDoctorId = is_numeric($get('doctor_id')) ? (int) $get('doctor_id') : null;
+                        if ($selectedDoctorId !== null && ! $authorizer->isAssignableDoctorId(auth()->user(), $selectedDoctorId, $branchId)) {
+                            $set('doctor_id', null);
+                        }
+
+                        $selectedAssistantId = is_numeric($get('assistant_id')) ? (int) $get('assistant_id') : null;
+                        if ($selectedAssistantId !== null && ! $authorizer->isAssignableStaffId(auth()->user(), $selectedAssistantId, $branchId)) {
+                            $set('assistant_id', null);
                         }
                     }),
                 Forms\Components\Select::make('plan_item_id')
@@ -70,16 +90,26 @@ class TreatmentSessionForm
                         }
                     }),
                 Forms\Components\Select::make('doctor_id')
-                    ->relationship('doctor', 'name')
+                    ->options(fn (Get $get): array => app(TreatmentAssignmentAuthorizer::class)
+                        ->assignableDoctorOptions(
+                            actor: auth()->user(),
+                            branchId: self::resolveTreatmentPlanBranchId($get('treatment_plan_id')),
+                        ))
                     ->label('Bác sĩ')
                     ->searchable()
                     ->preload()
+                    ->helperText('Chỉ hiển thị bác sĩ thuộc chi nhánh của kế hoạch đã chọn.')
                     ->nullable(),
                 Forms\Components\Select::make('assistant_id')
-                    ->relationship('assistant', 'name')
+                    ->options(fn (Get $get): array => app(TreatmentAssignmentAuthorizer::class)
+                        ->assignableStaffOptions(
+                            actor: auth()->user(),
+                            branchId: self::resolveTreatmentPlanBranchId($get('treatment_plan_id')),
+                        ))
                     ->label('Trợ thủ')
                     ->searchable()
                     ->preload()
+                    ->helperText('Chỉ hiển thị nhân sự thuộc chi nhánh của kế hoạch đã chọn.')
                     ->nullable(),
                 Forms\Components\DateTimePicker::make('performed_at')
                     ->label('Thời gian thực hiện')
@@ -152,6 +182,19 @@ class TreatmentSessionForm
             ->value('id');
 
         return is_numeric($planId) ? (int) $planId : null;
+    }
+
+    protected static function resolveTreatmentPlanBranchId(mixed $treatmentPlanId): ?int
+    {
+        if (! is_numeric($treatmentPlanId)) {
+            return null;
+        }
+
+        $branchId = TreatmentPlan::query()
+            ->whereKey((int) $treatmentPlanId)
+            ->value('branch_id');
+
+        return is_numeric($branchId) ? (int) $branchId : null;
     }
 
     /**

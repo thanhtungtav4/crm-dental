@@ -70,7 +70,8 @@ class TreatmentMaterialForm
                     ->label('Người ghi nhận')
                     ->default(fn (): ?int => auth()->id())
                     ->disabled()
-                    ->dehydrated(),
+                    ->dehydrated(false)
+                    ->helperText('Được gán tự động theo tài khoản đang thao tác.'),
             ]);
     }
 

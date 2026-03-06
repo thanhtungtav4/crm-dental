@@ -2,13 +2,13 @@
 
 namespace App\Filament\Resources\TreatmentPlans\Relations;
 
+use App\Services\TreatmentAssignmentAuthorizer;
 use Filament\Actions\CreateAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -21,11 +21,19 @@ class SessionsRelationManager extends RelationManager
         return $schema->schema([
             Forms\Components\Select::make('doctor_id')
                 ->label('Bác sĩ')
-                ->options(fn() => \App\Models\User::role('Doctor')->pluck('name', 'id'))
+                ->options(fn (): array => app(TreatmentAssignmentAuthorizer::class)
+                    ->assignableDoctorOptions(
+                        actor: auth()->user(),
+                        branchId: is_numeric($this->ownerRecord?->branch_id ?? null) ? (int) $this->ownerRecord->branch_id : null,
+                    ))
                 ->searchable()->preload(),
             Forms\Components\Select::make('assistant_id')
                 ->label('Trợ thủ')
-                ->options(fn() => \App\Models\User::query()->pluck('name', 'id'))
+                ->options(fn (): array => app(TreatmentAssignmentAuthorizer::class)
+                    ->assignableStaffOptions(
+                        actor: auth()->user(),
+                        branchId: is_numeric($this->ownerRecord?->branch_id ?? null) ? (int) $this->ownerRecord->branch_id : null,
+                    ))
                 ->searchable()->preload()
                 ->nullable(),
             Forms\Components\DateTimePicker::make('start_at')->label('Bắt đầu'),
@@ -50,8 +58,8 @@ class SessionsRelationManager extends RelationManager
                 TextColumn::make('doctor.name')->label('Bác sĩ'),
                 TextColumn::make('assistant.name')->label('Trợ thủ'),
                 TextColumn::make('status')->label('Trạng thái')->badge()
-                    ->icon(fn(?string $s) => \App\Support\StatusBadge::icon($s))
-                    ->color(fn(?string $s) => \App\Support\StatusBadge::color($s)),
+                    ->icon(fn (?string $s) => \App\Support\StatusBadge::icon($s))
+                    ->color(fn (?string $s) => \App\Support\StatusBadge::color($s)),
             ])
             ->headerActions([
                 CreateAction::make()

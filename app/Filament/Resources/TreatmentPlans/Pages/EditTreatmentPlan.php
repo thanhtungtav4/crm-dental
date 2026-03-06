@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TreatmentPlans\Pages;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Services\TreatmentPlanWorkflowService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -31,6 +32,8 @@ class EditTreatmentPlan extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentPlanFormData(auth()->user(), $data);
+
         return app(TreatmentPlanWorkflowService::class)->prepareEditablePayload($this->getRecord(), $data);
     }
 

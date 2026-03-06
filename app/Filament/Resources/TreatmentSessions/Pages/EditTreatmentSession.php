@@ -6,6 +6,7 @@ use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentSessions\TreatmentSessionResource;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -91,6 +92,12 @@ class EditTreatmentSession extends EditRecord
                 ]);
             }
         }
+
+        $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentSessionFormData(
+            actor: auth()->user(),
+            data: $data,
+            branchId: $plan->branch_id !== null ? (int) $plan->branch_id : null,
+        );
 
         return $data;
     }

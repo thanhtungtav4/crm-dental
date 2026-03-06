@@ -114,6 +114,12 @@ class TreatmentMaterialUsageService
                 ]);
             }
 
+            $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentMaterialUsageData(
+                actor: $authUser instanceof User ? $authUser : null,
+                data: $data,
+                branchId: $resolvedBranchId,
+            );
+
             $actorId = is_numeric($data['used_by'] ?? null)
                 ? (int) $data['used_by']
                 : (is_numeric(auth()->id()) ? (int) auth()->id() : null);

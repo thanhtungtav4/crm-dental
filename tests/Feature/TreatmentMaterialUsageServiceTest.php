@@ -103,3 +103,53 @@ it('blocks direct model create to force service boundary', function (): void {
         'used_by' => $manager->id,
     ]))->toThrow(ValidationException::class, 'TreatmentMaterialUsageService');
 });
+
+it('records treatment material usage with the authenticated actor even if payload is forged', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $foreignStaff = User::factory()->create();
+    $foreignStaff->assignRole('Manager');
+
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $manager->id,
+        'branch_id' => $branch->id,
+        'status' => 'in_progress',
+    ]);
+    $session = TreatmentSession::factory()->create([
+        'treatment_plan_id' => $plan->id,
+        'doctor_id' => $manager->id,
+    ]);
+    $material = Material::factory()->create([
+        'branch_id' => $branch->id,
+        'stock_qty' => 10,
+    ]);
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'LOT-TM-003',
+        'expiry_date' => now()->addMonths(4)->toDateString(),
+        'quantity' => 10,
+        'purchase_price' => 20_000,
+        'received_date' => now()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $usage = app(TreatmentMaterialUsageService::class)->create([
+        'treatment_session_id' => $session->id,
+        'material_id' => $material->id,
+        'batch_id' => $batch->id,
+        'quantity' => 2,
+        'used_by' => $foreignStaff->id,
+    ]);
+
+    expect($usage->used_by)->toBe($manager->id)
+        ->and(InventoryTransaction::query()
+            ->where('treatment_session_id', $session->id)
+            ->where('material_batch_id', $batch->id)
+            ->value('created_by'))->toBe($manager->id);
+});

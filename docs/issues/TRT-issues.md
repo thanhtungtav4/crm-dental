@@ -109,7 +109,7 @@
 - Dependencies:
   - CLIN, APPT
 - Suggested order: 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-003`
 
 ## [TRT-004] Staff selectors trong treatment plan/session/material forms chua branch-scoped
@@ -140,7 +140,7 @@
 - Dependencies:
   - GOV, PAT
 - Suggested order: 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-004`
 
 ## [TRT-005] Delete/force delete surfaces va FK permissive de mo duong orphan treatment data
@@ -262,7 +262,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 3
+- Open high count: 1
 - Open medium count: 3
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-TRT-003` va `TASK-TRT-004` truoc khi mo rong sang `FIN`/`INV`.
+- Next recommended action: vao `TASK-TRT-005` de khoa delete boundary truoc khi mo rong sang `FIN`/`INV`.

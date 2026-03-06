@@ -4,6 +4,7 @@ namespace App\Filament\Resources\TreatmentPlans\Schemas;
 
 use App\Models\Patient;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
@@ -60,11 +61,16 @@ class TreatmentPlanForm
                                         })
                                         ->columnSpan(1),
                                     Forms\Components\Select::make('doctor_id')
-                                        ->relationship('doctor', 'name')
+                                        ->options(fn (Get $get): array => app(TreatmentAssignmentAuthorizer::class)
+                                            ->assignableDoctorOptions(
+                                                actor: auth()->user(),
+                                                branchId: filled($get('branch_id')) ? (int) $get('branch_id') : null,
+                                            ))
                                         ->label('Bác sĩ điều trị')
                                         ->searchable()
                                         ->preload()
                                         ->required()
+                                        ->helperText('Chỉ hiển thị bác sĩ thuộc phạm vi chi nhánh đang chọn.')
                                         ->columnSpan(1),
                                 ])->columns(2),
 
@@ -85,7 +91,27 @@ class TreatmentPlanForm
                                     ->label('Chi nhánh')
                                     ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(function (Get $get, Set $set, $state): void {
+                                        $branchId = filled($state) ? (int) $state : null;
+                                        $doctorId = $get('doctor_id');
+
+                                        if (! filled($doctorId)) {
+                                            return;
+                                        }
+
+                                        $isDoctorAllowed = app(TreatmentAssignmentAuthorizer::class)->isAssignableDoctorId(
+                                            actor: auth()->user(),
+                                            doctorId: (int) $doctorId,
+                                            branchId: $branchId,
+                                        );
+
+                                        if (! $isDoctorAllowed) {
+                                            $set('doctor_id', null);
+                                        }
+                                    }),
                                 Forms\Components\Select::make('priority')
                                     ->label('Độ ưu tiên')
                                     ->options([

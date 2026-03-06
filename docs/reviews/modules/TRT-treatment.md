@@ -288,8 +288,8 @@
 | --- | --- | --- | --- | --- | --- |
 | TRT-001 | Critical | Data Integrity | Treatment material consumption khong traceable theo batch va khong khoa transaction | Resolved | Da dua vao service transactional, bat batch selector va ledger theo batch |
 | TRT-002 | Critical | Domain Logic | Treatment plan approval boundary bi bypass khi tao va khi table action mutate truc tiep | Resolved | Create payload da bi khoa ve `draft`; actions approve/start/complete/cancel da qua workflow service |
-| TRT-003 | High | Concurrency | Treatment progress sync bypass provisioning service transactional | Open | `TreatmentProgressSyncService` tu tao `ExamSession`/`ProgressDay` ngoai transaction |
-| TRT-004 | High | Security | Staff selectors trong treatment flow chua branch-scoped | Open | `doctor_id`, `assistant_id`, `used_by` dang load query chung |
+| TRT-003 | High | Concurrency | Treatment progress sync bypass provisioning service transactional | Resolved | Da reuse `ExamSessionProvisioningService`, bao `TreatmentSession -> ProgressDay/Item` trong transaction va observer sau commit |
+| TRT-004 | High | Security | Staff selectors trong treatment flow chua branch-scoped | Resolved | Doctor/assistant options da scope theo branch, payload duoc sanitize server-side, `used_by` tro thanh server-owned |
 | TRT-005 | High | Data Integrity | Delete/force delete surfaces va FK permissive de mo duong orphan treatment data | Open | Plan/item/session/material van co delete surface rong |
 | TRT-006 | Medium | Maintainability | Ton tai legacy relation managers yeu hon va de drift behavior | Open | `TreatmentPlans/Relations/*` trung lap voi bo chinh |
 | TRT-007 | Medium | UX | Treatment material co edit page du model cam update | Open | UX dan nguoi dung vao luong se fail khi save |
@@ -312,9 +312,9 @@
 
 # Recommended Next Steps
 
-- Tiep tuc `TASK-TRT-003` de dong progress sync idempotent
-- Sau do vao `TASK-TRT-004` va `TASK-TRT-005` de khoa selector scope va delete boundary
-- Chot `TASK-TRT-007` sau khi 3 workflow chinh cua TRT da on dinh
+- Vao `TASK-TRT-005` de khoa delete/force delete boundary cho treatment core
+- Sau do xu ly `TASK-TRT-006` de loai bo legacy relation managers gay drift
+- Chot `TASK-TRT-007` sau khi delete surface va relation surface cua TRT da on dinh
 
 # Current Status
 

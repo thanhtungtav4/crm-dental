@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TreatmentSessions\Pages;
 use App\Filament\Resources\TreatmentSessions\TreatmentSessionResource;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Http\Request;
@@ -107,6 +108,12 @@ class CreateTreatmentSession extends CreateRecord
         }
 
         $data['plan_item_id'] = $planItemId;
+
+        $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentSessionFormData(
+            actor: auth()->user(),
+            data: $data,
+            branchId: $plan->branch_id !== null ? (int) $plan->branch_id : null,
+        );
 
         return $data;
     }
