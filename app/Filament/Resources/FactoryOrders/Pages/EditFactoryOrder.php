@@ -4,6 +4,7 @@ namespace App\Filament\Resources\FactoryOrders\Pages;
 
 use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
 use App\Services\FactoryOrderAuthorizer;
+use App\Services\FactoryOrderWorkflowService;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -13,10 +14,13 @@ class EditFactoryOrder extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return app(FactoryOrderAuthorizer::class)->sanitizeFactoryOrderData(
-            actor: auth()->user(),
-            data: $data,
-            record: $this->getRecord(),
+        return app(FactoryOrderWorkflowService::class)->prepareEditablePayload(
+            order: $this->getRecord(),
+            data: app(FactoryOrderAuthorizer::class)->sanitizeFactoryOrderData(
+                actor: auth()->user(),
+                data: $data,
+                record: $this->getRecord(),
+            ),
         );
     }
 

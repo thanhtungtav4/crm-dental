@@ -135,7 +135,12 @@ class FactoryOrderForm
                     ->label('Trạng thái')
                     ->options(FactoryOrder::statusOptions())
                     ->default(FactoryOrder::STATUS_DRAFT)
-                    ->required(),
+                    ->required()
+                    ->disabled()
+                    ->dehydrated(fn (?FactoryOrder $record): bool => $record === null)
+                    ->helperText(fn (?FactoryOrder $record): string => $record instanceof FactoryOrder
+                        ? 'Doi trang thai bang action nghiep vu de giu workflow hop le.'
+                        : 'Lenh labo moi luon bat dau o trang thai nhap.'),
 
                 Select::make('priority')
                     ->label('Ưu tiên')
@@ -152,7 +157,9 @@ class FactoryOrderForm
                     ->label('Ngày đặt')
                     ->native(false)
                     ->seconds(false)
-                    ->default(now()),
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('He thong tu dong ghi khi chuyen lenh labo sang trang thai da dat.'),
 
                 DateTimePicker::make('due_at')
                     ->label('Ngày hẹn trả')

@@ -146,7 +146,7 @@
 - Dependencies:
   - `SUP-001`, `SUP-002`
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-005`
 
 ## [SUP-006] Supplier destructive surfaces mo va co the cat dut procurement provenance
@@ -229,7 +229,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
+- Open high count: 0
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: fix `SUP-005` de khoa workflow mutation boundary cua order/item, sau do chot `SUP-007` de dua report labo ve dung datasource.
+- Next recommended action: fix `SUP-007` de dua report labo ve dung datasource, sau do chot `SUP-008` de day du regression suite cho SUP.

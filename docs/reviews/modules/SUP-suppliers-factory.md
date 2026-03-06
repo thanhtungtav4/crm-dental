@@ -244,7 +244,7 @@
 | SUP-002 | High | Domain Logic | Factory order khong enforce consistency giua patient, branch va doctor | Resolved | payload server-side da duoc sanitize; patient branch va doctor scope deu bi khoa o form/page/model |
 | SUP-003 | High | Data Integrity | Supplier master khong la canonical identity cho factory orders | Resolved | `factory_orders` da co `supplier_id`, migration backfill canonical supplier, va form/resource da doi sang selector chuan |
 | SUP-004 | High | Concurrency | Sinh `order_no` dang race-prone voi unique index | Resolved | da doi sang sequence-per-day co `lockForUpdate()` va create boundary transaction-safe |
-| SUP-005 | High | Domain Logic / UX | Order va item mutation surfaces mo sau khi qua phase editable | Open | relation manager va table actions cho mutate raw, khong qua workflow service |
+| SUP-005 | High | Domain Logic / UX | Order va item mutation surfaces mo sau khi qua phase editable | Resolved | status transition da di qua workflow service; edit/item CRUD bi khoa sau draft va model layer hard-deny bypass |
 | SUP-006 | High | Data Integrity / Security | Supplier destructive surfaces mo va co the cat dut procurement provenance | Resolved | delete/force-delete/restore surfaces da bi go; policy + model layer deu hard-deny |
 | SUP-007 | Medium | Maintainability / Reporting | Bao cao labo dang query sai datasource | Open | `FactoryStatistical` query `TreatmentSession` thay vi `FactoryOrder` |
 | SUP-008 | Medium | Maintainability | Test coverage cua SUP qua mong | Open | hien moi co mot test state transition factory order, thieu auth/branch/report coverage |
@@ -264,8 +264,8 @@
 
 # Recommended Next Steps
 
-- Tiep tuc `SUP-005` de khoa mutation surfaces cua order/item theo editable phases.
-- Sau do chot `SUP-007` va `SUP-008` de sua report datasource va bo sung regression suite con thieu.
+- Tiep tuc `SUP-007` de sua report labo ve dung datasource.
+- Sau do chot `SUP-008` de bo sung regression suite con thieu va dua module vao re-audit.
 - Chi chuyen sang report/workflow re-audit sau khi branch invariants va create boundary da on dinh.
 
 # Current Status

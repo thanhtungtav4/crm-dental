@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\FactoryOrders\Tables;
 
 use App\Models\FactoryOrder;
+use App\Services\FactoryOrderWorkflowService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -71,7 +72,8 @@ class FactoryOrdersTable
                     ->preload(),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (FactoryOrder $record): bool => $record->isEditable()),
                 Action::make('markOrdered')
                     ->label('Chuyển đã đặt')
                     ->icon('heroicon-o-paper-airplane')
@@ -79,10 +81,7 @@ class FactoryOrdersTable
                     ->requiresConfirmation()
                     ->visible(fn (FactoryOrder $record): bool => $record->status === FactoryOrder::STATUS_DRAFT)
                     ->action(function (FactoryOrder $record): void {
-                        $record->forceFill([
-                            'status' => FactoryOrder::STATUS_ORDERED,
-                            'ordered_at' => $record->ordered_at ?? now(),
-                        ])->save();
+                        app(FactoryOrderWorkflowService::class)->markOrdered($record);
                     }),
                 Action::make('markInProgress')
                     ->label('Chuyển đang làm')
@@ -91,9 +90,7 @@ class FactoryOrdersTable
                     ->requiresConfirmation()
                     ->visible(fn (FactoryOrder $record): bool => $record->status === FactoryOrder::STATUS_ORDERED)
                     ->action(function (FactoryOrder $record): void {
-                        $record->forceFill([
-                            'status' => FactoryOrder::STATUS_IN_PROGRESS,
-                        ])->save();
+                        app(FactoryOrderWorkflowService::class)->markInProgress($record);
                     }),
                 Action::make('markDelivered')
                     ->label('Đánh dấu đã giao')
@@ -105,10 +102,7 @@ class FactoryOrdersTable
                         FactoryOrder::STATUS_IN_PROGRESS,
                     ], true))
                     ->action(function (FactoryOrder $record): void {
-                        $record->forceFill([
-                            'status' => FactoryOrder::STATUS_DELIVERED,
-                            'delivered_at' => now(),
-                        ])->save();
+                        app(FactoryOrderWorkflowService::class)->markDelivered($record);
                     }),
                 Action::make('markCancelled')
                     ->label('Hủy lệnh')
@@ -127,10 +121,10 @@ class FactoryOrdersTable
                         FactoryOrder::STATUS_IN_PROGRESS,
                     ], true))
                     ->action(function (FactoryOrder $record, array $data): void {
-                        $record->forceFill([
-                            'status' => FactoryOrder::STATUS_CANCELLED,
-                            'notes' => (string) ($data['notes'] ?? $record->notes),
-                        ])->save();
+                        app(FactoryOrderWorkflowService::class)->cancel(
+                            order: $record,
+                            reason: (string) ($data['notes'] ?? ''),
+                        );
                     }),
             ])
             ->toolbarActions([

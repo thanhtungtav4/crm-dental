@@ -22,6 +22,15 @@ class ItemsRelationManager extends RelationManager
 
     protected static ?string $title = 'Hạng mục labo';
 
+    protected function canMutateItems(): bool
+    {
+        $ownerRecord = $this->getOwnerRecord();
+
+        return $ownerRecord instanceof \App\Models\FactoryOrder
+            ? $ownerRecord->canMutateItems()
+            : false;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -113,16 +122,21 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->visible(fn (): bool => $this->canMutateItems()),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->visible(fn (): bool => $this->canMutateItems()),
+                DeleteAction::make()
+                    ->visible(fn (): bool => $this->canMutateItems()),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn (): bool => $this->canMutateItems()),
                 ]),
-            ]);
+            ])
+            ->checkIfRecordIsSelectableUsing(fn (): bool => $this->canMutateItems());
     }
 }

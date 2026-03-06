@@ -6,6 +6,7 @@ use App\Models\FactoryOrder;
 use App\Models\Patient;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\FactoryOrderWorkflowService;
 use Illuminate\Support\Facades\File;
 
 it('locks factory order resource access to admin and manager with branch scoped records', function (): void {
@@ -56,7 +57,8 @@ it('locks factory order resource access to admin and manager with branch scoped 
         ->and(FactoryOrderResource::getRecordRouteBindingEloquentQuery()->whereKey($visibleOrder->id)->exists())->toBeTrue()
         ->and(FactoryOrderResource::getRecordRouteBindingEloquentQuery()->whereKey($hiddenOrder->id)->exists())->toBeFalse();
 
-    $visibleOrder->update(['status' => FactoryOrder::STATUS_ORDERED]);
+    app(FactoryOrderWorkflowService::class)->markOrdered($visibleOrder);
+    $visibleOrder->refresh();
 
     expect($manager->can('delete', $visibleOrder))->toBeFalse();
 

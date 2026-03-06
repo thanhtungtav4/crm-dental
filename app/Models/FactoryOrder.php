@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DoctorBranchAssignmentService;
 use App\Services\FactoryOrderNumberGenerator;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,8 @@ class FactoryOrder extends Model
         self::STATUS_DELIVERED => [],
         self::STATUS_CANCELLED => [],
     ];
+
+    protected static bool $allowsManagedWorkflowMutation = false;
 
     protected $fillable = [
         'order_no',
@@ -135,6 +138,12 @@ class FactoryOrder extends Model
             }
 
             if ($order->exists && $order->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Trang thai lenh labo chi duoc thay doi qua FactoryOrderWorkflowService.',
+                    ]);
+                }
+
                 $fromStatus = (string) ($order->getOriginal('status') ?? static::STATUS_DRAFT);
                 $toStatus = (string) $order->status;
 
@@ -235,7 +244,40 @@ class FactoryOrder extends Model
         return in_array((int) $this->branch_id, $user->accessibleBranchIds(), true);
     }
 
-    protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        static::$allowsManagedWorkflowMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+        }
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function canMutateItems(): bool
+    {
+        return $this->isEditable();
+    }
+
+    public function assertItemsEditable(string $field = 'factory_order_id'): void
+    {
+        if ($this->canMutateItems()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $field => 'Chi co the sua hang muc labo khi lenh dang o trang thai nhap.',
+        ]);
+    }
+
+    public static function canTransitionStatus(string $fromStatus, string $toStatus): bool
     {
         if ($fromStatus === $toStatus) {
             return true;

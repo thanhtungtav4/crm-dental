@@ -24,13 +24,12 @@ class FactoryOrderPolicy
 
     public function update(User $user, FactoryOrder $factoryOrder): bool
     {
-        return $this->view($user, $factoryOrder);
+        return $this->view($user, $factoryOrder) && $factoryOrder->isEditable();
     }
 
     public function delete(User $user, FactoryOrder $factoryOrder): bool
     {
-        return $this->update($user, $factoryOrder)
-            && $factoryOrder->status === FactoryOrder::STATUS_DRAFT;
+        return $this->update($user, $factoryOrder);
     }
 
     public function restore(User $user, FactoryOrder $factoryOrder): bool
