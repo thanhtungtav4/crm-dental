@@ -116,7 +116,7 @@
 - Dependencies:
   - `SUP-001`
 - Suggested order: 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-004`
 
 ## [SUP-005] Order va item mutation surfaces mo sau khi qua phase editable
@@ -229,7 +229,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 2
+- Open high count: 1
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: fix `SUP-004` de khoa race condition `order_no`, sau do chot `SUP-005` cho workflow mutation boundary cua order/item.
+- Next recommended action: fix `SUP-005` de khoa workflow mutation boundary cua order/item, sau do chot `SUP-007` de dua report labo ve dung datasource.

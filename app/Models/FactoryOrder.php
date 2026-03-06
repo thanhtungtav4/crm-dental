@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FactoryOrderNumberGenerator;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -202,19 +203,7 @@ class FactoryOrder extends Model
 
     public static function generateOrderNo(): string
     {
-        $date = now()->format('Ymd');
-        $lastOrderNo = static::query()
-            ->whereDate('created_at', today())
-            ->where('order_no', 'like', "LAB-{$date}-%")
-            ->orderByDesc('id')
-            ->value('order_no');
-
-        $lastSequence = 0;
-        if (is_string($lastOrderNo) && preg_match('/LAB-\d{8}-(\d{4})$/', $lastOrderNo, $matches) === 1) {
-            $lastSequence = (int) ($matches[1] ?? 0);
-        }
-
-        return sprintf('LAB-%s-%04d', $date, $lastSequence + 1);
+        return app(FactoryOrderNumberGenerator::class)->next();
     }
 
     public function scopeBranchAccessible(Builder $query): Builder

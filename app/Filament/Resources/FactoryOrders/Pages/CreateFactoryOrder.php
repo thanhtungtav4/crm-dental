@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\FactoryOrders\Pages;
 
 use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
+use App\Models\FactoryOrder;
 use App\Services\FactoryOrderAuthorizer;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class CreateFactoryOrder extends CreateRecord
 {
@@ -18,5 +21,13 @@ class CreateFactoryOrder extends CreateRecord
         }
 
         return app(FactoryOrderAuthorizer::class)->sanitizeFactoryOrderData(auth()->user(), $data);
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        return DB::transaction(
+            fn (): Model => FactoryOrder::query()->create($data),
+            attempts: 5,
+        );
     }
 }
