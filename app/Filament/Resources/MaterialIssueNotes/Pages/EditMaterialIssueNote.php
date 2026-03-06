@@ -25,7 +25,8 @@ class EditMaterialIssueNote extends EditRecord
                     $this->record->post(auth()->id());
                     $this->refreshFormData(['status', 'posted_at', 'posted_by']);
                 }),
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->visible(fn (): bool => $this->record->status === MaterialIssueNote::STATUS_DRAFT),
         ];
     }
 }

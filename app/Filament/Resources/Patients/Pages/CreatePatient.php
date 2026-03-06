@@ -23,7 +23,11 @@ class CreatePatient extends CreateRecord
         }
 
         if (! empty($data['email'])) {
-            $exists = Patient::withTrashed()->where('email', $data['email'])->exists();
+            $emailHash = Patient::emailSearchHash((string) $data['email']);
+            $exists = $emailHash !== null
+                ? Patient::withTrashed()->where('email_search_hash', $emailHash)->exists()
+                : false;
+
             if ($exists) {
                 throw ValidationException::withMessages([
                     'email' => 'Email bệnh nhân đã tồn tại.',
@@ -31,14 +35,17 @@ class CreatePatient extends CreateRecord
             }
         }
         if (! empty($data['phone'])) {
-            $exists = Patient::withTrashed()
-                ->where('phone', $data['phone'])
-                ->when(
-                    ! empty($data['first_branch_id']),
-                    fn ($query) => $query->where('first_branch_id', $data['first_branch_id']),
-                    fn ($query) => $query->whereNull('first_branch_id')
-                )
-                ->exists();
+            $phoneHash = Patient::phoneSearchHash((string) $data['phone']);
+            $exists = $phoneHash !== null
+                ? Patient::withTrashed()
+                    ->where('phone_search_hash', $phoneHash)
+                    ->when(
+                        ! empty($data['first_branch_id']),
+                        fn ($query) => $query->where('first_branch_id', $data['first_branch_id']),
+                        fn ($query) => $query->whereNull('first_branch_id')
+                    )
+                    ->exists()
+                : false;
             if ($exists) {
                 throw ValidationException::withMessages([
                     'phone' => 'Số điện thoại bệnh nhân đã tồn tại trong chi nhánh đã chọn.',

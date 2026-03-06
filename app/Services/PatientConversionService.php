@@ -14,9 +14,8 @@ class PatientConversionService
 {
     /**
      * Convert a Customer (Lead) to a Patient.
-     * 
-     * @param Customer $customer
-     * @param Appointment|null $appointment Optional appointment context
+     *
+     * @param  Appointment|null  $appointment  Optional appointment context
      * @return Patient|null Returns the patient instance or null on failure
      */
     public function convert(Customer $customer, ?Appointment $appointment = null): ?Patient
@@ -79,7 +78,7 @@ class PatientConversionService
                 return $patient;
 
             } catch (\Exception $e) {
-                Log::error("Failed to convert customer {$customer->id} to patient: " . $e->getMessage());
+                Log::error("Failed to convert customer {$customer->id} to patient: ".$e->getMessage());
 
                 Notification::make()
                     ->title('Lỗi chuyển đổi dữ liệu')
@@ -100,8 +99,7 @@ class PatientConversionService
         Patient $patient,
         ?Appointment $appointment,
         ?int $targetBranchId = null,
-    ): Patient
-    {
+    ): Patient {
         $dirtyPatient = false;
         $linkedToCurrentCustomer = false;
 
@@ -123,7 +121,7 @@ class PatientConversionService
         }
 
         // Link appointment if needed
-        if ($appointment && !$appointment->patient_id) {
+        if ($appointment && ! $appointment->patient_id) {
             $appointment->patient_id = $patient->id;
             $appointment->customer_id = $appointment->customer_id ?: $customer->id;
             $appointment->saveQuietly();
@@ -144,10 +142,14 @@ class PatientConversionService
 
     protected function findByPhoneAndClinic(string $phone, ?int $branchId): ?Patient
     {
-        $exactMatch = Patient::query()
-            ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
-            ->where('phone', $phone)
-            ->first();
+        $phoneHash = Patient::phoneSearchHash($phone);
+
+        $exactMatch = $phoneHash !== null
+            ? Patient::query()
+                ->when($branchId, fn ($query) => $query->where('first_branch_id', $branchId))
+                ->where('phone_search_hash', $phoneHash)
+                ->first()
+            : null;
 
         if ($exactMatch) {
             return $exactMatch;
@@ -181,7 +183,7 @@ class PatientConversionService
         }
 
         return Str::startsWith($normalized, '84')
-            ? '0' . substr($normalized, 2)
+            ? '0'.substr($normalized, 2)
             : $normalized;
     }
 

@@ -54,7 +54,7 @@ class DeliveriesRelationManager extends RelationManager
                 TextColumn::make('sent_at')
                     ->label('Thời gian gửi')
                     ->dateTime('d/m/Y H:i')
-                    ->default('-'),
+                    ->placeholder('-'),
             ])
             ->filters([
                 //

@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Material;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class MaterialPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Material');
+        return $authUser->can('ViewAny:Material') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, Material $material): bool
+    public function view(User $authUser, Material $material): bool
     {
-        return $authUser->can('View:Material');
+        return $authUser->can('View:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:Material');
+        return $authUser->can('Create:Material') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, Material $material): bool
+    public function update(User $authUser, Material $material): bool
     {
-        return $authUser->can('Update:Material');
+        return $authUser->can('Update:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function delete(AuthUser $authUser, Material $material): bool
+    public function delete(User $authUser, Material $material): bool
     {
-        return $authUser->can('Delete:Material');
+        return $authUser->can('Delete:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function restore(AuthUser $authUser, Material $material): bool
+    public function restore(User $authUser, Material $material): bool
     {
-        return $authUser->can('Restore:Material');
+        return $authUser->can('Restore:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function forceDelete(AuthUser $authUser, Material $material): bool
+    public function forceDelete(User $authUser, Material $material): bool
     {
-        return $authUser->can('ForceDelete:Material');
+        return $authUser->can('ForceDelete:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Material');
+        return $authUser->can('ForceDeleteAny:Material') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Material');
+        return $authUser->can('RestoreAny:Material') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, Material $material): bool
+    public function replicate(User $authUser, Material $material): bool
     {
-        return $authUser->can('Replicate:Material');
+        return $authUser->can('Replicate:Material') && $this->canAccessMaterial($authUser, $material);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:Material');
+        return $authUser->can('Reorder:Material') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessMaterial(User $authUser, Material $material): bool
+    {
+        return $authUser->canAccessBranch($material->branch_id !== null ? (int) $material->branch_id : null);
+    }
 }

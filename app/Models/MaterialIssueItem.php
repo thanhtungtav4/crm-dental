@@ -34,6 +34,17 @@ class MaterialIssueItem extends Model
     protected static function booted(): void
     {
         static::saving(function (self $item): void {
+            $issueNote = MaterialIssueNote::query()
+                ->whereKey((int) $item->material_issue_note_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($issueNote && $issueNote->status !== MaterialIssueNote::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'material_issue_note_id' => 'Phiếu đã xuất kho không thể cập nhật vật tư.',
+                ]);
+            }
+
             $quantity = (int) ($item->quantity ?? 0);
             if ($quantity <= 0) {
                 throw ValidationException::withMessages([
@@ -50,6 +61,19 @@ class MaterialIssueItem extends Model
             }
 
             $item->total_cost = round($quantity * max((float) $item->unit_cost, 0), 2);
+        });
+
+        static::deleting(function (self $item): void {
+            $issueNote = MaterialIssueNote::query()
+                ->whereKey((int) $item->material_issue_note_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($issueNote && $issueNote->status !== MaterialIssueNote::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'material_issue_note_id' => 'Phiếu đã xuất kho không thể xóa vật tư.',
+                ]);
+            }
         });
     }
 

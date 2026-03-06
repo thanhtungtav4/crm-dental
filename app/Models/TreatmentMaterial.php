@@ -79,6 +79,12 @@ class TreatmentMaterial extends Model
             }
         });
 
+        static::updating(function (): void {
+            throw ValidationException::withMessages([
+                'treatment_material' => 'Không hỗ trợ chỉnh sửa vật tư đã ghi nhận để tránh sai lệch tồn kho. Vui lòng xóa và tạo lại.',
+            ]);
+        });
+
         static::created(function (self $usage) {
             if (! $usage->material_id || ! $usage->quantity) {
                 return;

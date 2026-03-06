@@ -22,6 +22,10 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
     $patient = Patient::factory()->create([
         'customer_id' => $customer->id,
         'first_branch_id' => $branch->id,
+        'phone' => '0901234567',
+        'email' => 'phi.patient@example.com',
+        'address' => '123 Nguyen Trai, Quan 1',
+        'cccd' => '079203001234',
         'medical_history' => 'Tiểu đường type 2 và tăng huyết áp.',
     ]);
 
@@ -98,6 +102,10 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
     ]);
 
     $rawPatient = DB::table('patients')->where('id', $patient->id)->value('medical_history');
+    $rawPatientPhone = DB::table('patients')->where('id', $patient->id)->value('phone');
+    $rawPatientEmail = DB::table('patients')->where('id', $patient->id)->value('email');
+    $rawPatientAddress = DB::table('patients')->where('id', $patient->id)->value('address');
+    $rawPatientCccd = DB::table('patients')->where('id', $patient->id)->value('cccd');
     $rawRecord = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('additional_notes');
     $rawNote = DB::table('clinical_notes')->where('id', $note->id)->value('examination_note');
     $rawOrder = DB::table('clinical_orders')->where('id', $order->id)->value('notes');
@@ -107,6 +115,10 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
     $rawConsent = DB::table('consents')->where('patient_id', $patient->id)->value('note');
 
     expect((string) $rawPatient)->not->toBe('Tiểu đường type 2 và tăng huyết áp.')
+        ->and((string) $rawPatientPhone)->not->toBe('0901234567')
+        ->and((string) $rawPatientEmail)->not->toBe('phi.patient@example.com')
+        ->and((string) $rawPatientAddress)->not->toBe('123 Nguyen Trai, Quan 1')
+        ->and((string) $rawPatientCccd)->not->toBe('079203001234')
         ->and((string) $rawRecord)->not->toBe('Dị ứng thuốc tê nhóm amid.')
         ->and((string) $rawNote)->not->toBe('Răng 26 đau khi gõ.')
         ->and((string) $rawOrder)->not->toBe('Chụp panorama kiểm tra quanh chóp.')
@@ -116,6 +128,10 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
         ->and((string) $rawConsent)->not->toBe('Đã giải thích rủi ro điều trị.');
 
     expect($patient->fresh()->medical_history)->toBe('Tiểu đường type 2 và tăng huyết áp.')
+        ->and($patient->fresh()->phone)->toBe('0901234567')
+        ->and($patient->fresh()->email)->toBe('phi.patient@example.com')
+        ->and($patient->fresh()->address)->toBe('123 Nguyen Trai, Quan 1')
+        ->and($patient->fresh()->cccd)->toBe('079203001234')
         ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->additional_notes)->toBe('Dị ứng thuốc tê nhóm amid.')
         ->and($note->fresh()->examination_note)->toBe('Răng 26 đau khi gõ.')
         ->and($order->fresh()->notes)->toBe('Chụp panorama kiểm tra quanh chóp.')

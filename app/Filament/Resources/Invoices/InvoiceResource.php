@@ -46,7 +46,9 @@ class InvoiceResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()
+            ->withSum('payments as payments_sum_amount', 'amount')
+            ->withExists('payments');
         $authUser = auth()->user();
 
         if (! $authUser instanceof User || $authUser->hasRole('Admin')) {

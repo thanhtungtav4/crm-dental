@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Patients\Tables;
 
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Models\Patient;
 use App\Services\DoctorBranchAssignmentService;
 use App\Services\PatientBranchTransferService;
 use App\Support\ActionPermission;
@@ -42,7 +43,15 @@ class PatientsTable
                     ->searchable(),
                 TextColumn::make('phone')
                     ->label('Điện thoại')
-                    ->searchable(),
+                    ->searchable(query: function ($query, string $search) {
+                        $phoneHash = Patient::phoneSearchHash($search);
+
+                        if ($phoneHash === null) {
+                            return $query->whereRaw('1 = 0');
+                        }
+
+                        return $query->where('phone_search_hash', $phoneHash);
+                    }),
                 TextColumn::make('phone_secondary')
                     ->label('Điện thoại 2')
                     ->searchable()
@@ -50,7 +59,6 @@ class PatientsTable
                 TextColumn::make('address')
                     ->label('Địa chỉ')
                     ->limit(40)
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('medical_history')
                     ->label('Tiền sử bệnh')

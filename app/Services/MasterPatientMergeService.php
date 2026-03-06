@@ -681,10 +681,11 @@ class MasterPatientMergeService
      */
     protected function snapshotPatient(Patient $patient): array
     {
+        $attributes = $patient->attributesToArray();
         $snapshot = [];
 
         foreach (self::SNAPSHOT_FIELDS as $field) {
-            $snapshot[$field] = $patient->getRawOriginal($field);
+            $snapshot[$field] = $attributes[$field] ?? null;
         }
 
         return $snapshot;

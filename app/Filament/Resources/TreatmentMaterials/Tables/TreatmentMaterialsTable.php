@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\TreatmentMaterials\Tables;
 
-use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -39,7 +39,10 @@ class TreatmentMaterialsTable
                 TextColumn::make('user.name')->label('Người dùng')->toggleable(),
             ])
             ->recordActions([
-                EditAction::make(),
+                DeleteAction::make()
+                    ->label('Xóa để tạo lại')
+                    ->tooltip('Vật tư đã ghi nhận không hỗ trợ sửa trực tiếp để đảm bảo tồn kho chính xác.')
+                    ->requiresConfirmation(),
             ]);
     }
 }

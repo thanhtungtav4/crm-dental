@@ -8,6 +8,7 @@ use App\Filament\Resources\MaterialBatches\Pages\ListMaterialBatches;
 use App\Filament\Resources\MaterialBatches\Schemas\MaterialBatchForm;
 use App\Filament\Resources\MaterialBatches\Tables\MaterialBatchesTable;
 use App\Models\MaterialBatch;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -29,7 +30,7 @@ class MaterialBatchResource extends Resource
     protected static ?string $pluralModelLabel = 'Lô vật tư';
 
     protected static ?int $navigationSort = 42;
-    
+
     public static function getNavigationGroup(): ?string
     {
         return 'Quản lý kho';
@@ -61,9 +62,28 @@ class MaterialBatchResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('material', function (Builder $materialQuery) use ($branchIds): void {
+            $materialQuery->whereIn('branch_id', $branchIds);
+        });
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

@@ -11,7 +11,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class TreatmentMaterialPolicy
 {
     use HandlesAuthorization;
-    
+
     public function viewAny(User $authUser): bool
     {
         return $authUser->can('ViewAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
@@ -29,7 +29,7 @@ class TreatmentMaterialPolicy
 
     public function update(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Update:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
+        return false;
     }
 
     public function delete(User $authUser, TreatmentMaterial $treatmentMaterial): bool
@@ -59,7 +59,7 @@ class TreatmentMaterialPolicy
 
     public function replicate(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Replicate:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
+        return false;
     }
 
     public function reorder(User $authUser): bool

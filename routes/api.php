@@ -30,7 +30,7 @@ Route::prefix('v1/emr/internal')
 Route::prefix('v1/mobile')
     ->group(function (): void {
         Route::post('/auth/token', [MobileAuthController::class, 'store'])
-            ->middleware('throttle:api-mobile')
+            ->middleware('throttle:mobile-auth')
             ->name('api.v1.mobile.auth.token');
 
         Route::middleware(['auth:sanctum', 'ability:mobile:read', 'throttle:api-mobile'])

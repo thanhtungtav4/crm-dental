@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\Patients\Schemas;
 
+use App\Models\Patient;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\Rule;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class PatientForm
 {
@@ -116,20 +117,33 @@ class PatientForm
                 ->label('Điện thoại')
                 ->tel()
                 ->maxLength(20)
-                ->rule(function (callable $get, $record) {
-                    $branchId = $get('first_branch_id');
+                ->rule(function (callable $get, $record): \Closure {
+                    return function (string $attribute, mixed $value, \Closure $fail) use ($get, $record): void {
+                        if (! is_string($value) || trim($value) === '') {
+                            return;
+                        }
 
-                    return Rule::unique('patients', 'phone')
-                        ->ignore($record?->id)
-                        ->where(function ($query) use ($branchId): void {
-                            if ($branchId) {
-                                $query->where('first_branch_id', $branchId);
+                        $phoneHash = Patient::phoneSearchHash($value);
+                        if ($phoneHash === null) {
+                            return;
+                        }
 
-                                return;
-                            }
+                        $branchId = $get('first_branch_id');
 
-                            $query->whereNull('first_branch_id');
-                        });
+                        $exists = Patient::withTrashed()
+                            ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
+                            ->where('phone_search_hash', $phoneHash)
+                            ->when(
+                                $branchId,
+                                fn (EloquentBuilder $query): EloquentBuilder => $query->where('first_branch_id', $branchId),
+                                fn (EloquentBuilder $query): EloquentBuilder => $query->whereNull('first_branch_id')
+                            )
+                            ->exists();
+
+                        if ($exists) {
+                            $fail('Số điện thoại đã tồn tại trong chi nhánh đã chọn.');
+                        }
+                    };
                 })
                 ->validationMessages([
                     'unique' => 'Số điện thoại đã tồn tại trong chi nhánh đã chọn.',
@@ -145,7 +159,27 @@ class PatientForm
             Forms\Components\TextInput::make('email')
                 ->label('Email')
                 ->email()
-                ->unique(table: 'patients', column: 'email', ignoreRecord: true)
+                ->rule(function ($record): \Closure {
+                    return function (string $attribute, mixed $value, \Closure $fail) use ($record): void {
+                        if (! is_string($value) || trim($value) === '') {
+                            return;
+                        }
+
+                        $emailHash = Patient::emailSearchHash($value);
+                        if ($emailHash === null) {
+                            return;
+                        }
+
+                        $exists = Patient::withTrashed()
+                            ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
+                            ->where('email_search_hash', $emailHash)
+                            ->exists();
+
+                        if ($exists) {
+                            $fail('Email bệnh nhân đã tồn tại.');
+                        }
+                    };
+                })
                 ->nullable(),
 
             Forms\Components\TextInput::make('occupation')

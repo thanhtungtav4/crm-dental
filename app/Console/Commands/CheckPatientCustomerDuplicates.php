@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CheckPatientCustomerDuplicates extends Command
 {
@@ -92,15 +94,15 @@ class CheckPatientCustomerDuplicates extends Command
     protected function renderPhoneDuplicates(): void
     {
         $rows = DB::table('patients')
-            ->selectRaw('first_branch_id, phone, COUNT(*) as total_patients, GROUP_CONCAT(id ORDER BY created_at ASC, id ASC) as patient_ids')
-            ->whereNotNull('phone')
-            ->whereRaw("TRIM(phone) <> ''")
-            ->groupBy('first_branch_id', 'phone')
+            ->selectRaw('first_branch_id, phone_search_hash, COUNT(*) as total_patients, GROUP_CONCAT(id ORDER BY created_at ASC, id ASC) as patient_ids')
+            ->whereNotNull('phone_search_hash')
+            ->groupBy('first_branch_id', 'phone_search_hash')
             ->havingRaw('COUNT(*) > 1')
             ->get();
 
         if ($rows->isEmpty()) {
             $this->info('Khong co duplicate phone + chi nhanh.');
+
             return;
         }
 
@@ -108,11 +110,29 @@ class CheckPatientCustomerDuplicates extends Command
             ['first_branch_id', 'phone', 'total_patients', 'patient_ids'],
             $rows->map(fn (object $row) => [
                 $row->first_branch_id,
-                $row->phone,
+                $this->resolveDisplayPhone($row),
                 $row->total_patients,
                 $row->patient_ids,
             ])->all()
         );
     }
-}
 
+    protected function resolveDisplayPhone(object $row): string
+    {
+        $rawPhone = DB::table('patients')
+            ->where('first_branch_id', $row->first_branch_id)
+            ->where('phone_search_hash', $row->phone_search_hash)
+            ->orderBy('id')
+            ->value('phone');
+
+        if (! is_string($rawPhone) || trim($rawPhone) === '') {
+            return '[hidden]';
+        }
+
+        try {
+            return (string) Crypt::decryptString($rawPhone);
+        } catch (Throwable) {
+            return '[legacy-plain] '.$rawPhone;
+        }
+    }
+}

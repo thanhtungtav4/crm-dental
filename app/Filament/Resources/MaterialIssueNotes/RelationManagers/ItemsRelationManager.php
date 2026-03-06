@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MaterialIssueNotes\RelationManagers;
 
+use App\Models\MaterialIssueNote;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -21,6 +22,11 @@ class ItemsRelationManager extends RelationManager
     protected static string $relationship = 'items';
 
     protected static ?string $title = 'Vật tư xuất kho';
+
+    public function isReadOnly(): bool
+    {
+        return $this->ownerRecord->status !== MaterialIssueNote::STATUS_DRAFT;
+    }
 
     public function form(Schema $schema): Schema
     {

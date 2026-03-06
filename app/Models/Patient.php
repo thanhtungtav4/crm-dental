@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class Patient extends Model
 {
@@ -29,9 +30,11 @@ class Patient extends Model
         'cccd',
         'gender',
         'phone',
+        'phone_search_hash',
         'phone_secondary',
         'occupation',
         'address',
+        'email_search_hash',
         'customer_group_id',
         'promotion_group_id',
         'primary_doctor_id',
@@ -47,6 +50,10 @@ class Patient extends Model
     protected $casts = [
         'birthday' => 'date',
         'last_verified_at' => 'datetime',
+        'email' => NullableEncrypted::class,
+        'phone' => NullableEncrypted::class,
+        'address' => NullableEncrypted::class,
+        'cccd' => NullableEncrypted::class,
         'medical_history' => NullableEncrypted::class,
     ];
 
@@ -248,6 +255,11 @@ class Patient extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $patient): void {
+            $patient->phone_search_hash = static::phoneSearchHash($patient->phone);
+            $patient->email_search_hash = static::emailSearchHash($patient->email);
+        });
+
         static::deleting(function (self $patient) {
             // Prevent any deletion (soft or force) via model events
             return false;
@@ -309,5 +321,52 @@ class Patient extends Model
                 }
             }
         });
+    }
+
+    public static function phoneSearchHash(?string $phone): ?string
+    {
+        $normalized = static::normalizePhoneForSearch($phone);
+
+        return $normalized === null
+            ? null
+            : hash('sha256', 'patient-phone|'.$normalized);
+    }
+
+    public static function emailSearchHash(?string $email): ?string
+    {
+        $normalized = static::normalizeEmailForSearch($email);
+
+        return $normalized === null
+            ? null
+            : hash('sha256', 'patient-email|'.$normalized);
+    }
+
+    public static function normalizePhoneForSearch(?string $phone): ?string
+    {
+        if ($phone === null || trim($phone) === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone) ?: '';
+        if ($digits === '') {
+            return null;
+        }
+
+        if (Str::startsWith($digits, '84')) {
+            return '0'.substr($digits, 2);
+        }
+
+        return $digits;
+    }
+
+    public static function normalizeEmailForSearch(?string $email): ?string
+    {
+        if ($email === null) {
+            return null;
+        }
+
+        $normalized = Str::lower(trim($email));
+
+        return $normalized !== '' ? $normalized : null;
     }
 }

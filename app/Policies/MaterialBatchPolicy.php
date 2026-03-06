@@ -4,67 +4,79 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\MaterialBatch;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class MaterialBatchPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:MaterialBatch');
+        return $authUser->can('ViewAny:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function view(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function view(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('View:MaterialBatch');
+        return $authUser->can('View:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:MaterialBatch');
+        return $authUser->can('Create:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function update(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function update(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Update:MaterialBatch');
+        return $authUser->can('Update:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function delete(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function delete(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Delete:MaterialBatch');
+        return $authUser->can('Delete:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function restore(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function restore(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Restore:MaterialBatch');
+        return $authUser->can('Restore:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function forceDelete(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function forceDelete(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('ForceDelete:MaterialBatch');
+        return $authUser->can('ForceDelete:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:MaterialBatch');
+        return $authUser->can('ForceDeleteAny:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:MaterialBatch');
+        return $authUser->can('RestoreAny:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
     }
 
-    public function replicate(AuthUser $authUser, MaterialBatch $materialBatch): bool
+    public function replicate(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Replicate:MaterialBatch');
+        return $authUser->can('Replicate:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:MaterialBatch');
+        return $authUser->can('Reorder:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
     }
 
+    protected function canAccessMaterialBatch(User $authUser, MaterialBatch $materialBatch): bool
+    {
+        $branchId = $materialBatch->material?->branch_id;
+
+        if ($branchId === null && $materialBatch->material_id !== null) {
+            $branchId = $materialBatch->material()
+                ->withoutGlobalScopes()
+                ->value('branch_id');
+        }
+
+        return $authUser->canAccessBranch($branchId !== null ? (int) $branchId : null);
+    }
 }

@@ -330,6 +330,10 @@ class Invoice extends Model
      */
     public function getTotalPaid(): float
     {
+        if (array_key_exists('payments_sum_amount', $this->attributes)) {
+            return (float) ($this->attributes['payments_sum_amount'] ?? 0);
+        }
+
         return (float) $this->payments()->sum('amount');
     }
 
@@ -565,6 +569,10 @@ class Invoice extends Model
      */
     public function hasPayments(): bool
     {
+        if (array_key_exists('payments_exists', $this->attributes)) {
+            return (bool) $this->attributes['payments_exists'];
+        }
+
         return $this->payments()->exists();
     }
 

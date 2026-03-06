@@ -96,6 +96,24 @@ class MaterialIssueNote extends Model
                     ]);
                 }
             }
+
+            if (
+                $note->exists
+                && (string) ($note->getOriginal('status') ?? static::STATUS_DRAFT) === static::STATUS_POSTED
+                && $note->isDirty()
+            ) {
+                throw ValidationException::withMessages([
+                    'status' => 'Phiếu đã xuất kho không thể chỉnh sửa.',
+                ]);
+            }
+        });
+
+        static::deleting(function (self $note): void {
+            if ($note->status === static::STATUS_POSTED) {
+                throw ValidationException::withMessages([
+                    'status' => 'Phiếu đã xuất kho không thể xóa.',
+                ]);
+            }
         });
     }
 
@@ -141,31 +159,54 @@ class MaterialIssueNote extends Model
      */
     public function post(?int $actorId = null): array
     {
-        if ($this->status === static::STATUS_POSTED) {
-            return [];
-        }
-
-        if ($this->status !== static::STATUS_DRAFT) {
-            throw ValidationException::withMessages([
-                'status' => 'Chỉ phiếu nháp mới được xuất kho.',
-            ]);
-        }
-
-        if ($this->items()->count() === 0) {
-            throw ValidationException::withMessages([
-                'items' => 'Phiếu xuất chưa có vật tư.',
-            ]);
-        }
-
         $lowStockWarnings = [];
 
         DB::transaction(function () use (&$lowStockWarnings, $actorId): void {
-            $this->loadMissing('items.material');
+            $lockedNote = static::query()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            foreach ($this->items as $item) {
-                $material = $item->material;
+            if ($lockedNote->status === static::STATUS_POSTED) {
+                return;
+            }
+
+            if ($lockedNote->status !== static::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'status' => 'Chỉ phiếu nháp mới được xuất kho.',
+                ]);
+            }
+
+            $items = $lockedNote->items()
+                ->lockForUpdate()
+                ->get();
+
+            if ($items->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => 'Phiếu xuất chưa có vật tư.',
+                ]);
+            }
+
+            $materialIds = $items->pluck('material_id')
+                ->filter(static fn (mixed $materialId): bool => is_numeric($materialId))
+                ->map(static fn (mixed $materialId): int => (int) $materialId)
+                ->unique()
+                ->sort()
+                ->values();
+
+            $materialsById = Material::query()
+                ->whereIn('id', $materialIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($items as $item) {
+                $material = $materialsById->get((int) $item->material_id);
                 if (! $material) {
-                    continue;
+                    throw ValidationException::withMessages([
+                        'items' => 'Không tìm thấy vật tư cho một hoặc nhiều dòng xuất kho.',
+                    ]);
                 }
 
                 $quantity = (int) $item->quantity;
@@ -175,9 +216,9 @@ class MaterialIssueNote extends Model
                     ]);
                 }
 
-                $material->decrement('stock_qty', $quantity);
+                $material->stock_qty = (int) $material->stock_qty - $quantity;
+                $material->save();
 
-                $material->refresh();
                 if ($material->isLowStock()) {
                     $lowStockWarnings[] = sprintf(
                         '%s (tồn: %d, min: %d)',
@@ -189,22 +230,24 @@ class MaterialIssueNote extends Model
 
                 InventoryTransaction::query()->create([
                     'material_id' => $material->id,
-                    'branch_id' => $this->branch_id,
-                    'material_issue_note_id' => $this->id,
+                    'branch_id' => $lockedNote->branch_id,
+                    'material_issue_note_id' => $lockedNote->id,
                     'type' => 'out',
                     'quantity' => $quantity,
                     'unit_cost' => (float) $item->unit_cost,
-                    'note' => 'Xuất theo phiếu: '.$this->note_no,
+                    'note' => 'Xuất theo phiếu: '.$lockedNote->note_no,
                     'created_by' => $actorId ?? auth()->id(),
                 ]);
             }
 
-            $this->forceFill([
+            $lockedNote->forceFill([
                 'status' => static::STATUS_POSTED,
                 'posted_at' => now(),
                 'posted_by' => $actorId ?? auth()->id(),
             ])->save();
         }, 3);
+
+        $this->refresh();
 
         return array_values(array_unique($lowStockWarnings));
     }

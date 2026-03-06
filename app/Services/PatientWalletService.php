@@ -25,19 +25,15 @@ class PatientWalletService
         }
 
         DB::transaction(function () use ($payment, $invoice, $patient, $entryDefinition): void {
-            $wallet = PatientWallet::query()->firstOrCreate(
+            PatientWallet::query()->firstOrCreate(
                 ['patient_id' => $patient->id],
                 ['branch_id' => $payment->branch_id ?? $invoice->branch_id, 'balance' => 0]
             );
 
-            $existingEntry = WalletLedgerEntry::query()
-                ->where('payment_id', $payment->id)
-                ->where('entry_type', $entryDefinition['entry_type'])
-                ->first();
-
-            if ($existingEntry) {
-                return;
-            }
+            $wallet = PatientWallet::query()
+                ->where('patient_id', $patient->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $amount = abs((float) $payment->amount);
             $balanceBefore = (float) $wallet->balance;
@@ -51,13 +47,14 @@ class PatientWalletService
                 ]);
             }
 
-            WalletLedgerEntry::query()->create([
+            $entry = WalletLedgerEntry::query()->firstOrCreate([
+                'payment_id' => $payment->id,
+                'entry_type' => $entryDefinition['entry_type'],
+            ], [
                 'patient_wallet_id' => $wallet->id,
                 'patient_id' => $patient->id,
                 'branch_id' => $payment->branch_id ?? $invoice->branch_id,
-                'payment_id' => $payment->id,
                 'invoice_id' => $invoice->id,
-                'entry_type' => $entryDefinition['entry_type'],
                 'direction' => $entryDefinition['direction'],
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,
@@ -71,6 +68,10 @@ class PatientWalletService
                 ],
                 'created_by' => $payment->received_by,
             ]);
+
+            if (! $entry->wasRecentlyCreated) {
+                return;
+            }
 
             $wallet->balance = $balanceAfter;
 
@@ -93,7 +94,10 @@ class PatientWalletService
     public function adjustBalance(PatientWallet $wallet, float $amount, string $note, ?int $actorId = null): WalletLedgerEntry
     {
         return DB::transaction(function () use ($wallet, $amount, $note, $actorId): WalletLedgerEntry {
-            $wallet->refresh();
+            $wallet = PatientWallet::query()
+                ->whereKey($wallet->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $balanceBefore = (float) $wallet->balance;
             $balanceAfter = $balanceBefore + $amount;

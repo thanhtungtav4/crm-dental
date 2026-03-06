@@ -8,6 +8,7 @@ use App\Filament\Resources\Materials\Pages\ListMaterials;
 use App\Filament\Resources\Materials\Schemas\MaterialForm;
 use App\Filament\Resources\Materials\Tables\MaterialsTable;
 use App\Models\Material;
+use App\Support\BranchAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -31,7 +32,7 @@ class MaterialResource extends Resource
     {
         return 'Quản lý kho';
     }
-    
+
     protected static ?int $navigationSort = 41;
 
     public static function form(Schema $schema): Schema
@@ -60,9 +61,16 @@ class MaterialResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        return BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

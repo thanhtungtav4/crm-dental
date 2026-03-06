@@ -87,6 +87,17 @@ class AppServiceProvider extends ServiceProvider
                 ->by(($tokenId ? 'token:'.$tokenId : 'ip:'.$request->ip()));
         });
 
+        RateLimiter::for('mobile-auth', function (Request $request): array {
+            $email = Str::lower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(10)
+                    ->by('mobile-auth:ip:'.$request->ip()),
+                Limit::perMinute(5)
+                    ->by('mobile-auth:email:'.sha1($email.'|'.$request->ip())),
+            ];
+        });
+
         // Register Appointment Observer
         Appointment::observe(AppointmentObserver::class);
         ClinicalNote::observe(ClinicalNoteVersionObserver::class);
