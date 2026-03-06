@@ -3,8 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\BranchAccess;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -156,5 +158,58 @@ class User extends Authenticatable implements FilamentUser, HasPasskeys
         }
 
         return count($this->accessibleBranchIds()) > 0;
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole('Admin')) {
+            return $query;
+        }
+
+        if (! $user->can('ViewAny:User')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $query) use ($branchIds): void {
+            $query->whereIn('branch_id', $branchIds)
+                ->orWhereHas('activeDoctorBranchAssignments', function (Builder $assignmentQuery) use ($branchIds): void {
+                    $assignmentQuery->whereIn('branch_id', $branchIds);
+                });
+        });
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (! $user->can('View:User')) {
+            return false;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+        if ($branchIds === []) {
+            return false;
+        }
+
+        if (in_array((int) ($this->branch_id ?? 0), $branchIds, true)) {
+            return true;
+        }
+
+        return $this->activeDoctorBranchAssignments()
+            ->whereIn('branch_id', $branchIds)
+            ->exists();
     }
 }

@@ -11,14 +11,15 @@ use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-   protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
     public static function getNavigationLabel(): string
     {
@@ -29,7 +30,7 @@ class UserResource extends Resource
     {
         return 'Quản lý nhân sự';
     }
-    
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
@@ -42,9 +43,21 @@ class UserResource extends Resource
         return UsersTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['branch', 'roles', 'activeDoctorBranchAssignments'])
+            ->visibleTo(auth()->user());
+    }
+
     public static function getRelations(): array
     {
         return [];
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 
     public static function getPages(): array

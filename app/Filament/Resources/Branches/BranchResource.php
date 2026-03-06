@@ -31,7 +31,7 @@ class BranchResource extends Resource
     {
         return 'Quản lý chi nhánh';
     }
-    
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
@@ -42,6 +42,13 @@ class BranchResource extends Resource
     public static function table(Table $table): Table
     {
         return BranchesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['manager', 'overbookingPolicy'])
+            ->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array
@@ -62,7 +69,7 @@ class BranchResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return static::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

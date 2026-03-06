@@ -235,7 +235,7 @@
 | GOV-004 | High | Data Integrity | AuditLog thuong chua immutable va thieu structured context | In Fix | Dang bo sung `branch_id`, `patient_id`, `occurred_at` va immutable guard. |
 | GOV-005 | High | Concurrency | Tao request chuyen chi nhanh chua an toan truoc race-condition | In Fix | `requestTransfer()` va `rejectTransferRequest()` dang duoc harden bang transaction + row lock + regression test. |
 | GOV-006 | High | Maintainability | BranchLog dang la system log nhung van co edit/delete surface | In Fix | Resource da bi cat create/edit/delete; model dang duoc khoa immutable + branch-scoped view. |
-| GOV-007 | High | Security | Resource GOV chua branch-aware o query layer | Open | Chua ap dung nhat quan `BranchAccess` trong resource GOV. |
+| GOV-007 | High | Security | Resource GOV chua branch-aware o query layer | In Fix | `BranchResource` va `UserResource` dang duoc bo sung query scope + route binding scope + delegated-view tests. |
 | GOV-008 | Medium | Maintainability | Coverage chua chan regression o RBAC va transfer concurrency | Open | Thieu test cho escalation, audit auth va duplicate pending transfer. |
 
 # Dependencies

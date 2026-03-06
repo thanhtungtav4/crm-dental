@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\BranchAccess;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -68,6 +70,42 @@ class Branch extends Model
     public function overbookingPolicy()
     {
         return $this->hasOne(BranchOverbookingPolicy::class);
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole('Admin')) {
+            return $query;
+        }
+
+        if (! $user->can('ViewAny:Branch')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('id', $branchIds);
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (! $user->can('View:Branch')) {
+            return false;
+        }
+
+        return in_array((int) $this->getKey(), BranchAccess::accessibleBranchIds($user, false), true);
     }
 
     protected static function booted(): void

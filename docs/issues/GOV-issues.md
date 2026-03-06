@@ -230,7 +230,7 @@
 - Dependencies:
   - PAT, APPT, FIN, INV
 - Suggested order: 7
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-006`
 
 ## [GOV-008] Coverage chua chan regression o RBAC va transfer concurrency
@@ -261,7 +261,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
+- Open high count: 0
 - Open medium count: 1
 - Open low count: 0
-- Next recommended action: hoan tat commit `TASK-GOV-006`, sau do tiep tuc `TASK-GOV-007` va chuan bi re-audit GOV.
+- Next recommended action: hoan tat commit `TASK-GOV-007`, sau do chuyen sang `TASK-GOV-008` va chuan bi re-audit GOV.

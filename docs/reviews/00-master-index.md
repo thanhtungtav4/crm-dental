@@ -30,7 +30,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 | Module code | Module name | Current status | Review file | Issue file | Plan file | Current verdict | Top open risks | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOV | Governance / Branches / RBAC / Audit | In Fix | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | D | Manager privilege escalation dang duoc rollout sync; audit log hardening dang o giai doan re-verify; branch transfer concurrency dang duoc harden | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
+| GOV | Governance / Branches / RBAC / Audit | In Fix | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | D | Manager privilege escalation dang duoc rollout sync; audit log hardening dang o giai doan re-verify; branch-aware query isolation dang duoc harden tren resource GOV | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
 | PAT | Customers / Patients / MPI | Pending Review | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | TBD | TODO | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Pending Review | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | TBD | TODO | GOV, PAT, CLIN, TRT, INT, ZNS |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
@@ -59,7 +59,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`, `TASK-GOV-005`, `TASK-GOV-006`; branch log read-only da vao implementation.
+- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`, `TASK-GOV-005`, `TASK-GOV-006`, `TASK-GOV-007`; branch-aware query isolation da vao implementation.
 
 # 6. Modules needing re-audit
 
@@ -71,4 +71,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `GOV` - chot `TASK-GOV-006`, sau do tiep tuc `TASK-GOV-007` de dong bo branch-aware query cho phan resource GOV con lai.
+- `GOV` - chot `TASK-GOV-007`, sau do tiep tuc `TASK-GOV-008` va bat dau re-audit module.

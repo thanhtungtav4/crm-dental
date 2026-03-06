@@ -4,67 +4,91 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Branch;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class BranchPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:Branch');
+        return $authUser->hasRole('Admin')
+            || ($authUser->can('ViewAny:Branch') && $authUser->hasAnyAccessibleBranch());
     }
 
-    public function view(AuthUser $authUser, Branch $branch): bool
+    public function view(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('View:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('View:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
         return $authUser->can('Create:Branch');
     }
 
-    public function update(AuthUser $authUser, Branch $branch): bool
+    public function update(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('Update:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('Update:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function delete(AuthUser $authUser, Branch $branch): bool
+    public function delete(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('Delete:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('Delete:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function restore(AuthUser $authUser, Branch $branch): bool
+    public function restore(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('Restore:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('Restore:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function forceDelete(AuthUser $authUser, Branch $branch): bool
+    public function forceDelete(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('ForceDelete:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('ForceDelete:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
         return $authUser->can('ForceDeleteAny:Branch');
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
         return $authUser->can('RestoreAny:Branch');
     }
 
-    public function replicate(AuthUser $authUser, Branch $branch): bool
+    public function replicate(User $authUser, Branch $branch): bool
     {
-        return $authUser->can('Replicate:Branch');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('Replicate:Branch') && $branch->isVisibleTo($authUser);
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
         return $authUser->can('Reorder:Branch');
     }
-
 }
