@@ -4,9 +4,13 @@ namespace App\Models;
 
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 class MasterPatientDuplicate extends Model
 {
@@ -60,6 +64,250 @@ class MasterPatientDuplicate extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function merges(): HasMany
+    {
+        return $this->hasMany(MasterPatientMerge::class, 'duplicate_case_id');
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $user->can(ActionPermission::MPI_DEDUPE_REVIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $duplicateQuery) use ($branchIds): void {
+            $duplicateQuery->whereIn('branch_id', $branchIds)
+                ->orWhereHas('patient', function (Builder $patientQuery) use ($branchIds): void {
+                    $patientQuery->whereIn('first_branch_id', $branchIds);
+                });
+
+            foreach ($branchIds as $branchId) {
+                $duplicateQuery->orWhereJsonContains('matched_branch_ids', $branchId);
+            }
+        });
+    }
+
+    public function isVisibleTo(User $user): bool
+    {
+        if (! $user->can(ActionPermission::MPI_DEDUPE_REVIEW)) {
+            return false;
+        }
+
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+        if ($branchIds === []) {
+            return false;
+        }
+
+        if (is_numeric($this->branch_id) && in_array((int) $this->branch_id, $branchIds, true)) {
+            return true;
+        }
+
+        $patientBranchId = $this->patient?->first_branch_id;
+
+        if (is_numeric($patientBranchId) && in_array((int) $patientBranchId, $branchIds, true)) {
+            return true;
+        }
+
+        return count(array_intersect($this->matchedBranchIds(), $branchIds)) > 0;
+    }
+
+    public function isReviewableBy(User $user): bool
+    {
+        if (! $user->can(ActionPermission::MPI_DEDUPE_REVIEW)) {
+            return false;
+        }
+
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($user, false);
+        $requiredBranchIds = $this->reviewScopeBranchIds();
+
+        if ($branchIds === [] || $requiredBranchIds === []) {
+            return false;
+        }
+
+        return array_diff($requiredBranchIds, $branchIds) === [];
+    }
+
+    public function canBeMerged(): bool
+    {
+        return $this->status === self::STATUS_OPEN && count($this->matchedPatientIds()) >= 2;
+    }
+
+    public function canBeIgnored(): bool
+    {
+        return $this->status === self::STATUS_OPEN;
+    }
+
+    public function latestAppliedMerge(): ?MasterPatientMerge
+    {
+        return $this->merges()
+            ->where('status', MasterPatientMerge::STATUS_APPLIED)
+            ->latest('id')
+            ->first();
+    }
+
+    public function matchedPatientIds(): array
+    {
+        return collect($this->matched_patient_ids ?? [])
+            ->push($this->patient_id)
+            ->filter(static fn (mixed $patientId): bool => is_numeric($patientId) && (int) $patientId > 0)
+            ->map(static fn (mixed $patientId): int => (int) $patientId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function matchedBranchIds(): array
+    {
+        return collect($this->matched_branch_ids ?? [])
+            ->push($this->branch_id)
+            ->push($this->patient?->first_branch_id)
+            ->filter(static fn (mixed $branchId): bool => is_numeric($branchId) && (int) $branchId > 0)
+            ->map(static fn (mixed $branchId): int => (int) $branchId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function defaultCanonicalPatientId(): ?int
+    {
+        if (is_numeric($this->patient_id) && in_array((int) $this->patient_id, $this->matchedPatientIds(), true)) {
+            return (int) $this->patient_id;
+        }
+
+        return $this->matchedPatientIds()[0] ?? null;
+    }
+
+    public function defaultMergedPatientId(): ?int
+    {
+        $canonicalPatientId = $this->defaultCanonicalPatientId();
+
+        return collect($this->matchedPatientIds())
+            ->first(fn (int $patientId): bool => $patientId !== $canonicalPatientId);
+    }
+
+    /**
+     * @return array<int, array{patient_id:int,patient_code:?string,full_name:string,branch_name:string,status:string,phone:?string,email:?string}>
+     */
+    public function matchedPatientsForReview(?User $user = null): array
+    {
+        $patientIds = $this->matchedPatientIds();
+
+        if ($patientIds === []) {
+            return [];
+        }
+
+        $query = Patient::query()
+            ->with('branch')
+            ->whereIn('id', $patientIds);
+
+        if ($user instanceof User && ! $user->hasRole('Admin')) {
+            $branchIds = BranchAccess::accessibleBranchIds($user, false);
+
+            if ($branchIds === []) {
+                return [];
+            }
+
+            $query->whereIn('first_branch_id', $branchIds);
+        }
+
+        $patients = $query->get()
+            ->sortBy(static fn (Patient $patient): int => array_search($patient->id, $patientIds, true) ?: 0)
+            ->values();
+
+        return $patients
+            ->map(static function (Patient $patient): array {
+                return [
+                    'patient_id' => $patient->id,
+                    'patient_code' => $patient->patient_code,
+                    'full_name' => $patient->full_name,
+                    'branch_name' => $patient->branch?->name ?? '-',
+                    'status' => (string) ($patient->status ?? '-'),
+                    'phone' => $patient->phone,
+                    'email' => $patient->email,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function matchedPatientOptionsForReview(?User $user = null): array
+    {
+        return collect($this->matchedPatientsForReview($user))
+            ->mapWithKeys(static function (array $patient): array {
+                $labelParts = array_filter([
+                    $patient['patient_code'] ?: '#'.$patient['patient_id'],
+                    $patient['full_name'],
+                    $patient['branch_name'],
+                ]);
+
+                return [
+                    $patient['patient_id'] => implode(' | ', $labelParts),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{merge_id:int,status:string,canonical_patient:string,merged_patient:string,merged_by:string,merged_at:?string,rolled_back_at:?string,rollback_note:?string}>
+     */
+    public function mergeHistoryForReview(?User $user = null): array
+    {
+        return $this->merges()
+            ->with([
+                'canonicalPatient.branch',
+                'mergedPatient.branch',
+                'mergedByUser',
+                'rolledBackByUser',
+            ])
+            ->latest('id')
+            ->get()
+            ->map(function (MasterPatientMerge $merge) use ($user): array {
+                $canSeeCanonical = $this->canSeePatientForReview($merge->canonicalPatient, $user);
+                $canSeeMerged = $this->canSeePatientForReview($merge->mergedPatient, $user);
+
+                return [
+                    'merge_id' => $merge->id,
+                    'status' => $merge->status,
+                    'canonical_patient' => $canSeeCanonical
+                        ? $this->formatPatientReference($merge->canonicalPatient)
+                        : 'Ngoài phạm vi chi nhánh',
+                    'merged_patient' => $canSeeMerged
+                        ? $this->formatPatientReference($merge->mergedPatient)
+                        : 'Ngoài phạm vi chi nhánh',
+                    'merged_by' => $merge->mergedByUser?->name ?? 'Hệ thống',
+                    'merged_at' => $merge->merged_at?->format('d/m/Y H:i'),
+                    'rolled_back_at' => $merge->rolled_back_at?->format('d/m/Y H:i'),
+                    'rollback_note' => $merge->rollback_note,
+                ];
+            })
+            ->all();
+    }
+
     public function markResolved(?int $reviewedBy = null, ?string $note = null): void
     {
         ActionGate::authorize(
@@ -67,11 +315,24 @@ class MasterPatientDuplicate extends Model
             'Bạn không có quyền xử lý queue trùng bệnh nhân liên chi nhánh.',
         );
 
-        $this->status = self::STATUS_RESOLVED;
-        $this->reviewed_by = $reviewedBy ?? auth()->id();
-        $this->reviewed_at = now();
-        $this->review_note = $note;
-        $this->save();
+        $this->assertOpenForReview('resolved');
+
+        $previousStatus = $this->status;
+        $actorId = $reviewedBy ?? auth()->id();
+
+        $this->forceFill([
+            'status' => self::STATUS_RESOLVED,
+            'reviewed_by' => $actorId,
+            'reviewed_at' => now(),
+            'review_note' => $note,
+        ])->save();
+
+        $this->recordReviewAudit(
+            previousStatus: $previousStatus,
+            nextStatus: self::STATUS_RESOLVED,
+            actorId: $actorId,
+            note: $note,
+        );
     }
 
     public function markIgnored(?int $reviewedBy = null, ?string $note = null): void
@@ -81,10 +342,147 @@ class MasterPatientDuplicate extends Model
             'Bạn không có quyền xử lý queue trùng bệnh nhân liên chi nhánh.',
         );
 
-        $this->status = self::STATUS_IGNORED;
-        $this->reviewed_by = $reviewedBy ?? auth()->id();
-        $this->reviewed_at = now();
-        $this->review_note = $note;
-        $this->save();
+        $this->assertOpenForReview('ignored');
+
+        $actorId = $reviewedBy ?? auth()->id();
+        $previousStatus = $this->status;
+
+        $this->forceFill([
+            'status' => self::STATUS_IGNORED,
+            'reviewed_by' => $actorId,
+            'reviewed_at' => now(),
+            'review_note' => $note,
+        ])->save();
+
+        $this->recordReviewAudit(
+            previousStatus: $previousStatus,
+            nextStatus: self::STATUS_IGNORED,
+            actorId: $actorId,
+            note: $note,
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function statusOptions(): array
+    {
+        return [
+            self::STATUS_OPEN => 'Đang chờ review',
+            self::STATUS_RESOLVED => 'Đã resolve',
+            self::STATUS_IGNORED => 'Đã bỏ qua',
+        ];
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        return static::statusOptions()[$status ?? ''] ?? ($status ?: '-');
+    }
+
+    public static function statusColor(?string $status): string
+    {
+        return match ($status) {
+            self::STATUS_OPEN => 'warning',
+            self::STATUS_RESOLVED => 'success',
+            self::STATUS_IGNORED => 'gray',
+            default => 'gray',
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function identityTypeOptions(): array
+    {
+        return [
+            MasterPatientIdentity::TYPE_PHONE => 'Điện thoại',
+            MasterPatientIdentity::TYPE_EMAIL => 'Email',
+            MasterPatientIdentity::TYPE_CCCD => 'CCCD',
+        ];
+    }
+
+    public static function identityTypeLabel(?string $identityType): string
+    {
+        return static::identityTypeOptions()[$identityType ?? ''] ?? ($identityType ?: '-');
+    }
+
+    protected function assertOpenForReview(string $targetStatus): void
+    {
+        if ($this->status !== self::STATUS_OPEN) {
+            throw ValidationException::withMessages([
+                'status' => "Case MPI chỉ có thể chuyển từ open sang {$targetStatus}.",
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function reviewScopeBranchIds(): array
+    {
+        $branchIds = $this->matchedBranchIds();
+
+        if ($branchIds !== []) {
+            return $branchIds;
+        }
+
+        $patientBranchId = is_numeric($this->patient_id)
+            ? Patient::query()->whereKey((int) $this->patient_id)->value('first_branch_id')
+            : null;
+
+        return is_numeric($patientBranchId)
+            ? [(int) $patientBranchId]
+            : [];
+    }
+
+    protected function canSeePatientForReview(?Patient $patient, ?User $user): bool
+    {
+        if (! $patient instanceof Patient) {
+            return false;
+        }
+
+        if (! $user instanceof User || $user->hasRole('Admin')) {
+            return true;
+        }
+
+        return $user->canAccessBranch(is_numeric($patient->first_branch_id) ? (int) $patient->first_branch_id : null);
+    }
+
+    protected function formatPatientReference(?Patient $patient): string
+    {
+        if (! $patient instanceof Patient) {
+            return '-';
+        }
+
+        return collect([
+            $patient->patient_code,
+            $patient->full_name,
+            $patient->branch?->name,
+        ])
+            ->filter(static fn (mixed $value): bool => filled($value))
+            ->implode(' | ');
+    }
+
+    protected function recordReviewAudit(string $previousStatus, string $nextStatus, ?int $actorId, ?string $note): void
+    {
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE,
+            entityId: $this->id,
+            action: AuditLog::ACTION_RESOLVE,
+            actorId: $actorId,
+            metadata: [
+                'patient_id' => $this->patient_id,
+                'branch_id' => $this->branch_id,
+                'status_from' => $previousStatus,
+                'status_to' => $nextStatus,
+                'identity_type' => $this->identity_type,
+                'identity_value' => $this->identity_value,
+                'matched_patient_ids' => $this->matchedPatientIds(),
+                'matched_branch_ids' => $this->matchedBranchIds(),
+                'review_note' => $note,
+            ],
+            branchId: is_numeric($this->branch_id) ? (int) $this->branch_id : null,
+            patientId: is_numeric($this->patient_id) ? (int) $this->patient_id : null,
+        );
     }
 }
