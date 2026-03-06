@@ -78,7 +78,7 @@
 - Dependencies:
   - GOV, FIN
 - Suggested order: 2
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-TRT-002`
 
 ## [TRT-003] Treatment progress sync bypass provisioning service transactional
@@ -261,8 +261,8 @@
 
 # Summary
 
-- Open critical count: 1
+- Open critical count: 0
 - Open high count: 3
 - Open medium count: 3
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-TRT-002` va `TASK-TRT-003` truoc khi mo rong sang `FIN`/`INV`.
+- Next recommended action: tiep tuc `TASK-TRT-003` va `TASK-TRT-004` truoc khi mo rong sang `FIN`/`INV`.

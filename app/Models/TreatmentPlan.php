@@ -32,6 +32,32 @@ class TreatmentPlan extends Model
         self::STATUS_CANCELLED => 'Đã hủy',
     ];
 
+    protected const STATUS_TRANSITIONS = [
+        self::STATUS_DRAFT => [
+            self::STATUS_DRAFT,
+            self::STATUS_APPROVED,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_APPROVED => [
+            self::STATUS_APPROVED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_IN_PROGRESS => [
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_COMPLETED => [
+            self::STATUS_COMPLETED,
+        ],
+        self::STATUS_CANCELLED => [
+            self::STATUS_CANCELLED,
+        ],
+    ];
+
+    protected static int $managedWorkflowDepth = 0;
+
     protected $fillable = [
         'patient_id',
         'doctor_id',
@@ -100,19 +126,92 @@ class TreatmentPlan extends Model
                 );
             }
 
+            $plan->status = static::normalizeStatusValue($plan->status) ?? static::DEFAULT_STATUS;
+
             if (! $plan->exists || ! $plan->isDirty('status')) {
+                static::assertWorkflowControlledFields($plan);
+
                 return;
             }
 
-            $fromStatus = strtolower(trim((string) $plan->getOriginal('status')));
-            $toStatus = strtolower(trim((string) $plan->status));
-
-            if ($fromStatus === self::STATUS_DRAFT && in_array($toStatus, [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED], true)) {
+            if (! static::isManagedWorkflow()) {
                 throw ValidationException::withMessages([
-                    'status' => 'Kế hoạch chưa được duyệt nên không thể chuyển sang giai đoạn điều trị.',
+                    'status' => 'Trang thai ke hoach chi duoc thay doi qua TreatmentPlanWorkflowService.',
                 ]);
             }
+
+            $fromStatus = static::normalizeStatusValue($plan->getOriginal('status')) ?? static::DEFAULT_STATUS;
+            $toStatus = static::normalizeStatusValue($plan->status) ?? static::DEFAULT_STATUS;
+
+            if (! static::canTransitionStatus($fromStatus, $toStatus)) {
+                throw ValidationException::withMessages([
+                    'status' => sprintf(
+                        'Khong the chuyen ke hoach dieu tri tu "%s" sang "%s".',
+                        static::statusLabel($fromStatus),
+                        static::statusLabel($toStatus),
+                    ),
+                ]);
+            }
+
+            static::assertWorkflowControlledFields($plan);
         });
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        static::$managedWorkflowDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            static::$managedWorkflowDepth = max(0, static::$managedWorkflowDepth - 1);
+        }
+    }
+
+    public static function normalizeStatusValue(mixed $status): ?string
+    {
+        $normalized = strtolower(trim((string) $status));
+
+        return array_key_exists($normalized, static::STATUS_LABELS) ? $normalized : null;
+    }
+
+    public static function canTransitionStatus(?string $fromStatus, ?string $toStatus): bool
+    {
+        $resolvedFrom = static::normalizeStatusValue($fromStatus) ?? static::DEFAULT_STATUS;
+        $resolvedTo = static::normalizeStatusValue($toStatus);
+
+        if ($resolvedTo === null) {
+            return false;
+        }
+
+        return in_array($resolvedTo, static::STATUS_TRANSITIONS[$resolvedFrom] ?? [], true);
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        $normalizedStatus = static::normalizeStatusValue($status);
+
+        return static::STATUS_LABELS[$normalizedStatus] ?? (string) $status;
+    }
+
+    protected static function isManagedWorkflow(): bool
+    {
+        return static::$managedWorkflowDepth > 0;
+    }
+
+    protected static function assertWorkflowControlledFields(self $plan): void
+    {
+        if (static::isManagedWorkflow()) {
+            return;
+        }
+
+        foreach (['approved_by', 'approved_at', 'actual_start_date', 'actual_end_date'] as $field) {
+            if ($plan->exists && $plan->isDirty($field)) {
+                throw ValidationException::withMessages([
+                    $field => 'Workflow ke hoach dieu tri chi duoc cap nhat qua TreatmentPlanWorkflowService.',
+                ]);
+            }
+        }
     }
 
     public function sessions()
@@ -155,11 +254,6 @@ class TreatmentPlan extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // Helper Methods
-
-    /**
-     * Calculate overall progress based on plan items
-     */
     public function calculateProgress(): int
     {
         $items = $this->planItems;
@@ -173,24 +267,16 @@ class TreatmentPlan extends Model
         return (int) ($totalProgress / $items->count());
     }
 
-    /**
-     * Update progress percentage and sync with items
-     */
     public function updateProgress(): void
     {
         $this->progress_percentage = $this->calculateProgress();
-
-        // Count completed visits
         $this->completed_visits = $this->planItems->sum('completed_visits');
         $this->total_visits = $this->planItems->sum('required_visits');
-
-        // Calculate actual costs
         $this->total_cost = $this->planItems->sum('actual_cost');
         $this->total_estimated_cost = $this->planItems->sum('estimated_cost');
 
-        // Auto-update status based on progress
         if ($this->progress_percentage === 0 && $this->status === self::STATUS_DRAFT) {
-            // Keep as draft
+            // Keep as draft.
         } elseif ($this->progress_percentage > 0 && $this->progress_percentage < 100) {
             if (in_array($this->status, [self::STATUS_APPROVED, self::STATUS_IN_PROGRESS], true)) {
                 $this->status = self::STATUS_IN_PROGRESS;
@@ -202,12 +288,11 @@ class TreatmentPlan extends Model
             }
         }
 
-        $this->save();
+        static::runWithinManagedWorkflow(function (): void {
+            $this->save();
+        });
     }
 
-    /**
-     * Get progress status badge color
-     */
     public function getProgressBadgeColor(): string
     {
         return match (true) {
@@ -219,17 +304,11 @@ class TreatmentPlan extends Model
         };
     }
 
-    /**
-     * Get status label in Vietnamese
-     */
     public function getStatusLabel(): string
     {
         return static::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
-    /**
-     * Get priority label in Vietnamese
-     */
     public function getPriorityLabel(): string
     {
         return match ($this->priority) {
@@ -241,9 +320,6 @@ class TreatmentPlan extends Model
         };
     }
 
-    /**
-     * Check if plan is overdue
-     */
     public function isOverdue(): bool
     {
         if (! $this->expected_end_date) {
@@ -253,17 +329,11 @@ class TreatmentPlan extends Model
         return $this->expected_end_date->isPast() && $this->status !== self::STATUS_COMPLETED;
     }
 
-    /**
-     * Get cost variance (actual vs estimated)
-     */
     public function getCostVariance(): float
     {
         return (float) ($this->total_cost - $this->total_estimated_cost);
     }
 
-    /**
-     * Get cost variance percentage
-     */
     public function getCostVariancePercentage(): float
     {
         if ($this->total_estimated_cost == 0) {
@@ -273,25 +343,16 @@ class TreatmentPlan extends Model
         return (($this->total_cost - $this->total_estimated_cost) / $this->total_estimated_cost) * 100;
     }
 
-    /**
-     * Check if has before photo
-     */
     public function hasBeforePhoto(): bool
     {
         return ! empty($this->before_photo);
     }
 
-    /**
-     * Check if has after photo
-     */
     public function hasAfterPhoto(): bool
     {
         return ! empty($this->after_photo);
     }
 
-    /**
-     * Get duration in days (actual or expected)
-     */
     public function getDurationInDays(): ?int
     {
         if ($this->actual_start_date && $this->actual_end_date) {
@@ -305,9 +366,6 @@ class TreatmentPlan extends Model
         return null;
     }
 
-    /**
-     * Scopes
-     */
     public function scopeInProgress($query)
     {
         return $query->where('status', self::STATUS_IN_PROGRESS);

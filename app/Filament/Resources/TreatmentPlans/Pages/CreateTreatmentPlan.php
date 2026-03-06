@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentPlans\Pages;
 
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
+use App\Services\TreatmentPlanWorkflowService;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ class CreateTreatmentPlan extends CreateRecord
             );
         }
 
-        return $data;
+        return app(TreatmentPlanWorkflowService::class)->prepareCreatePayload($data);
     }
 
     protected function getRedirectUrl(): string

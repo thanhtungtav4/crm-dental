@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentPlans\Schemas;
 
 use App\Models\Patient;
+use App\Models\TreatmentPlan;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
@@ -145,7 +146,6 @@ class TreatmentPlanForm
                     \Filament\Schemas\Components\Wizard\Step::make('Chẩn đoán & Điều trị')
                         ->icon('heroicon-m-sparkles')
                         ->schema([
-                            // Visual Aid
                             Section::make('Sơ đồ răng')
                                 ->schema([
                                     Forms\Components\Hidden::make('tooth_chart_dentition_mode')
@@ -161,7 +161,6 @@ class TreatmentPlanForm
                                 ])
                                 ->collapsible(),
 
-                            // The Main Action
                             Section::make('Danh sách hạng mục điều trị')
                                 ->schema([
                                     Forms\Components\Repeater::make('planItems')
@@ -176,21 +175,25 @@ class TreatmentPlanForm
                                                     ->preload()
                                                     ->required()
                                                     ->live()
-                                                    ->afterStateUpdated(function ($state, Set $set) {
-                                                        if ($state) {
-                                                            $service = \App\Models\Service::find($state);
-                                                            if ($service) {
-                                                                $set('price', $service->default_price);
-                                                                $set('name', $service->name);
-                                                            }
+                                                    ->afterStateUpdated(function ($state, Set $set): void {
+                                                        if (! $state) {
+                                                            return;
                                                         }
+
+                                                        $service = \App\Models\Service::find($state);
+                                                        if (! $service) {
+                                                            return;
+                                                        }
+
+                                                        $set('price', $service->default_price);
+                                                        $set('name', $service->name);
                                                     })
                                                     ->columnSpan(4),
 
                                                 \App\Filament\Forms\Components\ToothPicker::make('tooth_number')
                                                     ->label('Răng số')
                                                     ->columnSpan(2)
-                                                    ->afterStateHydrated(function ($component, $state) {
+                                                    ->afterStateHydrated(function ($component, $state): void {
                                                         if (is_string($state) && ! empty($state)) {
                                                             $component->state(array_map('trim', explode(',', $state)));
                                                         }
@@ -213,8 +216,6 @@ class TreatmentPlanForm
                                                     ->required()
                                                     ->columnSpan(4),
                                             ])->columns(12),
-
-                                            //
 
                                             Forms\Components\Textarea::make('notes')
                                                 ->label('Ghi chú chi tiết')
@@ -241,13 +242,13 @@ class TreatmentPlanForm
                                         ->label('Ngày hoàn thành dự kiến'),
                                     Forms\Components\Select::make('status')
                                         ->label('Trạng thái kế hoạch')
-                                        ->options([
-                                            'draft' => 'Nháp',
-                                            'approved' => 'Đã duyệt',
-                                            'in_progress' => 'Đang thực hiện',
-                                        ])
-                                        ->default('draft')
-                                        ->required(),
+                                        ->options(fn (?TreatmentPlan $record): array => $record instanceof TreatmentPlan
+                                            ? [$record->status => $record->getStatusLabel()]
+                                            : [TreatmentPlan::STATUS_DRAFT => 'Nháp'])
+                                        ->default(TreatmentPlan::STATUS_DRAFT)
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->helperText('Trang thai duoc dieu khien boi workflow action. Ke hoach moi luon duoc tao o trang thai nhap.'),
                                 ])->columns(3),
 
                             Section::make('Hình ảnh hồ sơ')
@@ -266,7 +267,6 @@ class TreatmentPlanForm
                         ]),
                 ])
                     ->columnSpanFull()
-                    // Improve UX by allowing skipping steps if needed, or strict validation
                     ->skippable(false)
                     ->persistStepInQueryString('plan-step'),
             ]);

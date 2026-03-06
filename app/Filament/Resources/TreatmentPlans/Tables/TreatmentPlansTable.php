@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TreatmentPlans\Tables;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentPlanWorkflowService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -12,6 +13,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -52,7 +54,6 @@ class TreatmentPlansTable
                     ->sortable()
                     ->description(fn (TreatmentPlan $record): string => 'Mã KH #'.$record->id)
                     ->icon('heroicon-m-clipboard-document-list'),
-
                 TextColumn::make('patient.full_name')
                     ->label('Bệnh nhân')
                     ->searchable()
@@ -64,13 +65,11 @@ class TreatmentPlansTable
                         ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'exam-treatment'])
                         : null)
                     ->openUrlInNewTab(),
-
                 TextColumn::make('doctor.name')
                     ->label('Bác sĩ')
                     ->placeholder('Chưa phân công')
                     ->searchable()
                     ->toggleable(),
-
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
@@ -78,7 +77,6 @@ class TreatmentPlansTable
                     ->icon(fn (?string $state): string => \App\Support\StatusBadge::icon($state))
                     ->color(fn (?string $state): string => \App\Support\StatusBadge::color($state))
                     ->sortable(),
-
                 TextColumn::make('priority')
                     ->label('Ưu tiên')
                     ->badge()
@@ -92,7 +90,6 @@ class TreatmentPlansTable
                     })
                     ->sortable()
                     ->toggleable(),
-
                 TextColumn::make('progress_percentage')
                     ->label('Tiến độ')
                     ->formatStateUsing(fn ($state): string => ((int) $state).'%')
@@ -104,7 +101,6 @@ class TreatmentPlansTable
                         default => 'gray',
                     })
                     ->sortable(),
-
                 TextColumn::make('visit_summary')
                     ->label('Số phiên')
                     ->state(fn (TreatmentPlan $record): string => sprintf(
@@ -115,7 +111,6 @@ class TreatmentPlansTable
                     ->description('Đã hoàn thành / Tổng')
                     ->alignCenter()
                     ->toggleable(),
-
                 TextColumn::make('total_cost')
                     ->label('Tổng chi phí')
                     ->money('VND')
@@ -124,14 +119,12 @@ class TreatmentPlansTable
                     ->description(fn (TreatmentPlan $record): ?string => $record->total_estimated_cost !== null
                         ? 'Dự kiến: '.number_format((float) $record->total_estimated_cost, 0, ',', '.').' đ'
                         : null),
-
                 TextColumn::make('expected_end_date')
                     ->label('Kết thúc dự kiến')
                     ->date('d/m/Y')
                     ->sortable()
                     ->color(fn (TreatmentPlan $record): string => $record->isOverdue() ? 'danger' : 'gray')
                     ->description(fn (TreatmentPlan $record): ?string => $record->isOverdue() ? 'Quá hạn' : null),
-
                 TextColumn::make('updated_at')
                     ->label('Cập nhật')
                     ->since()
@@ -170,40 +163,45 @@ class TreatmentPlansTable
                     ->color('info')
                     ->successNotificationTitle('Đã duyệt kế hoạch điều trị')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'approved',
-                            'approved_by' => auth()->id(),
-                        ]);
+                    ->action(function (TreatmentPlan $record): void {
+                        app(TreatmentPlanWorkflowService::class)->approve($record);
                     })
-                    ->visible(fn ($record) => $record->status === 'draft'),
+                    ->visible(fn (TreatmentPlan $record): bool => TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_APPROVED)),
                 Action::make('start')
                     ->label('Bắt đầu điều trị')
                     ->icon('heroicon-o-play')
                     ->color('warning')
                     ->successNotificationTitle('Đã chuyển kế hoạch sang đang thực hiện')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'in_progress',
-                            'actual_start_date' => now(),
-                        ]);
+                    ->action(function (TreatmentPlan $record): void {
+                        app(TreatmentPlanWorkflowService::class)->start($record);
                     })
-                    ->visible(fn ($record) => $record->status === 'approved'),
+                    ->visible(fn (TreatmentPlan $record): bool => TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_IN_PROGRESS)),
                 Action::make('complete')
                     ->label('Hoàn thành')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->successNotificationTitle('Đã hoàn thành kế hoạch điều trị')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'completed',
-                            'actual_end_date' => now(),
-                        ]);
-                        $record->updateProgress();
+                    ->action(function (TreatmentPlan $record): void {
+                        app(TreatmentPlanWorkflowService::class)->complete($record);
                     })
-                    ->visible(fn ($record) => $record->status === 'in_progress'),
+                    ->visible(fn (TreatmentPlan $record): bool => TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_COMPLETED)),
+                Action::make('cancel')
+                    ->label('Hủy kế hoạch')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do hủy')
+                            ->rows(3),
+                    ])
+                    ->successNotificationTitle('Đã hủy kế hoạch điều trị')
+                    ->requiresConfirmation()
+                    ->action(function (TreatmentPlan $record, array $data): void {
+                        app(TreatmentPlanWorkflowService::class)->cancel($record, $data['reason'] ?? null);
+                    })
+                    ->visible(fn (TreatmentPlan $record): bool => TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_CANCELLED)),
                 Action::make('open_patient_profile')
                     ->label('Hồ sơ BN')
                     ->icon('heroicon-o-user')
@@ -227,14 +225,13 @@ class TreatmentPlansTable
                         ->color('info')
                         ->successNotificationTitle('Đã duyệt các kế hoạch đã chọn')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             foreach ($records as $record) {
-                                if ($record->status === 'draft') {
-                                    $record->update([
-                                        'status' => 'approved',
-                                        'approved_by' => auth()->id(),
-                                    ]);
+                                if (! TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_APPROVED)) {
+                                    continue;
                                 }
+
+                                app(TreatmentPlanWorkflowService::class)->approve($record);
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -244,14 +241,13 @@ class TreatmentPlansTable
                         ->color('warning')
                         ->successNotificationTitle('Đã cập nhật các kế hoạch sang đang thực hiện')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             foreach ($records as $record) {
-                                if ($record->status === 'approved') {
-                                    $record->update([
-                                        'status' => 'in_progress',
-                                        'actual_start_date' => $record->actual_start_date ?? now(),
-                                    ]);
+                                if (! TreatmentPlan::canTransitionStatus($record->status, TreatmentPlan::STATUS_IN_PROGRESS)) {
+                                    continue;
                                 }
+
+                                app(TreatmentPlanWorkflowService::class)->start($record);
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
