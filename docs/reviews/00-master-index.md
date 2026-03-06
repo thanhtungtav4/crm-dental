@@ -35,7 +35,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
 | CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
-| FIN | Finance / Payments / Wallet / Installments | In Fix | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | D | `received_by` scope la blocker lon nhat; finance write drift va regression boundary la 2 risk tiep theo | GOV, PAT, APPT, TRT, INV, KPI |
+| FIN | Finance / Payments / Wallet / Installments | Clean Baseline Reached | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | B | Khong con open blocker baseline; tiep tuc theo doi drift giua finance, inventory va KPI bang full-suite regression | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Pending Review | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | TBD | TODO | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
@@ -51,19 +51,18 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `APPT` da dat clean baseline; scheduling, overbooking auth, reschedule audit, encrypted search va observer side-effects da duoc khoa bang regression test.
 - `CLIN` da dat clean baseline; EMR PHI, consent lifecycle, session idempotency, branch-scoped doctor assignment va audit timeline reader da duoc khoa bang regression test.
 - `TRT` da dat clean baseline; batch-safe material usage, workflow state machine, branch-scoped assignment va destructive guard da duoc khoa bang regression test.
-- `FIN` da co review + issue + plan; open blockers lon nhat cua module nay nam o wallet authorization, invoice lifecycle va refund concurrency.
+- `FIN` da dat clean baseline; wallet authorization, invoice workflow, refund idempotency va canonical payment boundary da duoc khoa bang regression test.
 - `INV` la module phu thuoc gan nhat sau khi `FIN` khoa xong payment/invoice boundary.
 
 # 4. Priority overview
 
-- Critical modules: Chua co module critical dang mo sau khi `TRT` dat baseline
-- High priority modules: `FIN`, `INV`
+- Critical modules: Chua co module critical dang mo sau khi `FIN` dat baseline
+- High priority modules: `INV`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `FIN` - da co review va plan day du; day la module nen tiep theo de fix sau `TRT`.
 - `INV` - inventory batch/stock la module phu thuoc gan nhat sau khi `FIN` khoa xong payment/invoice boundary.
 
 # 6. Modules needing re-audit
@@ -72,8 +71,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `INV` - module tiep theo nen duoc review sau khi `FIN` da co plan va dang fix.
+- `INV` - module tiep theo nen duoc review sau khi `FIN` da dat clean baseline.
 
 # 8. Suggested next module to fix
 
-- `FIN` - vao `TASK-FIN-005`, `TASK-FIN-006`, `TASK-FIN-007` de khoa branch-scoped actor attribution, service drift va regression boundary.
+- `INV` - bat dau review inventory batch/stock boundary sau khi finance baseline da on dinh.

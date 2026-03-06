@@ -2,8 +2,8 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `FIN-`
 - Task ID prefix: `TASK-FIN-`
 - Review file: `docs/reviews/modules/FIN-finance.md`
@@ -172,7 +172,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-005`
 
 ## [FIN-006] Finance write logic bi nhan ban qua nhieu surface UI
@@ -201,7 +201,7 @@
 - Dependencies:
   - FIN-002, FIN-003, FIN-005
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-006`
 
 ## [FIN-007] Regression suite chua khoa wallet auth, invoice cancel hole va concurrent reversal
@@ -227,13 +227,26 @@
 - Dependencies:
   - FIN-001, FIN-002, FIN-003, FIN-005
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-007`
+
+# Re-audit Update
+
+- FIN da hoan thanh full lifecycle `review -> issues -> plan -> fix -> regression -> re-audit`.
+- Tat ca issue `FIN-001` den `FIN-007` da duoc giai quyet trong baseline hien tai.
+- Regression suite da bao phu:
+  - wallet auth va wallet adjustment audit
+  - invoice workflow + cancel guard + destructive surface guard
+  - refund/reversal idempotency
+  - receiver branch scoping
+  - canonical payment recording boundary
+- Full suite sau FIN hardening dat `629 passed / 3373 assertions`.
+- Module dat `Clean Baseline Reached`, verdict `B`.
 
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
-- Open medium count: 2
+- Open high count: 0
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: vao `TASK-FIN-005`, `TASK-FIN-006`, `TASK-FIN-007` truoc khi fix sau hon `INV`.
+- Next recommended action: chuyen sang review `INV` va giu FIN regression suite trong moi lan full-suite run.

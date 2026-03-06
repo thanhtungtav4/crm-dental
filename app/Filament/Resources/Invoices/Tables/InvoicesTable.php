@@ -7,6 +7,7 @@ use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\Invoice;
 use App\Services\InvoiceWorkflowService;
+use App\Services\PaymentRecordingService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -306,19 +307,11 @@ class InvoicesTable
                     ])
                     ->action(function ($record, array $data) {
                         $direction = (string) ($data['direction'] ?? ClinicRuntimeSettings::defaultPaymentDirection());
-                        $paymentSource = (string) ($data['payment_source'] ?? ClinicRuntimeSettings::defaultPaymentSource());
-
-                        $payment = $record->recordPayment(
-                            amount: (float) $data['amount'],
-                            method: (string) $data['method'],
-                            notes: 'Thanh toán hóa đơn '.$record->invoice_no,
-                            paidAt: $data['paid_at'],
-                            direction: $direction,
-                            refundReason: $data['refund_reason'] ?? null,
-                            transactionRef: $data['transaction_ref'] ?? null,
-                            paymentSource: $paymentSource,
-                            insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
-                            receivedBy: auth()->id(),
+                        $payment = app(PaymentRecordingService::class)->record(
+                            invoice: $record,
+                            data: $data,
+                            actor: auth()->user(),
+                            fallbackNote: 'Thanh toán hóa đơn '.$record->invoice_no,
                         );
 
                         $isDuplicateRetry = filled($data['transaction_ref'] ?? null) && ! $payment->wasRecentlyCreated;

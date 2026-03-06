@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Invoices\RelationManagers;
 
 use App\Models\Payment;
+use App\Services\FinanceActorAuthorizer;
+use App\Services\PaymentRecordingService;
 use App\Services\PaymentReversalService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\CreateAction;
@@ -114,7 +116,10 @@ class PaymentsRelationManager extends RelationManager
                     ->schema([
                         Select::make('received_by')
                             ->label('Người nhận')
-                            ->relationship('receiver', 'name')
+                            ->options(fn (): array => app(FinanceActorAuthorizer::class)->assignableReceiverOptions(
+                                actor: auth()->user(),
+                                branchId: $this->getOwnerRecord()->resolveBranchId(),
+                            ))
                             ->searchable()
                             ->preload()
                             ->default(auth()->id()),
@@ -218,41 +223,17 @@ class PaymentsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedPlus)
                     ->using(function (array $data): Payment {
                         $invoice = $this->getOwnerRecord();
-                        $transactionRef = filled($data['transaction_ref'] ?? null)
-                            ? trim((string) $data['transaction_ref'])
-                            : null;
+                        $payment = app(PaymentRecordingService::class)->record($invoice, $data, auth()->user());
 
-                        if ($transactionRef) {
-                            $existingPayment = Payment::query()
-                                ->where('invoice_id', (int) $data['invoice_id'])
-                                ->where('transaction_ref', $transactionRef)
-                                ->first();
-
-                            if ($existingPayment) {
-                                Notification::make()
-                                    ->warning()
-                                    ->title('Mã giao dịch đã tồn tại')
-                                    ->body('Đã dùng bản ghi thanh toán hiện có để tránh ghi trùng.')
-                                    ->send();
-
-                                return $existingPayment;
-                            }
+                        if (filled($data['transaction_ref'] ?? null) && ! $payment->wasRecentlyCreated) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Mã giao dịch đã tồn tại')
+                                ->body('Đã dùng bản ghi thanh toán hiện có để tránh ghi trùng.')
+                                ->send();
                         }
 
-                        return $invoice->recordPayment(
-                            amount: (float) ($data['amount'] ?? 0),
-                            method: (string) ($data['method'] ?? 'cash'),
-                            notes: $data['note'] ?? null,
-                            paidAt: $data['paid_at'] ?? now(),
-                            direction: (string) ($data['direction'] ?? ClinicRuntimeSettings::defaultPaymentDirection()),
-                            refundReason: $data['refund_reason'] ?? null,
-                            transactionRef: $transactionRef,
-                            paymentSource: (string) ($data['payment_source'] ?? ClinicRuntimeSettings::defaultPaymentSource()),
-                            insuranceClaimNumber: $data['insurance_claim_number'] ?? null,
-                            receivedBy: $data['received_by'] ?? auth()->id(),
-                            reversalOfId: null,
-                            isDeposit: (bool) ($data['is_deposit'] ?? false),
-                        );
+                        return $payment;
                     })
                     ->after(function () {
                         $this->getOwnerRecord()->updatePaidAmount();

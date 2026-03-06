@@ -2,8 +2,8 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/FIN-finance.md`
 - Issue file: `docs/issues/FIN-issues.md`
 - Plan file: `docs/planning/FIN-plan.md`
@@ -37,15 +37,16 @@
 
 # Executive Summary
 
-🚨 CẢNH BÁO NGHIÊM TRỌNG
+- Các lỗ hổng `Critical/High` ban đầu của module `FIN` đã được khóa trong chu kỳ fix hiện tại:
+  - wallet authorization + wallet adjustment audit boundary
+  - invoice cancellation workflow và destructive surface
+  - refund/reversal idempotency
+  - `received_by` branch scoping
+  - payment write canonical service boundary
 
-- `PatientWalletResource` hiện không có policy riêng; runtime check cho thấy `Doctor` có thể `canViewAny()` và `canEdit()`, trong khi action `adjust` gọi thẳng `PatientWalletService::adjustBalance()` mà không có `ActionPermission` hoặc audit log chuyên biệt.
-- Invoice lifecycle vẫn cho phép đi thẳng vào `cancelled` từ form edit, và `updatePaymentStatus()` sẽ short-circuit nếu invoice đã `cancelled`; điều này mở đường hủy hóa đơn dù đã có payment/refund mà không qua workflow canonical.
-- Luồng refund đang gọi `markReversed()` rồi `recordPayment()` từ nhiều UI surface khác nhau nhưng không khóa record gốc và không có unique guard trên `reversal_of_id`; hai thao tác đồng thời có thể tạo nhiều phiếu đảo cho cùng một khoản thu.
-
-- Mức độ an toàn hiện tại: `Kém`
-- Mức độ rủi ro nghiệp vụ: `Rất cao`
-- Mức độ sẵn sàng production: `Kém`, chưa đạt baseline an toàn cho module tài chính
+- Mức độ an toàn hiện tại: `Tốt` cho finance baseline hiện tại
+- Mức độ rủi ro nghiệp vụ: `Trung bình`, chủ yếu còn ở vận hành đối soát và kiểm soát thay đổi liên module
+- Mức độ sẵn sàng production: `Đạt clean baseline` cho module tài chính ở phase hiện tại
 - Điểm tốt đáng kể:
   - `Invoice::recordPayment()` đã có transaction, `lockForUpdate()` trên invoice và idempotency theo `transaction_ref`
   - wallet ledger đã có unique `(payment_id, entry_type)` cho một số nhánh idempotency
@@ -263,9 +264,28 @@
 | FIN-002 | Critical | Domain Logic | Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh | Resolved | Cancel invoice da di qua workflow service, form/model khong con bypass |
 | FIN-003 | Critical | Concurrency | Refund/reversal khong idempotent va co race-condition tren payment goc | Resolved | Refund surfaces da di qua `PaymentReversalService` transaction-safe va idempotent |
 | FIN-004 | High | Data Integrity | Delete surface cua invoice va finance core van de drift du lieu xuong dong | Resolved | Delete surface da bi go bo, policy false va model layer chan direct delete |
-| FIN-005 | High | Security | `received_by` chua branch-scoped va chua sanitize server-side | Open | Co the gan nguoi thu sai chi nhanh tren payment/refund flow |
-| FIN-006 | Medium | Maintainability | Finance write logic bi nhan ban qua nhieu surface UI | Open | Create/refund flow dang lap lai o page, table, relation manager |
-| FIN-007 | Medium | Maintainability | Regression suite chua khoa wallet auth, invoice cancel hole va concurrent reversal | Open | Chua thay test chan 3 lo hong nghiem trong nhat cua FIN |
+| FIN-005 | High | Security | `received_by` chua branch-scoped va chua sanitize server-side | Resolved | `FinanceActorAuthorizer` da scope receiver theo branch va sanitize server-side o create path |
+| FIN-006 | Medium | Maintainability | Finance write logic bi nhan ban qua nhieu surface UI | Resolved | Payment create surfaces da duoc gom ve `PaymentRecordingService` canonical |
+| FIN-007 | Medium | Maintainability | Regression suite chua khoa wallet auth, invoice cancel hole va concurrent reversal | Resolved | FIN-focused regression suite va full suite da xanh sau hardening |
+
+# Re-audit Outcome
+
+- FIN da hoan thanh full lifecycle `review -> issues -> plan -> fix -> regression -> re-audit`.
+- Cac boundary da duoc khoa lai o 5 diem quan trong nhat:
+  - wallet resource da co policy, action permission va audit boundary
+  - invoice khong con bypass `cancelled`, delete surface da bi go bo
+  - refund/reversal da di qua `PaymentReversalService` transaction-safe va idempotent
+  - `received_by` da branch-scoped va forged payload bi chan o server-side
+  - create payment surfaces da duoc gom ve `PaymentRecordingService` canonical
+- FIN-focused regression suite tren snapshot sau hardening dat:
+  - `39 passed`
+  - `131 assertions`
+- Full suite tren snapshot sau FIN dat:
+  - `629 passed`
+  - `3373 assertions`
+  - `158.94s`
+- Verdict duoc nang tu `D` len `B`.
+- Module dat `Clean Baseline Reached`.
 
 # Dependencies
 
@@ -284,10 +304,10 @@
 
 # Recommended Next Steps
 
-- Tiep tuc `TASK-FIN-005` de branch-scope `received_by` va sanitize server-side
-- Sau do vao `TASK-FIN-006` va `TASK-FIN-007` de gom finance write logic va chot regression boundary
-- Chot full FIN regression va re-audit sau khi 3 task tren xanh
+- Chuyen sang `INV` de review inventory batch/stock boundary tren nen `FIN` da on dinh.
+- Giu regression suite `FIN` trong moi lan full-suite run vi day la module tien.
+- Theo doi tiep drift giua `FIN`, `INV` va `KPI` khi bat dau module inventory/reporting.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

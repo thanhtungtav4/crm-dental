@@ -2,8 +2,8 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-FIN-`
 - Source review: `docs/reviews/modules/FIN-finance.md`
 - Source issues: `docs/issues/FIN-issues.md`

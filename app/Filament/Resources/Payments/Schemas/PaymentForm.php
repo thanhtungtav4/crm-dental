@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Models\Invoice;
+use App\Services\FinanceActorAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms\Components\DateTimePicker;
@@ -139,7 +141,10 @@ class PaymentForm
                     ->schema([
                         Select::make('received_by')
                             ->label('Người nhận tiền')
-                            ->relationship('receiver', 'name')
+                            ->options(fn (Get $get): array => app(FinanceActorAuthorizer::class)->assignableReceiverOptions(
+                                actor: auth()->user(),
+                                branchId: self::resolveInvoiceBranchId($get('invoice_id')),
+                            ))
                             ->searchable()
                             ->preload()
                             ->default(auth()->id())
@@ -229,5 +234,17 @@ class PaymentForm
                         ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds));
                 });
         });
+    }
+
+    protected static function resolveInvoiceBranchId(mixed $invoiceId): ?int
+    {
+        if (! is_numeric($invoiceId)) {
+            return null;
+        }
+
+        return Invoice::query()
+            ->with('patient:id,first_branch_id')
+            ->find((int) $invoiceId)
+            ?->resolveBranchId();
     }
 }

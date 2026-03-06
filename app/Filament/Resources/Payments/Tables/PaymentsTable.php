@@ -6,6 +6,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\Payment;
+use App\Services\FinanceActorAuthorizer;
 use App\Services\PaymentReversalService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -163,7 +164,12 @@ class PaymentsTable
                 // Filter by receiver
                 SelectFilter::make('received_by')
                     ->label('Người nhận')
-                    ->relationship('receiver', 'name')
+                    ->relationship(
+                        name: 'receiver',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => app(FinanceActorAuthorizer::class)
+                            ->scopeAssignableReceivers($query, auth()->user()),
+                    )
                     ->searchable()
                     ->preload(),
 
