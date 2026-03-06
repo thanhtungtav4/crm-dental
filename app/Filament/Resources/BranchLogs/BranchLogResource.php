@@ -2,17 +2,15 @@
 
 namespace App\Filament\Resources\BranchLogs;
 
-use App\Filament\Resources\BranchLogs\Pages\CreateBranchLog;
-use App\Filament\Resources\BranchLogs\Pages\EditBranchLog;
 use App\Filament\Resources\BranchLogs\Pages\ListBranchLogs;
-use App\Filament\Resources\BranchLogs\Schemas\BranchLogForm;
 use App\Filament\Resources\BranchLogs\Tables\BranchLogsTable;
 use App\Models\BranchLog;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class BranchLogResource extends Resource
 {
@@ -29,17 +27,19 @@ class BranchLogResource extends Resource
     {
         return 'Quản lý khách hàng';
     }
-    
-    protected static ?int $navigationSort = 23;
 
-    public static function form(Schema $schema): Schema
-    {
-        return BranchLogForm::configure($schema);
-    }
+    protected static ?int $navigationSort = 23;
 
     public static function table(Table $table): Table
     {
         return BranchLogsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['patient', 'fromBranch', 'toBranch', 'mover'])
+            ->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array
@@ -49,12 +49,30 @@ class BranchLogResource extends Resource
         ];
     }
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListBranchLogs::route('/'),
-            'create' => CreateBranchLog::route('/create'),
-            'edit' => EditBranchLog::route('/{record}/edit'),
         ];
     }
 

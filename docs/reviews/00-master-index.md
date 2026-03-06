@@ -59,7 +59,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`, `TASK-GOV-005`; branch transfer concurrency da vao implementation.
+- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`, `TASK-GOV-005`, `TASK-GOV-006`; branch log read-only da vao implementation.
 
 # 6. Modules needing re-audit
 
@@ -71,4 +71,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `GOV` - tiep tuc chot `TASK-GOV-004` va `TASK-GOV-005`, sau do sang `TASK-GOV-006`.
+- `GOV` - chot `TASK-GOV-006`, sau do tiep tuc `TASK-GOV-007` de dong bo branch-aware query cho phan resource GOV con lai.

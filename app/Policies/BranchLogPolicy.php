@@ -4,67 +4,71 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\BranchLog;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class BranchLogPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $authUser): bool
     {
-        return $authUser->can('ViewAny:BranchLog');
+        return $authUser->hasRole('Admin')
+            || ($authUser->can('ViewAny:BranchLog') && $authUser->hasAnyAccessibleBranch());
     }
 
-    public function view(AuthUser $authUser, BranchLog $branchLog): bool
+    public function view(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('View:BranchLog');
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->can('View:BranchLog') && $branchLog->isVisibleTo($authUser);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $authUser): bool
     {
-        return $authUser->can('Create:BranchLog');
+        return false;
     }
 
-    public function update(AuthUser $authUser, BranchLog $branchLog): bool
+    public function update(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('Update:BranchLog');
+        return false;
     }
 
-    public function delete(AuthUser $authUser, BranchLog $branchLog): bool
+    public function delete(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('Delete:BranchLog');
+        return false;
     }
 
-    public function restore(AuthUser $authUser, BranchLog $branchLog): bool
+    public function restore(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('Restore:BranchLog');
+        return false;
     }
 
-    public function forceDelete(AuthUser $authUser, BranchLog $branchLog): bool
+    public function forceDelete(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('ForceDelete:BranchLog');
+        return false;
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:BranchLog');
+        return false;
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:BranchLog');
+        return false;
     }
 
-    public function replicate(AuthUser $authUser, BranchLog $branchLog): bool
+    public function replicate(User $authUser, BranchLog $branchLog): bool
     {
-        return $authUser->can('Replicate:BranchLog');
+        return false;
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $authUser): bool
     {
-        return $authUser->can('Reorder:BranchLog');
+        return false;
     }
-
 }

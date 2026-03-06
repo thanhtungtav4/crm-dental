@@ -200,7 +200,7 @@
 - Dependencies:
   - GOV-004
 - Suggested order: 6
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-GOV-006`
 
 ## [GOV-007] Resource GOV chua branch-aware o query layer
@@ -261,7 +261,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 2
+- Open high count: 1
 - Open medium count: 1
 - Open low count: 0
-- Next recommended action: hoan tat verify va commit `TASK-GOV-005`, sau do chuyen sang `TASK-GOV-006`.
+- Next recommended action: hoan tat commit `TASK-GOV-006`, sau do tiep tuc `TASK-GOV-007` va chuan bi re-audit GOV.
