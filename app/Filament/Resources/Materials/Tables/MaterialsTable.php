@@ -2,11 +2,8 @@
 
 namespace App\Filament\Resources\Materials\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use App\Support\BranchAccess;
 use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -59,16 +56,23 @@ class MaterialsTable
                     ->sortable()
                     ->alignEnd()
                     ->color(function ($record) {
-                        if ($record->needsReorder()) return 'danger';
-                        if ($record->isLowStock()) return 'warning';
+                        if ($record->needsReorder()) {
+                            return 'danger';
+                        }
+                        if ($record->isLowStock()) {
+                            return 'warning';
+                        }
+
                         return 'success';
                     })
                     ->weight(function ($record) {
-                        if ($record->needsReorder() || $record->isLowStock()) return 'bold';
+                        if ($record->needsReorder() || $record->isLowStock()) {
+                            return 'bold';
+                        }
+
                         return 'normal';
                     })
-                    ->description(fn ($record) => 
-                        $record->needsReorder() ? '🔴 Cần đặt hàng' : 
+                    ->description(fn ($record) => $record->needsReorder() ? '🔴 Cần đặt hàng' :
                         ($record->isLowStock() ? '⚠️ Tồn kho thấp' : '')
                     ),
                 TextColumn::make('cost_price')
@@ -169,7 +173,7 @@ class MaterialsTable
                     ->placeholder('Tất cả nhà cung cấp'),
                 SelectFilter::make('branch_id')
                     ->label('Chi nhánh')
-                    ->relationship('branch', 'name')
+                    ->relationship('branch', 'name', fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query))
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả chi nhánh'),
@@ -182,16 +186,6 @@ class MaterialsTable
             ->recordActions([
                 EditAction::make()
                     ->label('Sửa'),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->label('Xóa đã chọn'),
-                    ForceDeleteBulkAction::make()
-                        ->label('Xóa vĩnh viễn'),
-                    RestoreBulkAction::make()
-                        ->label('Khôi phục'),
-                ]),
             ])
             ->defaultSort('sku', 'asc');
     }

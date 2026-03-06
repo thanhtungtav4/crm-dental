@@ -2,15 +2,13 @@
 
 namespace App\Filament\Resources\Materials\RelationManagers;
 
-use Filament\Actions\BulkActionGroup;
+use App\Services\InventorySelectionAuthorizer;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -18,6 +16,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class BatchesRelationManager extends RelationManager
 {
@@ -57,7 +56,12 @@ class BatchesRelationManager extends RelationManager
                     ->required()
                     ->numeric()
                     ->minValue(0)
-                    ->default(0),
+                    ->default(0)
+                    ->disabled(fn (?Model $record): bool => $record !== null)
+                    ->dehydrated(fn (?Model $record): bool => $record === null)
+                    ->helperText(fn (?Model $record): ?string => $record
+                        ? 'So luong ton theo lo duoc dieu chinh qua workflow inventory, khong sua tay o day.'
+                        : null),
                 TextInput::make('purchase_price')
                     ->label('Giá nhập')
                     ->numeric()
@@ -65,7 +69,12 @@ class BatchesRelationManager extends RelationManager
                     ->suffix('VNĐ'),
                 Select::make('supplier_id')
                     ->label('Nhà cung cấp')
-                    ->relationship('supplier', 'name')
+                    ->relationship(
+                        name: 'supplier',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => app(InventorySelectionAuthorizer::class)
+                            ->scopeActiveSuppliers($query),
+                    )
                     ->searchable()
                     ->preload(),
                 Select::make('status')
@@ -77,7 +86,12 @@ class BatchesRelationManager extends RelationManager
                         'depleted' => 'Đã hết',
                     ])
                     ->default('active')
-                    ->required(),
+                    ->required()
+                    ->disabled(fn (?Model $record): bool => $record !== null)
+                    ->dehydrated(fn (?Model $record): bool => $record === null)
+                    ->helperText(fn (?Model $record): ?string => $record
+                        ? 'Doi trang thai lo bang action nghiep vu de giu audit va ly do thay doi.'
+                        : null),
                 Textarea::make('notes')
                     ->label('Ghi chú')
                     ->rows(2)
@@ -101,13 +115,13 @@ class BatchesRelationManager extends RelationManager
                     ->date('d/m/Y')
                     ->sortable()
                     ->badge()
-                    ->color(fn ($record) => match($record->getExpiryStatusBadge()) {
+                    ->color(fn ($record) => match ($record->getExpiryStatusBadge()) {
                         'danger' => 'danger',
                         'warning' => 'warning',
                         'success' => 'success',
                         default => 'gray',
                     })
-                    ->description(fn ($record) => $record->getDaysUntilExpiry() . ' ngày'),
+                    ->description(fn ($record) => $record->getDaysUntilExpiry().' ngày'),
                 TextColumn::make('quantity')
                     ->label('SL')
                     ->numeric()
@@ -175,6 +189,7 @@ class BatchesRelationManager extends RelationManager
                     ->label('Tạo lô mới')
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['created_by'] = auth()->id();
+
                         return $data;
                     }),
             ])
@@ -183,16 +198,9 @@ class BatchesRelationManager extends RelationManager
                     ->label('Sửa')
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['updated_by'] = auth()->id();
+
                         return $data;
                     }),
-                DeleteAction::make()
-                    ->label('Xóa'),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->label('Xóa đã chọn'),
-                ]),
             ])
             ->defaultSort('expiry_date', 'asc')
             ->emptyStateHeading('Chưa có lô nào')

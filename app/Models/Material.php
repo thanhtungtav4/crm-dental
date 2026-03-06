@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class Material extends Model
 {
@@ -35,6 +36,27 @@ class Material extends Model
         'sale_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $material): void {
+            $material->sku = filled($material->sku)
+                ? strtoupper(trim((string) $material->sku))
+                : null;
+        });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'material' => 'Vat tu kho khong ho tro xoa truc tiep. Vui long dung workflow inventory phu hop.',
+            ]);
+        });
+
+        static::restoring(function (): void {
+            throw ValidationException::withMessages([
+                'material' => 'Vat tu kho khong ho tro khoi phuc tu thao tac xoa.',
+            ]);
+        });
+    }
 
     /**
      * Relationships
@@ -80,7 +102,7 @@ class Material extends Model
     public function scopeNeedReorder($query)
     {
         return $query->whereNotNull('reorder_point')
-                     ->whereColumn('stock_qty', '<=', 'reorder_point');
+            ->whereColumn('stock_qty', '<=', 'reorder_point');
     }
 
     public function scopeForBranch($query, int $branchId)
@@ -99,10 +121,10 @@ class Material extends Model
     public function getActiveBatches()
     {
         return $this->batches()
-                    ->active()
-                    ->inStock()
-                    ->orderBy('expiry_date', 'asc')
-                    ->get();
+            ->active()
+            ->inStock()
+            ->orderBy('expiry_date', 'asc')
+            ->get();
     }
 
     public function hasExpiringBatches(int $days = 30): bool
@@ -132,7 +154,7 @@ class Material extends Model
 
     public function getCategoryLabel(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'medicine' => 'Thuốc',
             'consumable' => 'Vật tư tiêu hao',
             'equipment' => 'Thiết bị',

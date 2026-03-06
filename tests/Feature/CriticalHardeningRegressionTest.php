@@ -83,6 +83,15 @@ it('posts material issue note only once when post is retried', function (): void
         'min_stock' => 2,
         'cost_price' => 40_000,
     ]);
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'BATCH-ISSUE-001',
+        'expiry_date' => now()->addMonths(6)->toDateString(),
+        'quantity' => 8,
+        'purchase_price' => 40_000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
 
     $issueNote = MaterialIssueNote::query()->create([
         'patient_id' => $patient->id,
@@ -94,6 +103,7 @@ it('posts material issue note only once when post is retried', function (): void
     MaterialIssueItem::query()->create([
         'material_issue_note_id' => $issueNote->id,
         'material_id' => $material->id,
+        'material_batch_id' => $batch->id,
         'quantity' => 3,
         'unit_cost' => 40_000,
     ]);
@@ -103,9 +113,11 @@ it('posts material issue note only once when post is retried', function (): void
 
     expect($issueNote->refresh()->status)->toBe(MaterialIssueNote::STATUS_POSTED)
         ->and($material->refresh()->stock_qty)->toBe(5)
+        ->and($batch->refresh()->quantity)->toBe(5)
         ->and(InventoryTransaction::query()
             ->where('material_issue_note_id', $issueNote->id)
             ->where('material_id', $material->id)
+            ->where('material_batch_id', $batch->id)
             ->where('type', 'out')
             ->count())->toBe(1);
 });
@@ -122,6 +134,15 @@ it('prevents editing or deleting material issue items after note is posted', fun
         'stock_qty' => 10,
         'cost_price' => 35_000,
     ]);
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'BATCH-ISSUE-002',
+        'expiry_date' => now()->addMonths(6)->toDateString(),
+        'quantity' => 10,
+        'purchase_price' => 35_000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
 
     $issueNote = MaterialIssueNote::query()->create([
         'patient_id' => $patient->id,
@@ -133,6 +154,7 @@ it('prevents editing or deleting material issue items after note is posted', fun
     $item = MaterialIssueItem::query()->create([
         'material_issue_note_id' => $issueNote->id,
         'material_id' => $material->id,
+        'material_batch_id' => $batch->id,
         'quantity' => 2,
         'unit_cost' => 35_000,
     ]);

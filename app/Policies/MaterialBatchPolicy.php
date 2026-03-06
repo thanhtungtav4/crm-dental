@@ -34,27 +34,27 @@ class MaterialBatchPolicy
 
     public function delete(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Delete:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
+        return false;
     }
 
     public function restore(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('Restore:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
+        return false;
     }
 
     public function forceDelete(User $authUser, MaterialBatch $materialBatch): bool
     {
-        return $authUser->can('ForceDelete:MaterialBatch') && $this->canAccessMaterialBatch($authUser, $materialBatch);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:MaterialBatch') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, MaterialBatch $materialBatch): bool

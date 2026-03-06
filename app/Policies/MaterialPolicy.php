@@ -34,27 +34,27 @@ class MaterialPolicy
 
     public function delete(User $authUser, Material $material): bool
     {
-        return $authUser->can('Delete:Material') && $this->canAccessMaterial($authUser, $material);
+        return false;
     }
 
     public function restore(User $authUser, Material $material): bool
     {
-        return $authUser->can('Restore:Material') && $this->canAccessMaterial($authUser, $material);
+        return false;
     }
 
     public function forceDelete(User $authUser, Material $material): bool
     {
-        return $authUser->can('ForceDelete:Material') && $this->canAccessMaterial($authUser, $material);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Material') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Material') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, Material $material): bool

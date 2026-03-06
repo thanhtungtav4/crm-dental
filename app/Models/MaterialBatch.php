@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class MaterialBatch extends Model
 {
@@ -33,6 +33,21 @@ class MaterialBatch extends Model
         'purchase_price' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'material_batch' => 'Lo vat tu khong ho tro xoa truc tiep. Vui long dung workflow inventory phu hop.',
+            ]);
+        });
+
+        static::restoring(function (): void {
+            throw ValidationException::withMessages([
+                'material_batch' => 'Lo vat tu khong ho tro khoi phuc tu thao tac xoa.',
+            ]);
+        });
+    }
+
     /**
      * Relationships
      */
@@ -49,6 +64,16 @@ class MaterialBatch extends Model
     public function treatmentMaterials(): HasMany
     {
         return $this->hasMany(TreatmentMaterial::class, 'batch_id');
+    }
+
+    public function inventoryTransactions(): HasMany
+    {
+        return $this->hasMany(InventoryTransaction::class, 'material_batch_id');
+    }
+
+    public function issueItems(): HasMany
+    {
+        return $this->hasMany(MaterialIssueItem::class, 'material_batch_id');
     }
 
     public function createdBy(): BelongsTo
@@ -77,7 +102,7 @@ class MaterialBatch extends Model
     public function scopeExpiringSoon($query, int $days = 30)
     {
         return $query->where('expiry_date', '>', now())
-                     ->where('expiry_date', '<=', now()->addDays($days));
+            ->where('expiry_date', '<=', now()->addDays($days));
     }
 
     public function scopeInStock($query)
@@ -100,7 +125,7 @@ class MaterialBatch extends Model
 
     public function isExpiringSoon(int $days = 30): bool
     {
-        return $this->expiry_date > now() && 
+        return $this->expiry_date > now() &&
                $this->expiry_date <= now()->addDays($days);
     }
 
@@ -118,21 +143,22 @@ class MaterialBatch extends Model
         } elseif ($this->isExpiringSoon(30)) {
             return 'warning'; // 7-30 days = yellow
         }
+
         return 'success'; // > 30 days = green
     }
 
     public function getExpiryWarningMessage(): ?string
     {
         $days = $this->getDaysUntilExpiry();
-        
+
         if ($days < 0) {
-            return '⚠️ ĐÃ HẾT HẠN ' . abs($days) . ' ngày!';
+            return '⚠️ ĐÃ HẾT HẠN '.abs($days).' ngày!';
         } elseif ($days <= 7) {
-            return '🚨 SẮP HẾT HẠN trong ' . $days . ' ngày!';
+            return '🚨 SẮP HẾT HẠN trong '.$days.' ngày!';
         } elseif ($days <= 30) {
-            return '⚡ Sắp hết hạn trong ' . $days . ' ngày';
+            return '⚡ Sắp hết hạn trong '.$days.' ngày';
         }
-        
+
         return null;
     }
 
@@ -148,22 +174,22 @@ class MaterialBatch extends Model
         }
 
         $this->quantity -= $amount;
-        
+
         if ($this->quantity == 0) {
             $this->status = 'depleted';
         }
-        
+
         return $this->save();
     }
 
     public function increaseQuantity(int $amount): bool
     {
         $this->quantity += $amount;
-        
+
         if ($this->status === 'depleted' && $this->quantity > 0) {
             $this->status = 'active';
         }
-        
+
         return $this->save();
     }
 }

@@ -2,12 +2,16 @@
 
 namespace App\Filament\Resources\Materials\Schemas;
 
+use App\Services\InventorySelectionAuthorizer;
+use App\Support\BranchAccess;
 use Filament\Forms\Components\Placeholder;
-use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rules\Unique;
 
 class MaterialForm
 {
@@ -21,9 +25,16 @@ class MaterialForm
                             ->label('SKU')
                             ->required()
                             ->maxLength(50)
-                            ->unique(ignoreRecord: true)
+                            ->unique(
+                                ignoreRecord: true,
+                                modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule->where(
+                                    'branch_id',
+                                    $get('branch_id'),
+                                ),
+                            )
+                            ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtoupper(trim($state)) : null)
                             ->placeholder('VD: MAT-001')
-                            ->helperText('Mã vật tư duy nhất')
+                            ->helperText('Mã vật tư duy nhất trong từng chi nhánh')
                             ->columnSpan(1),
                         TextInput::make('name')
                             ->label('Tên vật tư')
@@ -47,9 +58,15 @@ class MaterialForm
                             ->columnSpan(1),
                         Select::make('branch_id')
                             ->label('Chi nhánh')
-                            ->relationship('branch', 'name')
+                            ->relationship(
+                                name: 'branch',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                            )
                             ->searchable()
                             ->preload()
+                            ->default(fn (): ?int => BranchAccess::defaultBranchIdForCurrentUser())
+                            ->required()
                             ->columnSpan(1),
                     ])
                     ->columns(2),
@@ -64,7 +81,11 @@ class MaterialForm
                             ->columnSpan(1),
                         Select::make('supplier_id')
                             ->label('Nhà cung cấp mặc định')
-                            ->relationship('supplier', 'name')
+                            ->relationship(
+                                name: 'supplier',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => app(InventorySelectionAuthorizer::class)->scopeActiveSuppliers($query),
+                            )
                             ->searchable()
                             ->preload()
                             ->createOptionForm([
@@ -89,11 +110,12 @@ class MaterialForm
                             ->columnSpan(1),
                         TextInput::make('stock_qty')
                             ->label('Số lượng tồn kho')
-                            ->required()
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
-                            ->helperText('Số lượng hiện có trong kho')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('Tồn tổng được đồng bộ qua lô vật tư và service nghiệp vụ, không sửa tay ở form này.')
                             ->columnSpan(1),
                         TextInput::make('min_stock')
                             ->label('Tồn kho tối thiểu')
@@ -151,17 +173,28 @@ class MaterialForm
                         Placeholder::make('expiring_batches_count')
                             ->label('Số lô sắp hết hạn')
                             ->content(function ($record) {
-                                if (!$record) return 0;
+                                if (! $record) {
+                                    return 0;
+                                }
+
                                 $count = $record->getExpiringBatchesCount(30);
-                                return $count > 0 ? "⚠️ {$count} lô" : "✅ Không có";
+
+                                return $count > 0 ? "⚠️ {$count} lô" : '✅ Không có';
                             })
                             ->columnSpan(1),
                         Placeholder::make('is_low_stock')
                             ->label('Cảnh báo tồn kho')
                             ->content(function ($record) {
-                                if (!$record) return 'Chưa có';
-                                if ($record->needsReorder()) return '🔴 Cần đặt hàng ngay';
-                                if ($record->isLowStock()) return '⚠️ Tồn kho thấp';
+                                if (! $record) {
+                                    return 'Chưa có';
+                                }
+                                if ($record->needsReorder()) {
+                                    return '🔴 Cần đặt hàng ngay';
+                                }
+                                if ($record->isLowStock()) {
+                                    return '⚠️ Tồn kho thấp';
+                                }
+
                                 return '✅ Đủ hàng';
                             })
                             ->columnSpan(1),

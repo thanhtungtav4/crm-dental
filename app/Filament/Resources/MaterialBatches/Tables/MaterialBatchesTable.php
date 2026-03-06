@@ -2,11 +2,8 @@
 
 namespace App\Filament\Resources\MaterialBatches\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use App\Services\InventorySelectionAuthorizer;
 use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -37,13 +34,13 @@ class MaterialBatchesTable
                     ->date('d/m/Y')
                     ->sortable()
                     ->badge()
-                    ->color(fn ($record) => match($record->getExpiryStatusBadge()) {
+                    ->color(fn ($record) => match ($record->getExpiryStatusBadge()) {
                         'danger' => 'danger',
                         'warning' => 'warning',
                         'success' => 'success',
                         default => 'gray',
                     })
-                    ->description(fn ($record) => $record->getDaysUntilExpiry() . ' ngày'),
+                    ->description(fn ($record) => $record->getDaysUntilExpiry().' ngày'),
                 TextColumn::make('quantity')
                     ->label('Số lượng')
                     ->numeric()
@@ -141,7 +138,11 @@ class MaterialBatchesTable
                     ->placeholder('Tất cả trạng thái'),
                 SelectFilter::make('material_id')
                     ->label('Vật tư')
-                    ->relationship('material', 'name')
+                    ->relationship(
+                        'material',
+                        'name',
+                        fn (Builder $query): Builder => app(InventorySelectionAuthorizer::class)->scopeMaterials($query, auth()->user()),
+                    )
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả vật tư'),
@@ -161,17 +162,6 @@ class MaterialBatchesTable
                 EditAction::make()
                     ->label('Sửa'),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->label('Xóa đã chọn'),
-                    ForceDeleteBulkAction::make()
-                        ->label('Xóa vĩnh viễn'),
-                    RestoreBulkAction::make()
-                        ->label('Khôi phục'),
-                ]),
-            ])
             ->defaultSort('expiry_date', 'asc');
     }
 }
-

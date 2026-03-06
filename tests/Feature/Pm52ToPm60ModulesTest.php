@@ -12,6 +12,7 @@ use App\Models\FactoryOrder;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\Material;
+use App\Models\MaterialBatch;
 use App\Models\MaterialIssueItem;
 use App\Models\MaterialIssueNote;
 use App\Models\Note;
@@ -360,6 +361,15 @@ it('posts material issue note and records inventory transactions', function (): 
         'min_stock' => 7,
         'cost_price' => 50_000,
     ]);
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'BATCH-PM60-001',
+        'expiry_date' => now()->addMonths(6)->toDateString(),
+        'quantity' => 10,
+        'purchase_price' => 50_000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
 
     $issueNote = MaterialIssueNote::query()->create([
         'patient_id' => $patient->id,
@@ -371,6 +381,7 @@ it('posts material issue note and records inventory transactions', function (): 
     MaterialIssueItem::query()->create([
         'material_issue_note_id' => $issueNote->id,
         'material_id' => $material->id,
+        'material_batch_id' => $batch->id,
         'quantity' => 4,
         'unit_cost' => 50_000,
     ]);
@@ -383,12 +394,14 @@ it('posts material issue note and records inventory transactions', function (): 
     expect($issueNote->status)->toBe(MaterialIssueNote::STATUS_POSTED)
         ->and($issueNote->posted_by)->toBe($admin->id)
         ->and($material->stock_qty)->toBe(6)
+        ->and($batch->refresh()->quantity)->toBe(6)
         ->and($warnings)->toHaveCount(1)
         ->and($warnings[0])->toContain((string) $material->name);
 
     expect(InventoryTransaction::query()
         ->where('material_issue_note_id', $issueNote->id)
         ->where('material_id', $material->id)
+        ->where('material_batch_id', $batch->id)
         ->where('type', 'out')
         ->where('quantity', 4)
         ->exists())->toBeTrue();
