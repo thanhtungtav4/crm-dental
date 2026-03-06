@@ -2,8 +2,11 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\TreatmentSession;
+use App\Models\Branch;
+use App\Models\FactoryOrder;
+use App\Models\FactoryOrderItem;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class FactoryStatistical extends BaseReportPage
@@ -25,64 +28,137 @@ class FactoryStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return TreatmentSession::query()
-            ->with(['treatmentPlan.patient', 'planItem.service', 'doctor']);
+        return $this->baseFactoryOrderQuery()
+            ->with(['patient', 'branch', 'doctor', 'supplier'])
+            ->withCount('items')
+            ->withSum('items as items_total_amount', 'total_price');
     }
 
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('treatmentPlan.patient.full_name')
-                ->label('Khách hàng')
+            TextColumn::make('order_no')
+                ->label('Mã lệnh')
+                ->searchable(),
+            TextColumn::make('patient.full_name')
+                ->label('Bệnh nhân')
                 ->searchable()
-                ->default('-'),
-            TextColumn::make('planItem.service.name')
-                ->label('Thủ thuật')
                 ->default('-')
                 ->wrap(),
+            TextColumn::make('supplier.name')
+                ->label('Nhà cung cấp')
+                ->default('-')
+                ->wrap(),
+            TextColumn::make('branch.name')
+                ->label('Chi nhánh')
+                ->default('-'),
             TextColumn::make('doctor.name')
                 ->label('Bác sĩ')
                 ->default('-'),
-            TextColumn::make('performed_at')
-                ->label('Ngày điều trị')
-                ->dateTime('d/m/Y H:i'),
             TextColumn::make('status')
                 ->label('Trạng thái')
                 ->badge()
-                ->formatStateUsing(fn (?string $state) => match ($state) {
-                    'completed' => 'Hoàn thành',
-                    'in_progress' => 'Đang thực hiện',
-                    'pending' => 'Chờ xử lý',
-                    default => 'Chưa xác định',
-                }),
+                ->formatStateUsing(fn (string $state): string => FactoryOrder::statusOptions()[$state] ?? $state),
+            TextColumn::make('items_count')
+                ->label('Số item')
+                ->numeric(),
+            TextColumn::make('items_total_amount')
+                ->label('Tổng giá trị')
+                ->money('VND', divideBy: 1),
+            TextColumn::make('due_at')
+                ->label('Hẹn trả')
+                ->dateTime('d/m/Y H:i')
+                ->default('-'),
         ];
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all()),
+            SelectFilter::make('status')
+                ->label('Trạng thái')
+                ->options(FactoryOrder::statusOptions()),
+            SelectFilter::make('supplier_id')
+                ->label('Nhà cung cấp')
+                ->relationship(
+                    name: 'supplier',
+                    titleAttribute: 'name',
+                    modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'),
+                )
+                ->searchable()
+                ->preload(),
+        ]);
     }
 
     protected function getExportColumns(): array
     {
         return [
-            ['label' => 'Khách hàng', 'value' => fn ($record) => $record->treatmentPlan?->patient?->full_name],
-            ['label' => 'Thủ thuật', 'value' => fn ($record) => $record->planItem?->service?->name],
+            ['label' => 'Mã lệnh', 'value' => fn ($record) => $record->order_no],
+            ['label' => 'Bệnh nhân', 'value' => fn ($record) => $record->patient?->full_name],
+            ['label' => 'Nhà cung cấp', 'value' => fn ($record) => $record->supplier?->name],
+            ['label' => 'Chi nhánh', 'value' => fn ($record) => $record->branch?->name],
             ['label' => 'Bác sĩ', 'value' => fn ($record) => $record->doctor?->name],
-            ['label' => 'Ngày điều trị', 'value' => fn ($record) => $record->performed_at],
-            ['label' => 'Trạng thái', 'value' => fn ($record) => match ($record->status) {
-                'completed' => 'Hoàn thành',
-                'in_progress' => 'Đang thực hiện',
-                'pending' => 'Chờ xử lý',
-                default => 'Chưa xác định',
-            }],
+            ['label' => 'Trạng thái', 'value' => fn ($record) => FactoryOrder::statusOptions()[$record->status] ?? $record->status],
+            ['label' => 'Số item', 'value' => fn ($record) => $record->items_count],
+            ['label' => 'Tổng giá trị', 'value' => fn ($record) => $record->items_total_amount],
+            ['label' => 'Hẹn trả', 'value' => fn ($record) => $record->due_at],
         ];
     }
 
     public function getStats(): array
     {
-        $baseQuery = TreatmentSession::query();
+        $baseQuery = $this->baseFactoryOrderQuery();
         $this->applyDateRange($baseQuery, 'created_at');
 
-        $total = (clone $baseQuery)->count();
+        $totalOrders = (clone $baseQuery)->count();
+        $openOrders = (clone $baseQuery)
+            ->whereIn('status', [
+                FactoryOrder::STATUS_ORDERED,
+                FactoryOrder::STATUS_IN_PROGRESS,
+            ])
+            ->count();
+        $deliveredOrders = (clone $baseQuery)
+            ->where('status', FactoryOrder::STATUS_DELIVERED)
+            ->count();
+        $totalValue = (float) FactoryOrderItem::query()
+            ->whereIn('factory_order_id', (clone $baseQuery)->select('id'))
+            ->sum('total_price');
 
         return [
-            ['label' => 'Tổng phiên điều trị', 'value' => number_format($total)],
+            ['label' => 'Tổng lệnh labo', 'value' => number_format($totalOrders)],
+            ['label' => 'Đang xử lý', 'value' => number_format($openOrders)],
+            ['label' => 'Đã giao', 'value' => number_format($deliveredOrders)],
+            ['label' => 'Tổng giá trị', 'value' => number_format($totalValue).' đ'],
         ];
+    }
+
+    protected function baseFactoryOrderQuery(): Builder
+    {
+        $branchId = $this->getFilterValue('branch_id');
+        $status = $this->getFilterValue('status');
+        $supplierId = $this->getFilterValue('supplier_id');
+
+        return FactoryOrder::query()
+            ->branchAccessible()
+            ->when(
+                filled($branchId),
+                fn (Builder $query): Builder => $query->where('branch_id', (int) $branchId),
+            )
+            ->when(
+                filled($status),
+                fn (Builder $query): Builder => $query->where('status', (string) $status),
+            )
+            ->when(
+                filled($supplierId),
+                fn (Builder $query): Builder => $query->where('supplier_id', (int) $supplierId),
+            );
+    }
+
+    protected function getFilterValue(string $filterName): mixed
+    {
+        return data_get($this->tableFilters ?? [], "{$filterName}.value");
     }
 }
