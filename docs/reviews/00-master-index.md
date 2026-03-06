@@ -36,7 +36,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Clean Baseline Reached | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | B | Khong con open blocker baseline; tiep tuc theo doi drift giua finance, inventory va KPI bang full-suite regression | GOV, PAT, APPT, TRT, INV, KPI |
-| INV | Inventory / Batches / Stock | In Fix | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | D | Inventory mutation boundary chua centralize; rollout drift `inventory_transactions.material_batch_id` con mo | GOV, TRT, FIN, SUP, KPI |
+| INV | Inventory / Batches / Stock | Clean Baseline Reached | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | B | Khong con open code blocker baseline; follow-up van hanh la chay migrate + schema gate inventory tren DB dang drift | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Pending Review | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | TBD | TODO | PAT, APPT, CARE, INT, OPS |
@@ -52,23 +52,23 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `CLIN` da dat clean baseline; EMR PHI, consent lifecycle, session idempotency, branch-scoped doctor assignment va audit timeline reader da duoc khoa bang regression test.
 - `TRT` da dat clean baseline; batch-safe material usage, workflow state machine, branch-scoped assignment va destructive guard da duoc khoa bang regression test.
 - `FIN` da dat clean baseline; wallet authorization, invoice workflow, refund idempotency va canonical payment boundary da duoc khoa bang regression test.
-- `INV` dang o phase `In Fix`; `INV-001` den `INV-004` da duoc khoa, con mo `INV-005` (canonical mutation boundary) va `INV-006` (regression + rollout drift).
+- `INV` da dat clean baseline; canonical mutation boundary, regression suite va schema gate inventory da duoc khoa. Follow-up con lai la rollout migration/schema gate tren DB thuc te.
 - `SUP` nen duoc review sau khi `INV` khoa batch-safe inventory baseline.
 
 # 4. Priority overview
 
 - Critical modules: Chua co module critical dang mo sau khi `FIN` dat baseline
-- High priority modules: `INV`, `SUP`, `CARE`, `ZNS`, `INT`, `OPS`, `KPI`
+- High priority modules: `SUP`, `CARE`, `ZNS`, `INT`, `OPS`, `KPI`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `INV` - da khoa batch traceability va UI/manual mutation surfaces; san sang deep fix `TASK-INV-005`.
+- `SUP` - nen duoc review va lap plan tiep ngay sau khi `INV` dat clean baseline.
 
 # 6. Modules needing re-audit
 
-- Chua co module nao can re-audit ngay luc nay; `INV` dang o phase fix dau tien.
+- Chua co module nao can re-audit ngay luc nay.
 
 # 7. Suggested next module to review
 
@@ -76,4 +76,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `INV` - tiep tuc `TASK-INV-005` de centralize inventory mutation boundary.
+- `SUP` - sau khi xong review/issues/plan thi day la module fix ke tiep vi phu thuoc truc tiep vao inventory baseline.

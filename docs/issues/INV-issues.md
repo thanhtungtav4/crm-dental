@@ -2,8 +2,8 @@
 
 - Module code: `INV`
 - Module name: `Inventory / Batches / Stock`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `INV-`
 - Task ID prefix: `TASK-INV-`
 - Review file: `docs/reviews/modules/INV-inventory.md`
@@ -164,7 +164,7 @@
   - `INV-001`
   - `TRT`
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-INV-005`
 
 ## [INV-006] Regression coverage va rollout verification chua khoa inventory drift
@@ -192,13 +192,13 @@
 - Dependencies:
   - `INV-001`, `INV-002`, `INV-003`, `INV-004`
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-INV-006`
 
 # Summary
 
 - Open critical count: 0
 - Open high count: 0
-- Open medium count: 2
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: chot `TASK-INV-005` de centralize inventory mutation boundary, sau do dong `TASK-INV-006` cho regression va rollout verification.
+- Next recommended action: chay `php artisan migrate` + `php artisan schema:assert-critical-inventory-columns` tren DB thuc te, sau do chuyen sang review `SUP`.

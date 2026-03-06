@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\InventoryTransaction;
 use App\Models\Material;
-use App\Models\MaterialBatch;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentSession;
 use App\Models\User;
@@ -56,13 +55,7 @@ class TreatmentMaterialUsageService
                 ->lockForUpdate()
                 ->findOrFail($sessionId);
 
-            $material = Material::query()
-                ->lockForUpdate()
-                ->findOrFail($materialId);
-
-            $batch = MaterialBatch::query()
-                ->lockForUpdate()
-                ->findOrFail($batchId);
+            $material = Material::query()->findOrFail($materialId);
 
             $sessionBranchId = $session->treatmentPlan?->branch_id;
             $materialBranchId = $material->branch_id;
@@ -78,42 +71,6 @@ class TreatmentMaterialUsageService
                 ]);
             }
 
-            if ((int) $batch->material_id !== $material->id) {
-                throw ValidationException::withMessages([
-                    'batch_id' => 'Lo vat tu khong thuoc vat tu da chon.',
-                ]);
-            }
-
-            if ($materialBranchId !== null && $sessionBranchId !== null && (int) $materialBranchId !== (int) $sessionBranchId) {
-                throw ValidationException::withMessages([
-                    'material_id' => 'Vat tu khong cung chi nhanh voi phien dieu tri da chon.',
-                ]);
-            }
-
-            if ($batch->status !== 'active') {
-                throw ValidationException::withMessages([
-                    'batch_id' => 'Chi duoc su dung lo vat tu dang hoat dong.',
-                ]);
-            }
-
-            if ($batch->expiry_date !== null && $batch->expiry_date->lt(today())) {
-                throw ValidationException::withMessages([
-                    'batch_id' => 'Khong duoc su dung lo vat tu da het han.',
-                ]);
-            }
-
-            if ((int) $batch->quantity < $quantity) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'So luong su dung vuot qua ton kho cua lo vat tu da chon.',
-                ]);
-            }
-
-            if ((int) $material->stock_qty < $quantity) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'So luong su dung vuot qua ton kho hien tai.',
-                ]);
-            }
-
             $data = app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentMaterialUsageData(
                 actor: $authUser instanceof User ? $authUser : null,
                 data: $data,
@@ -123,6 +80,17 @@ class TreatmentMaterialUsageService
             $actorId = is_numeric($data['used_by'] ?? null)
                 ? (int) $data['used_by']
                 : (is_numeric(auth()->id()) ? (int) auth()->id() : null);
+
+            $mutation = app(InventoryMutationService::class)->consumeBatch(
+                materialId: $material->id,
+                batchId: $batchId,
+                quantity: $quantity,
+                expectedBranchId: $resolvedBranchId,
+                branchMismatchMessage: 'Vat tu khong cung chi nhanh voi phien dieu tri da chon.',
+            );
+
+            $material = $mutation['material'];
+            $batch = $mutation['batch'];
 
             $unitCost = (float) ($batch->purchase_price ?? $material->cost_price ?? $material->sale_price ?? 0);
             $totalCost = is_numeric($data['cost'] ?? null) && (float) $data['cost'] > 0
@@ -137,15 +105,6 @@ class TreatmentMaterialUsageService
                 'cost' => $totalCost,
                 'used_by' => $actorId,
             ]));
-
-            $batch->quantity = (int) $batch->quantity - $quantity;
-            if ((int) $batch->quantity === 0) {
-                $batch->status = 'depleted';
-            }
-            $batch->save();
-
-            $material->stock_qty = (int) $material->stock_qty - $quantity;
-            $material->save();
 
             InventoryTransaction::query()->create([
                 'material_id' => $material->id,
@@ -175,29 +134,23 @@ class TreatmentMaterialUsageService
                 ->lockForUpdate()
                 ->findOrFail($usage->getKey());
 
-            $material = Material::query()
-                ->lockForUpdate()
-                ->findOrFail((int) $lockedUsage->material_id);
-
-            $batch = MaterialBatch::query()
-                ->lockForUpdate()
-                ->findOrFail((int) $lockedUsage->batch_id);
+            $material = Material::query()->findOrFail((int) $lockedUsage->material_id);
 
             $quantity = (int) $lockedUsage->quantity;
             $resolvedBranchId = $lockedUsage->session?->treatmentPlan?->branch_id !== null
                 ? (int) $lockedUsage->session->treatmentPlan->branch_id
                 : ($material->branch_id !== null ? (int) $material->branch_id : null);
 
-            $batch->quantity = (int) $batch->quantity + $quantity;
-            if ($batch->status === 'depleted' && (int) $batch->quantity > 0) {
-                $batch->status = $batch->expiry_date !== null && $batch->expiry_date->lt(today())
-                    ? 'expired'
-                    : 'active';
-            }
-            $batch->save();
+            $mutation = app(InventoryMutationService::class)->restoreBatch(
+                materialId: (int) $lockedUsage->material_id,
+                batchId: (int) $lockedUsage->batch_id,
+                quantity: $quantity,
+                expectedBranchId: $resolvedBranchId,
+                branchMismatchMessage: 'Vat tu khong cung chi nhanh voi phien dieu tri da chon.',
+            );
 
-            $material->stock_qty = (int) $material->stock_qty + $quantity;
-            $material->save();
+            $material = $mutation['material'];
+            $batch = $mutation['batch'];
 
             InventoryTransaction::query()->create([
                 'material_id' => $material->id,

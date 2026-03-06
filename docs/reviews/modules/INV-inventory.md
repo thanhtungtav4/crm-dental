@@ -2,8 +2,8 @@
 
 - Module code: `INV`
 - Module name: `Inventory / Batches / Stock`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/INV-inventory.md`
 - Issue file: `docs/issues/INV-issues.md`
 - Plan file: `docs/planning/INV-plan.md`
@@ -38,13 +38,13 @@
 
 # Executive Summary
 
-- Muc do an toan hien tai: `Kem`
-- Muc do rui ro nghiep vu: `Cao`
-- Muc do san sang production: `Kem`, chua dat baseline cho inventory do ton tong va ton theo lo co the drift ngay trong flow chuan.
+- Muc do an toan hien tai: `Tot`
+- Muc do rui ro nghiep vu: `Trung binh`
+- Muc do san sang production: `Dat clean baseline cho codebase`; can chot rollout migration/schema gate tren DB thuc te truoc khi xem la da trien khai xong.
 - Cac canh bao nghiem trong:
-  - inventory mutation boundary van chua duoc centralize giua issue-note flow, treatment usage va cac future adjust/receive flows.
-  - rollout drift van ton tai: app DB hien tai chua co cot `inventory_transactions.material_batch_id` du migration da ton tai trong repo.
-  - module dang trong giai doan `In Fix`; `INV-001` den `INV-004` da duoc khoa bang code + test, nhung chua re-audit module.
+  - khong con open code blocker baseline trong `INV`; `INV-001` den `INV-006` da duoc khoa bang code + test + full suite.
+  - rollout drift van ton tai o DB app hien huu neu chua chay migration them `material_issue_items.material_batch_id` va `inventory_transactions.material_batch_id`.
+  - schema gate moi chi xac nhan ro drift van hanh; can chay `php artisan migrate` va `php artisan schema:assert-critical-inventory-columns` tren moi moi truong.
 
 # Architecture Findings
 
@@ -254,8 +254,8 @@
 | INV-002 | High | Data Integrity | SKU uniqueness va aggregate stock invariant con yeu | Resolved | SKU da duoc khoa unique o DB; `stock_qty` da bi cat khoi CRUD form/page thong thuong |
 | INV-003 | High | UX / Data Integrity | Destructive va manual mutation surfaces cua material/batch van mo | Resolved | delete/restore/force-delete surfaces da bi cat; batch quantity/status chi con editable khi tao moi |
 | INV-004 | High | Security / Domain Logic | Forms va relation managers chua branch-scoped, stock-aware day du | Resolved | material selectors da branch-aware; forged payload va supplier inactive deu bi chan server-side |
-| INV-005 | Medium | Concurrency | Batch mutation logic chua duoc centralize thanh transaction-safe boundary | Open | `MaterialBatch::decreaseQuantity()` / `increaseQuantity()` khong lock-safe; issue note khong dung chung boundary voi treatment |
-| INV-006 | Medium | Maintainability | Regression coverage chua khoa inventory drift va rollout drift | Open | thieu test cho batch-safe issue note, SKU invariant, destructive surfaces va migration alignment |
+| INV-005 | Medium | Concurrency | Batch mutation logic chua duoc centralize thanh transaction-safe boundary | Resolved | `InventoryMutationService` da tro thanh canonical mutation boundary cho consume/restore va duoc treatment + issue-note flow tai su dung |
+| INV-006 | Medium | Maintainability | Regression coverage chua khoa inventory drift va rollout drift | Resolved | regression suite inventory da day du; schema gate command da them vao de bat rollout drift som |
 
 # Dependencies
 
@@ -275,10 +275,10 @@
 
 # Recommended Next Steps
 
-- Chot `INV-005` de dua batch mutation ve canonical transaction-safe boundary dung chung cho inventory va treatment.
-- Sau do dong `INV-006` de khoa regression suite va rollout verification cho schema drift.
-- Bo sung regression suite cho batch-safe issue posting truoc khi sang `SUP` hoac `KPI`.
+- Chay `php artisan migrate` tren moi moi truong chua apply inventory migrations.
+- Chay `php artisan schema:assert-critical-inventory-columns` nhu release gate sau migrate de dam bao khong con schema drift.
+- Bat dau review `SUP` vi inventory baseline da dat clean.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

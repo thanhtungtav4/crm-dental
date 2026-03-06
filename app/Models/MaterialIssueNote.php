@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InventoryMutationService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -187,97 +188,20 @@ class MaterialIssueNote extends Model
                 ]);
             }
 
-            $materialIds = $items->pluck('material_id')
-                ->filter(static fn (mixed $materialId): bool => is_numeric($materialId))
-                ->map(static fn (mixed $materialId): int => (int) $materialId)
-                ->unique()
-                ->sort()
-                ->values();
-
-            $materialsById = Material::query()
-                ->whereIn('id', $materialIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
-
-            $batchIds = $items->pluck('material_batch_id')
-                ->filter(static fn (mixed $batchId): bool => is_numeric($batchId))
-                ->map(static fn (mixed $batchId): int => (int) $batchId)
-                ->unique()
-                ->sort()
-                ->values();
-
-            $materialBatchesById = MaterialBatch::query()
-                ->whereIn('id', $batchIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
-
             foreach ($items as $item) {
-                $material = $materialsById->get((int) $item->material_id);
-                if (! $material) {
-                    throw ValidationException::withMessages([
-                        'items' => 'Không tìm thấy vật tư cho một hoặc nhiều dòng xuất kho.',
-                    ]);
-                }
-
-                $materialBatch = $materialBatchesById->get((int) $item->material_batch_id);
-                if (! $materialBatch) {
-                    throw ValidationException::withMessages([
-                        'items' => 'Một hoặc nhiều dòng xuất kho chưa gán lô vật tư hợp lệ.',
-                    ]);
-                }
-
-                if ((int) $materialBatch->material_id !== (int) $material->id) {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Lô vật tư không thuộc vật tư "%s".', $material->name),
-                    ]);
-                }
-
-                $materialBranchId = is_numeric($material->branch_id) ? (int) $material->branch_id : null;
                 $noteBranchId = is_numeric($lockedNote->branch_id) ? (int) $lockedNote->branch_id : null;
-
-                if ($noteBranchId !== null && $materialBranchId !== null && $noteBranchId !== $materialBranchId) {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Vật tư "%s" không thuộc chi nhánh của phiếu xuất.', $material->name),
-                    ]);
-                }
-
-                if ($materialBatch->status !== 'active') {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Lô "%s" không còn ở trạng thái hoạt động.', $materialBatch->batch_number),
-                    ]);
-                }
-
-                if ($materialBatch->expiry_date !== null && $materialBatch->expiry_date->lt(today())) {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Lô "%s" đã hết hạn, không thể xuất kho.', $materialBatch->batch_number),
-                    ]);
-                }
-
                 $quantity = (int) $item->quantity;
-                if ((int) $material->stock_qty < $quantity) {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Vật tư "%s" không đủ tồn kho.', $material->name),
-                    ]);
-                }
 
-                if ((int) $materialBatch->quantity < $quantity) {
-                    throw ValidationException::withMessages([
-                        'items' => sprintf('Lô "%s" không đủ tồn kho.', $materialBatch->batch_number),
-                    ]);
-                }
+                $mutation = app(InventoryMutationService::class)->consumeBatch(
+                    materialId: (int) $item->material_id,
+                    batchId: (int) $item->material_batch_id,
+                    quantity: $quantity,
+                    expectedBranchId: $noteBranchId,
+                    branchMismatchMessage: 'Vat tu khong thuoc chi nhanh cua phieu xuat.',
+                );
 
-                $materialBatch->quantity = (int) $materialBatch->quantity - $quantity;
-                if ((int) $materialBatch->quantity === 0) {
-                    $materialBatch->status = 'depleted';
-                }
-                $materialBatch->save();
-
-                $material->stock_qty = (int) $material->stock_qty - $quantity;
-                $material->save();
+                $material = $mutation['material'];
+                $materialBatch = $mutation['batch'];
 
                 if ($material->isLowStock()) {
                     $lowStockWarnings[] = sprintf(

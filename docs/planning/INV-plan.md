@@ -2,8 +2,8 @@
 
 - Module code: `INV`
 - Module name: `Inventory / Batches / Stock`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-INV-`
 - Source review: `docs/reviews/modules/INV-inventory.md`
 - Source issues: `docs/issues/INV-issues.md`

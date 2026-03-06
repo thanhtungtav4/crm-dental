@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InventoryMutationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -169,27 +170,27 @@ class MaterialBatch extends Model
 
     public function decreaseQuantity(int $amount): bool
     {
-        if ($this->quantity < $amount) {
-            return false;
-        }
+        app(InventoryMutationService::class)->consumeBatch(
+            materialId: (int) $this->material_id,
+            batchId: (int) $this->getKey(),
+            quantity: $amount,
+        );
 
-        $this->quantity -= $amount;
+        $this->refresh();
 
-        if ($this->quantity == 0) {
-            $this->status = 'depleted';
-        }
-
-        return $this->save();
+        return true;
     }
 
     public function increaseQuantity(int $amount): bool
     {
-        $this->quantity += $amount;
+        app(InventoryMutationService::class)->restoreBatch(
+            materialId: (int) $this->material_id,
+            batchId: (int) $this->getKey(),
+            quantity: $amount,
+        );
 
-        if ($this->status === 'depleted' && $this->quantity > 0) {
-            $this->status = 'active';
-        }
+        $this->refresh();
 
-        return $this->save();
+        return true;
     }
 }
