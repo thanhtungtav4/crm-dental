@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\GovernanceResourcePermissionBaselineService;
 use App\Support\ActionPermission;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -60,6 +61,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'Role',
         ];
 
+        $managerManagedResources = array_values(array_diff(
+            $resources,
+            GovernanceResourcePermissionBaselineService::governanceResources(),
+        ));
+
         $pages = [
             'SystemSettings',
             'IntegrationSettings',
@@ -93,9 +99,9 @@ class RolesAndPermissionsSeeder extends Seeder
         // Admin: all permissions
         $admin->syncPermissions(Permission::all());
 
-        // Manager: CRUD (ViewAny, View, Create, Update, Delete)
+        // Manager: CRUD on operational resources only.
         $managerPerms = [];
-        foreach ($resources as $res) {
+        foreach ($managerManagedResources as $res) {
             foreach ($basicPrefixes as $prefix) {
                 $managerPerms[] = $prefix.':'.$res; // e.g. ViewAny:Customer
             }

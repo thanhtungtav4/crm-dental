@@ -2,21 +2,28 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Services\UserProvisioningAuthorizer;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rules\Password;
-use Spatie\Permission\Models\Permission;
 
 class UserForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $authorizer = app(UserProvisioningAuthorizer::class);
+
         return $schema
             ->columns(2)
             ->schema([
                 Forms\Components\Select::make('branch_id')
-                    ->relationship('branch', 'name')
+                    ->relationship(
+                        'branch',
+                        'name',
+                        fn (Builder $query): Builder => $authorizer->scopeAssignableBranches($query, auth()->user()),
+                    )
                     ->label('Chi nhánh')
                     ->searchable()
                     ->preload()
@@ -24,7 +31,7 @@ class UserForm
 
                 Forms\Components\Select::make('doctor_branch_ids')
                     ->label('Chi nhánh làm việc (Bác sĩ)')
-                    ->options(fn (): array => \App\Models\Branch::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn (): array => $authorizer->assignableBranchOptions(auth()->user()))
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -102,46 +109,30 @@ class UserForm
 
                 Forms\Components\CheckboxList::make('roles')
                     ->label('Vai trò')
-                    ->relationship('roles', 'name')
+                    ->relationship(
+                        'roles',
+                        'name',
+                        fn (Builder $query): Builder => $authorizer->scopeAssignableRoles($query, auth()->user()),
+                    )
                     ->searchable()
                     ->bulkToggleable()
                     ->columns(3)
+                    ->visible(fn (): bool => $authorizer->canManageRoles(auth()->user()))
+                    ->helperText('Chỉ Admin được phép gán vai trò cho người dùng.')
                     ->columnSpanFull(),
 
                 Forms\Components\CheckboxList::make('permissions')
                     ->label('Quyền')
-                    ->relationship('permissions', 'name')
-                    ->options(function () {
-                        $options = [];
-                        $perms = Permission::query()->orderBy('name')->get();
-                        foreach ($perms as $perm) {
-                            // Expecting pattern: prefix_resource, e.g., view_any_customer
-                            $parts = explode('_', $perm->name, 2);
-                            $resource = $parts[1] ?? 'other';
-                            $group = match ($resource) {
-                                'user' => 'Người dùng',
-                                'branch' => 'Chi nhánh',
-                                'customer' => 'Khách hàng',
-                                'patient' => 'Bệnh nhân',
-                                'treatment-plan' => 'Kế hoạch điều trị',
-                                'treatment-session' => 'Phiên điều trị',
-                                'plan-item' => 'Hạng mục điều trị',
-                                'material' => 'Vật tư',
-                                'treatment-material' => 'Vật tư sử dụng',
-                                'invoice' => 'Hóa đơn',
-                                'payment' => 'Thanh toán',
-                                'note' => 'Ghi chú',
-                                'appointment' => 'Lịch hẹn',
-                                default => 'Khác',
-                            };
-                            $label = str_replace(['_', '-'], ' ', $perm->name);
-                            $options[$perm->id] = "$group — ".ucwords($label);
-                        }
-
-                        return $options;
-                    })
+                    ->relationship(
+                        'permissions',
+                        'name',
+                        fn (Builder $query): Builder => $authorizer->scopeAssignablePermissions($query, auth()->user()),
+                    )
+                    ->options(fn (): array => $authorizer->assignablePermissionOptions(auth()->user()))
                     ->columns(3)
                     ->bulkToggleable()
+                    ->visible(fn (): bool => $authorizer->canManageDirectPermissions(auth()->user()))
+                    ->helperText('Chỉ Admin được phép gán quyền trực tiếp. Ưu tiên quản trị bằng vai trò.')
                     ->columnSpanFull(),
             ]);
     }

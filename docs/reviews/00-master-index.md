@@ -30,7 +30,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 | Module code | Module name | Current status | Review file | Issue file | Plan file | Current verdict | Top open risks | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOV | Governance / Branches / RBAC / Audit | Pending Review | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | TBD | TODO | PAT, APPT, FIN, INV, CLIN |
+| GOV | Governance / Branches / RBAC / Audit | In Fix | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | D | Manager privilege escalation dang duoc rollout sync; user provisioning actor/branch scope dang duoc khoa; audit log overexposure | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
 | PAT | Customers / Patients / MPI | Pending Review | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | TBD | TODO | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Pending Review | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | TBD | TODO | GOV, PAT, CLIN, TRT, INT, ZNS |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
@@ -46,27 +46,29 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 3. Cross-module risks
 
-- TODO
+- GOV dang la module blocker cho `PAT`, `APPT`, `CLIN`, `FIN`, `INV` vi branch scoping va RBAC chua dat baseline an toan.
+- Audit log overexposure cua GOV co the lan sang workflow clinical, finance, automation va observability.
+- Branch transfer concurrency gap cua GOV co the gay invalid ownership state cho patient, appointment va treatment data.
 
 # 4. Priority overview
 
-- Critical modules: TODO
-- High priority modules: TODO
-- Medium priority modules: TODO
-- Low priority modules: TODO
+- Critical modules: `GOV`
+- High priority modules: `PAT`, `APPT`, `CLIN`, `FIN`, `INV`
+- Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `TRT`, `SUP`, `KPI`
+- Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- TODO
+- `GOV` - dang fix `TASK-GOV-001` va `TASK-GOV-002`; tiep tuc `TASK-GOV-003 -> TASK-GOV-007` sau khi chot 2 task dang mo.
 
 # 6. Modules needing re-audit
 
-- TODO
+- Chua co module nao dat moc `Re-audit Needed`.
 
 # 7. Suggested next module to review
 
-- TODO
+- `PAT` - sau GOV, day la module tiep theo co muc do phu thuoc cao nhat vao branch ownership, MPI va patient access scope.
 
 # 8. Suggested next module to fix
 
-- TODO
+- `GOV` - chot rollout sync cho `TASK-GOV-001`, tiep tuc `TASK-GOV-002`, sau do vao `TASK-GOV-003`.

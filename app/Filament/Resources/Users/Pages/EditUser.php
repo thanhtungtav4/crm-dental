@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
 use App\Services\DoctorBranchAssignmentService;
+use App\Services\UserProvisioningAuthorizer;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -29,6 +30,11 @@ class EditUser extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data = app(UserProvisioningAuthorizer::class)->sanitizeFormData(
+            actor: auth()->user(),
+            data: $data,
+        );
+
         $this->doctorBranchIds = collect($data['doctor_branch_ids'] ?? [])
             ->filter(fn ($branchId): bool => filled($branchId))
             ->map(fn ($branchId): int => (int) $branchId)

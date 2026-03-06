@@ -2,36 +2,266 @@
 
 - Module code: `GOV`
 - Module name: `Governance / Branches / RBAC / Audit`
-- Current status: `Pending Review`
-- Current verdict: `TBD`
+- Current status: `In Fix`
+- Current verdict: `D`
 - Issue ID prefix: `GOV-`
 - Task ID prefix: `TASK-GOV-`
 - Review file: `docs/reviews/modules/GOV-branches-rbac-audit.md`
 - Plan file: `docs/planning/GOV-plan.md`
-- Dependencies: `PAT, APPT, FIN, INV, CLIN`
-- Last updated: `TBD`
+- Dependencies: `PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS`
+- Last updated: `2026-03-06`
 
 # Issue Backlog
 
-## [GOV-001] [TODO]
-- Severity: TODO
-- Category: TODO
+## [GOV-001] Manager co the leo thang dac quyen qua User/Role/Branch
+- Severity: Critical
+- Category: Security
 - Module: GOV
 - Description:
+  - Baseline seeder dang cap CRUD cho `Branch`, `User`, `Role` cho `Manager`.
+  - Policy layer chi check permission string, khong co governance rule bo sung theo scope hoac sensitivity.
 - Why it matters:
+  - Cho phep manager tu nang quyen, thao tac len branch va role cap he thong.
+  - Day la duong privilege escalation truc tiep, khong chap nhan duoc cho production multi-branch.
 - Evidence:
+  - `database/seeders/RolesAndPermissionsSeeder.php:32-61`
+  - `database/seeders/RolesAndPermissionsSeeder.php:96-121`
+  - Runtime check xac nhan `Create/Update/Delete:Branch|User|Role` deu la `true` voi manager.
 - Suggested fix:
+  - Tach baseline permission theo role nghiep vu.
+  - Khong cap `Branch`, `User`, `Role` cho manager o baseline.
+  - Neu can governance role rieng, tao role/system permission tach biet.
 - Affected areas:
+  - Seeder
+  - Policy
+  - Filament navigation/resource authorization
+  - Operational governance
 - Tests needed:
+  - Feature test permission matrix cho `Admin`, `Manager`, `Doctor`, `CSKH`
+  - Feature test manager bi chan khi CRUD `Branch`, `User`, `Role`
 - Dependencies:
-- Suggested order:
+  - OPS
+- Suggested order: 1
+- Current status: In Fix
+- Linked task IDs: `TASK-GOV-001`
+
+## [GOV-002] User form cho phep gan role/permission va branch khong gioi han
+- Severity: Critical
+- Category: Security
+- Module: GOV
+- Description:
+  - `UserForm` dang hien toan bo `roles`, `permissions`, va branch options cho actor hien tai.
+  - Khong co logic loc theo role nguoi thao tac hoac branch scope.
+- Why it matters:
+  - Tao duong privilege escalation qua UI.
+  - De gay cross-branch misconfiguration va cap quyen sai cho nhan su.
+- Evidence:
+  - `app/Filament/Resources/Users/Schemas/UserForm.php:18-49`
+  - `app/Filament/Resources/Users/Schemas/UserForm.php:103-145`
+- Suggested fix:
+  - Tao `UserProvisioningAuthorizer` de xac dinh assignable roles, permissions, branches.
+  - An direct permission assignment doi voi non-admin.
+  - Hien helper text / confirm modal cho role nhay cam.
+- Affected areas:
+  - Filament form user
+  - User provisioning service
+  - Branch scoping
+  - Audit trail role changes
+- Tests needed:
+  - Feature test assignable role/permission theo actor
+  - Browser/feature test non-admin khong thay hoac khong submit duoc role nhay cam
+- Dependencies:
+  - GOV-001
+- Suggested order: 2
+- Current status: In Fix
+- Linked task IDs: `TASK-GOV-002`
+
+## [GOV-003] Audit log bi lo cho role nghiep vu do thieu policy va scope
+- Severity: Critical
+- Category: Security
+- Module: GOV
+- Description:
+  - `AuditLogResource` khong co `AuditLogPolicy` rieng va khong co branch-aware query guard.
+  - Runtime check xac nhan `doctor` co the `canViewAny()`.
+- Why it matters:
+  - Audit trail co the chua metadata nhay cam ve patient, payment, security, automation.
+  - Lo audit log gay risk forensic, privacy va internal control.
+- Evidence:
+  - `app/Filament/Resources/AuditLogs/AuditLogResource.php:17-91`
+  - `app/Filament/Resources/AuditLogs/Tables/AuditLogsTable.php:14-113`
+  - Runtime check `AuditLogResource::canViewAny()` tra `true` cho `doctor`.
+- Suggested fix:
+  - Tao `AuditLogPolicy` rieng.
+  - Chi cho `Admin` hoac role governance duoc xem audit logs cap he thong.
+  - Neu can manager xem mot phan, phai scope branch/actor/entity ro rang.
+- Affected areas:
+  - Filament resource auth
+  - Audit visibility rules
+  - Panel governance
+- Tests needed:
+  - Feature test `doctor` va non-governance role bi chan xem audit log
+  - Feature test branch-scoped audit visibility neu policy cho manager xem mot phan
+- Dependencies:
+  - OPS
+- Suggested order: 3
 - Current status: Open
-- Linked task IDs:
+- Linked task IDs: `TASK-GOV-003`
+
+## [GOV-004] AuditLog thuong chua immutable va thieu structured context
+- Severity: High
+- Category: Data Integrity
+- Module: GOV
+- Description:
+  - `AuditLog` chua khoa update/delete o model layer.
+  - Schema `audit_logs` chua co `branch_id`, `patient_id`, `occurred_at` rieng cho operational querying.
+- Why it matters:
+  - Lam yeu auditability va forensic trace.
+  - Khien query theo branch/patient/incident kem hieu qua va kho xay report.
+- Evidence:
+  - `app/Models/AuditLog.php:14-130`
+  - `app/Models/EmrAuditLog.php:48-89`
+  - Schema `audit_logs` chi co `entity_type`, `entity_id`, `action`, `actor_id`, `metadata`
+- Suggested fix:
+  - Them immutable guard cho `AuditLog`.
+  - Mo rong schema voi structured context va index phu hop.
+  - Chuan hoa recorder API bat buoc `branch_id`, `actor_id`, `occurred_at` khi co the.
+- Affected areas:
+  - Migration
+  - AuditLog model
+  - Audit recording service
+  - Report/filter queries
+- Tests needed:
+  - Feature test `AuditLog` khong the update/delete
+  - Feature test filter audit theo branch/patient sau khi bo sung context
+- Dependencies:
+  - OPS, FIN, CLIN
+- Suggested order: 4
+- Current status: Open
+- Linked task IDs: `TASK-GOV-004`
+
+## [GOV-005] Tao request chuyen chi nhanh chua an toan truoc race-condition
+- Severity: High
+- Category: Concurrency
+- Module: GOV
+- Description:
+  - `requestTransfer()` dung `exists()` roi `create()` ngoai transaction.
+  - `rejectTransferRequest()` chua khoa row va chua co transaction boundary ro rang.
+- Why it matters:
+  - Co the tao nhieu pending transfer cho cung patient va target branch.
+  - Gay state nghiep vu mo ho ve ownership patient giua cac module.
+- Evidence:
+  - `app/Services/PatientBranchTransferService.php:17-53`
+  - `app/Services/PatientBranchTransferService.php:133-153`
+  - `app/Models/BranchTransferRequest.php:13-44`
+- Suggested fix:
+  - Bao boi `requestTransfer()` va `rejectTransferRequest()` trong transaction.
+  - Dung `lockForUpdate()` va them idempotency guard cho pending state.
+  - Can nhac schema-level unique guard neu co the mo ta duoc invariant.
+- Affected areas:
+  - Branch transfer service
+  - Branch transfer schema/index
+  - Patient ownership flow
+- Tests needed:
+  - Concurrency test chi tao 1 pending request
+  - Feature test reject/apply transition khong va cham sai state
+- Dependencies:
+  - PAT, APPT
+- Suggested order: 5
+- Current status: Open
+- Linked task IDs: `TASK-GOV-005`
+
+## [GOV-006] BranchLog dang la system log nhung van co edit/delete surface
+- Severity: High
+- Category: Maintainability
+- Module: GOV
+- Description:
+  - Resource `BranchLog` co create/edit pages.
+  - Table van expose `EditAction` va `DeleteBulkAction`.
+  - Model chua immutable, trong khi form rong.
+- Why it matters:
+  - Log van hanh co nguy co bi sua/xoa neu permission duoc mo sau nay.
+  - UX nham lan giua system event log va manual CRUD resource.
+- Evidence:
+  - `app/Filament/Resources/BranchLogs/BranchLogResource.php:17-65`
+  - `app/Filament/Resources/BranchLogs/Tables/BranchLogsTable.php:13-48`
+  - `app/Filament/Resources/BranchLogs/Schemas/BranchLogForm.php:7-15`
+  - `app/Models/BranchLog.php:8-38`
+- Suggested fix:
+  - Chuyen `BranchLog` thanh read-only immutable resource hoac loai bo resource rieng.
+  - Xoa create/edit/delete actions.
+  - Neu can xem log, dung infolist/table read-only voi filter branch/patient/time.
+- Affected areas:
+  - BranchLog model
+  - Filament resource/pages/table/form
+  - Branch transfer audit UX
+- Tests needed:
+  - Feature test BranchLog resource khong cho create/edit/delete
+  - Feature test model update/delete bi chan neu branch log duoc khoa immutable
+- Dependencies:
+  - GOV-004
+- Suggested order: 6
+- Current status: Open
+- Linked task IDs: `TASK-GOV-006`
+
+## [GOV-007] Resource GOV chua branch-aware o query layer
+- Severity: High
+- Category: Security
+- Module: GOV
+- Description:
+  - `BranchAccess` da ton tai, nhung resource GOV chua dung nhat quan trong `getEloquentQuery()` va option loading.
+- Why it matters:
+  - Multi-branch governance khong the dua chi vao permission string.
+  - Neu resource auth hoac UI hở, cross-branch data visibility se xay ra.
+- Evidence:
+  - `app/Support/BranchAccess.php:104-150`
+  - `app/Filament/Resources/Branches/BranchResource.php:19-69`
+  - `app/Filament/Resources/Users/UserResource.php:17-57`
+  - `app/Filament/Resources/AuditLogs/AuditLogResource.php:17-91`
+- Suggested fix:
+  - Override `getEloquentQuery()` cho resource GOV can scope.
+  - Loc branch options theo `BranchAccess`.
+  - Bo sung branch-aware filters va route binding constraints neu can.
+- Affected areas:
+  - Filament resources GOV
+  - Query shape
+  - Cross-branch visibility
+- Tests needed:
+  - Feature test branch isolation cho Branch/User/AuditLog resources
+- Dependencies:
+  - PAT, APPT, FIN, INV
+- Suggested order: 7
+- Current status: Open
+- Linked task IDs: `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-006`
+
+## [GOV-008] Coverage chua chan regression o RBAC va transfer concurrency
+- Severity: Medium
+- Category: Maintainability
+- Module: GOV
+- Description:
+  - Test hien co bao phu baseline security tot mot phan, nhung chua khoa du cac regression quan trong cua GOV.
+- Why it matters:
+  - Nhung loi nhu role escalation, audit resource overexposure, duplicate pending transfer de quay lai khi refactor.
+- Evidence:
+  - Co test baseline nhu `ActionSecurityCoverageTest`, `SecurityMfaAndSessionPolicyTest`, `MultiBranchTransferAndDoctorAssignmentTest`.
+  - Chua thay test cho manager CRUD `Role/User/Branch`, audit resource auth, duplicate pending transfer request.
+- Suggested fix:
+  - Bo sung feature tests va neu can browser tests cho GOV.
+  - Map moi test moi voi issue/task governance tuong ung.
+- Affected areas:
+  - `tests/Feature`
+  - `tests/Browser` neu can flow provisioning UI
+- Tests needed:
+  - Chinh issue nay la backlog test regression
+- Dependencies:
+  - GOV-001, GOV-002, GOV-003, GOV-005
+- Suggested order: 8
+- Current status: Open
+- Linked task IDs: `TASK-GOV-007`
 
 # Summary
 
-- Open critical count: TODO
-- Open high count: TODO
-- Open medium count: TODO
-- Open low count: TODO
-- Next recommended action: TODO
+- Open critical count: 1
+- Open high count: 4
+- Open medium count: 1
+- Open low count: 0
+- Next recommended action: re-audit `TASK-GOV-001` va `TASK-GOV-002`, sau do chuyen sang `TASK-GOV-003` de khoa audit log visibility.
