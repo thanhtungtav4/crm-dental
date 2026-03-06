@@ -76,6 +76,13 @@ class Payment extends Model
                     ActionPermission::PAYMENT_REVERSAL,
                     'Bạn không có quyền thực hiện hoàn tiền hoặc đảo phiếu thu.',
                 );
+
+                if (blank($payment->transaction_ref) && is_numeric($payment->invoice_id)) {
+                    $payment->transaction_ref = static::reversalTransactionRef(
+                        invoiceId: (int) $payment->invoice_id,
+                        originalPaymentId: (int) $payment->reversal_of_id,
+                    );
+                }
             }
 
             if ($payment->transaction_ref !== null) {
@@ -206,6 +213,11 @@ class Payment extends Model
     public function canReverse(): bool
     {
         return ! $this->isRefund() && ! $this->isReversal() && ! $this->isReversed();
+    }
+
+    public static function reversalTransactionRef(int $invoiceId, int $originalPaymentId): string
+    {
+        return sprintf('REV-%d-%d', $invoiceId, $originalPaymentId);
     }
 
     public function resolveBranchId(): ?int

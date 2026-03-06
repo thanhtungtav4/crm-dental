@@ -110,7 +110,7 @@
 - Dependencies:
   - FIN-001
 - Suggested order: 3
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-003`
 
 ## [FIN-004] Delete surface cua invoice va finance core van de drift du lieu xuong dong
@@ -232,8 +232,8 @@
 
 # Summary
 
-- Open critical count: 1
+- Open critical count: 0
 - Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: vao `TASK-FIN-003`, `TASK-FIN-004`, `TASK-FIN-005` truoc khi fix sau hon `INV`.
+- Next recommended action: vao `TASK-FIN-004`, `TASK-FIN-005`, `TASK-FIN-006` truoc khi fix sau hon `INV`.

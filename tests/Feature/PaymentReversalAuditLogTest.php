@@ -1,32 +1,35 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\Branch;
 use App\Models\Invoice;
+use App\Models\Patient;
 use App\Models\User;
+use App\Services\PaymentReversalService;
 
 it('records an audit log when reversing a payment', function () {
-    $user = User::factory()->create();
+    $branch = Branch::factory()->create();
+    $user = User::factory()->create(['branch_id' => $branch->id]);
+    $user->assignRole('Manager');
+    $this->actingAs($user);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
     $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
         'total_amount' => 1_000_000,
         'paid_amount' => 0,
         'status' => 'issued',
     ]);
 
     $receipt = $invoice->recordPayment(400_000, 'cash', 'Thanh toán đợt 1', now(), 'receipt', null, null, 'patient', null, $user->id);
-    $receipt->markReversed($user->id);
-
-    $refund = $invoice->recordPayment(
+    $refund = app(PaymentReversalService::class)->reverse(
+        payment: $receipt,
         amount: 200_000,
-        method: 'cash',
-        notes: 'Hoàn tiền đợt 1',
         paidAt: now(),
-        direction: 'refund',
         refundReason: 'Điều chỉnh dịch vụ',
-        transactionRef: null,
-        paymentSource: 'patient',
-        insuranceClaimNumber: null,
-        receivedBy: $user->id,
-        reversalOfId: $receipt->id
+        note: 'Hoàn tiền đợt 1',
+        actorId: $user->id,
     );
 
     $log = AuditLog::query()

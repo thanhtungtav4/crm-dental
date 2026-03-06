@@ -261,7 +261,7 @@
 | --- | --- | --- | --- | --- | --- |
 | FIN-001 | Critical | Security | Wallet resource khong co policy va mo duong dieu chinh so du qua rong | Resolved | Wallet da co policy, action permission va audit boundary |
 | FIN-002 | Critical | Domain Logic | Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh | Resolved | Cancel invoice da di qua workflow service, form/model khong con bypass |
-| FIN-003 | Critical | Concurrency | Refund/reversal khong idempotent va co race-condition tren payment goc | Open | Nhieu UI surface goi `markReversed() -> recordPayment()` khong co lock/unique |
+| FIN-003 | Critical | Concurrency | Refund/reversal khong idempotent va co race-condition tren payment goc | Resolved | Refund surfaces da di qua `PaymentReversalService` transaction-safe va idempotent |
 | FIN-004 | High | Data Integrity | Delete surface cua invoice va finance core van de drift du lieu xuong dong | Open | DeleteAction/DeleteBulkAction va FK strategy hien tai chua an toan |
 | FIN-005 | High | Security | `received_by` chua branch-scoped va chua sanitize server-side | Open | Co the gan nguoi thu sai chi nhanh tren payment/refund flow |
 | FIN-006 | Medium | Maintainability | Finance write logic bi nhan ban qua nhieu surface UI | Open | Create/refund flow dang lap lai o page, table, relation manager |
@@ -284,8 +284,8 @@
 
 # Recommended Next Steps
 
-- Tiep tuc `TASK-FIN-003` de khoa refund/reversal concurrency va idempotency
-- Sau do vao `TASK-FIN-004` va `TASK-FIN-005` de loai destructive surface va branch-scope `received_by`
+- Tiep tuc `TASK-FIN-004` de loai destructive invoice surfaces va dong immutable history boundary
+- Sau do vao `TASK-FIN-005` va `TASK-FIN-006` de branch-scope `received_by` va gom finance write logic
 - Chot full FIN regression va re-audit sau khi 3 task tren xanh
 
 # Current Status

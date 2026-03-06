@@ -6,6 +6,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\Payment;
+use App\Services\PaymentReversalService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -18,7 +19,6 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 class PaymentsTable
 {
@@ -228,29 +228,14 @@ class PaymentsTable
                     ])
                     ->requiresConfirmation()
                     ->action(function (Payment $record, array $data): void {
-                        $invoice = $record->invoice;
-
-                        if (! $invoice) {
-                            return;
-                        }
-
-                        DB::transaction(function () use ($record, $invoice, $data): void {
-                            $record->markReversed(auth()->id());
-
-                            $invoice->recordPayment(
-                                amount: (float) $data['amount'],
-                                method: (string) $record->method,
-                                notes: $data['note'] ?? null,
-                                paidAt: $data['paid_at'] ?? now(),
-                                direction: 'refund',
-                                refundReason: $data['refund_reason'] ?? null,
-                                transactionRef: null,
-                                paymentSource: (string) $record->payment_source,
-                                insuranceClaimNumber: $record->insurance_claim_number,
-                                receivedBy: auth()->id(),
-                                reversalOfId: $record->id
-                            );
-                        });
+                        app(PaymentReversalService::class)->reverse(
+                            payment: $record,
+                            amount: (float) $data['amount'],
+                            paidAt: $data['paid_at'] ?? now(),
+                            refundReason: $data['refund_reason'] ?? null,
+                            note: $data['note'] ?? null,
+                            actorId: is_numeric(auth()->id()) ? (int) auth()->id() : null,
+                        );
                     }),
                 \Filament\Actions\Action::make('view_invoice')
                     ->label('Xem HĐ')
