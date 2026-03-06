@@ -2,7 +2,7 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Task ID prefix: `TASK-ZNS-`
 - Source review: `docs/reviews/modules/ZNS-zalo-zns.md`

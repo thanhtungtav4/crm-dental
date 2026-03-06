@@ -2,7 +2,7 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Issue ID prefix: `ZNS-`
 - Task ID prefix: `TASK-ZNS-`
@@ -36,7 +36,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 1
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-001`
 
 ## [ZNS-002] Campaign workflow dang mutate status truc tiep, khong qua service canonical
@@ -62,7 +62,7 @@
 - Dependencies:
   - ZNS-001
 - Suggested order: 2
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-002`
 
 ## [ZNS-003] Appointment reminder cancel co the race voi worker dang processing va van gui tin
@@ -215,8 +215,8 @@
 
 # Summary
 
-- Open critical count: 3
-- Open high count: 3
+- Open critical count: 2
+- Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: bat dau fix `TASK-ZNS-001`, `TASK-ZNS-002`, `TASK-ZNS-003` truoc vi day la auth boundary + workflow boundary + race blocker cua toan module.
+- Next recommended action: tiep tuc `TASK-ZNS-002` va `TASK-ZNS-003` ngay sau batch auth boundary, vi workflow canonical va cancel-processing race van la 2 blocker lon nhat cua module.

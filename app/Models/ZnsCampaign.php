@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -187,6 +188,32 @@ class ZnsCampaign extends Model
         }
 
         return $query->whereIn('branch_id', $branchIds);
+    }
+
+    public static function canAccessModule(?User $authUser): bool
+    {
+        return $authUser instanceof User
+            && (
+                $authUser->hasRole('Admin')
+                || ($authUser->can(ActionPermission::AUTOMATION_RUN) && $authUser->hasAnyAccessibleBranch())
+            );
+    }
+
+    public function isVisibleTo(User $authUser): bool
+    {
+        if (! static::canAccessModule($authUser)) {
+            return false;
+        }
+
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        if ($this->branch_id === null) {
+            return $authUser->hasAnyAccessibleBranch();
+        }
+
+        return in_array((int) $this->branch_id, $authUser->accessibleBranchIds(), true);
     }
 
     protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool

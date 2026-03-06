@@ -2,6 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
+use App\Models\ZnsCampaign;
+
 class ZaloZns extends PlaceholderPage
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-paper-airplane';
@@ -22,4 +25,11 @@ class ZaloZns extends PlaceholderPage
         'Mẫu tin',
         'Chiến dịch',
     ];
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return ZnsCampaign::canAccessModule($authUser instanceof User ? $authUser : null);
+    }
 }

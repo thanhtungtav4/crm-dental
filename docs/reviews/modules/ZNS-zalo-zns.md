@@ -2,7 +2,7 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Review file: `docs/reviews/modules/ZNS-zalo-zns.md`
 - Issue file: `docs/issues/ZNS-issues.md`
@@ -251,12 +251,12 @@
 
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
-| ZNS-001 | Critical | Security | ZNS page/resource khong co auth boundary dung | Open | Runtime check xac nhan `Doctor` dang vao duoc page va tao campaign |
+| ZNS-001 | Critical | Security | ZNS page/resource khong co auth boundary dung | Resolved | `ZnsCampaignPolicy` + `ZaloZns::canAccess()` da khoa `Doctor` khoi page/resource |
 | ZNS-002 | Critical | Domain Logic | Campaign workflow dang mutate status truc tiep, khong qua service canonical | Open | Form/table/page action deu co the doi status ma khong co audit boundary |
 | ZNS-003 | Critical | Concurrency | Appointment reminder cancel co the race voi worker dang processing va van gui tin | Open | `cancelAppointmentReminder()` va `processEvent()` khong co pre-send coordination |
 | ZNS-004 | High | Security | Outbox/delivery/log dang luu phone va payload ZNS plaintext | Open | PII va payload provider hien dang luu raw o 3 bang van hanh |
 | ZNS-005 | High | Concurrency | Campaign runner chua co campaign-level lock | Open | Hai worker co the cung scan audience va flap campaign summary |
-| ZNS-006 | High | Security | `RunZnsCampaigns` khong duoc bao ve bang action permission | Open | Command nay khac chuan so voi `SyncZnsAutomationEvents` |
+| ZNS-006 | High | Security | `RunZnsCampaigns` khong duoc bao ve bang action permission | Resolved | Command da duoc khoa bang `ActionGate::authorize(ActionPermission::AUTOMATION_RUN)` |
 | ZNS-007 | Medium | UX | Filament UX cho ZNS de thao tac sai va thieu triage view | Open | `status` editable raw, `ZaloZns` chi la placeholder, deliveries thieu filters |
 | ZNS-008 | Medium | Maintainability | Coverage thieu auth matrix, cancel-processing race va payload governance | Open | Test reliability co, nhung thieu suite cho 3 blocker tren |
 
@@ -282,4 +282,4 @@
 
 # Current Status
 
-- Planning
+- In Fix

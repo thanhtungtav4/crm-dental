@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +31,11 @@ class RunZnsCampaigns extends Command
      */
     public function handle(ZnsCampaignRunnerService $runner): int
     {
+        ActionGate::authorize(
+            ActionPermission::AUTOMATION_RUN,
+            'Bạn không có quyền chạy campaign ZNS.',
+        );
+
         $campaignId = $this->option('campaign_id');
         $hasValidationFailure = false;
 
