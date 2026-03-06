@@ -48,7 +48,7 @@ class InvoiceResource extends Resource
     {
         $query = parent::getEloquentQuery()
             ->withSum('payments as payments_sum_amount', 'amount')
-            ->withExists('payments');
+            ->withExists(['payments', 'installmentPlan']);
         $authUser = auth()->user();
 
         if (! $authUser instanceof User || $authUser->hasRole('Admin')) {

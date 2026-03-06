@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Invoices\Tables;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
+use App\Models\Invoice;
+use App\Services\InvoiceWorkflowService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -13,6 +15,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -202,6 +205,22 @@ class InvoicesTable
                 EditAction::make()
                     ->label('Sửa'),
 
+                Action::make('cancel')
+                    ->label('Hủy hóa đơn')
+                    ->icon(Heroicon::OutlinedXCircle)
+                    ->color('danger')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do hủy')
+                            ->rows(3),
+                    ])
+                    ->requiresConfirmation()
+                    ->successNotificationTitle('Đã hủy hóa đơn')
+                    ->action(function (Invoice $record, array $data): void {
+                        app(InvoiceWorkflowService::class)->cancel($record, $data['reason'] ?? null);
+                    })
+                    ->visible(fn (Invoice $record): bool => $record->canBeCancelled()),
+
                 Action::make('open_patient_profile')
                     ->label('Hồ sơ BN')
                     ->icon(Heroicon::OutlinedUser)
@@ -327,7 +346,7 @@ class InvoicesTable
 
                         $notification->send();
                     })
-                    ->visible(fn ($record) => $record->status !== 'cancelled' && ($record->calculateBalance() > 0 || $record->hasPayments()))
+                    ->visible(fn (Invoice $record): bool => $record->status !== Invoice::STATUS_CANCELLED && ($record->calculateBalance() > 0 || $record->hasPayments()))
                     ->modalWidth('md'),
 
                 Action::make('view_payments')

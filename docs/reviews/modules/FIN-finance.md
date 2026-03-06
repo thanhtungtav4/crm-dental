@@ -259,8 +259,8 @@
 
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
-| FIN-001 | Critical | Security | Wallet resource khong co policy va mo duong dieu chinh so du qua rong | Open | Doctor runtime van xem/sua wallet surface, adjust khong co action permission |
-| FIN-002 | Critical | Domain Logic | Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh | Open | Form va model cho phep set `cancelled` khong qua service canonical |
+| FIN-001 | Critical | Security | Wallet resource khong co policy va mo duong dieu chinh so du qua rong | Resolved | Wallet da co policy, action permission va audit boundary |
+| FIN-002 | Critical | Domain Logic | Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh | Resolved | Cancel invoice da di qua workflow service, form/model khong con bypass |
 | FIN-003 | Critical | Concurrency | Refund/reversal khong idempotent va co race-condition tren payment goc | Open | Nhieu UI surface goi `markReversed() -> recordPayment()` khong co lock/unique |
 | FIN-004 | High | Data Integrity | Delete surface cua invoice va finance core van de drift du lieu xuong dong | Open | DeleteAction/DeleteBulkAction va FK strategy hien tai chua an toan |
 | FIN-005 | High | Security | `received_by` chua branch-scoped va chua sanitize server-side | Open | Co the gan nguoi thu sai chi nhanh tren payment/refund flow |
@@ -284,9 +284,9 @@
 
 # Recommended Next Steps
 
-- Tao issue file canonical cho module
-- Tao plan file cho module
-- Fix truoc `FIN-001`, `FIN-002`, `FIN-003` vi day la 3 blocker tac dong truc tiep toi an toan tai chinh
+- Tiep tuc `TASK-FIN-003` de khoa refund/reversal concurrency va idempotency
+- Sau do vao `TASK-FIN-004` va `TASK-FIN-005` de loai destructive surface va branch-scope `received_by`
+- Chot full FIN regression va re-audit sau khi 3 task tren xanh
 
 # Current Status
 

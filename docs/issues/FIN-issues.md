@@ -44,7 +44,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 1
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-001`
 
 ## [FIN-002] Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh
@@ -77,7 +77,7 @@
 - Dependencies:
   - GOV, KPI
 - Suggested order: 2
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-FIN-002`
 
 ## [FIN-003] Refund/reversal khong idempotent va co race-condition tren payment goc
@@ -232,8 +232,8 @@
 
 # Summary
 
-- Open critical count: 3
+- Open critical count: 1
 - Open high count: 2
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: vao `TASK-FIN-001`, `TASK-FIN-002`, `TASK-FIN-003` truoc khi fix sau hon `INV`.
+- Next recommended action: vao `TASK-FIN-003`, `TASK-FIN-004`, `TASK-FIN-005` truoc khi fix sau hon `INV`.

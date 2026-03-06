@@ -6,6 +6,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
+use App\Services\InvoiceWorkflowService;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -95,6 +96,6 @@ class CreateInvoice extends CreateRecord
             $data['issued_at'] = now();
         }
 
-        return $data;
+        return app(InvoiceWorkflowService::class)->prepareCreatePayload($data);
     }
 }

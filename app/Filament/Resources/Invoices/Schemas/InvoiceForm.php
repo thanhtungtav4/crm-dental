@@ -154,7 +154,7 @@ class InvoiceForm
 
                         Select::make('status')
                             ->label('Trạng thái')
-                            ->options(Invoice::formStatusOptions())
+                            ->options(fn ($record): array => Invoice::formStatusOptions($record?->status))
                             ->default(Invoice::STATUS_DRAFT)
                             ->required()
                             ->native(false)

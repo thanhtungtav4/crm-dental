@@ -2,6 +2,8 @@
 
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\User;
+use App\Services\InvoiceWorkflowService;
 use Illuminate\Support\Facades\Artisan;
 
 it('tracks invoice payments and updates status', function () {
@@ -47,6 +49,11 @@ it('tracks refund as negative payment and recalculates balance', function () {
 
 it('persists overdue status with command and keeps cancelled invoice unchanged', function () {
     $patient = Patient::factory()->create();
+    $manager = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
+    ]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
 
     $overdueInvoice = Invoice::factory()->create([
         'patient_id' => $patient->id,
@@ -60,9 +67,10 @@ it('persists overdue status with command and keeps cancelled invoice unchanged',
         'patient_id' => $patient->id,
         'total_amount' => 1000000,
         'paid_amount' => 0,
-        'status' => 'cancelled',
+        'status' => 'issued',
         'due_date' => now()->subDays(3)->toDateString(),
     ]);
+    app(InvoiceWorkflowService::class)->cancel($cancelledInvoice, 'Cap nhat nham');
 
     Artisan::call('invoices:sync-overdue-status');
 

@@ -22,6 +22,13 @@ class Invoice extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static int $managedCancellationDepth = 0;
+
+    /**
+     * @var array<int, array<string, mixed>>
+     */
+    protected static array $managedCancellationContexts = [];
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_ISSUED = 'issued';
@@ -51,7 +58,6 @@ class Invoice extends Model
     public const EDITABLE_STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_ISSUED,
-        self::STATUS_CANCELLED,
     ];
 
     protected $fillable = [
@@ -95,7 +101,9 @@ class Invoice extends Model
                 $invoice->invoice_no = static::generateInvoiceNo();
             }
 
-            $invoice->status = static::normalizeStatus((string) $invoice->status);
+            $invoice->status = static::normalizeStatusValue($invoice->status) ?? self::STATUS_DRAFT;
+
+            static::assertCancellationWorkflow($invoice);
 
             static::syncRelationalContext($invoice);
 
@@ -157,6 +165,7 @@ class Invoice extends Model
                         'patient_id' => $invoice->patient_id,
                         'invoice_no' => $invoice->invoice_no,
                         'previous_status' => $invoice->getOriginal('status'),
+                        ...static::currentManagedCancellationContext(),
                     ]
                 );
 
@@ -198,9 +207,20 @@ class Invoice extends Model
         return self::STATUS_LABELS;
     }
 
-    public static function formStatusOptions(): array
+    public static function formStatusOptions(?string $currentStatus = null): array
     {
-        return array_intersect_key(self::STATUS_LABELS, array_flip(self::EDITABLE_STATUSES));
+        $options = array_intersect_key(self::STATUS_LABELS, array_flip(self::EDITABLE_STATUSES));
+        $normalizedCurrentStatus = static::normalizeStatusValue($currentStatus);
+
+        if (
+            $normalizedCurrentStatus !== null
+            && array_key_exists($normalizedCurrentStatus, self::STATUS_LABELS)
+            && ! array_key_exists($normalizedCurrentStatus, $options)
+        ) {
+            $options[$normalizedCurrentStatus] = self::STATUS_LABELS[$normalizedCurrentStatus];
+        }
+
+        return $options;
     }
 
     public static function generateInvoiceNo(): string
@@ -230,13 +250,29 @@ class Invoice extends Model
         return round(max(0, $subtotal - $discountAmount + $taxAmount), 2);
     }
 
-    private static function normalizeStatus(string $status): string
+    public static function normalizeStatusValue(mixed $status): ?string
     {
-        $normalized = strtolower(trim($status));
+        $normalized = strtolower(trim((string) $status));
 
         return array_key_exists($normalized, self::STATUS_LABELS)
             ? $normalized
-            : self::STATUS_DRAFT;
+            : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public static function runWithinManagedCancellation(callable $callback, array $context = []): mixed
+    {
+        static::$managedCancellationDepth++;
+        static::$managedCancellationContexts[] = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$managedCancellationDepth = max(0, static::$managedCancellationDepth - 1);
+            array_pop(static::$managedCancellationContexts);
+        }
     }
 
     private static function syncRelationalContext(self $invoice): void
@@ -269,6 +305,54 @@ class Invoice extends Model
     private static function normalizeMonetaryValue(mixed $value): float
     {
         return max(0, round((float) $value, 2));
+    }
+
+    private static function assertCancellationWorkflow(self $invoice): void
+    {
+        $targetStatus = static::normalizeStatusValue($invoice->status) ?? self::STATUS_DRAFT;
+
+        if (! $invoice->exists) {
+            if ($targetStatus === self::STATUS_CANCELLED && ! static::isManagedCancellation()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Trang thai huy hoa don chi duoc thay doi qua InvoiceWorkflowService.',
+                ]);
+            }
+
+            return;
+        }
+
+        if (! $invoice->isDirty('status')) {
+            return;
+        }
+
+        $originalStatus = static::normalizeStatusValue($invoice->getOriginal('status')) ?? self::STATUS_DRAFT;
+        $touchesCancellation = $targetStatus === self::STATUS_CANCELLED
+            || $originalStatus === self::STATUS_CANCELLED;
+
+        if ($touchesCancellation && ! static::isManagedCancellation()) {
+            throw ValidationException::withMessages([
+                'status' => 'Trang thai huy hoa don chi duoc thay doi qua InvoiceWorkflowService.',
+            ]);
+        }
+    }
+
+    private static function isManagedCancellation(): bool
+    {
+        return static::$managedCancellationDepth > 0;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function currentManagedCancellationContext(): array
+    {
+        $context = end(static::$managedCancellationContexts);
+
+        if (! is_array($context)) {
+            return [];
+        }
+
+        return $context;
     }
 
     // ==================== RELATIONSHIPS ====================
@@ -442,6 +526,12 @@ class Invoice extends Model
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($lockedInvoice->status === self::STATUS_CANCELLED) {
+                throw ValidationException::withMessages([
+                    'invoice_id' => 'Khong the ghi nhan thanh toan tren hoa don da huy.',
+                ]);
+            }
+
             if ($direction === 'receipt') {
                 if ($lockedInvoice->status === self::STATUS_DRAFT && ! ClinicRuntimeSettings::allowDraftPrepay()) {
                     throw ValidationException::withMessages([
@@ -574,6 +664,22 @@ class Invoice extends Model
         }
 
         return $this->payments()->exists();
+    }
+
+    public function hasInstallmentPlan(): bool
+    {
+        if (array_key_exists('installment_plan_exists', $this->attributes)) {
+            return (bool) $this->attributes['installment_plan_exists'];
+        }
+
+        return $this->installmentPlan()->exists();
+    }
+
+    public function canBeCancelled(): bool
+    {
+        return $this->status !== self::STATUS_CANCELLED
+            && ! $this->hasPayments()
+            && ! $this->hasInstallmentPlan();
     }
 
     /**

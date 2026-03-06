@@ -35,7 +35,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
 | CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
-| FIN | Finance / Payments / Wallet / Installments | In Fix | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | D | Wallet auth dang duoc khoa; invoice cancel workflow va refund/reversal van la 2 blocker lon tiep theo | GOV, PAT, APPT, TRT, INV, KPI |
+| FIN | Finance / Payments / Wallet / Installments | In Fix | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | D | Refund/reversal concurrency la blocker lon nhat; destructive invoice delete surface va `received_by` scope la 2 risk tiep theo | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Pending Review | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | TBD | TODO | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
@@ -76,4 +76,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `FIN` - vao `TASK-FIN-001`, `TASK-FIN-002`, `TASK-FIN-003` de khoa wallet auth, invoice workflow va refund concurrency.
+- `FIN` - vao `TASK-FIN-003`, `TASK-FIN-004`, `TASK-FIN-005` de khoa refund concurrency, destructive surface va branch-scoped actor attribution.
