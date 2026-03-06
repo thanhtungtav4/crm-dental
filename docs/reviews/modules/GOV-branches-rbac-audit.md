@@ -2,8 +2,8 @@
 
 - Module code: `GOV`
 - Module name: `Governance / Branches / RBAC / Audit`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/GOV-branches-rbac-audit.md`
 - Issue file: `docs/issues/GOV-issues.md`
 - Plan file: `docs/planning/GOV-plan.md`
@@ -27,14 +27,12 @@
 
 # Executive Summary
 
-- Muc do an toan hien tai: `Kem`
-- Muc do rui ro nghiep vu: `Cao`
-- Muc do san sang production: `Kem`, chua dat clean baseline cho module GOV.
+- Muc do an toan hien tai: `Tot` cho governance baseline hien tai.
+- Muc do rui ro nghiep vu: `Trung binh`, chu yeu nam o rollout dong bo permission tren moi truong da seed truoc day va nhu cau governance role matrix chi tiet hon trong tuong lai.
+- Muc do san sang production: `Dat clean baseline` cho module GOV o phase hien tai.
 - Cac canh bao nghiem trong:
-  - `Manager` dang co CRUD tren `Branch`, `User`, `Role`, tao duong leo thang dac quyen ro rang.
-  - `UserForm` cho phep gan role, permission va chi nhanh qua rong, khong loc theo actor.
-  - `AuditLogResource` dang overexpose; runtime xac nhan `doctor` co the `canViewAny()`.
-  - `requestTransfer()` co race window tao duplicate pending transfer request.
+  - Khong con open blocker cap `Critical` trong code baseline cua GOV sau re-audit.
+  - Theo doi rollout: can chay command dong bo permission baseline tren DB da ton tai truoc khi xem la da safe operationally.
 
 # Architecture Findings
 
@@ -229,14 +227,14 @@
 
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
-| GOV-001 | Critical | Security | Manager co the leo thang dac quyen qua User/Role/Branch | In Fix | Seeder baseline da duoc siet lai, can tiep tuc re-audit sau khi rollout. |
-| GOV-002 | Critical | Security | User form cho phep gan role/permission va branch khong gioi han | In Fix | Authorizer + form/page guard da duoc noi vao code, can re-audit sau khi rollout. |
-| GOV-003 | Critical | Security | Audit log bi lo cho role nghiep vu do thieu policy va scope | In Fix | `doctor` co the `canViewAny()` tren AuditLogResource; dang khoa bang policy + query scope. |
-| GOV-004 | High | Data Integrity | AuditLog thuong chua immutable va thieu structured context | In Fix | Dang bo sung `branch_id`, `patient_id`, `occurred_at` va immutable guard. |
-| GOV-005 | High | Concurrency | Tao request chuyen chi nhanh chua an toan truoc race-condition | In Fix | `requestTransfer()` va `rejectTransferRequest()` dang duoc harden bang transaction + row lock + regression test. |
-| GOV-006 | High | Maintainability | BranchLog dang la system log nhung van co edit/delete surface | In Fix | Resource da bi cat create/edit/delete; model dang duoc khoa immutable + branch-scoped view. |
-| GOV-007 | High | Security | Resource GOV chua branch-aware o query layer | In Fix | `BranchResource` va `UserResource` dang duoc bo sung query scope + route binding scope + delegated-view tests. |
-| GOV-008 | Medium | Maintainability | Coverage chua chan regression o RBAC va transfer concurrency | Open | Thieu test cho escalation, audit auth va duplicate pending transfer. |
+| GOV-001 | Critical | Security | Manager co the leo thang dac quyen qua User/Role/Branch | Resolved | Baseline permission da duoc tach lai; co them sync command de rollout an toan tren DB hien huu. |
+| GOV-002 | Critical | Security | User form cho phep gan role/permission va branch khong gioi han | Resolved | User provisioning da bi khoa theo actor/branch scope va duoc sanitize o server side. |
+| GOV-003 | Critical | Security | Audit log bi lo cho role nghiep vu do thieu policy va scope | Resolved | AuditLogResource da duoc khoa bang policy + query scope; chi con admin baseline duoc xem. |
+| GOV-004 | High | Data Integrity | AuditLog thuong chua immutable va thieu structured context | Resolved | Audit log da co immutable guard, structured context va migration backfill. |
+| GOV-005 | High | Concurrency | Tao request chuyen chi nhanh chua an toan truoc race-condition | Resolved | Branch transfer request da duoc bao boi transaction, row lock va index query-shape. |
+| GOV-006 | High | Maintainability | BranchLog dang la system log nhung van co edit/delete surface | Resolved | Branch log da read-only end-to-end, model immutable, resource bo CRUD surface. |
+| GOV-007 | High | Security | Resource GOV chua branch-aware o query layer | Resolved | Branch/User/AuditLog resource da branch-aware o query + route binding + policy. |
+| GOV-008 | Medium | Maintainability | Coverage chua chan regression o RBAC va transfer concurrency | Resolved | GOV-focused suite va full suite da xanh sau khi hardening. |
 
 # Dependencies
 
@@ -258,12 +256,30 @@
 - Branch transfer co can luong duyet 2 buoc hay SLA xu ly hay khong?
 - Co can retention / archive policy rieng cho audit log va branch log hay khong?
 
+# Re-audit Outcome
+
+- Updated verdict: `B`
+- Clean baseline status: `Yes`
+- Resolved issues:
+  - `GOV-001`
+  - `GOV-002`
+  - `GOV-003`
+  - `GOV-004`
+  - `GOV-005`
+  - `GOV-006`
+  - `GOV-007`
+  - `GOV-008`
+- Residual follow-up:
+  - Chay `php artisan security:assert-governance-resource-baseline --sync` tren moi truong da seed tu truoc.
+  - Formalize governance role matrix neu muon mo delegated admin thay vi baseline chi `Admin`.
+  - Theo doi them nhu cau filter/audit viewer role truoc khi mo branch-scoped delegated access.
+
 # Recommended Next Steps
 
-- Tao issue file canonical cho GOV va khoa map issue ID.
-- Tao implementation plan cho GOV voi uu tien `RBAC -> audit visibility -> transfer concurrency -> immutable logs -> regression tests`.
-- Chua nen fix sau `PAT`, `APPT`, `CLIN`, `FIN` truoc khi GOV dat baseline toi thieu.
+- Dong bo permission baseline tren cac moi truong da ton tai bang command rollout an toan.
+- Chuyen focus sang `PAT` vi GOV khong con la blocker baseline cho patient ownership, MPI va customer-to-patient flow.
+- Giữ `GOV` o che do theo doi, chi mo lai neu PAT/APPT/FIN phat hien dependency gap moi.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

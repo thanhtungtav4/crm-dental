@@ -2,8 +2,8 @@
 
 - Module code: `GOV`
 - Module name: `Governance / Branches / RBAC / Audit`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `GOV-`
 - Task ID prefix: `TASK-GOV-`
 - Review file: `docs/reviews/modules/GOV-branches-rbac-audit.md`
@@ -42,7 +42,7 @@
 - Dependencies:
   - OPS
 - Suggested order: 1
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-001`
 
 ## [GOV-002] User form cho phep gan role/permission va branch khong gioi han
@@ -73,7 +73,7 @@
 - Dependencies:
   - GOV-001
 - Suggested order: 2
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-002`
 
 ## [GOV-003] Audit log bi lo cho role nghiep vu do thieu policy va scope
@@ -104,7 +104,7 @@
 - Dependencies:
   - OPS
 - Suggested order: 3
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-003`
 
 ## [GOV-004] AuditLog thuong chua immutable va thieu structured context
@@ -136,7 +136,7 @@
 - Dependencies:
   - OPS, FIN, CLIN
 - Suggested order: 4
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-004`
 
 ## [GOV-005] Tao request chuyen chi nhanh chua an toan truoc race-condition
@@ -167,7 +167,7 @@
 - Dependencies:
   - PAT, APPT
 - Suggested order: 5
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-005`
 
 ## [GOV-006] BranchLog dang la system log nhung van co edit/delete surface
@@ -200,7 +200,7 @@
 - Dependencies:
   - GOV-004
 - Suggested order: 6
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-006`
 
 ## [GOV-007] Resource GOV chua branch-aware o query layer
@@ -230,7 +230,7 @@
 - Dependencies:
   - PAT, APPT, FIN, INV
 - Suggested order: 7
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-006`
 
 ## [GOV-008] Coverage chua chan regression o RBAC va transfer concurrency
@@ -255,13 +255,13 @@
 - Dependencies:
   - GOV-001, GOV-002, GOV-003, GOV-005
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-GOV-007`
 
 # Summary
 
 - Open critical count: 0
 - Open high count: 0
-- Open medium count: 1
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: hoan tat commit `TASK-GOV-007`, sau do chuyen sang `TASK-GOV-008` va chuan bi re-audit GOV.
+- Next recommended action: rollout command dong bo permission baseline tren moi truong da seed truoc day, sau do chuyen sang review `PAT`.

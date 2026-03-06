@@ -30,8 +30,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 | Module code | Module name | Current status | Review file | Issue file | Plan file | Current verdict | Top open risks | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOV | Governance / Branches / RBAC / Audit | In Fix | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | D | Manager privilege escalation dang duoc rollout sync; audit log hardening dang o giai doan re-verify; branch-aware query isolation dang duoc harden tren resource GOV | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
-| PAT | Customers / Patients / MPI | Pending Review | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | TBD | TODO | GOV, APPT, CLIN, FIN, CARE, ZNS |
+| GOV | Governance / Branches / RBAC / Audit | Clean Baseline Reached | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | B | Khong con open blocker baseline; follow-up van hanh la sync permission baseline tren DB da seed truoc day va formalize governance delegation matrix neu can | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
+| PAT | Customers / Patients / MPI | Planning | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | D | Customer PII dang luu plaintext; flow convert customer->patient co race window; doctor/owner/assignee select chua branch-scoped | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Pending Review | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | TBD | TODO | GOV, PAT, CLIN, TRT, INT, ZNS |
 | CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Pending Review | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | TBD | TODO | PAT, APPT, CLIN, INV, FIN |
@@ -46,29 +46,29 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 3. Cross-module risks
 
-- GOV dang la module blocker cho `PAT`, `APPT`, `CLIN`, `FIN`, `INV` vi branch scoping va RBAC chua dat baseline an toan.
-- Audit log overexposure cua GOV co the lan sang workflow clinical, finance, automation va observability.
-- Branch transfer concurrency gap cua GOV co the gay invalid ownership state cho patient, appointment va treatment data.
+- GOV da dat clean baseline, khong con la blocker chinh cho PAT/APPT/CLIN/FIN o phase hien tai.
+- PAT dang lo nguy co PII plaintext tren `customers`, conversion race-condition va MPI/customer ownership inconsistency.
+- Cac module sau `APPT`, `CLIN`, `FIN` van phu thuoc ket qua review PAT de khoa ownership va patient identity boundary.
 
 # 4. Priority overview
 
-- Critical modules: `GOV`
-- High priority modules: `PAT`, `APPT`, `CLIN`, `FIN`, `INV`
+- Critical modules: `PAT`
+- High priority modules: `APPT`, `CLIN`, `FIN`, `INV`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `TRT`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`, `TASK-GOV-005`, `TASK-GOV-006`, `TASK-GOV-007`; branch-aware query isolation da vao implementation.
+- `PAT` - da co review, issue backlog va implementation plan; san sang vao deep fix tu `TASK-PAT-001`.
 
 # 6. Modules needing re-audit
 
-- Chua co module nao dat moc `Re-audit Needed`.
+- Chua co module nao can re-audit ngay luc nay.
 
 # 7. Suggested next module to review
 
-- `PAT` - sau GOV, day la module tiep theo co muc do phu thuoc cao nhat vao branch ownership, MPI va patient access scope.
+- `APPT` - sau khi `PAT` vao deep fix, day la module review tiep theo vi auto-convert, scheduling va ownership deu phu thuoc PAT.
 
 # 8. Suggested next module to fix
 
-- `GOV` - chot `TASK-GOV-007`, sau do tiep tuc `TASK-GOV-008` va bat dau re-audit module.
+- `PAT` - bat dau tu `TASK-PAT-001`, sau do `TASK-PAT-002` truoc khi sang APPT/CLIN/FIN.
