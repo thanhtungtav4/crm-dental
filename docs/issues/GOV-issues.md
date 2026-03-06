@@ -167,7 +167,7 @@
 - Dependencies:
   - PAT, APPT
 - Suggested order: 5
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-GOV-005`
 
 ## [GOV-006] BranchLog dang la system log nhung van co edit/delete surface
@@ -261,7 +261,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 3
+- Open high count: 2
 - Open medium count: 1
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-GOV-004` de chot immutable + structured audit context truoc khi vao `TASK-GOV-005`.
+- Next recommended action: hoan tat verify va commit `TASK-GOV-005`, sau do chuyen sang `TASK-GOV-006`.

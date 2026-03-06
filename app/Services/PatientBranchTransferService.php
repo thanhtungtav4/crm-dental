@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class PatientBranchTransferService
 {
+    protected const TRANSACTION_ATTEMPTS = 3;
+
     public function requestTransfer(
         Patient $patient,
         int $toBranchId,
@@ -26,30 +28,38 @@ class PatientBranchTransferService
             'Bạn không có quyền chuyển bệnh nhân liên chi nhánh.',
         );
 
-        $this->assertTargetBranch($patient, $toBranchId, $actorId);
+        return DB::transaction(function () use ($patient, $toBranchId, $actorId, $reason, $note): BranchTransferRequest {
+            $lockedPatient = Patient::query()
+                ->whereKey($patient->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $pendingExists = BranchTransferRequest::query()
-            ->where('patient_id', $patient->id)
-            ->where('to_branch_id', $toBranchId)
-            ->where('status', BranchTransferRequest::STATUS_PENDING)
-            ->exists();
+            $this->assertTargetBranch($lockedPatient, $toBranchId, $actorId);
 
-        if ($pendingExists) {
-            throw ValidationException::withMessages([
-                'to_branch_id' => 'Yêu cầu chuyển chi nhánh này đang chờ xử lý.',
+            $pendingRequest = BranchTransferRequest::query()
+                ->where('patient_id', $lockedPatient->id)
+                ->where('to_branch_id', $toBranchId)
+                ->pending()
+                ->lockForUpdate()
+                ->first();
+
+            if ($pendingRequest instanceof BranchTransferRequest) {
+                throw ValidationException::withMessages([
+                    'to_branch_id' => 'Yêu cầu chuyển chi nhánh này đang chờ xử lý.',
+                ]);
+            }
+
+            return BranchTransferRequest::query()->create([
+                'patient_id' => $lockedPatient->id,
+                'from_branch_id' => $lockedPatient->first_branch_id,
+                'to_branch_id' => $toBranchId,
+                'status' => BranchTransferRequest::STATUS_PENDING,
+                'requested_by' => $actorId ?? auth()->id(),
+                'requested_at' => now(),
+                'reason' => $reason,
+                'note' => $note,
             ]);
-        }
-
-        return BranchTransferRequest::query()->create([
-            'patient_id' => $patient->id,
-            'from_branch_id' => $patient->first_branch_id,
-            'to_branch_id' => $toBranchId,
-            'status' => BranchTransferRequest::STATUS_PENDING,
-            'requested_by' => $actorId ?? auth()->id(),
-            'requested_at' => now(),
-            'reason' => $reason,
-            'note' => $note,
-        ]);
+        }, attempts: self::TRANSACTION_ATTEMPTS);
     }
 
     public function applyTransferRequest(BranchTransferRequest $transferRequest, ?int $actorId = null): BranchTransferRequest
@@ -64,11 +74,7 @@ class PatientBranchTransferService
                 ->lockForUpdate()
                 ->findOrFail($transferRequest->id);
 
-            if ($request->status !== BranchTransferRequest::STATUS_PENDING) {
-                throw ValidationException::withMessages([
-                    'status' => 'Yêu cầu chuyển chi nhánh không còn ở trạng thái chờ xử lý.',
-                ]);
-            }
+            $this->ensurePendingRequest($request);
 
             $patient = Patient::query()
                 ->lockForUpdate()
@@ -109,7 +115,7 @@ class PatientBranchTransferService
             );
 
             return $request->fresh();
-        }, attempts: 3);
+        }, attempts: self::TRANSACTION_ATTEMPTS);
     }
 
     public function transferDirect(
@@ -137,19 +143,21 @@ class PatientBranchTransferService
             'Bạn không có quyền chuyển bệnh nhân liên chi nhánh.',
         );
 
-        if ($transferRequest->status !== BranchTransferRequest::STATUS_PENDING) {
-            throw ValidationException::withMessages([
-                'status' => 'Yêu cầu chuyển chi nhánh không còn ở trạng thái chờ xử lý.',
-            ]);
-        }
+        return DB::transaction(function () use ($transferRequest, $actorId, $note): BranchTransferRequest {
+            $request = BranchTransferRequest::query()
+                ->lockForUpdate()
+                ->findOrFail($transferRequest->id);
 
-        $transferRequest->status = BranchTransferRequest::STATUS_REJECTED;
-        $transferRequest->decided_by = $actorId ?? auth()->id();
-        $transferRequest->decided_at = now();
-        $transferRequest->note = trim(implode(' | ', array_filter([$transferRequest->note, $note])));
-        $transferRequest->save();
+            $this->ensurePendingRequest($request);
 
-        return $transferRequest;
+            $request->status = BranchTransferRequest::STATUS_REJECTED;
+            $request->decided_by = $actorId ?? auth()->id();
+            $request->decided_at = now();
+            $request->note = trim(implode(' | ', array_filter([$request->note, $note])));
+            $request->save();
+
+            return $request->fresh();
+        }, attempts: self::TRANSACTION_ATTEMPTS);
     }
 
     protected function assertTargetBranch(Patient $patient, int $toBranchId, ?int $actorId = null): void
@@ -207,5 +215,16 @@ class PatientBranchTransferService
         $authUser = auth()->user();
 
         return $authUser instanceof User ? $authUser : null;
+    }
+
+    protected function ensurePendingRequest(BranchTransferRequest $transferRequest): void
+    {
+        if ($transferRequest->isPending()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'status' => 'Yêu cầu chuyển chi nhánh không còn ở trạng thái chờ xử lý.',
+        ]);
     }
 }
