@@ -62,6 +62,10 @@ it('generates recall tickets from completed plan items and closes stale recall t
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $this->artisan('care:generate-recall-tickets', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
     $recallTicket = Note::query()
         ->where('source_type', PlanItem::class)
         ->where('source_id', $completedItem->id)
@@ -71,7 +75,12 @@ it('generates recall tickets from completed plan items and closes stale recall t
     expect($recallTicket)->not->toBeNull()
         ->and($recallTicket->care_channel)->toBe('call')
         ->and($recallTicket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
-        ->and($recallTicket->content)->toContain('30 ngày');
+        ->and($recallTicket->content)->toContain('30 ngày')
+        ->and(Note::query()
+            ->where('source_type', PlanItem::class)
+            ->where('source_id', $completedItem->id)
+            ->where('care_type', 'recall_recare')
+            ->count())->toBe(1);
 
     $staleTicket = Note::query()
         ->where('source_type', PlanItem::class)
@@ -93,6 +102,10 @@ it('creates and resolves no-show recovery tickets', function () {
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $this->artisan('appointments:run-no-show-recovery', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
     $ticket = Note::query()
         ->where('source_type', Appointment::class)
         ->where('source_id', $appointment->id)
@@ -100,7 +113,12 @@ it('creates and resolves no-show recovery tickets', function () {
         ->first();
 
     expect($ticket)->not->toBeNull()
-        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED);
+        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
+        ->and(Note::query()
+            ->where('source_type', Appointment::class)
+            ->where('source_id', $appointment->id)
+            ->where('care_type', 'no_show_recovery')
+            ->count())->toBe(1);
 
     $appointment->update([
         'status' => Appointment::STATUS_SCHEDULED,
@@ -134,6 +152,10 @@ it('creates and resolves treatment plan follow-up tickets for unapproved plan it
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $this->artisan('care:run-plan-follow-up', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
     $ticket = Note::query()
         ->where('source_type', PlanItem::class)
         ->where('source_id', $item->id)
@@ -141,7 +163,12 @@ it('creates and resolves treatment plan follow-up tickets for unapproved plan it
         ->first();
 
     expect($ticket)->not->toBeNull()
-        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED);
+        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
+        ->and(Note::query()
+            ->where('source_type', PlanItem::class)
+            ->where('source_id', $item->id)
+            ->where('care_type', 'treatment_plan_follow_up')
+            ->count())->toBe(1);
 
     $item->update([
         'approval_status' => PlanItem::APPROVAL_APPROVED,
@@ -166,6 +193,10 @@ it('creates and resolves invoice aging reminders based on balance status', funct
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $this->artisan('finance:run-invoice-aging-reminders', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
     $ticket = Note::query()
         ->where('source_type', Invoice::class)
         ->where('source_id', $invoice->id)
@@ -173,7 +204,12 @@ it('creates and resolves invoice aging reminders based on balance status', funct
         ->first();
 
     expect($ticket)->not->toBeNull()
-        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED);
+        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
+        ->and(Note::query()
+            ->where('source_type', Invoice::class)
+            ->where('source_id', $invoice->id)
+            ->where('care_type', 'payment_reminder')
+            ->count())->toBe(1);
 
     $invoice->recordPayment(900000, 'cash');
 

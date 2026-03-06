@@ -5,6 +5,8 @@ namespace App\Filament\Pages\Reports;
 use App\Models\Branch;
 use App\Models\Note;
 use App\Models\ReportCareQueueDailyAggregate;
+use App\Models\User;
+use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -24,6 +26,15 @@ class CustomsCareStatistical extends BaseReportPage
 
     protected ?bool $usesCareAggregateCache = null;
 
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->can('ViewAny:Note')
+            && $authUser->hasAnyAccessibleBranch();
+    }
+
     protected function getDateColumn(): ?string
     {
         return $this->usesCareAggregate()
@@ -34,7 +45,13 @@ class CustomsCareStatistical extends BaseReportPage
     protected function getTableQuery(): Builder
     {
         if ($this->usesCareAggregate()) {
-            $scopeId = $this->selectedBranchScopeId();
+            $scopeIds = $this->selectedBranchScopeIds();
+
+            if ($scopeIds === []) {
+                return ReportCareQueueDailyAggregate::query()
+                    ->from('report_care_queue_daily_aggregates as care_daily')
+                    ->whereRaw('1 = 0');
+            }
 
             return ReportCareQueueDailyAggregate::query()
                 ->from('report_care_queue_daily_aggregates as care_daily')
@@ -47,37 +64,36 @@ class CustomsCareStatistical extends BaseReportPage
                     MAX(care_daily.latest_care_at) as care_at,
                     MAX(care_daily.snapshot_date) as snapshot_date
                 ')
-                ->where('care_daily.branch_scope_id', $scopeId)
+                ->whereIn('care_daily.branch_scope_id', $scopeIds)
                 ->groupBy('care_daily.care_type', 'care_daily.care_status');
         }
 
-        return Note::query()
-            ->selectRaw('care_type, care_status, count(*) as total_count, max(care_at) as care_at')
-            ->whereNotNull('care_type')
-            ->whereNotNull('care_status')
-            ->when(
-                filled($this->getFilterValue('branch_id')),
-                function (Builder $query): void {
-                    $branchId = (int) $this->getFilterValue('branch_id');
-
-                    $query->where(function (Builder $scopeQuery) use ($branchId): void {
-                        $scopeQuery->where('branch_id', $branchId)
-                            ->orWhere(function (Builder $legacyQuery) use ($branchId): void {
-                                $legacyQuery->whereNull('branch_id')
-                                    ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
-                            });
-                    });
-                }
-            )
-            ->groupBy('care_type', 'care_status');
+        return $this->applyNoteBranchScope(
+            Note::query()
+                ->selectRaw('care_type, care_status, count(*) as total_count, max(care_at) as care_at')
+                ->whereNotNull('care_type')
+                ->whereNotNull('care_status')
+        )->groupBy('care_type', 'care_status');
     }
 
     protected function getTableFilters(): array
     {
+        $branchIds = $this->accessibleBranchIds();
+
         return array_merge(parent::getTableFilters(), [
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all()),
+                ->options(fn (): array => Branch::query()
+                    ->when(
+                        ! $this->isAdmin(),
+                        fn (Builder $query) => $branchIds === []
+                            ? $query->whereRaw('1 = 0')
+                            : $query->whereIn('id', $branchIds),
+                    )
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all())
+                ->query(fn (Builder $query): Builder => $query),
         ]);
     }
 
@@ -135,7 +151,21 @@ class CustomsCareStatistical extends BaseReportPage
         if ($this->usesCareAggregate()) {
             $baseQuery = ReportCareQueueDailyAggregate::query();
             $this->applyDateRange($baseQuery, 'snapshot_date');
-            $baseQuery->where('branch_scope_id', $this->selectedBranchScopeId());
+            $scopeIds = $this->selectedBranchScopeIds();
+
+            if ($scopeIds === []) {
+                $total = 0;
+                $completed = 0;
+                $planned = 0;
+
+                return [
+                    ['label' => 'Tổng chăm sóc', 'value' => number_format($total)],
+                    ['label' => 'Hoàn thành', 'value' => number_format($completed)],
+                    ['label' => 'Đã đặt lịch', 'value' => number_format($planned)],
+                ];
+            }
+
+            $baseQuery->whereIn('branch_scope_id', $scopeIds);
 
             $total = (int) (clone $baseQuery)->sum('total_count');
             $completed = (int) (clone $baseQuery)
@@ -145,19 +175,12 @@ class CustomsCareStatistical extends BaseReportPage
                 ->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_NOT_STARTED]))
                 ->sum('total_count');
         } else {
-            $baseQuery = Note::query();
+            $baseQuery = $this->applyNoteBranchScope(
+                Note::query()
+                    ->whereNotNull('care_type')
+                    ->whereNotNull('care_status')
+            );
             $this->applyDateRange($baseQuery, 'care_at');
-            $branchId = $this->getFilterValue('branch_id');
-
-            if (filled($branchId)) {
-                $baseQuery->where(function (Builder $scopeQuery) use ($branchId): void {
-                    $scopeQuery->where('branch_id', (int) $branchId)
-                        ->orWhere(function (Builder $legacyQuery) use ($branchId): void {
-                            $legacyQuery->whereNull('branch_id')
-                                ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', (int) $branchId));
-                        });
-                });
-            }
 
             $total = (clone $baseQuery)->count();
             $completed = (clone $baseQuery)->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_DONE]))->count();
@@ -197,12 +220,94 @@ class CustomsCareStatistical extends BaseReportPage
         return $this->usesCareAggregateCache;
     }
 
-    protected function selectedBranchScopeId(): int
+    protected function selectedBranchScopeIds(): array
     {
         $branchId = $this->getFilterValue('branch_id');
 
-        return filled($branchId)
-            ? (int) $branchId
-            : 0;
+        if ($this->isAdmin()) {
+            return filled($branchId)
+                ? [(int) $branchId]
+                : [0];
+        }
+
+        $accessibleBranchIds = $this->accessibleBranchIds();
+
+        if (filled($branchId)) {
+            $branchId = (int) $branchId;
+
+            return in_array($branchId, $accessibleBranchIds, true)
+                ? [$branchId]
+                : [];
+        }
+
+        return $accessibleBranchIds;
+    }
+
+    protected function applyNoteBranchScope(Builder $query): Builder
+    {
+        if ($this->isAdmin()) {
+            $branchId = $this->getFilterValue('branch_id');
+
+            if (! filled($branchId)) {
+                return $query;
+            }
+
+            return $this->applyBranchConstraint($query, (int) $branchId);
+        }
+
+        $accessibleBranchIds = $this->accessibleBranchIds();
+
+        if ($accessibleBranchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $branchId = $this->getFilterValue('branch_id');
+
+        if (filled($branchId)) {
+            $branchId = (int) $branchId;
+
+            if (! in_array($branchId, $accessibleBranchIds, true)) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $this->applyBranchConstraint($query, $branchId);
+        }
+
+        return $query->where(function (Builder $scopeQuery) use ($accessibleBranchIds): void {
+            $scopeQuery->whereIn('branch_id', $accessibleBranchIds)
+                ->orWhere(function (Builder $legacyQuery) use ($accessibleBranchIds): void {
+                    $legacyQuery->whereNull('branch_id')
+                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $accessibleBranchIds));
+                });
+        });
+    }
+
+    protected function applyBranchConstraint(Builder $query, int $branchId): Builder
+    {
+        return $query->where(function (Builder $scopeQuery) use ($branchId): void {
+            $scopeQuery->where('branch_id', $branchId)
+                ->orWhere(function (Builder $legacyQuery) use ($branchId): void {
+                    $legacyQuery->whereNull('branch_id')
+                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
+                });
+        });
+    }
+
+    protected function accessibleBranchIds(): array
+    {
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return [];
+        }
+
+        return BranchAccess::accessibleBranchIds($authUser);
+    }
+
+    protected function isAdmin(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User && $authUser->hasRole('Admin');
     }
 }

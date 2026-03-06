@@ -2,36 +2,288 @@
 
 - Module code: `CARE`
 - Module name: `Customer Care / Automation`
-- Current status: `Pending Review`
-- Current verdict: `TBD`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `CARE-`
 - Task ID prefix: `TASK-CARE-`
 - Review file: `docs/reviews/modules/CARE-customer-care-automation.md`
 - Plan file: `docs/planning/CARE-plan.md`
 - Dependencies: `PAT, APPT, FIN, ZNS, KPI`
-- Last updated: `TBD`
+- Last updated: `2026-03-06`
 
 # Issue Backlog
 
-## [CARE-001] [TODO]
-- Severity: TODO
-- Category: TODO
+## [CARE-001] CustomerCare page chua co auth gate rieng
+- Severity: Critical
+- Category: Security
 - Module: CARE
 - Description:
+  - `CustomerCare` la custom page hien thi queue CSKH, patient phone, export CSV va tong hop theo branch/staff, nhung class page chua co `HasPageShield`, khong co `canAccess()`, va khong co permission page-level rieng.
 - Why it matters:
+  - Moi actor vao duoc admin panel co the dung duong dan page neu khong co gate rieng. Day la surface nhay cam vi co PII va tong hop nghiep vu cross-module.
 - Evidence:
+  - `app/Filament/Pages/CustomerCare.php:31-90`
+  - `app/Models/User.php:84-99`
 - Suggested fix:
+  - Them permission page-level cho `CustomerCare`, gate bang `canAccess()` hoac Shield trait, va chi role dung baseline moi vao duoc.
 - Affected areas:
+  - `app/Filament/Pages/CustomerCare.php`
+  - permission seeder / page auth matrix
 - Tests needed:
+  - feature test role matrix cho route/page `customer-care`
+  - feature test export bi chan voi role khong du quyen
 - Dependencies:
+  - GOV
 - Suggested order:
-- Current status: Open
+  - 1
+- Current status:
+  - Resolved
 - Linked task IDs:
+  - `TASK-CARE-001`
+
+## [CARE-002] CustomsCareStatistical co nguy co lo global cross-branch scope
+- Severity: Critical
+- Category: Security
+- Module: CARE
+- Description:
+  - Report `CustomsCareStatistical` doc aggregate/raw data theo branch filter. Neu khong chon branch, query aggregate dung `branch_scope_id = 0`; query raw cung khong actor-scope mac dinh.
+- Why it matters:
+  - Non-admin co the xem global aggregate hoac tong hop ngoai branch duoc giao, trai voi baseline multi-branch.
+- Evidence:
+  - `app/Filament/Pages/Reports/CustomsCareStatistical.php:34-81`
+  - `app/Filament/Pages/Reports/CustomsCareStatistical.php:133-166`
+  - `app/Services/HotReportAggregateService.php:136-177`
+- Suggested fix:
+  - Branch-scope page theo actor, an/han che branch filter option, va chi cho `branch_scope_id = 0` voi admin.
+- Affected areas:
+  - `app/Filament/Pages/Reports/CustomsCareStatistical.php`
+  - report aggregate query path
+- Tests needed:
+  - feature test non-admin khong doc duoc global care snapshot
+  - feature test filter branch chi hien thi accessible branches
+- Dependencies:
+  - GOV, KPI
+- Suggested order:
+  - 2
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-001`
+
+## [CARE-003] Care ticket invariant chua duoc khoa bang unique/idempotent boundary
+- Severity: Critical
+- Category: Concurrency
+- Module: CARE
+- Description:
+  - `CareTicketService` va nhieu scheduler command dang upsert ticket theo `{source_type, source_id, care_type}` nhung bang `notes` khong co unique/composite key tuong ung. `CareTicketService` con dung `firstOrNew()` roi `save()`.
+- Why it matters:
+  - Concurrent scheduler/retry co the tao duplicate ticket, drift SLA queue va audit.
+- Evidence:
+  - `app/Services/CareTicketService.php:137-156`
+  - `app/Console/Commands/GenerateRecallTickets.php:73-95`
+  - `app/Console/Commands/RunPlanFollowUpPipeline.php:64-84`
+  - `app/Console/Commands/RunInvoiceAgingReminders.php:57-93`
+  - schema `notes` chi co index `notes_source_index`
+- Suggested fix:
+  - Them unique invariant canonical cho ticket key, dua toan bo upsert vao workflow service transaction-safe, va retry an toan.
+- Affected areas:
+  - `app/Services/CareTicketService.php`
+  - cac command CARE/FIN lien quan
+  - migrations `notes`
+- Tests needed:
+  - concurrency test cho duplicate ticket creation
+  - idempotency test cho repeated run cua scheduler
+- Dependencies:
+  - APPT, FIN, PAT
+- Suggested order:
+  - 3
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-002`
+
+## [CARE-004] Birthday automation publish side effect truoc dedupe ticket
+- Severity: High
+- Category: Concurrency
+- Module: CARE
+- Description:
+  - Command birthday goi `publishBirthdayGreeting()` truoc khi check ticket da ton tai trong nam hay chua, sau do moi `exists()` roi `create()`.
+- Why it matters:
+  - Retry hoac concurrent run co the gui greeting trung du ticket bi skip. Day la loi nghiep vu thuc te va gay spam/ton quota.
+- Evidence:
+  - `app/Console/Commands/GenerateBirthdayCareTickets.php:45-84`
+- Suggested fix:
+  - Dedupe ticket/event truoc khi publish, va dua publish birthday vao idempotent workflow hoac outbox.
+- Affected areas:
+  - `app/Console/Commands/GenerateBirthdayCareTickets.php`
+  - ZNS automation event publisher
+- Tests needed:
+  - feature test birthday rerun khong publish trung
+  - concurrency test scheduler birthday
+- Dependencies:
+  - CARE-003, ZNS
+- Suggested order:
+  - 4
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-003`
+
+## [CARE-005] Manual care assignee selector chua branch-scoped
+- Severity: High
+- Category: Security
+- Module: CARE
+- Description:
+  - `PatientNotesRelationManager` load tat ca user cho `user_id` filter/selector va payload build khong sanitize branch scope server-side.
+- Why it matters:
+  - CSKH/Manager co the gan ticket cho user ngoai branch, gay sai queue va lo nghiep vu.
+- Evidence:
+  - `app/Filament/Resources/Patients/Relations/PatientNotesRelationManager.php:231-235`
+  - `app/Filament/Resources/Patients/Relations/PatientNotesRelationManager.php:259-263`
+  - `app/Filament/Resources/Patients/Relations/PatientNotesRelationManager.php:291-319`
+  - `app/Filament/Resources/Patients/Relations/PatientNotesRelationManager.php:394-399`
+- Suggested fix:
+  - Tach `CareStaffAuthorizer`, branch-scope options theo actor va patient branch, validate/sanitize `user_id` server-side.
+- Affected areas:
+  - `PatientNotesRelationManager`
+  - possible shared care staff helper
+- Tests needed:
+  - feature test selector options theo branch
+  - forged payload test cho `user_id` ngoai scope
+- Dependencies:
+  - GOV, PAT
+- Suggested order:
+  - 5
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-004`
+
+## [CARE-006] CustomerCare dang mix raw source tables voi note tickets
+- Severity: High
+- Category: Domain Logic
+- Module: CARE
+- Description:
+  - Page `CustomerCare` dung `Note` cho mot so tab, nhung tab reminder/follow-up/birthday lai doc truc tiep `Appointment`, `Prescription`, `TreatmentSession`, `Patient` va render `care_status`/`care_channel` mac dinh.
+- Why it matters:
+  - UI khong con la source of truth cho ticket care. Nguoi dung co the thay status/hang doi khac voi `Note` that dang duoc scheduler va automation cap nhat.
+- Evidence:
+  - `app/Filament/Pages/CustomerCare.php:199-233`
+  - `app/Filament/Pages/CustomerCare.php:523-559`
+  - `app/Filament/Pages/CustomerCare.php:575-640`
+  - `app/Filament/Pages/CustomerCare.php:681-696`
+- Suggested fix:
+  - Chot `Note` la canonical datasource cho care queue va dung source records chi de tao/resolve ticket.
+- Affected areas:
+  - `CustomerCare` page
+  - `CareTicketService`
+  - scheduler/report alignment
+- Tests needed:
+  - feature test tab data bám theo care ticket canonical
+  - regression test status/channel khong bi drift sau source event thay doi
+- Dependencies:
+  - APPT, CLIN, TRT, FIN, PAT
+- Suggested order:
+  - 6
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-005`
+
+## [CARE-007] Care ticket destructive/edit surfaces van mo ngoai workflow canonical
+- Severity: High
+- Category: Data Integrity
+- Module: CARE
+- Description:
+  - `NoteResource` van co edit/bulk delete/force delete surface. `PatientNotesRelationManager` van cho edit/delete ticket khi chua `done`. Hien chua co workflow service de chot transition thay vi xoa du lieu.
+- Why it matters:
+  - Xoa/sua ticket dang mo cat dut provenance cua scheduler, audit trail va SLA queue.
+- Evidence:
+  - `app/Filament/Resources/Notes/NoteResource.php:81-102`
+  - `app/Filament/Resources/Notes/Tables/NotesTable.php:41-49`
+  - `app/Filament/Resources/Patients/Relations/PatientNotesRelationManager.php:147-176`
+  - `app/Models/Note.php:113-138`
+- Suggested fix:
+  - Loai destructive surfaces hoac chuyen sang workflow actions `complete`, `follow_up`, `fail`, `cancel`; neu can delete thi chi cho draft/manual note rieng biet.
+- Affected areas:
+  - `NoteResource`
+  - `PatientNotesRelationManager`
+  - `Note` model/workflow service
+- Tests needed:
+  - feature test chan delete/edit ticket automation theo role va state
+  - feature test workflow actions thay the delete
+- Dependencies:
+  - CARE-003, GOV
+- Suggested order:
+  - 7
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-006`
+
+## [CARE-008] Search phone trong CARE chua theo encrypted/hash strategy
+- Severity: Medium
+- Category: UX
+- Module: CARE
+- Description:
+  - `CustomerCare` dang `searchable()` truc tiep tren `patient.phone`/`phone` o nhieu tab, trong khi `PAT` da chuyen phone sang encrypted cast + hash search.
+- Why it matters:
+  - Tim kiem CSKH theo so dien thoai co nguy co khong ra ket qua hoac drift sau hardening PII.
+- Evidence:
+  - `app/Filament/Pages/CustomerCare.php:400-410`
+  - `app/Filament/Pages/CustomerCare.php:442-452`
+  - `app/Filament/Pages/CustomerCare.php:513-522`
+  - `app/Filament/Pages/CustomerCare.php:565-624`
+  - `app/Filament/Pages/CustomerCare.php:671-680`
+  - doi chieu `app/Filament/Resources/Patients/Tables/PatientsTable.php:40-48`
+- Suggested fix:
+  - Them custom searchable query dung `Patient::phoneSearchHash()` / `Customer::phoneSearchHash()` hoac tach search service cho CARE.
+- Affected areas:
+  - `CustomerCare` page
+  - co the ca `NoteResource` neu them phone search ve sau
+- Tests needed:
+  - feature test search phone tren tung tab quan trong
+- Dependencies:
+  - PAT
+- Suggested order:
+  - 8
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-007`
+
+## [CARE-009] Coverage chua khoa auth, duplicate automation va selector scope
+- Severity: Medium
+- Category: Maintainability
+- Module: CARE
+- Description:
+  - Test hien co cover state machine va mot so automation happy path, nhung chua co test cho auth custom page, global branch report scope, duplicate ticket race, birthday duplicate publish, branch-scoped assignee selector, va encrypted phone search trong CARE.
+- Why it matters:
+  - CARE la module co nhieu scheduler va retry path; neu khong co regression suite dung tam, duplicate va auth leak se quay lai rat de.
+- Evidence:
+  - `tests/Feature/CareAutomationCommandTest.php`
+  - `tests/Feature/CareTicketStateMachineTest.php`
+  - `tests/Feature/CareTicketAuditLogTest.php`
+  - khong co file test rieng cho `CustomerCare` auth/report scope/search
+- Suggested fix:
+  - Bo sung feature test va Livewire test cho page auth, report scope, manual care assignee scope, duplicate scheduler run, search phone.
+- Affected areas:
+  - `tests/Feature`
+- Tests needed:
+  - chinh issue nay la test backlog
+- Dependencies:
+  - CARE-001 -> CARE-008
+- Suggested order:
+  - 9
+- Current status:
+  - Resolved
+- Linked task IDs:
+  - `TASK-CARE-008`
 
 # Summary
 
-- Open critical count: TODO
-- Open high count: TODO
-- Open medium count: TODO
-- Open low count: TODO
-- Next recommended action: TODO
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 0
+- Open low count: 0
+- Next recommended action: Khong con open issue baseline. Rollout tiep theo la `php artisan migrate` cho `notes.ticket_key` va review module `ZNS` de khoa tiep outbound care side-effects.

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\InstallmentPlan;
 use App\Models\Note;
+use App\Services\CareTicketWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Carbon\Carbon;
@@ -16,7 +17,7 @@ class RunInstallmentDunning extends Command
 
     protected $description = 'Chạy nhắc nợ trả góp theo aging bucket và log ticket CSKH.';
 
-    public function handle(): int
+    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -32,7 +33,7 @@ class RunInstallmentDunning extends Command
 
         InstallmentPlan::query()
             ->whereNotIn('status', [InstallmentPlan::STATUS_CANCELLED, InstallmentPlan::STATUS_COMPLETED])
-            ->chunkById(100, function ($plans) use (&$queued, $asOf, $dryRun): void {
+            ->chunkById(100, function ($plans) use (&$queued, $asOf, $careTicketWorkflowService, $dryRun): void {
                 foreach ($plans as $plan) {
                     $plan->syncFinancialState($asOf, ! $dryRun);
 
@@ -48,13 +49,8 @@ class RunInstallmentDunning extends Command
                     };
 
                     if (! $dryRun) {
-                        Note::query()->updateOrCreate(
-                            [
-                                'source_type' => InstallmentPlan::class,
-                                'source_id' => $plan->id,
-                                'care_type' => 'payment_reminder',
-                            ],
-                            [
+                        $careTicketWorkflowService->upsertSourceTicket(
+                            attributes: [
                                 'patient_id' => $plan->patient_id,
                                 'customer_id' => $plan->patient?->customer_id,
                                 'user_id' => auth()->id(),
@@ -64,7 +60,10 @@ class RunInstallmentDunning extends Command
                                 'care_mode' => 'scheduled',
                                 'care_at' => now(),
                                 'content' => $message,
+                                'care_type' => 'payment_reminder',
                             ],
+                            sourceType: InstallmentPlan::class,
+                            sourceId: $plan->id,
                         );
 
                         $plan->dunning_level = $bucket;

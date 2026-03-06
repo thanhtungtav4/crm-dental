@@ -102,6 +102,7 @@ class Note extends Model
         'content',
         'source_type',
         'source_id',
+        'ticket_key',
     ];
 
     protected $casts = [
@@ -258,6 +259,24 @@ class Note extends Model
         ];
     }
 
+    public static function ticketKey(string $sourceType, int|string $sourceId, string $careType, ?string $scope = null): string
+    {
+        $segments = [
+            trim($sourceType),
+            trim((string) $sourceId),
+            trim($careType),
+        ];
+
+        if (filled($scope)) {
+            $segments[] = trim((string) $scope);
+        }
+
+        return implode('|', array_map(
+            static fn (string $segment): string => str_replace('|', '-', $segment),
+            array_values(array_filter($segments, static fn (string $segment): bool => $segment !== ''))
+        ));
+    }
+
     protected static function legacyAliasesForCareStatus(string $status): array
     {
         $aliases = [];
@@ -278,6 +297,21 @@ class Note extends Model
             ?? $this->customer?->branch_id;
 
         return $branchId !== null ? (int) $branchId : null;
+    }
+
+    public function isWorkflowManagedCareTicket(): bool
+    {
+        if (blank($this->care_type)) {
+            return false;
+        }
+
+        if (filled($this->ticket_key)) {
+            return true;
+        }
+
+        $sourceType = trim((string) ($this->source_type ?? ''));
+
+        return $sourceType !== '' && str_starts_with($sourceType, 'App\\Models\\');
     }
 
     protected static function inferBranchId(self $note): ?int

@@ -5,6 +5,7 @@ use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\Customer;
+use App\Models\Note;
 use App\Models\Patient;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
@@ -276,6 +277,18 @@ it('publishes birthday greeting event from birthday automation and deduplicates 
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $event = ZnsAutomationEvent::query()
+        ->where('patient_id', $patient->id)
+        ->where('event_type', ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING)
+        ->firstOrFail();
+
+    $event->markSent(
+        providerMessageId: 'birthday-msg-001',
+        providerStatusCode: 'sent',
+        httpStatus: 200,
+        providerResponse: ['status' => 'sent'],
+    );
+
     $this->artisan('care:generate-birthday-tickets', [
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
@@ -283,7 +296,21 @@ it('publishes birthday greeting event from birthday automation and deduplicates 
     expect(ZnsAutomationEvent::query()
         ->where('patient_id', $patient->id)
         ->where('event_type', ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING)
-        ->count())->toBe(1);
+        ->count())->toBe(1)
+        ->and($event->fresh()->status)->toBe(ZnsAutomationEvent::STATUS_SENT)
+        ->and(Note::query()
+            ->where('patient_id', $patient->id)
+            ->where('care_type', 'birthday_care')
+            ->count())->toBe(1)
+        ->and(Note::query()
+            ->where('patient_id', $patient->id)
+            ->where('care_type', 'birthday_care')
+            ->value('ticket_key'))->toBe(Note::ticketKey(
+                Patient::class,
+                $patient->id,
+                'birthday_care',
+                now()->format('Y'),
+            ));
 });
 
 function configureWebLeadApiForZns(

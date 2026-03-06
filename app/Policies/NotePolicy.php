@@ -29,22 +29,30 @@ class NotePolicy
 
     public function update(User $authUser, Note $note): bool
     {
-        return $authUser->can('Update:Note') && $this->canAccessNote($authUser, $note);
+        return ! $note->isWorkflowManagedCareTicket()
+            && $authUser->can('Update:Note')
+            && $this->canAccessNote($authUser, $note);
     }
 
     public function delete(User $authUser, Note $note): bool
     {
-        return $authUser->can('Delete:Note') && $this->canAccessNote($authUser, $note);
+        return ! $note->isWorkflowManagedCareTicket()
+            && $authUser->can('Delete:Note')
+            && $this->canAccessNote($authUser, $note);
     }
 
     public function restore(User $authUser, Note $note): bool
     {
-        return $authUser->can('Restore:Note') && $this->canAccessNote($authUser, $note);
+        return ! $note->isWorkflowManagedCareTicket()
+            && $authUser->can('Restore:Note')
+            && $this->canAccessNote($authUser, $note);
     }
 
     public function forceDelete(User $authUser, Note $note): bool
     {
-        return $authUser->can('ForceDelete:Note') && $this->canAccessNote($authUser, $note);
+        return ! $note->isWorkflowManagedCareTicket()
+            && $authUser->can('ForceDelete:Note')
+            && $this->canAccessNote($authUser, $note);
     }
 
     public function forceDeleteAny(User $authUser): bool

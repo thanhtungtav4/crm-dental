@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\PlanItem;
+use App\Services\CareTicketWorkflowService;
 use App\Services\RecallRuleEngineService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -22,7 +23,7 @@ class GenerateRecallTickets extends Command
         parent::__construct();
     }
 
-    public function handle(): int
+    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -43,7 +44,7 @@ class GenerateRecallTickets extends Command
             ->where('status', PlanItem::STATUS_COMPLETED)
             ->whereNotNull('completed_at')
             ->where('completed_at', '<=', $asOf)
-            ->chunkById(200, function ($items) use (&$createdOrUpdated, &$completedIds, $dryRun): void {
+            ->chunkById(200, function ($items) use (&$createdOrUpdated, &$completedIds, $careTicketWorkflowService, $dryRun): void {
                 foreach ($items as $item) {
                     $patientId = $item->treatmentPlan?->patient_id;
 
@@ -70,13 +71,8 @@ class GenerateRecallTickets extends Command
                         continue;
                     }
 
-                    Note::query()->updateOrCreate(
-                        [
-                            'source_type' => PlanItem::class,
-                            'source_id' => $item->id,
-                            'care_type' => 'recall_recare',
-                        ],
-                        [
+                    $careTicketWorkflowService->upsertSourceTicket(
+                        attributes: [
                             'patient_id' => $patientId,
                             'customer_id' => $item->treatmentPlan?->patient?->customer_id,
                             'user_id' => $item->treatmentPlan?->doctor_id ?? $item->treatmentPlan?->created_by,
@@ -91,7 +87,10 @@ class GenerateRecallTickets extends Command
                                 $item->service?->name ?? $item->name,
                                 (int) $rule['offset_days'],
                             ),
+                            'care_type' => 'recall_recare',
                         ],
+                        sourceType: PlanItem::class,
+                        sourceId: $item->id,
                     );
 
                     $createdOrUpdated++;

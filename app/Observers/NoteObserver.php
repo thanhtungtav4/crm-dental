@@ -42,6 +42,7 @@ class NoteObserver
                 'branch_id' => $note->resolveBranchId(),
                 'care_type' => $note->care_type,
                 'care_channel' => $note->care_channel,
+                'ticket_key' => $note->ticket_key,
                 'care_status_from' => Note::normalizeCareStatus((string) $note->getOriginal('care_status'))
                     ?? Note::DEFAULT_CARE_STATUS,
                 'care_status_to' => $note->care_status,

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Patients\Relations;
 
 use App\Models\Note;
 use App\Models\User;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -150,8 +151,16 @@ class PatientNotesRelationManager extends RelationManager
                     ->icon('heroicon-o-pencil-square')
                     ->iconButton()
                     ->color('gray')
-                    ->disabled(fn (Note $record): bool => $this->isCareLocked($record))
-                    ->tooltip(fn (Note $record): string => $this->isCareLocked($record) ? 'Bản ghi đã hoàn thành, không thể chỉnh sửa.' : 'Cập nhật lịch chăm sóc')
+                    ->disabled(fn (Note $record): bool => ! $this->canMutateCareRecord($record))
+                    ->tooltip(function (Note $record): string {
+                        if ($record->isWorkflowManagedCareTicket()) {
+                            return 'Ticket automation/canonical chỉ được cập nhật qua workflow chuẩn.';
+                        }
+
+                        return $this->isCareLocked($record)
+                            ? 'Bản ghi đã hoàn thành, không thể chỉnh sửa.'
+                            : 'Cập nhật lịch chăm sóc';
+                    })
                     ->modalHeading('Cập nhật lịch chăm sóc')
                     ->modalSubmitActionLabel('Lưu thông tin')
                     ->modalCancelActionLabel('Hủy bỏ')
@@ -165,8 +174,16 @@ class PatientNotesRelationManager extends RelationManager
                     ->icon('heroicon-o-trash')
                     ->iconButton()
                     ->color('danger')
-                    ->disabled(fn (Note $record): bool => $this->isCareLocked($record))
-                    ->tooltip(fn (Note $record): string => $this->isCareLocked($record) ? 'Bản ghi đã hoàn thành, không thể xóa.' : 'Xóa lịch chăm sóc')
+                    ->disabled(fn (Note $record): bool => ! $this->canMutateCareRecord($record))
+                    ->tooltip(function (Note $record): string {
+                        if ($record->isWorkflowManagedCareTicket()) {
+                            return 'Ticket automation/canonical không được xóa trực tiếp.';
+                        }
+
+                        return $this->isCareLocked($record)
+                            ? 'Bản ghi đã hoàn thành, không thể xóa.'
+                            : 'Xóa lịch chăm sóc';
+                    })
                     ->requiresConfirmation()
                     ->modalHeading('Thông báo xác nhận')
                     ->modalDescription('Bạn muốn xoá lịch chăm sóc không ?')
@@ -287,12 +304,20 @@ class PatientNotesRelationManager extends RelationManager
         $careStatus = $resolvedMode === 'scheduled'
             ? Note::CARE_STATUS_NOT_STARTED
             : ($data['care_status'] ?? Note::CARE_STATUS_DONE);
+        $branchId = $this->careBranchId();
+        $authUser = auth()->user();
+        $resolvedUserId = $resolvedMode === 'scheduled'
+            ? (isset($data['user_id']) && filled($data['user_id']) ? (int) $data['user_id'] : null)
+            : (is_numeric(auth()->id()) ? (int) auth()->id() : null);
 
         return [
             'customer_id' => $this->getOwnerRecord()->customer_id,
-            'user_id' => $resolvedMode === 'scheduled'
-                ? ($data['user_id'] ?? auth()->id())
-                : auth()->id(),
+            'user_id' => app(PatientAssignmentAuthorizer::class)->assertAssignableStaffId(
+                actor: $authUser instanceof User ? $authUser : null,
+                staffId: $resolvedUserId,
+                branchId: $branchId,
+                field: 'user_id',
+            ),
             'type' => Note::TYPE_GENERAL,
             'care_type' => $this->normalizeCareType($data['care_type'] ?? null),
             'care_channel' => $this->normalizeCareChannel($data['care_channel'] ?? null),
@@ -308,9 +333,20 @@ class PatientNotesRelationManager extends RelationManager
 
     protected function buildUpdatePayload(Note $record, array $data): array
     {
+        $branchId = $this->careBranchId();
+        $authUser = auth()->user();
+        $resolvedUserId = isset($data['user_id']) && filled($data['user_id'])
+            ? (int) $data['user_id']
+            : ($record->user_id ?? (is_numeric(auth()->id()) ? (int) auth()->id() : null));
+
         return [
             'customer_id' => $this->getOwnerRecord()->customer_id,
-            'user_id' => $data['user_id'] ?? $record->user_id ?? auth()->id(),
+            'user_id' => app(PatientAssignmentAuthorizer::class)->assertAssignableStaffId(
+                actor: $authUser instanceof User ? $authUser : null,
+                staffId: $resolvedUserId,
+                branchId: $branchId,
+                field: 'user_id',
+            ),
             'type' => Note::TYPE_GENERAL,
             'care_type' => $this->normalizeCareType($data['care_type'] ?? $record->care_type ?? null),
             'care_channel' => $this->normalizeCareChannel($data['care_channel'] ?? $record->care_channel ?? null),
@@ -341,6 +377,11 @@ class PatientNotesRelationManager extends RelationManager
     protected function isCareLocked(Note $record): bool
     {
         return ($record->care_status ?? Note::DEFAULT_CARE_STATUS) === Note::CARE_STATUS_DONE;
+    }
+
+    protected function canMutateCareRecord(Note $record): bool
+    {
+        return ! $record->isWorkflowManagedCareTicket() && ! $this->isCareLocked($record);
     }
 
     protected function getCareTypeOptions(): array
@@ -393,10 +434,19 @@ class PatientNotesRelationManager extends RelationManager
 
     protected function getCareStaffOptions(): array
     {
-        return User::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
+        $authUser = auth()->user();
+
+        return app(PatientAssignmentAuthorizer::class)->assignableStaffOptions(
+            actor: $authUser instanceof User ? $authUser : null,
+            branchId: $this->careBranchId(),
+        );
+    }
+
+    protected function careBranchId(): ?int
+    {
+        $branchId = $this->getOwnerRecord()->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
     }
 
     protected function mapLegacyType(?string $legacyType): string

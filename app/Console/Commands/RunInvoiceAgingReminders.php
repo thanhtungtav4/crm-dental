@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Note;
+use App\Services\CareTicketWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -17,7 +18,7 @@ class RunInvoiceAgingReminders extends Command
 
     protected $description = 'Tạo nhắc thanh toán theo aging bucket cho hóa đơn còn nợ.';
 
-    public function handle(): int
+    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -41,7 +42,7 @@ class RunInvoiceAgingReminders extends Command
             ->whereNotIn('status', [Invoice::STATUS_CANCELLED, Invoice::STATUS_PAID, Invoice::STATUS_DRAFT])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $dueCutoff)
-            ->chunkById(200, function ($invoices) use (&$upserted, &$skipped, $dryRun, $asOf, $minIntervalHours): void {
+            ->chunkById(200, function ($invoices) use (&$upserted, &$skipped, $asOf, $careTicketWorkflowService, $dryRun, $minIntervalHours): void {
                 foreach ($invoices as $invoice) {
                     if (! $invoice->patient_id) {
                         continue;
@@ -72,13 +73,8 @@ class RunInvoiceAgingReminders extends Command
                     }
 
                     if (! $dryRun) {
-                        Note::query()->updateOrCreate(
-                            [
-                                'source_type' => Invoice::class,
-                                'source_id' => $invoice->id,
-                                'care_type' => 'payment_reminder',
-                            ],
-                            [
+                        $careTicketWorkflowService->upsertSourceTicket(
+                            attributes: [
                                 'patient_id' => $invoice->patient_id,
                                 'customer_id' => $invoice->patient?->customer_id,
                                 'user_id' => $invoice->patient?->owner_staff_id ?? $invoice->patient?->primary_doctor_id,
@@ -89,7 +85,10 @@ class RunInvoiceAgingReminders extends Command
                                 'is_recurring' => false,
                                 'care_at' => now(),
                                 'content' => $this->buildReminderContent($daysOverdue, $balance),
-                            ]
+                                'care_type' => 'payment_reminder',
+                            ],
+                            sourceType: Invoice::class,
+                            sourceId: $invoice->id,
                         );
                     }
 

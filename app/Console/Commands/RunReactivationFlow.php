@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Services\CareTicketWorkflowService;
 use App\Services\PatientLoyaltyService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -21,6 +22,7 @@ class RunReactivationFlow extends Command
 
     public function __construct(
         protected PatientLoyaltyService $loyaltyService,
+        protected CareTicketWorkflowService $careTicketWorkflowService,
     ) {
         parent::__construct();
     }
@@ -94,13 +96,8 @@ class RunReactivationFlow extends Command
                         continue;
                     }
 
-                    Note::query()->updateOrCreate(
-                        [
-                            'source_type' => Patient::class,
-                            'source_id' => $patient->id,
-                            'care_type' => 'reactivation_follow_up',
-                        ],
-                        [
+                    $this->careTicketWorkflowService->upsertSourceTicket(
+                        attributes: [
                             'patient_id' => $patient->id,
                             'customer_id' => $patient->customer_id,
                             'user_id' => $patient->owner_staff_id ?? $patient->primary_doctor_id,
@@ -111,7 +108,10 @@ class RunReactivationFlow extends Command
                             'is_recurring' => false,
                             'care_at' => now(),
                             'content' => "Bệnh nhân đã {$inactiveDays} ngày chưa quay lại. Cần gọi reactivation và đề xuất lịch tái khám.",
+                            'care_type' => 'reactivation_follow_up',
                         ],
+                        sourceType: Patient::class,
+                        sourceId: $patient->id,
                     );
 
                     $ticketUpserted++;

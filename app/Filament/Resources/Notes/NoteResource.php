@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Notes;
 
-use App\Filament\Resources\Notes\Pages\CreateNote;
-use App\Filament\Resources\Notes\Pages\EditNote;
 use App\Filament\Resources\Notes\Pages\ListNotes;
 use App\Filament\Resources\Notes\Schemas\NoteForm;
 use App\Filament\Resources\Notes\Tables\NotesTable;
@@ -82,8 +80,6 @@ class NoteResource extends Resource
     {
         return [
             'index' => ListNotes::route('/'),
-            'create' => CreateNote::route('/create'),
-            'edit' => EditNote::route('/{record}/edit'),
         ];
     }
 

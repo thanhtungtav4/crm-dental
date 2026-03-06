@@ -5,12 +5,14 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Services\CareTicketWorkflowService;
 use App\Services\ZnsAutomationEventPublisher;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class GenerateBirthdayCareTickets extends Command
 {
@@ -18,8 +20,10 @@ class GenerateBirthdayCareTickets extends Command
 
     protected $description = 'Tạo ticket CSKH sinh nhật theo ngày hiện tại.';
 
-    public function handle(ZnsAutomationEventPublisher $znsAutomationEventPublisher): int
-    {
+    public function handle(
+        CareTicketWorkflowService $careTicketWorkflowService,
+        ZnsAutomationEventPublisher $znsAutomationEventPublisher,
+    ): int {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy automation chăm sóc sinh nhật.',
@@ -30,9 +34,6 @@ class GenerateBirthdayCareTickets extends Command
         $date = $date->timezone(config('app.timezone'));
 
         $scheduledAt = $date->copy()->startOfDay()->addMinutes(5);
-        $yearStart = $date->copy()->startOfYear();
-        $yearEnd = $date->copy()->endOfYear();
-
         $patients = Patient::query()
             ->whereNotNull('birthday')
             ->whereMonth('birthday', $date->month)
@@ -43,45 +44,65 @@ class GenerateBirthdayCareTickets extends Command
         $skipped = 0;
 
         foreach ($patients as $patient) {
-            if (! $this->option('dry-run')) {
-                $znsAutomationEventPublisher->publishBirthdayGreeting(
-                    patient: $patient,
-                    asOfDate: $date,
-                );
+            $scope = (string) $date->format('Y');
+            $ticketKey = Note::ticketKey(Patient::class, $patient->id, 'birthday_care', $scope);
+
+            if ($this->option('dry-run')) {
+                if (Note::query()->where('ticket_key', $ticketKey)->exists()) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $created++;
+
+                continue;
             }
 
-            $exists = Note::query()
-                ->where('care_type', 'birthday_care')
-                ->where('source_type', Patient::class)
-                ->where('source_id', $patient->id)
-                ->whereBetween('care_at', [$yearStart, $yearEnd])
-                ->exists();
+            $ticketResult = DB::transaction(function () use (
+                $careTicketWorkflowService,
+                $date,
+                $patient,
+                $scheduledAt,
+                $scope,
+                $znsAutomationEventPublisher,
+            ): array {
+                $result = $careTicketWorkflowService->upsertSourceTicketWithState(
+                    attributes: [
+                        'patient_id' => $patient->id,
+                        'customer_id' => $patient->customer_id,
+                        'user_id' => $patient->owner_staff_id ?? $patient->primary_doctor_id ?? $patient->created_by,
+                        'type' => Note::TYPE_GENERAL,
+                        'care_type' => 'birthday_care',
+                        'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
+                        'care_status' => Note::CARE_STATUS_NOT_STARTED,
+                        'care_mode' => 'scheduled',
+                        'is_recurring' => true,
+                        'care_at' => $scheduledAt,
+                        'content' => 'Chúc mừng sinh nhật '.$patient->full_name,
+                    ],
+                    sourceType: Patient::class,
+                    sourceId: $patient->id,
+                    scope: $scope,
+                );
 
-            if ($exists) {
+                if ($result['was_created']) {
+                    $znsAutomationEventPublisher->publishBirthdayGreeting(
+                        patient: $patient,
+                        asOfDate: $date,
+                    );
+                }
+
+                return $result;
+            }, 3);
+
+            if (! $ticketResult['was_created']) {
                 $skipped++;
 
                 continue;
             }
 
             $created++;
-
-            if ($this->option('dry-run')) {
-                continue;
-            }
-
-            Note::create([
-                'patient_id' => $patient->id,
-                'customer_id' => $patient->customer_id,
-                'user_id' => $patient->owner_staff_id ?? $patient->primary_doctor_id ?? $patient->created_by,
-                'type' => Note::TYPE_GENERAL,
-                'care_type' => 'birthday_care',
-                'care_channel' => ClinicRuntimeSettings::defaultCareChannel(),
-                'care_status' => Note::CARE_STATUS_NOT_STARTED,
-                'care_at' => $scheduledAt,
-                'content' => 'Chúc mừng sinh nhật '.$patient->full_name,
-                'source_type' => Patient::class,
-                'source_id' => $patient->id,
-            ]);
         }
 
         if (! $this->option('dry-run')) {

@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PatientRiskProfile;
+use App\Services\CareTicketWorkflowService;
 use App\Services\PatientRiskScoringService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -22,6 +23,7 @@ class ScorePatientRisk extends Command
 
     public function __construct(
         protected PatientRiskScoringService $riskScoringService,
+        protected CareTicketWorkflowService $careTicketWorkflowService,
     ) {
         parent::__construct();
     }
@@ -102,13 +104,8 @@ class ScorePatientRisk extends Command
                     );
 
                     if ($autoCreateHighRiskTicket && $profile->risk_level === PatientRiskProfile::LEVEL_HIGH) {
-                        Note::query()->updateOrCreate(
-                            [
-                                'source_type' => PatientRiskProfile::class,
-                                'source_id' => $profile->id,
-                                'care_type' => 'risk_high_follow_up',
-                            ],
-                            [
+                        $this->careTicketWorkflowService->upsertSourceTicket(
+                            attributes: [
                                 'patient_id' => $patient->id,
                                 'customer_id' => $patient->customer_id,
                                 'user_id' => $patient->owner_staff_id ?? $patient->primary_doctor_id,
@@ -119,7 +116,10 @@ class ScorePatientRisk extends Command
                                 'is_recurring' => false,
                                 'care_at' => now(),
                                 'content' => "Risk cao ({$profile->no_show_risk_score}/{$profile->churn_risk_score}). {$profile->recommended_action}",
+                                'care_type' => 'risk_high_follow_up',
                             ],
+                            sourceType: PatientRiskProfile::class,
+                            sourceId: $profile->id,
                         );
 
                         $ticketsUpserted++;

@@ -38,7 +38,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | FIN | Finance / Payments / Wallet / Installments | Clean Baseline Reached | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | B | Khong con open blocker baseline; tiep tuc theo doi drift giua finance, inventory va KPI bang full-suite regression | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Clean Baseline Reached | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | B | Khong con open code blocker baseline; follow-up van hanh la chay migrate + schema gate inventory tren DB dang drift | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Clean Baseline Reached | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la chay migrate va smoke test supplier backfill + factory report tren du lieu that | INV, FIN, GOV |
-| CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
+| CARE | Customer Care / Automation | Clean Baseline Reached | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | B | Khong con open blocker baseline; follow-up la rollout migration `notes.ticket_key` va review `ZNS/KPI` de khoa tiep outbound side-effects/report coupling | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Pending Review | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | TBD | TODO | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Pending Review | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | TBD | TODO | GOV, APPT, CLIN, ZNS, OPS |
 | KPI | Reports / KPI | Pending Review | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | TBD | TODO | FIN, INV, CARE, OPS |
@@ -54,17 +54,18 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `FIN` da dat clean baseline; wallet authorization, invoice workflow, refund idempotency va canonical payment boundary da duoc khoa bang regression test.
 - `INV` da dat clean baseline; canonical mutation boundary, regression suite va schema gate inventory da duoc khoa. Follow-up con lai la rollout migration/schema gate tren DB thuc te.
 - `SUP` da dat clean baseline; supplier canonical link, numbering, workflow boundary va report datasource da duoc khoa bang regression test. Follow-up con lai la rollout migration va smoke test tren du lieu that.
+- `CARE` da dat clean baseline; page/report auth, ticket invariant, birthday dedupe, canonical datasource va regression suite da duoc khoa. Follow-up tiep theo la rollout `notes.ticket_key` va review `ZNS/KPI`.
 
 # 4. Priority overview
 
 - Critical modules: Chua co module critical dang mo sau khi `FIN` dat baseline
-- High priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `KPI`
-- Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `KPI`
+- High priority modules: `ZNS`, `INT`, `OPS`, `KPI`
+- Medium priority modules: `ZNS`, `INT`, `OPS`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- Chua co module nao dang active fix. Module tiep theo nen di theo pipeline review truoc khi fix.
+- Chua co module nao dang ready-for-fix. Can review `ZNS` truoc de tao issue/plan canonical.
 
 # 6. Modules needing re-audit
 
@@ -72,8 +73,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `CARE` - day la module ke tiep hop ly sau khi `SUP` da dat clean baseline.
+- `ZNS` - uu tien cao nhat sau `CARE`, vi module nay giu provider retry semantics, delivery ownership va dead-letter policy cho birthday/care automation.
 
 # 8. Suggested next module to fix
 
-- `CARE` - bat dau fix sau khi hoan tat Prompt 1 -> 4 cho module nay.
+- Chua co module fix-ready moi. Can chay `Prompt 1 -> 4` cho `ZNS` truoc.

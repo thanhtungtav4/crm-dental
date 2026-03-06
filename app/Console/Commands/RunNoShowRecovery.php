@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Note;
+use App\Services\CareTicketWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -17,7 +18,7 @@ class RunNoShowRecovery extends Command
 
     protected $description = 'Tạo automation recovery cho lịch hẹn no-show và đóng ticket khi đã recover.';
 
-    public function handle(): int
+    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -37,20 +38,15 @@ class RunNoShowRecovery extends Command
             ->with(['patient'])
             ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
             ->where('date', '<=', $recoveryCutoff)
-            ->chunkById(200, function ($appointments) use (&$createdOrUpdated, $dryRun): void {
+            ->chunkById(200, function ($appointments) use (&$createdOrUpdated, $careTicketWorkflowService, $dryRun): void {
                 foreach ($appointments as $appointment) {
                     if (! $appointment->patient_id) {
                         continue;
                     }
 
                     if (! $dryRun) {
-                        Note::query()->updateOrCreate(
-                            [
-                                'source_type' => Appointment::class,
-                                'source_id' => $appointment->id,
-                                'care_type' => 'no_show_recovery',
-                            ],
-                            [
+                        $careTicketWorkflowService->upsertSourceTicket(
+                            attributes: [
                                 'patient_id' => $appointment->patient_id,
                                 'customer_id' => $appointment->customer_id ?? $appointment->patient?->customer_id,
                                 'user_id' => $appointment->assigned_to ?? $appointment->doctor_id,
@@ -61,7 +57,10 @@ class RunNoShowRecovery extends Command
                                 'is_recurring' => false,
                                 'care_at' => now(),
                                 'content' => 'Bệnh nhân no-show, cần gọi lại để recovery lịch hẹn.',
-                            ]
+                                'care_type' => 'no_show_recovery',
+                            ],
+                            sourceType: Appointment::class,
+                            sourceId: $appointment->id,
                         );
                     }
 

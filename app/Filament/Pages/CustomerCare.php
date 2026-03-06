@@ -10,6 +10,7 @@ use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\Exports\ExportsCsv;
@@ -46,6 +47,15 @@ class CustomerCare extends Page implements HasTable
     protected string $view = 'filament.pages.customer-care';
 
     public string $activeTab = 'care_schedule';
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->can('ViewAny:Note')
+            && $authUser->hasAnyAccessibleBranch();
+    }
 
     public function getHeading(): string
     {
@@ -199,27 +209,15 @@ class CustomerCare extends Page implements HasTable
     protected function getTableQuery(): Builder
     {
         return match ($this->activeTab) {
-            'appointment_reminder' => $this->applyDirectBranchScope(Appointment::query(), 'branch_id')
-                ->with(['patient', 'doctor', 'assignedTo'])
-                ->whereNotNull('patient_id')
-                ->whereIn('status', Appointment::statusesForQuery([
-                    Appointment::STATUS_NO_SHOW,
-                    Appointment::STATUS_RESCHEDULED,
-                ])),
-            'prescription_reminder' => $this->applyPatientBranchScope(Prescription::query(), 'patient')
-                ->with(['patient', 'doctor'])
-                ->whereNotNull('patient_id'),
-            'post_treatment_followup' => $this->applyPatientBranchScope(TreatmentSession::query(), 'treatmentPlan.patient')
-                ->with(['treatmentPlan.patient', 'doctor', 'planItem.service'])
-                ->whereNotNull('performed_at'),
-            'birthday' => $this->applyDirectBranchScope(Patient::query(), 'first_branch_id')
-                ->with('ownerStaff')
-                ->whereNotNull('birthday'),
+            'appointment_reminder' => $this->careTicketQueryByType('appointment_reminder', Appointment::class),
+            'prescription_reminder' => $this->careTicketQueryByType('medication_reminder', Prescription::class),
+            'post_treatment_followup' => $this->careTicketQueryByType('post_treatment_follow_up', TreatmentSession::class),
+            'birthday' => $this->careTicketQueryByType('birthday_care', Patient::class),
             'priority_queue' => $this->baseCareTicketQuery()
-                ->with(['patient', 'user', 'branch'])
+                ->with($this->careTicketRelations())
                 ->whereIn('care_type', array_keys($this->priorityCareTypeOptions())),
             default => $this->applyDirectBranchScope(Note::query(), 'branch_id')
-                ->with(['patient', 'user', 'branch'])
+                ->with($this->careTicketRelations())
                 ->whereNotNull('patient_id')
                 ->where(function (Builder $query): void {
                     $query->whereNull('care_type');
@@ -237,10 +235,7 @@ class CustomerCare extends Page implements HasTable
     {
         return match ($this->activeTab) {
             'priority_queue' => $this->getPriorityQueueColumns(),
-            'appointment_reminder' => $this->getAppointmentColumns(),
-            'prescription_reminder' => $this->getPrescriptionColumns(),
-            'post_treatment_followup' => $this->getFollowupColumns(),
-            'birthday' => $this->getBirthdayColumns(),
+            'appointment_reminder', 'prescription_reminder', 'post_treatment_followup', 'birthday' => $this->getCareScheduleColumns(),
             default => $this->getCareScheduleColumns(),
         };
     }
@@ -249,10 +244,7 @@ class CustomerCare extends Page implements HasTable
     {
         return match ($this->activeTab) {
             'priority_queue' => $this->getPriorityQueueFilters(),
-            'appointment_reminder' => $this->getAppointmentFilters(),
-            'prescription_reminder' => $this->getPrescriptionFilters(),
-            'post_treatment_followup' => $this->getFollowupFilters(),
-            'birthday' => $this->getBirthdayFilters(),
+            'appointment_reminder', 'prescription_reminder', 'post_treatment_followup', 'birthday' => $this->getCareScheduleFilters(),
             default => $this->getCareScheduleFilters(),
         };
     }
@@ -274,10 +266,7 @@ class CustomerCare extends Page implements HasTable
     protected function getExportColumns(): array
     {
         return match ($this->activeTab) {
-            'appointment_reminder' => $this->getAppointmentExportColumns(),
-            'prescription_reminder' => $this->getPrescriptionExportColumns(),
-            'post_treatment_followup' => $this->getFollowupExportColumns(),
-            'birthday' => $this->getBirthdayExportColumns(),
+            'appointment_reminder', 'prescription_reminder', 'post_treatment_followup', 'birthday' => $this->getCareScheduleExportColumns(),
             default => $this->getCareScheduleExportColumns(),
         };
     }
@@ -407,7 +396,7 @@ class CustomerCare extends Page implements HasTable
                 ->sortable(),
             TextColumn::make('patient.phone')
                 ->label('Điện thoại')
-                ->searchable(),
+                ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyPatientPhoneSearch($query, $search)),
             TextColumn::make('care_type')
                 ->label('Loại chăm sóc')
                 ->badge()
@@ -449,7 +438,7 @@ class CustomerCare extends Page implements HasTable
                 ->sortable(),
             TextColumn::make('patient.phone')
                 ->label('Điện thoại')
-                ->searchable(),
+                ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyPatientPhoneSearch($query, $search)),
             TextColumn::make('branch.name')
                 ->label('Chi nhánh')
                 ->default('-')
@@ -741,7 +730,7 @@ class CustomerCare extends Page implements HasTable
                 ->relationship('branch', 'name'),
             SelectFilter::make('user_id')
                 ->label('Nhân viên chăm sóc')
-                ->relationship('user', 'name'),
+                ->relationship('user', 'name', fn (Builder $query): Builder => $this->scopeCareStaffFilterOptions($query)),
         ];
     }
 
@@ -777,7 +766,7 @@ class CustomerCare extends Page implements HasTable
                 ->relationship('branch', 'name'),
             SelectFilter::make('user_id')
                 ->label('Nhân viên')
-                ->relationship('user', 'name'),
+                ->relationship('user', 'name', fn (Builder $query): Builder => $this->scopeCareStaffFilterOptions($query)),
         ];
     }
 
@@ -807,7 +796,7 @@ class CustomerCare extends Page implements HasTable
                 ->relationship('doctor', 'name'),
             SelectFilter::make('assigned_to')
                 ->label('Nhân viên chăm sóc')
-                ->relationship('assignedTo', 'name'),
+                ->relationship('assignedTo', 'name', fn (Builder $query): Builder => $this->scopeCareStaffFilterOptions($query)),
         ];
     }
 
@@ -995,6 +984,14 @@ class CustomerCare extends Page implements HasTable
             ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()));
     }
 
+    protected function careTicketQueryByType(string $careType, string $sourceType): Builder
+    {
+        return $this->baseCareTicketQuery()
+            ->with($this->careTicketRelations())
+            ->where('care_type', $careType)
+            ->where('source_type', $sourceType);
+    }
+
     protected function applyDirectBranchScope(Builder $query, string $column): Builder
     {
         $authUser = auth()->user();
@@ -1045,5 +1042,39 @@ class CustomerCare extends Page implements HasTable
             ->filter(fn (string $type): bool => array_key_exists($type, $availableTypes))
             ->values()
             ->all();
+    }
+
+    protected function scopeCareStaffFilterOptions(Builder $query): Builder
+    {
+        $authUser = auth()->user();
+
+        return app(PatientAssignmentAuthorizer::class)->scopeAssignableStaff(
+            query: $query,
+            actor: $authUser instanceof User ? $authUser : null,
+            branchId: null,
+        );
+    }
+
+    protected function applyPatientPhoneSearch(Builder $query, string $search): Builder
+    {
+        $phoneHash = Patient::phoneSearchHash($search);
+
+        if ($phoneHash === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('patient', fn (Builder $patientQuery): Builder => $patientQuery->where('phone_search_hash', $phoneHash));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function careTicketRelations(): array
+    {
+        return [
+            'patient:id,patient_code,full_name,phone,phone_search_hash,first_branch_id',
+            'user:id,name',
+            'branch:id,name',
+        ];
     }
 }

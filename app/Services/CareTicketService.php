@@ -13,6 +13,8 @@ use Carbon\Carbon;
 
 class CareTicketService
 {
+    public function __construct(protected CareTicketWorkflowService $workflowService) {}
+
     public function syncAppointment(Appointment $appointment): void
     {
         if (! $appointment->patient_id) {
@@ -21,6 +23,7 @@ class CareTicketService
 
         if (! in_array($appointment->status, [Appointment::STATUS_NO_SHOW, Appointment::STATUS_RESCHEDULED], true)) {
             $this->cancelTicket(Appointment::class, $appointment->id, 'appointment_reminder');
+
             return;
         }
 
@@ -57,7 +60,7 @@ class CareTicketService
         $offsetDays = ClinicRuntimeSettings::medicationReminderOffsetDays();
         $careAt = $baseDate ? $baseDate->copy()->startOfDay()->addDays($offsetDays) : now();
         $assigneeId = $prescription->doctor_id ?: $prescription->created_by;
-        $content = $prescription->notes ?: ($prescription->prescription_name ? 'Nhắc uống thuốc: ' . $prescription->prescription_name : 'Nhắc lịch uống thuốc');
+        $content = $prescription->notes ?: ($prescription->prescription_name ? 'Nhắc uống thuốc: '.$prescription->prescription_name : 'Nhắc lịch uống thuốc');
 
         $this->upsertTicket([
             'patient_id' => $prescription->patient_id,
@@ -82,6 +85,7 @@ class CareTicketService
         $isCompleted = in_array($session->status, ['done', 'completed', null], true);
         if (! $session->performed_at || ! $isCompleted) {
             $this->cancelTicket(TreatmentSession::class, $session->id, 'post_treatment_follow_up');
+
             return;
         }
 
@@ -112,6 +116,7 @@ class CareTicketService
 
         if (! $planItem->isDeclined()) {
             $this->cancelTicket(PlanItem::class, $planItem->id, 'treatment_plan_follow_up');
+
             return;
         }
 
@@ -136,38 +141,16 @@ class CareTicketService
 
     protected function upsertTicket(array $attributes, string $sourceType, int $sourceId): void
     {
-        $attributes['source_type'] = $sourceType;
-        $attributes['source_id'] = $sourceId;
-
-        $note = Note::firstOrNew([
-            'source_type' => $sourceType,
-            'source_id' => $sourceId,
-            'care_type' => $attributes['care_type'] ?? null,
-        ]);
-
-        $existingStatus = $note->care_status;
-        $note->fill($attributes);
-
-        if ($note->exists && $existingStatus === Note::CARE_STATUS_DONE) {
-            $note->care_status = Note::CARE_STATUS_DONE;
-        }
-
-        $note->save();
+        $this->workflowService->upsertSourceTicket(
+            attributes: $attributes,
+            sourceType: $sourceType,
+            sourceId: $sourceId,
+        );
     }
 
     protected function cancelTicket(string $sourceType, int $sourceId, ?string $careType = null): void
     {
-        $query = Note::query()
-            ->where('source_type', $sourceType)
-            ->where('source_id', $sourceId);
-
-        if ($careType) {
-            $query->where('care_type', $careType);
-        }
-
-        $query->update([
-            'care_status' => Note::CARE_STATUS_FAILED,
-        ]);
+        $this->workflowService->failActiveTicketsForSource($sourceType, $sourceId, $careType);
     }
 
     public function cancelBySource(string $sourceType, int $sourceId, ?string $careType = null): void

@@ -139,13 +139,21 @@ it('creates reactivation tickets and awards bonus after successful reactivation'
         '--date' => now()->toDateString(),
     ])->assertSuccessful();
 
+    $this->artisan('growth:run-reactivation-flow', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
     $ticket = Note::query()
         ->where('patient_id', $patient->id)
         ->where('care_type', 'reactivation_follow_up')
         ->first();
 
     expect($ticket)->not->toBeNull()
-        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED);
+        ->and($ticket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
+        ->and(Note::query()
+            ->where('patient_id', $patient->id)
+            ->where('care_type', 'reactivation_follow_up')
+            ->count())->toBe(1);
 
     $ticket->update([
         'care_status' => Note::CARE_STATUS_DONE,
@@ -253,6 +261,11 @@ it('scores patient risk and manages high risk intervention tickets', function ()
         '--patient_id' => $patient->id,
     ])->assertSuccessful();
 
+    $this->artisan('patients:score-risk', [
+        '--date' => now()->toDateString(),
+        '--patient_id' => $patient->id,
+    ])->assertSuccessful();
+
     $profile = PatientRiskProfile::query()->where('patient_id', $patient->id)->firstOrFail();
 
     expect($profile->risk_level)->toBe(PatientRiskProfile::LEVEL_HIGH);
@@ -263,7 +276,11 @@ it('scores patient risk and manages high risk intervention tickets', function ()
         ->first();
 
     expect($riskTicket)->not->toBeNull()
-        ->and($riskTicket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED);
+        ->and($riskTicket->care_status)->toBe(Note::CARE_STATUS_NOT_STARTED)
+        ->and(Note::query()
+            ->where('patient_id', $patient->id)
+            ->where('care_type', 'risk_high_follow_up')
+            ->count())->toBe(1);
 
     Appointment::query()->where('patient_id', $patient->id)->update([
         'status' => Appointment::STATUS_CONFIRMED,

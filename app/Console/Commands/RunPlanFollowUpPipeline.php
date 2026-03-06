@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
+use App\Services\CareTicketWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -18,7 +19,7 @@ class RunPlanFollowUpPipeline extends Command
 
     protected $description = 'Chạy pipeline follow-up cho plan item chưa chốt (chưa duyệt/từ chối).';
 
-    public function handle(): int
+    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -49,7 +50,7 @@ class RunPlanFollowUpPipeline extends Command
                     TreatmentPlan::STATUS_COMPLETED,
                 ]);
             })
-            ->chunkById(200, function ($items) use (&$upserted, $dryRun): void {
+            ->chunkById(200, function ($items) use (&$upserted, $careTicketWorkflowService, $dryRun): void {
                 foreach ($items as $item) {
                     $patientId = $item->treatmentPlan?->patient_id;
 
@@ -62,13 +63,8 @@ class RunPlanFollowUpPipeline extends Command
                         : 'Kế hoạch điều trị chưa chốt. Cần follow-up tư vấn xác nhận điều trị.';
 
                     if (! $dryRun) {
-                        Note::query()->updateOrCreate(
-                            [
-                                'source_type' => PlanItem::class,
-                                'source_id' => $item->id,
-                                'care_type' => 'treatment_plan_follow_up',
-                            ],
-                            [
+                        $careTicketWorkflowService->upsertSourceTicket(
+                            attributes: [
                                 'patient_id' => $patientId,
                                 'customer_id' => $item->treatmentPlan?->patient?->customer_id,
                                 'user_id' => $item->treatmentPlan?->doctor_id ?? $item->treatmentPlan?->created_by,
@@ -79,7 +75,10 @@ class RunPlanFollowUpPipeline extends Command
                                 'is_recurring' => false,
                                 'care_at' => now(),
                                 'content' => $content,
-                            ]
+                                'care_type' => 'treatment_plan_follow_up',
+                            ],
+                            sourceType: PlanItem::class,
+                            sourceId: $item->id,
                         );
                     }
 
