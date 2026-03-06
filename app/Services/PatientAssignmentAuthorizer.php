@@ -87,6 +87,20 @@ class PatientAssignmentAuthorizer
             ->orderBy('name');
     }
 
+    public function assertAssignableDoctorId(?User $actor, ?int $doctorId, ?int $branchId, string $field): ?int
+    {
+        if (! $actor instanceof User) {
+            return $doctorId;
+        }
+
+        return $this->sanitizeAssignableDoctorId(
+            actor: $actor,
+            doctorId: $doctorId,
+            branchId: $branchId,
+            field: $field,
+        );
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

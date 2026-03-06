@@ -235,7 +235,7 @@ class PatientMedicalRecordForm
             $patientId = $record->patient_id;
         }
 
-        $patient = self::resolvePatient($patientId);
+        $patient = self::resolvePatient($patientId, $record);
 
         if (! $patient) {
             return 'Chưa chọn bệnh nhân.';
@@ -302,10 +302,16 @@ class PatientMedicalRecordForm
         return $summary;
     }
 
-    private static function resolvePatient(mixed $patientId): ?Patient
+    private static function resolvePatient(mixed $patientId, ?PatientMedicalRecord $record = null): ?Patient
     {
         if (! is_numeric($patientId)) {
             return null;
+        }
+
+        if ($record?->relationLoaded('patient') && $record->patient && (int) $record->patient_id === (int) $patientId) {
+            $record->patient->loadMissing('branch:id,name');
+
+            return $record->patient;
         }
 
         return Patient::query()

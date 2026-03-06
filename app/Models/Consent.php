@@ -21,6 +21,13 @@ class Consent extends Model
 
     public const STATUS_EXPIRED = 'expired';
 
+    protected const TRANSITIONS = [
+        self::STATUS_PENDING => [self::STATUS_PENDING, self::STATUS_SIGNED, self::STATUS_EXPIRED],
+        self::STATUS_SIGNED => [self::STATUS_SIGNED, self::STATUS_REVOKED, self::STATUS_EXPIRED],
+        self::STATUS_REVOKED => [self::STATUS_REVOKED],
+        self::STATUS_EXPIRED => [self::STATUS_EXPIRED],
+    ];
+
     protected $fillable = [
         'patient_id',
         'branch_id',
@@ -34,6 +41,7 @@ class Consent extends Model
         'expires_at',
         'revoked_at',
         'note',
+        'signature_context',
     ];
 
     protected function casts(): array
@@ -44,6 +52,7 @@ class Consent extends Model
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
             'note' => NullableEncrypted::class,
+            'signature_context' => 'array',
         ];
     }
 
@@ -54,7 +63,23 @@ class Consent extends Model
                 $consent->branch_id = static::inferBranchId($consent);
             }
 
-            $consent->status = strtolower(trim((string) $consent->status));
+            $consent->status = strtolower(trim((string) ($consent->status ?: self::STATUS_PENDING)));
+
+            if ($consent->exists && $consent->isDirty('status')) {
+                $fromStatus = strtolower(trim((string) ($consent->getOriginal('status') ?: self::STATUS_PENDING)));
+
+                if (! self::canTransition($fromStatus, $consent->status)) {
+                    throw ValidationException::withMessages([
+                        'status' => 'CONSENT_STATE_INVALID: Không thể chuyển trạng thái consent không hợp lệ.',
+                    ]);
+                }
+            }
+
+            if ($consent->exists && $consent->hasLockedContentMutations()) {
+                throw ValidationException::withMessages([
+                    'consent' => 'CONSENT_CONTENT_LOCKED: Consent đã ký hoặc đã kết thúc vòng đời nên không thể sửa nội dung.',
+                ]);
+            }
 
             if ($consent->status === self::STATUS_SIGNED) {
                 if (! $consent->signed_by) {
@@ -70,6 +95,11 @@ class Consent extends Model
                 $consent->revoked_at = $consent->revoked_at ?? now();
             }
         });
+    }
+
+    public static function canTransition(string $fromStatus, string $toStatus): bool
+    {
+        return in_array($toStatus, self::TRANSITIONS[$fromStatus] ?? [], true);
     }
 
     public function patient(): BelongsTo
@@ -156,5 +186,25 @@ class Consent extends Model
             ->value('first_branch_id');
 
         return $patientBranchId !== null ? (int) $patientBranchId : null;
+    }
+
+    protected function hasLockedContentMutations(): bool
+    {
+        $originalStatus = strtolower(trim((string) ($this->getOriginal('status') ?: self::STATUS_PENDING)));
+
+        if (! in_array($originalStatus, [self::STATUS_SIGNED, self::STATUS_REVOKED, self::STATUS_EXPIRED], true)) {
+            return false;
+        }
+
+        $allowedDirtyFields = ['status', 'revoked_at', 'updated_at'];
+        $dirtyFields = array_keys($this->getDirty());
+
+        foreach ($dirtyFields as $field) {
+            if (! in_array($field, $allowedDirtyFields, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

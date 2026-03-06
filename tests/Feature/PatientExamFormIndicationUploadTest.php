@@ -17,12 +17,16 @@ it('stores uploaded indication images per selected indication type', function ()
     $user = User::factory()->create();
     $user->assignRole('Admin');
     $patient = Patient::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
+    ]);
+    $doctor->assignRole('Doctor');
 
     $this->actingAs($user);
 
     $examSession = ExamSession::query()->create([
         'patient_id' => $patient->id,
-        'doctor_id' => $user->id,
+        'doctor_id' => $doctor->id,
         'branch_id' => $patient->first_branch_id,
         'session_date' => now()->toDateString(),
         'status' => ExamSession::STATUS_IN_PROGRESS,
@@ -33,7 +37,7 @@ it('stores uploaded indication images per selected indication type', function ()
     $note = ClinicalNote::query()->create([
         'patient_id' => $patient->id,
         'exam_session_id' => $examSession->id,
-        'doctor_id' => $user->id,
+        'doctor_id' => $doctor->id,
         'branch_id' => $patient->first_branch_id,
         'date' => now()->toDateString(),
         'indications' => [],

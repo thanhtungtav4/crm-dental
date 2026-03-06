@@ -36,11 +36,47 @@ it('provisions exam session when a clinical note is created', function (): void 
         ->and($session->status)->toBe(ExamSession::STATUS_IN_PROGRESS);
 });
 
-it('blocks deleting an exam session when clinical order exists', function (): void {
-    $doctor = User::factory()->create();
-    $doctor->assignRole('Doctor');
-
+it('reuses the same exam session when clinical notes are created twice on the same day', function (): void {
     $patient = Patient::factory()->create();
+    $doctor = User::factory()->create();
+
+    $firstNote = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $patient->first_branch_id,
+        'date' => '2026-03-01',
+        'general_exam_notes' => 'Phiếu khám đầu tiên.',
+        'indications' => [],
+        'indication_images' => [],
+        'tooth_diagnosis_data' => [],
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $secondNote = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $patient->first_branch_id,
+        'date' => '2026-03-01',
+        'general_exam_notes' => 'Phiếu khám bổ sung.',
+        'indications' => [],
+        'indication_images' => [],
+        'tooth_diagnosis_data' => [],
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    expect($firstNote->exam_session_id)->not->toBeNull()
+        ->and((int) $secondNote->exam_session_id)->toBe((int) $firstNote->exam_session_id)
+        ->and(ExamSession::query()->where('patient_id', $patient->id)->count())->toBe(1);
+});
+
+it('blocks deleting an exam session when clinical order exists', function (): void {
+    $patient = Patient::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
+    ]);
+    $doctor->assignRole('Doctor');
 
     $this->actingAs($doctor);
 

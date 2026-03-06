@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Services\ClinicalAuditTimelineService;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
@@ -283,6 +284,10 @@ class PatientActivityTimelineWidget extends Widget
                     'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
                 ]);
             });
+
+        app(ClinicalAuditTimelineService::class)
+            ->timelineEntriesForPatient($this->record, 10)
+            ->each(fn (array $entry) => $activities->push($entry));
 
         // Notes
         $this->record->notes()->with('user')->get()->each(function ($note) use ($activities) {

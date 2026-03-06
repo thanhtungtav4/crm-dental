@@ -47,27 +47,32 @@ class PatientMedicalRecordPolicy
 
     public function delete(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Delete:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
+        return false;
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function restore(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('Restore:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
+        return false;
     }
 
     public function forceDelete(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool
     {
-        return $authUser->can('ForceDelete:PatientMedicalRecord') && $this->canAccessRecord($authUser, $patientMedicalRecord);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:PatientMedicalRecord') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, PatientMedicalRecord $patientMedicalRecord): bool

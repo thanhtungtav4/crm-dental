@@ -33,7 +33,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | GOV | Governance / Branches / RBAC / Audit | Clean Baseline Reached | [Review](modules/GOV-branches-rbac-audit.md) | [Issues](../issues/GOV-issues.md) | [Plan](../planning/GOV-plan.md) | B | Khong con open blocker baseline; follow-up van hanh la sync permission baseline tren DB da seed truoc day va formalize governance delegation matrix neu can | PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS |
 | PAT | Customers / Patients / MPI | Clean Baseline Reached | [Review](modules/PAT-customers-patients.md) | [Issues](../issues/PAT-issues.md) | [Plan](../planning/PAT-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la SOP/aging dashboard cho MPI queue neu van hanh can | GOV, APPT, CLIN, FIN, CARE, ZNS |
 | APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
-| CLIN | Clinical Records / Consent | Pending Review | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, FIN, INT |
+| CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Pending Review | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | TBD | TODO | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Pending Review | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Pending Review | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | TBD | TODO | GOV, TRT, FIN, SUP, KPI |
@@ -49,19 +49,20 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - GOV da dat clean baseline va tiep tuc la nen cho governance/RBAC toan he thong.
 - PAT da dat clean baseline, khoa patient identity boundary, customer->patient conversion idempotency va MPI operator workflow.
 - `APPT` da dat clean baseline; scheduling, overbooking auth, reschedule audit, encrypted search va observer side-effects da duoc khoa bang regression test.
-- Cac module sau `CLIN`, `TRT`, `FIN` gio co the duoc review/fix tren patient ownership va scheduling boundary on dinh hon.
+- `CLIN` da dat clean baseline; EMR PHI, consent lifecycle, session idempotency, branch-scoped doctor assignment va audit timeline reader da duoc khoa bang regression test.
+- Cac module sau `TRT`, `FIN` gio co the duoc review/fix tren patient ownership, scheduling va clinical boundary on dinh hon.
 
 # 4. Priority overview
 
-- Critical modules: Chua co module nao con `Critical` blocker sau GOV + PAT baseline.
-- High priority modules: `CLIN`, `FIN`, `INV`, `TRT`
+- Critical modules: Chua co module nao dang active co blocker `Critical` sau khi chot `CLIN`.
+- High priority modules: `FIN`, `INV`, `TRT`
 - Medium priority modules: `CARE`, `ZNS`, `INT`, `OPS`, `TRT`, `SUP`, `KPI`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `CLIN` - dependency scheduling/patient boundary da on dinh, co the deep-fix consent + clinical record lifecycle.
 - `TRT` - da co nen APPT/PAT/GOV on dinh de review tiep session/material usage boundary.
+- `FIN` - co the vao sau `TRT` tren nen governance, patient va clinical traceability da on dinh hon.
 
 # 6. Modules needing re-audit
 
@@ -69,8 +70,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `CLIN` - clinical records / consent la module ke tiep co rui ro nghiep vu cao nhat tren nen APPT/PAT/GOV da sach.
+- `TRT` - la module tiep theo hop ly nhat vi phu thuoc truc tiep vao consent, session lifecycle va material usage vua duoc on dinh o `CLIN`.
 
 # 8. Suggested next module to fix
 
-- `CLIN` - sau khi review xong, day la module hop ly nhat de deep-fix tiep.
+- `TRT` - co the vao deep review/fix ngay tren nen `GOV`, `PAT`, `APPT`, `CLIN` da dat clean baseline.

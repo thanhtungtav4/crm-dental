@@ -7,7 +7,6 @@ use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Patient;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPatientMedicalRecord extends EditRecord
@@ -46,7 +45,6 @@ class EditPatientMedicalRecord extends EditRecord
                 ->color('gray')
                 ->url(fn (): ?string => $this->resolvePatientProfileUrl())
                 ->visible(fn (): bool => $this->resolvePatientProfileUrl() !== null),
-            DeleteAction::make(),
         ];
     }
 

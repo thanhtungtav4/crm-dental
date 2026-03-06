@@ -4,9 +4,13 @@ namespace App\Models;
 
 use App\Casts\NullableEncrypted;
 use App\Services\ExamSessionLifecycleService;
+use App\Services\ExamSessionProvisioningService;
+use App\Services\PatientAssignmentAuthorizer;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 class ClinicalNote extends Model
 {
@@ -60,6 +64,53 @@ class ClinicalNote extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $clinicalNote): void {
+            $authUser = BranchAccess::currentUser();
+
+            if (! $authUser) {
+                return;
+            }
+
+            $branchId = $clinicalNote->branch_id ? (int) $clinicalNote->branch_id : null;
+
+            if ($branchId !== null) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: $branchId,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền ghi phiếu khám ở chi nhánh này.',
+                );
+            }
+
+            $authorizer = app(PatientAssignmentAuthorizer::class);
+
+            if (! $clinicalNote->exists || $clinicalNote->isDirty('doctor_id')) {
+                $clinicalNote->doctor_id = $authorizer->assertAssignableDoctorId(
+                    actor: $authUser,
+                    doctorId: $clinicalNote->doctor_id ? (int) $clinicalNote->doctor_id : null,
+                    branchId: $branchId,
+                    field: 'doctor_id',
+                );
+            }
+
+            if (! $clinicalNote->exists || $clinicalNote->isDirty('examining_doctor_id')) {
+                $clinicalNote->examining_doctor_id = $authorizer->assertAssignableDoctorId(
+                    actor: $authUser,
+                    doctorId: $clinicalNote->examining_doctor_id ? (int) $clinicalNote->examining_doctor_id : null,
+                    branchId: $branchId,
+                    field: 'examining_doctor_id',
+                );
+            }
+
+            if (! $clinicalNote->exists || $clinicalNote->isDirty('treating_doctor_id')) {
+                $clinicalNote->treating_doctor_id = $authorizer->assertAssignableDoctorId(
+                    actor: $authUser,
+                    doctorId: $clinicalNote->treating_doctor_id ? (int) $clinicalNote->treating_doctor_id : null,
+                    branchId: $branchId,
+                    field: 'treating_doctor_id',
+                );
+            }
+        });
+
         static::creating(function (self $clinicalNote): void {
             if (! $clinicalNote->lock_version || (int) $clinicalNote->lock_version < 1) {
                 $clinicalNote->lock_version = 1;
@@ -71,6 +122,12 @@ class ClinicalNote extends Model
         });
 
         static::updating(function (self $clinicalNote): void {
+            if ($clinicalNote->hasTrackedRevisionChanges() && $clinicalNote->isRevisionLocked()) {
+                throw ValidationException::withMessages([
+                    'clinical_note' => 'EXAM_SESSION_LOCKED: Phiếu khám đã bị khóa và không thể chỉnh sửa nội dung lâm sàng.',
+                ]);
+            }
+
             if (! $clinicalNote->hasTrackedRevisionChanges()) {
                 return;
             }
@@ -145,15 +202,20 @@ class ClinicalNote extends Model
     public static function trackedRevisionFields(): array
     {
         return [
+            'doctor_id',
             'date',
+            'branch_id',
             'exam_session_id',
             'visit_episode_id',
+            'examination_note',
             'examining_doctor_id',
             'treating_doctor_id',
             'general_exam_notes',
+            'recommendation_notes',
             'treatment_plan_note',
             'indications',
             'indication_images',
+            'diagnoses',
             'tooth_diagnosis_data',
             'other_diagnosis',
         ];
@@ -170,15 +232,20 @@ class ClinicalNote extends Model
     public function revisionPayload(): array
     {
         return [
+            'doctor_id' => $this->doctor_id ? (int) $this->doctor_id : null,
             'date' => $this->date?->toDateString(),
+            'branch_id' => $this->branch_id ? (int) $this->branch_id : null,
             'exam_session_id' => $this->exam_session_id ? (int) $this->exam_session_id : null,
             'visit_episode_id' => $this->visit_episode_id ? (int) $this->visit_episode_id : null,
+            'examination_note' => $this->examination_note,
             'examining_doctor_id' => $this->examining_doctor_id ? (int) $this->examining_doctor_id : null,
             'treating_doctor_id' => $this->treating_doctor_id ? (int) $this->treating_doctor_id : null,
             'general_exam_notes' => $this->general_exam_notes,
+            'recommendation_notes' => $this->recommendation_notes,
             'treatment_plan_note' => $this->treatment_plan_note,
             'indications' => array_values((array) ($this->indications ?? [])),
             'indication_images' => (array) ($this->indication_images ?? []),
+            'diagnoses' => array_values((array) ($this->diagnoses ?? [])),
             'tooth_diagnosis_data' => (array) ($this->tooth_diagnosis_data ?? []),
             'other_diagnosis' => $this->other_diagnosis,
         ];
@@ -196,16 +263,30 @@ class ClinicalNote extends Model
             ?: $clinicalNote->doctor_id
             ?: null;
 
-        $session = ExamSession::query()->create([
-            'patient_id' => (int) $clinicalNote->patient_id,
-            'visit_episode_id' => $clinicalNote->visit_episode_id ? (int) $clinicalNote->visit_episode_id : null,
-            'branch_id' => $clinicalNote->branch_id ? (int) $clinicalNote->branch_id : null,
-            'doctor_id' => $doctorId ? (int) $doctorId : null,
-            'session_date' => $clinicalNote->date?->toDateString() ?: now()->toDateString(),
-            'status' => $clinicalNote->resolveExamSessionStatus(),
-            'created_by' => $clinicalNote->created_by ? (int) $clinicalNote->created_by : auth()->id(),
-            'updated_by' => $clinicalNote->updated_by ? (int) $clinicalNote->updated_by : auth()->id(),
-        ]);
+        $session = app(ExamSessionProvisioningService::class)->resolveForPatientOnDate(
+            patientId: (int) $clinicalNote->patient_id,
+            branchId: $clinicalNote->branch_id ? (int) $clinicalNote->branch_id : null,
+            date: $clinicalNote->date?->toDateString() ?: now()->toDateString(),
+            doctorId: $doctorId ? (int) $doctorId : null,
+            visitEpisodeId: $clinicalNote->visit_episode_id ? (int) $clinicalNote->visit_episode_id : null,
+            createIfMissing: true,
+        );
+
+        if (! $session) {
+            return null;
+        }
+
+        if ($session->status === ExamSession::STATUS_DRAFT) {
+            $session->fill([
+                'status' => $clinicalNote->resolveExamSessionStatus(),
+                'created_by' => $session->created_by ?: ($clinicalNote->created_by ? (int) $clinicalNote->created_by : auth()->id()),
+                'updated_by' => $clinicalNote->updated_by ? (int) $clinicalNote->updated_by : auth()->id(),
+            ]);
+
+            if ($session->isDirty()) {
+                $session->save();
+            }
+        }
 
         return $session->id ? (int) $session->id : null;
     }
@@ -294,12 +375,29 @@ class ClinicalNote extends Model
     protected function hasClinicalPayloadContent(): bool
     {
         $indications = array_filter((array) ($this->indications ?? []), fn ($item) => filled($item));
+        $diagnoses = array_filter((array) ($this->diagnoses ?? []), fn ($item) => filled($item));
         $diagnosis = array_filter((array) ($this->tooth_diagnosis_data ?? []), fn ($item) => filled($item));
 
-        return filled($this->general_exam_notes)
+        return filled($this->examination_note)
+            || filled($this->general_exam_notes)
+            || filled($this->recommendation_notes)
             || filled($this->treatment_plan_note)
             || filled($this->other_diagnosis)
             || ! empty($indications)
+            || ! empty($diagnoses)
             || ! empty($diagnosis);
+    }
+
+    protected function isRevisionLocked(): bool
+    {
+        $status = $this->examSession?->status;
+
+        if (! $status && $this->exam_session_id) {
+            $status = ExamSession::query()
+                ->whereKey((int) $this->exam_session_id)
+                ->value('status');
+        }
+
+        return $status === ExamSession::STATUS_LOCKED;
     }
 }

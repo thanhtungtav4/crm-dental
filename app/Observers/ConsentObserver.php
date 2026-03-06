@@ -55,6 +55,7 @@ class ConsentObserver
             'signed_at' => $consent->signed_at?->toDateTimeString(),
             'revoked_at' => $consent->revoked_at?->toDateTimeString(),
             'expires_at' => $consent->expires_at?->toDateTimeString(),
+            'signature_context' => $consent->signature_context,
         ];
     }
 }

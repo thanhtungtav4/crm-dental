@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
+use App\Filament\Resources\PatientMedicalRecords\Schemas\PatientMedicalRecordForm;
 use App\Livewire\PatientExamForm;
 use App\Models\Branch;
 use App\Models\ClinicalNote;
@@ -8,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 it('scopes patient medical record resource and policy by accessible branch', function () {
@@ -50,6 +52,46 @@ it('scopes patient medical record resource and policy by accessible branch', fun
         ->and($visibleRecordIds)->not->toContain($recordB->id)
         ->and($manager->can('view', $recordA))->toBeTrue()
         ->and($manager->can('view', $recordB))->toBeFalse();
+});
+
+it('eager loads patient branch and updater relationships for patient medical record resource', function () {
+    $query = PatientMedicalRecordResource::getEloquentQuery();
+    $eagerLoads = $query->getEagerLoads();
+
+    expect($eagerLoads)->toHaveKeys(['patient.branch', 'updatedBy']);
+});
+
+it('reuses loaded patient relation when resolving medical record form context', function () {
+    $branch = Branch::factory()->create();
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctor->id,
+    ]);
+
+    $record = PatientMedicalRecord::query()->create([
+        'patient_id' => $patient->id,
+        'updated_by' => $doctor->id,
+    ])->load('patient.branch');
+
+    $method = new ReflectionMethod(PatientMedicalRecordForm::class, 'resolvePatient');
+    $method->setAccessible(true);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $resolvedPatient = $method->invoke(null, $patient->id, $record);
+
+    expect($resolvedPatient)->not->toBeNull()
+        ->and($resolvedPatient->is($patient))->toBeTrue()
+        ->and(DB::getQueryLog())->toHaveCount(0);
 });
 
 it('shows edit medical record link in patient exam when emr already exists', function () {

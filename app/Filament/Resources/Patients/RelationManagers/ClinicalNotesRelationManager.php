@@ -2,12 +2,10 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
@@ -19,6 +17,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -42,14 +41,14 @@ class ClinicalNotesRelationManager extends RelationManager
                         Grid::make(4)->schema([
                             Select::make('examining_doctor_id')
                                 ->label('Bác sĩ khám')
-                                ->relationship('examiningDoctor', 'name')
+                                ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
                                 ->searchable()
                                 ->preload()
                                 ->columnSpan(1),
 
                             Select::make('treating_doctor_id')
                                 ->label('Bác sĩ điều trị')
-                                ->relationship('treatingDoctor', 'name')
+                                ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
                                 ->searchable()
                                 ->preload()
                                 ->columnSpan(1),
@@ -63,6 +62,11 @@ class ClinicalNotesRelationManager extends RelationManager
                                 )
                                 ->searchable()
                                 ->preload()
+                                ->live()
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('examining_doctor_id', null);
+                                    $set('treating_doctor_id', null);
+                                })
                                 ->columnSpan(1),
 
                             DatePicker::make('date')
@@ -174,21 +178,77 @@ class ClinicalNotesRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Thêm phiếu khám')
                     ->icon('heroicon-o-plus')
+                    ->mutateFormDataUsing(fn (array $data): array => $this->sanitizeClinicalNoteData($data))
                     ->modalWidth('6xl'),
             ])
             ->actions([
                 EditAction::make()
+                    ->mutateFormDataUsing(fn (array $data): array => $this->sanitizeClinicalNoteData($data))
                     ->modalWidth('6xl'),
-                DeleteAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->emptyStateHeading('Chưa có phiếu khám')
             ->emptyStateDescription('Thêm phiếu khám mới bằng nút bên trên.')
             ->emptyStateIcon('heroicon-o-document-text');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function doctorOptionsForBranch(Get $get): array
+    {
+        return app(PatientAssignmentAuthorizer::class)->assignableDoctorOptions(
+            actor: BranchAccess::currentUser(),
+            branchId: $this->resolveSelectedBranchId($get),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function sanitizeClinicalNoteData(array $data): array
+    {
+        $branchId = isset($data['branch_id']) && filled($data['branch_id'])
+            ? (int) $data['branch_id']
+            : ($this->getOwnerRecord()->first_branch_id ? (int) $this->getOwnerRecord()->first_branch_id : null);
+
+        if ($branchId !== null) {
+            BranchAccess::assertCanAccessBranch(
+                branchId: $branchId,
+                field: 'branch_id',
+                message: 'Bạn không có quyền ghi phiếu khám ở chi nhánh này.',
+            );
+        }
+
+        $authorizer = app(PatientAssignmentAuthorizer::class);
+        $actor = BranchAccess::currentUser();
+
+        $data['branch_id'] = $branchId;
+        $data['examining_doctor_id'] = $authorizer->assertAssignableDoctorId(
+            actor: $actor,
+            doctorId: isset($data['examining_doctor_id']) && filled($data['examining_doctor_id']) ? (int) $data['examining_doctor_id'] : null,
+            branchId: $branchId,
+            field: 'examining_doctor_id',
+        );
+        $data['treating_doctor_id'] = $authorizer->assertAssignableDoctorId(
+            actor: $actor,
+            doctorId: isset($data['treating_doctor_id']) && filled($data['treating_doctor_id']) ? (int) $data['treating_doctor_id'] : null,
+            branchId: $branchId,
+            field: 'treating_doctor_id',
+        );
+
+        return $data;
+    }
+
+    protected function resolveSelectedBranchId(Get $get): ?int
+    {
+        $branchId = $get('branch_id');
+
+        if (filled($branchId)) {
+            return (int) $branchId;
+        }
+
+        return $this->getOwnerRecord()->first_branch_id ? (int) $this->getOwnerRecord()->first_branch_id : null;
     }
 
     /**

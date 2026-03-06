@@ -31,6 +31,12 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
 
     PatientMedicalRecord::query()->create([
         'patient_id' => $patient->id,
+        'insurance_provider' => 'Bao Viet',
+        'insurance_number' => 'BHYT-999888',
+        'emergency_contact_name' => 'Tran Thi Nguoi Than',
+        'emergency_contact_phone' => '0901888999',
+        'emergency_contact_email' => 'emergency@example.test',
+        'emergency_contact_relationship' => 'Me',
         'additional_notes' => 'Dị ứng thuốc tê nhóm amid.',
     ]);
 
@@ -107,6 +113,12 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
     $rawPatientAddress = DB::table('patients')->where('id', $patient->id)->value('address');
     $rawPatientCccd = DB::table('patients')->where('id', $patient->id)->value('cccd');
     $rawRecord = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('additional_notes');
+    $rawRecordInsuranceProvider = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('insurance_provider');
+    $rawRecordInsuranceNumber = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('insurance_number');
+    $rawRecordEmergencyName = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('emergency_contact_name');
+    $rawRecordEmergencyPhone = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('emergency_contact_phone');
+    $rawRecordEmergencyEmail = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('emergency_contact_email');
+    $rawRecordEmergencyRelationship = DB::table('patient_medical_records')->where('patient_id', $patient->id)->value('emergency_contact_relationship');
     $rawNote = DB::table('clinical_notes')->where('id', $note->id)->value('examination_note');
     $rawOrder = DB::table('clinical_orders')->where('id', $order->id)->value('notes');
     $rawResult = DB::table('clinical_results')->where('id', $result->id)->value('interpretation');
@@ -120,6 +132,12 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
         ->and((string) $rawPatientAddress)->not->toBe('123 Nguyen Trai, Quan 1')
         ->and((string) $rawPatientCccd)->not->toBe('079203001234')
         ->and((string) $rawRecord)->not->toBe('Dị ứng thuốc tê nhóm amid.')
+        ->and((string) $rawRecordInsuranceProvider)->not->toBe('Bao Viet')
+        ->and((string) $rawRecordInsuranceNumber)->not->toBe('BHYT-999888')
+        ->and((string) $rawRecordEmergencyName)->not->toBe('Tran Thi Nguoi Than')
+        ->and((string) $rawRecordEmergencyPhone)->not->toBe('0901888999')
+        ->and((string) $rawRecordEmergencyEmail)->not->toBe('emergency@example.test')
+        ->and((string) $rawRecordEmergencyRelationship)->not->toBe('Me')
         ->and((string) $rawNote)->not->toBe('Răng 26 đau khi gõ.')
         ->and((string) $rawOrder)->not->toBe('Chụp panorama kiểm tra quanh chóp.')
         ->and((string) $rawResult)->not->toBe('Thấu quang quanh chóp răng 26.')
@@ -133,6 +151,12 @@ it('encrypts phi fields at rest while keeping model read/write behavior', functi
         ->and($patient->fresh()->address)->toBe('123 Nguyen Trai, Quan 1')
         ->and($patient->fresh()->cccd)->toBe('079203001234')
         ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->additional_notes)->toBe('Dị ứng thuốc tê nhóm amid.')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->insurance_provider)->toBe('Bao Viet')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->insurance_number)->toBe('BHYT-999888')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->emergency_contact_name)->toBe('Tran Thi Nguoi Than')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->emergency_contact_phone)->toBe('0901888999')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->emergency_contact_email)->toBe('emergency@example.test')
+        ->and(PatientMedicalRecord::query()->where('patient_id', $patient->id)->first()?->emergency_contact_relationship)->toBe('Me')
         ->and($note->fresh()->examination_note)->toBe('Răng 26 đau khi gõ.')
         ->and($order->fresh()->notes)->toBe('Chụp panorama kiểm tra quanh chóp.')
         ->and($result->fresh()->interpretation)->toBe('Thấu quang quanh chóp răng 26.')

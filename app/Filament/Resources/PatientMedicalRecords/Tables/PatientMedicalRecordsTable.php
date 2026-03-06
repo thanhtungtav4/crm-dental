@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\PatientMedicalRecords\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -31,12 +29,13 @@ class PatientMedicalRecordsTable
                 TextColumn::make('allergies_display')
                     ->label('🚨 Dị ứng')
                     ->getStateUsing(function ($record) {
-                        if (!$record->hasAllergies()) {
+                        if (! $record->hasAllergies()) {
                             return 'Không';
                         }
                         $count = count($record->allergies);
-                        return implode(', ', array_slice($record->allergies, 0, 2)) . 
-                               ($count > 2 ? " (+".($count-2)." khác)" : '');
+
+                        return implode(', ', array_slice($record->allergies, 0, 2)).
+                               ($count > 2 ? ' (+'.($count - 2).' khác)' : '');
                     })
                     ->badge()
                     ->color(fn ($record) => $record->hasAllergies() ? 'danger' : 'success')
@@ -45,12 +44,13 @@ class PatientMedicalRecordsTable
                 TextColumn::make('chronic_diseases_display')
                     ->label('Bệnh mãn tính')
                     ->getStateUsing(function ($record) {
-                        if (!$record->hasChronicDiseases()) {
+                        if (! $record->hasChronicDiseases()) {
                             return 'Không';
                         }
                         $count = count($record->chronic_diseases);
-                        return implode(', ', array_slice($record->chronic_diseases, 0, 2)) . 
-                               ($count > 2 ? " (+".($count-2).")" : '');
+
+                        return implode(', ', array_slice($record->chronic_diseases, 0, 2)).
+                               ($count > 2 ? ' (+'.($count - 2).')' : '');
                     })
                     ->badge()
                     ->color(fn ($record) => $record->hasChronicDiseases() ? 'warning' : 'gray')
@@ -61,10 +61,11 @@ class PatientMedicalRecordsTable
                     ->color('info')
                     ->formatStateUsing(fn (string $state): string => $state === 'unknown' ? 'Chưa xác định' : $state)
                     ->sortable(),
-                TextColumn::make('insurance_provider')
+                TextColumn::make('insurance_summary')
                     ->label('Bảo hiểm')
-                    ->searchable()
-                    ->placeholder('Không có')
+                    ->getStateUsing(fn ($record): string => $record->hasInsuranceInformation() ? 'Đã lưu thông tin' : 'Không có')
+                    ->badge()
+                    ->color(fn ($record): string => $record->hasInsuranceInformation() ? 'info' : 'gray')
                     ->toggleable(),
                 TextColumn::make('insurance_expiry_date')
                     ->label('BH hết hạn')
@@ -74,11 +75,11 @@ class PatientMedicalRecordsTable
                     ->icon(fn ($record) => $record->isInsuranceExpired() ? 'heroicon-o-exclamation-circle' : null)
                     ->placeholder('Không có')
                     ->toggleable(),
-                TextColumn::make('emergency_contact_name')
+                TextColumn::make('emergency_contact_status')
                     ->label('Liên hệ khẩn cấp')
-                    ->searchable()
-                    ->description(fn ($record) => $record->emergency_contact_phone)
-                    ->placeholder('Chưa có')
+                    ->getStateUsing(fn ($record): string => $record->hasEmergencyContact() ? 'Đã lưu' : 'Chưa có')
+                    ->badge()
+                    ->color(fn ($record): string => $record->hasEmergencyContact() ? 'warning' : 'gray')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updatedBy.name')
                     ->label('Cập nhật bởi')
@@ -132,18 +133,17 @@ class PatientMedicalRecordsTable
                     ->trueLabel('Có bảo hiểm')
                     ->falseLabel('Không bảo hiểm')
                     ->queries(
-                        true: fn ($query) => $query->whereNotNull('insurance_provider'),
-                        false: fn ($query) => $query->whereNull('insurance_provider'),
+                        true: fn ($query) => $query->where(function ($insuranceQuery) {
+                            $insuranceQuery
+                                ->whereNotNull('insurance_provider')
+                                ->orWhereNotNull('insurance_number');
+                        }),
+                        false: fn ($query) => $query->whereNull('insurance_provider')->whereNull('insurance_number'),
                     ),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('updated_at', 'desc');
     }

@@ -31,6 +31,12 @@ class PatientMedicalRecord extends Model
         'chronic_diseases' => 'array',
         'current_medications' => 'array',
         'insurance_expiry_date' => 'date',
+        'insurance_provider' => NullableEncrypted::class,
+        'insurance_number' => NullableEncrypted::class,
+        'emergency_contact_name' => NullableEncrypted::class,
+        'emergency_contact_phone' => NullableEncrypted::class,
+        'emergency_contact_email' => NullableEncrypted::class,
+        'emergency_contact_relationship' => NullableEncrypted::class,
         'additional_notes' => NullableEncrypted::class,
     ];
 
@@ -85,6 +91,18 @@ class PatientMedicalRecord extends Model
         }
 
         return $this->insurance_expiry_date < now();
+    }
+
+    public function hasInsuranceInformation(): bool
+    {
+        return filled($this->insurance_provider) || filled($this->insurance_number);
+    }
+
+    public function hasEmergencyContact(): bool
+    {
+        return filled($this->emergency_contact_name)
+            || filled($this->emergency_contact_phone)
+            || filled($this->emergency_contact_email);
     }
 
     public function scopeForPatient(Builder $query, int $patientId): Builder

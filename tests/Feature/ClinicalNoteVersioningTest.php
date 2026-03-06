@@ -72,6 +72,47 @@ it('increments lock version and writes revision on optimistic update', function 
         ->and((string) data_get($revision?->current_payload, 'general_exam_notes'))->toBe('Khám cập nhật lần 2.');
 });
 
+it('tracks examination recommendation and diagnoses fields in clinical note revisions', function () {
+    [$patient, $doctor, $encounter] = seedClinicalVersioningContext();
+
+    $note = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'visit_episode_id' => $encounter->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $encounter->branch_id,
+        'date' => '2026-03-12',
+        'general_exam_notes' => 'Khám ban đầu.',
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $updated = app(ClinicalNoteVersioningService::class)->updateWithOptimisticLock(
+        clinicalNote: $note,
+        attributes: [
+            'examination_note' => 'Đau khi gõ răng 26.',
+            'recommendation_notes' => 'Theo dõi sát và hẹn chụp phim.',
+            'diagnoses' => ['Viêm tủy răng 26'],
+        ],
+        expectedVersion: 1,
+        actorId: $doctor->id,
+        operation: ClinicalNoteRevision::OPERATION_AMEND,
+        reason: 'clinical_revision',
+    );
+
+    $revision = ClinicalNoteRevision::query()
+        ->where('clinical_note_id', $note->id)
+        ->where('version', 2)
+        ->first();
+
+    expect((int) $updated->lock_version)->toBe(2)
+        ->and((array) $revision?->changed_fields)->toContain('examination_note')
+        ->and((array) $revision?->changed_fields)->toContain('recommendation_notes')
+        ->and((array) $revision?->changed_fields)->toContain('diagnoses')
+        ->and((string) data_get($revision?->current_payload, 'examination_note'))->toBe('Đau khi gõ răng 26.')
+        ->and((string) data_get($revision?->current_payload, 'recommendation_notes'))->toBe('Theo dõi sát và hẹn chụp phim.')
+        ->and((array) data_get($revision?->current_payload, 'diagnoses'))->toBe(['Viêm tủy răng 26']);
+});
+
 it('rejects stale clinical note version update', function () {
     [$patient, $doctor, $encounter] = seedClinicalVersioningContext();
 
@@ -104,6 +145,31 @@ it('rejects stale clinical note version update', function () {
 
     expect((int) $note->lock_version)->toBe(2)
         ->and((string) $note->general_exam_notes)->toBe('Phiên bản mới');
+});
+
+it('blocks tracked clinical note updates once the exam session is locked', function () {
+    [$patient, $doctor, $encounter] = seedClinicalVersioningContext();
+
+    $note = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'visit_episode_id' => $encounter->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $encounter->branch_id,
+        'date' => '2026-03-12',
+        'general_exam_notes' => 'Khám ban đầu.',
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $examSession = $note->fresh()->examSession;
+
+    expect($examSession)->not->toBeNull();
+
+    $examSession?->transitionTo(\App\Models\ExamSession::STATUS_LOCKED);
+
+    expect(fn () => $note->fresh()->update([
+        'recommendation_notes' => 'Không được phép sửa sau khi khóa phiên khám.',
+    ]))->toThrow(ValidationException::class, 'EXAM_SESSION_LOCKED');
 });
 
 /**

@@ -47,7 +47,10 @@ class PatientMedicalRecordResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with([
+            'patient.branch:id,name',
+            'updatedBy:id,name',
+        ]);
         $authUser = auth()->user();
 
         if (! $authUser instanceof User || $authUser->hasRole('Admin')) {

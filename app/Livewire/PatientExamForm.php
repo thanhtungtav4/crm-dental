@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ClinicalMediaAccessService;
 use App\Services\ClinicalNoteVersioningService;
 use App\Services\EncounterService;
+use App\Services\ExamSessionProvisioningService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -108,13 +109,30 @@ class PatientExamForm extends Component
 
         $sessionDate = (string) $validated['newSessionDate'];
 
-        $existingSession = $this->patient->examSessions()
-            ->whereDate('session_date', $sessionDate)
-            ->latest('id')
-            ->first();
+        $visitEpisodeId = $this->resolveEncounterIdForDate($sessionDate);
 
-        if ($existingSession) {
-            $this->setActiveSession($existingSession->id);
+        $session = $this->examSessionProvisioningService()->resolveForPatientOnDate(
+            patientId: (int) $this->patient->id,
+            branchId: $this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null,
+            date: $sessionDate,
+            doctorId: Auth::id() ?: null,
+            visitEpisodeId: $visitEpisodeId,
+            createIfMissing: true,
+        );
+
+        if (! $session) {
+            Notification::make()
+                ->title('Không thể khởi tạo phiếu khám cho ngày đã chọn.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $session->load('clinicalNote');
+
+        if ($session->clinicalNote) {
+            $this->setActiveSession($session->id);
 
             Notification::make()
                 ->title('Ngày khám đã tồn tại, đã chuyển về phiếu hiện có')
@@ -123,19 +141,6 @@ class PatientExamForm extends Component
 
             return;
         }
-
-        $visitEpisodeId = $this->resolveEncounterIdForDate($sessionDate);
-
-        $session = $this->patient->examSessions()->create([
-            'patient_id' => $this->patient->id,
-            'visit_episode_id' => $visitEpisodeId,
-            'doctor_id' => Auth::id() ?: null,
-            'branch_id' => $this->patient->first_branch_id,
-            'session_date' => $sessionDate,
-            'status' => ExamSession::STATUS_DRAFT,
-            'created_by' => Auth::id() ?: null,
-            'updated_by' => Auth::id() ?: null,
-        ]);
 
         $this->patient->clinicalNotes()->create([
             'exam_session_id' => $session->id,
@@ -1104,6 +1109,11 @@ class PatientExamForm extends Component
     protected function clinicalNoteVersioningService(): ClinicalNoteVersioningService
     {
         return app(ClinicalNoteVersioningService::class);
+    }
+
+    protected function examSessionProvisioningService(): ExamSessionProvisioningService
+    {
+        return app(ExamSessionProvisioningService::class);
     }
 
     protected function authorizeClinicalWrite(): void
