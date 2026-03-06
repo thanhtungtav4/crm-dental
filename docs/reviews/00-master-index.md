@@ -59,7 +59,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`; cac task con lai se theo sau khi khoa xong audit visibility.
+- `GOV` - dang fix `TASK-GOV-001`, `TASK-GOV-002`, `TASK-GOV-003`, `TASK-GOV-004`; uu tien audit integrity truoc khi sang transfer concurrency.
 
 # 6. Modules needing re-audit
 
@@ -71,4 +71,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `GOV` - tiep tuc `TASK-GOV-003` sau khi da chot commit rieng cho `TASK-GOV-001` va `TASK-GOV-002`.
+- `GOV` - sau khi chot `TASK-GOV-003`, tiep tuc `TASK-GOV-004` de co audit log immutable va structured context.

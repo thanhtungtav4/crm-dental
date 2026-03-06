@@ -121,8 +121,11 @@ class PatientActivityTimelineWidget extends Widget
                 AuditLog::ACTION_CANCEL,
                 AuditLog::ACTION_UPDATE,
             ])
-            ->where('metadata->patient_id', $this->record->id)
-            ->latest('created_at')
+            ->where(function ($query): void {
+                $query->where('patient_id', $this->record->id)
+                    ->orWhere('metadata->patient_id', $this->record->id);
+            })
+            ->latest('occurred_at')
             ->limit(20)
             ->get()
             ->each(function (AuditLog $log) use ($activities) {
@@ -143,7 +146,7 @@ class PatientActivityTimelineWidget extends Widget
                 $description = $amount !== null ? $description.' • '.$amount.'đ' : $description;
 
                 $activities->push([
-                    'date' => $log->created_at,
+                    'date' => $log->occurred_at ?? $log->created_at,
                     'type' => 'audit',
                     'icon' => 'heroicon-o-shield-check',
                     'color' => match ($log->action) {
@@ -174,8 +177,11 @@ class PatientActivityTimelineWidget extends Widget
                 AuditLog::ACTION_FOLLOW_UP,
                 AuditLog::ACTION_FAIL,
             ])
-            ->where('metadata->patient_id', $this->record->id)
-            ->latest('created_at')
+            ->where(function ($query): void {
+                $query->where('patient_id', $this->record->id)
+                    ->orWhere('metadata->patient_id', $this->record->id);
+            })
+            ->latest('occurred_at')
             ->limit(20)
             ->get()
             ->each(function (AuditLog $log) use ($activities) {
@@ -209,7 +215,7 @@ class PatientActivityTimelineWidget extends Widget
                     }
 
                     $activities->push([
-                        'date' => $log->created_at,
+                        'date' => $log->occurred_at ?? $log->created_at,
                         'type' => 'audit',
                         'icon' => match ($log->action) {
                             AuditLog::ACTION_COMPLETE => 'heroicon-o-check-badge',
@@ -253,7 +259,7 @@ class PatientActivityTimelineWidget extends Widget
                 };
 
                 $activities->push([
-                    'date' => $log->created_at,
+                    'date' => $log->occurred_at ?? $log->created_at,
                     'type' => 'audit',
                     'icon' => match ($log->action) {
                         AuditLog::ACTION_COMPLETE => 'heroicon-o-check-badge',

@@ -24,12 +24,21 @@ class AuditLogForm
                         TextEntry::make('actor.name')
                             ->label('Người thực hiện')
                             ->placeholder('-'),
+                        TextEntry::make('branch.name')
+                            ->label('Chi nhánh')
+                            ->placeholder('-'),
+                        TextEntry::make('patient.full_name')
+                            ->label('Bệnh nhân')
+                            ->placeholder('-'),
                         TextEntry::make('metadata')
                             ->label('Metadata')
                             ->formatStateUsing(fn ($state) => $state ? json_encode($state, JSON_PRETTY_PRINT) : '-')
                             ->columnSpanFull(),
+                        TextEntry::make('occurred_at')
+                            ->label('Xảy ra lúc')
+                            ->dateTime(),
                         TextEntry::make('created_at')
-                            ->label('Thời điểm')
+                            ->label('Ghi vào hệ thống')
                             ->dateTime(),
                     ])
                     ->columns(2),

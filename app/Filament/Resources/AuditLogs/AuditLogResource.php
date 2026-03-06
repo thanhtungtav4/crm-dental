@@ -59,7 +59,7 @@ class AuditLogResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['actor'])
+            ->with(['actor', 'branch', 'patient'])
             ->visibleTo(auth()->user());
     }
 

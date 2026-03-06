@@ -28,6 +28,8 @@ it('records audit log when appointment is rescheduled', function () {
 
     expect($log)->not->toBeNull()
         ->and($log->actor_id)->toBe($user->id)
+        ->and($log->patient_id)->toBe($appointment->patient_id)
+        ->and($log->branch_id)->toBe($appointment->branch_id)
         ->and($log->metadata['patient_id'] ?? null)->toBe($appointment->patient_id)
         ->and($log->metadata['status_from'] ?? null)->toBe(Appointment::STATUS_SCHEDULED)
         ->and($log->metadata['status_to'] ?? null)->toBe(Appointment::STATUS_RESCHEDULED);

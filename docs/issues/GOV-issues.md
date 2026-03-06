@@ -136,7 +136,7 @@
 - Dependencies:
   - OPS, FIN, CLIN
 - Suggested order: 4
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-GOV-004`
 
 ## [GOV-005] Tao request chuyen chi nhanh chua an toan truoc race-condition
@@ -261,7 +261,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 4
+- Open high count: 3
 - Open medium count: 1
 - Open low count: 0
-- Next recommended action: hoan tat `TASK-GOV-003`, sau do re-audit `TASK-GOV-001` va `TASK-GOV-002` de gom batch GOV dang fix.
+- Next recommended action: tiep tuc `TASK-GOV-004` de chot immutable + structured audit context truoc khi vao `TASK-GOV-005`.

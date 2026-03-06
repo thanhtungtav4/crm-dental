@@ -20,16 +20,15 @@ class AuditLogFactory extends Factory
      */
     public function definition(): array
     {
-        $actor = User::factory()->create();
-
         return [
             'entity_type' => $this->faker->randomElement(['payment', 'invoice', 'appointment', 'care_ticket']),
             'entity_id' => $this->faker->numberBetween(1, 5000),
-            'action' => $this->faker->randomElement(['create', 'update', 'refund', 'reverse', 'cancel']),
-            'actor_id' => $actor->id,
+            'action' => $this->faker->randomElement(['create', 'update', 'refund', 'reversal', 'cancel']),
+            'actor_id' => User::factory(),
             'metadata' => [
                 'note' => $this->faker->sentence(),
             ],
+            'occurred_at' => now(),
         ];
     }
 }

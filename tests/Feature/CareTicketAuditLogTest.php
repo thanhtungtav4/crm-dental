@@ -27,6 +27,8 @@ it('records audit log when care ticket is completed', function () {
 
     expect($log)->not->toBeNull()
         ->and($log->actor_id)->toBe($user->id)
+        ->and($log->patient_id)->toBe($note->patient_id)
+        ->and($log->branch_id)->toBe($note->resolveBranchId())
         ->and($log->metadata['patient_id'] ?? null)->toBe($note->patient_id)
         ->and($log->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE);
 });

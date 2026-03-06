@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 class AuditLog extends Model
 {
@@ -18,11 +19,10 @@ class AuditLog extends Model
         'entity_id',
         'action',
         'actor_id',
+        'branch_id',
+        'patient_id',
         'metadata',
-    ];
-
-    protected $casts = [
-        'metadata' => 'array',
+        'occurred_at',
     ];
 
     public const ENTITY_PAYMENT = 'payment';
@@ -107,9 +107,69 @@ class AuditLog extends Model
 
     public const ACTION_BLOCK = 'block';
 
+    protected function casts(): array
+    {
+        return [
+            'entity_id' => 'integer',
+            'actor_id' => 'integer',
+            'branch_id' => 'integer',
+            'patient_id' => 'integer',
+            'metadata' => 'array',
+            'occurred_at' => 'datetime',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $auditLog): void {
+            $metadata = $auditLog->normalizeMetadata();
+            $patientId = $auditLog->patient_id ?? static::normalizeNullableInt(data_get($metadata, 'patient_id'));
+            $branchId = $auditLog->branch_id
+                ?? static::resolveBranchIdFromMetadata($metadata)
+                ?? static::resolveBranchIdFromPatient($patientId);
+
+            $auditLog->patient_id = $patientId;
+            $auditLog->branch_id = $branchId;
+            $auditLog->metadata = $metadata;
+            $auditLog->occurred_at = $auditLog->occurred_at ?? now();
+        });
+
+        static::updating(function (): void {
+            throw ValidationException::withMessages([
+                'audit_log' => 'Audit log là immutable, không cho phép cập nhật.',
+            ]);
+        });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'audit_log' => 'Audit log là immutable, không cho phép xóa.',
+            ]);
+        });
+    }
+
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function scopeForBranch(Builder $query, int $branchId): Builder
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    public function scopeForPatient(Builder $query, int $patientId): Builder
+    {
+        return $query->where('patient_id', $patientId);
     }
 
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
@@ -133,21 +193,15 @@ class AuditLog extends Model
         }
 
         return $query->where(function (Builder $query) use ($branchIds): void {
-            $hasCondition = false;
+            $query->whereIn('branch_id', $branchIds)
+                ->orWhereIn('patient_id', Patient::query()
+                    ->whereIn('first_branch_id', $branchIds)
+                    ->select('id'));
 
             foreach (static::branchScopeMetadataKeys() as $metadataKey) {
                 foreach ($branchIds as $branchId) {
-                    if ($hasCondition) {
-                        $query->orWhere("metadata->{$metadataKey}", $branchId);
-                    } else {
-                        $query->where("metadata->{$metadataKey}", $branchId);
-                        $hasCondition = true;
-                    }
+                    $query->orWhere("metadata->{$metadataKey}", $branchId);
                 }
-            }
-
-            if (! $hasCondition) {
-                $query->whereRaw('1 = 0');
             }
         });
     }
@@ -176,7 +230,11 @@ class AuditLog extends Model
             }
         }
 
-        $patientId = data_get($this->metadata, 'patient_id');
+        if (is_numeric($this->patient_id) && in_array((int) $this->patient?->first_branch_id, $branchIds, true)) {
+            return true;
+        }
+
+        $patientId = $this->patient_id ?? data_get($this->metadata, 'patient_id');
 
         if (! is_numeric($patientId)) {
             return false;
@@ -210,14 +268,65 @@ class AuditLog extends Model
         int $entityId,
         string $action,
         ?int $actorId = null,
-        array $metadata = []
+        array $metadata = [],
+        ?int $branchId = null,
+        ?int $patientId = null,
+        \DateTimeInterface|string|int|null $occurredAt = null,
     ): self {
         return self::query()->create([
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'action' => $action,
             'actor_id' => $actorId,
+            'branch_id' => $branchId,
+            'patient_id' => $patientId,
             'metadata' => $metadata,
+            'occurred_at' => $occurredAt,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function normalizeMetadata(): array
+    {
+        if (is_array($this->metadata)) {
+            return $this->metadata;
+        }
+
+        $metadata = json_decode((string) $this->metadata, true);
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    protected static function resolveBranchIdFromMetadata(array $metadata): ?int
+    {
+        foreach (static::branchScopeMetadataKeys() as $metadataKey) {
+            $branchId = static::normalizeNullableInt(data_get($metadata, $metadataKey));
+
+            if ($branchId !== null) {
+                return $branchId;
+            }
+        }
+
+        return null;
+    }
+
+    protected static function resolveBranchIdFromPatient(?int $patientId): ?int
+    {
+        if ($patientId === null) {
+            return null;
+        }
+
+        $branchId = Patient::query()
+            ->whereKey($patientId)
+            ->value('first_branch_id');
+
+        return static::normalizeNullableInt($branchId);
+    }
+
+    protected static function normalizeNullableInt(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
     }
 }

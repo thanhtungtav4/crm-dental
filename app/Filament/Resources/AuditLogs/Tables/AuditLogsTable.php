@@ -19,6 +19,10 @@ class AuditLogsTable
                     ->label('Thời điểm')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
+                TextColumn::make('occurred_at')
+                    ->label('Xảy ra lúc')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
                 BadgeColumn::make('entity_type')
                     ->label('Entity')
                     ->colors([
@@ -53,6 +57,15 @@ class AuditLogsTable
                 TextColumn::make('actor.name')
                     ->label('Người thực hiện')
                     ->searchable(),
+                TextColumn::make('branch.name')
+                    ->label('Chi nhánh')
+                    ->placeholder('-')
+                    ->toggleable(),
+                TextColumn::make('patient.full_name')
+                    ->label('Bệnh nhân')
+                    ->placeholder('-')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('metadata')
                     ->label('Metadata')
                     ->limit(50)
@@ -107,11 +120,17 @@ class AuditLogsTable
                 SelectFilter::make('actor_id')
                     ->label('Người thực hiện')
                     ->relationship('actor', 'name'),
+                SelectFilter::make('branch_id')
+                    ->label('Chi nhánh')
+                    ->relationship('branch', 'name'),
+                SelectFilter::make('patient_id')
+                    ->label('Bệnh nhân')
+                    ->relationship('patient', 'full_name'),
             ])
             ->recordActions([
                 ViewAction::make()
                     ->label('Xem'),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('occurred_at', 'desc');
     }
 }

@@ -27,6 +27,8 @@ it('records audit log when invoice is updated', function () {
 
     expect($log)->not->toBeNull()
         ->and($log->actor_id)->toBe($user->id)
+        ->and($log->patient_id)->toBe($invoice->patient_id)
+        ->and($log->branch_id)->toBe($invoice->resolveBranchId())
         ->and($log->metadata['patient_id'] ?? null)->toBe($invoice->patient_id);
 });
 
@@ -52,5 +54,7 @@ it('records audit log when invoice is cancelled', function () {
 
     expect($log)->not->toBeNull()
         ->and($log->actor_id)->toBe($user->id)
+        ->and($log->patient_id)->toBe($invoice->patient_id)
+        ->and($log->branch_id)->toBe($invoice->resolveBranchId())
         ->and($log->metadata['previous_status'] ?? null)->toBe('issued');
 });

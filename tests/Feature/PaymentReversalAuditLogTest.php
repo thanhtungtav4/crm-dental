@@ -37,6 +37,8 @@ it('records an audit log when reversing a payment', function () {
 
     expect($log)->not->toBeNull()
         ->and($log->actor_id)->toBe($user->id)
+        ->and($log->patient_id)->toBe($invoice->patient_id)
+        ->and($log->branch_id)->toBe($invoice->resolveBranchId())
         ->and($log->metadata['reversal_of_id'] ?? null)->toBe($receipt->id)
         ->and($log->metadata['invoice_id'] ?? null)->toBe($invoice->id);
 });
