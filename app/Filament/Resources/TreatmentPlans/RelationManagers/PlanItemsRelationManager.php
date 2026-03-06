@@ -3,12 +3,12 @@
 namespace App\Filament\Resources\TreatmentPlans\RelationManagers;
 
 use App\Models\PlanItem;
+use App\Services\TreatmentDeletionGuardService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -459,6 +459,7 @@ class PlanItemsRelationManager extends RelationManager
                     }),
                 DeleteAction::make()
                     ->label('Xóa')
+                    ->visible(fn ($record): bool => app(TreatmentDeletionGuardService::class)->canDeletePlanItem($record))
                     ->successNotificationTitle('Đã xóa hạng mục điều trị')
                     ->after(function ($record) {
                         // Update parent treatment plan after deletion
@@ -541,14 +542,6 @@ class PlanItemsRelationManager extends RelationManager
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
-                    DeleteBulkAction::make()
-                        ->label('Xóa đã chọn')
-                        ->after(function () {
-                            // Update parent plan after bulk delete
-                            if ($this->getOwnerRecord()) {
-                                $this->getOwnerRecord()->updateProgress();
-                            }
-                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'asc')

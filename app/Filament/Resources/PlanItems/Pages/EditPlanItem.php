@@ -5,10 +5,9 @@ namespace App\Filament\Resources\PlanItems\Pages;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\PlanItems\PlanItemResource;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentDeletionGuardService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -46,10 +45,7 @@ class EditPlanItem extends EditRecord
                 ->url(fn (): ?string => $this->resolvePatientExamTreatmentUrl())
                 ->visible(fn (): bool => filled($this->resolvePatientExamTreatmentUrl())),
             DeleteAction::make()
-                ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
-            ForceDeleteAction::make()
-                ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
-            RestoreAction::make()
+                ->visible(fn (): bool => app(TreatmentDeletionGuardService::class)->canDeletePlanItem($this->getRecord()))
                 ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
         ];
     }

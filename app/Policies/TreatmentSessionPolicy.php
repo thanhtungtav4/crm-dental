@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\TreatmentDeletionGuardService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentSessionPolicy
@@ -34,27 +35,34 @@ class TreatmentSessionPolicy
 
     public function delete(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Delete:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
+        return $authUser->can('Delete:TreatmentSession')
+            && $this->canAccessSession($authUser, $treatmentSession)
+            && app(TreatmentDeletionGuardService::class)->canDeleteTreatmentSession($treatmentSession);
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function restore(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('Restore:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
+        return false;
     }
 
     public function forceDelete(User $authUser, TreatmentSession $treatmentSession): bool
     {
-        return $authUser->can('ForceDelete:TreatmentSession') && $this->canAccessSession($authUser, $treatmentSession);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentSession') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, TreatmentSession $treatmentSession): bool

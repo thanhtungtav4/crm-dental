@@ -7,8 +7,6 @@ use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
 use App\Filament\Resources\TreatmentSessions\TreatmentSessionResource;
 use App\Models\TreatmentSession;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Grouping\Group;
@@ -110,11 +108,6 @@ class TreatmentSessionsTable
                         'record' => $record,
                         'return_url' => request()->fullUrl(),
                     ])),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\TreatmentPlan;
 use App\Models\User;
+use App\Services\TreatmentDeletionGuardService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentPlanPolicy
@@ -34,27 +35,34 @@ class TreatmentPlanPolicy
 
     public function delete(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Delete:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
+        return $authUser->can('Delete:TreatmentPlan')
+            && $this->canAccessTreatmentPlan($authUser, $treatmentPlan)
+            && app(TreatmentDeletionGuardService::class)->canDeleteTreatmentPlan($treatmentPlan);
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function restore(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Restore:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
+        return false;
     }
 
     public function forceDelete(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('ForceDelete:TreatmentPlan') && $this->canAccessTreatmentPlan($authUser, $treatmentPlan);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentPlan') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, TreatmentPlan $treatmentPlan): bool

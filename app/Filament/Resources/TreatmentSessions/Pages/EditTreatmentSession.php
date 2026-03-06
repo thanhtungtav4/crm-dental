@@ -7,6 +7,7 @@ use App\Filament\Resources\TreatmentSessions\TreatmentSessionResource;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Services\TreatmentAssignmentAuthorizer;
+use App\Services\TreatmentDeletionGuardService;
 use App\Support\BranchAccess;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -39,6 +40,7 @@ class EditTreatmentSession extends EditRecord
                 ->url(fn (): ?string => $this->resolvePatientExamTreatmentUrl())
                 ->visible(fn (): bool => filled($this->resolvePatientExamTreatmentUrl())),
             DeleteAction::make()
+                ->visible(fn (): bool => app(TreatmentDeletionGuardService::class)->canDeleteTreatmentSession($this->getRecord()))
                 ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
         ];
     }

@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\PlanItem;
 use App\Models\User;
+use App\Services\TreatmentDeletionGuardService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PlanItemPolicy
@@ -34,27 +35,34 @@ class PlanItemPolicy
 
     public function delete(User $authUser, PlanItem $planItem): bool
     {
-        return $authUser->can('Delete:PlanItem') && $this->canAccessPlanItem($authUser, $planItem);
+        return $authUser->can('Delete:PlanItem')
+            && $this->canAccessPlanItem($authUser, $planItem)
+            && app(TreatmentDeletionGuardService::class)->canDeletePlanItem($planItem);
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function restore(User $authUser, PlanItem $planItem): bool
     {
-        return $authUser->can('Restore:PlanItem') && $this->canAccessPlanItem($authUser, $planItem);
+        return false;
     }
 
     public function forceDelete(User $authUser, PlanItem $planItem): bool
     {
-        return $authUser->can('ForceDelete:PlanItem') && $this->canAccessPlanItem($authUser, $planItem);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:PlanItem') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:PlanItem') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, PlanItem $planItem): bool
