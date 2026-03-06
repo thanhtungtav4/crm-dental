@@ -2,8 +2,8 @@
 
 - Module code: `SUP`
 - Module name: `Suppliers / Factory Orders`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-SUP-`
 - Source review: `docs/reviews/modules/SUP-suppliers-factory.md`
 - Source issues: `docs/issues/SUP-issues.md`

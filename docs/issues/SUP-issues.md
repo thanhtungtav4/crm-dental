@@ -2,8 +2,8 @@
 
 - Module code: `SUP`
 - Module name: `Suppliers / Factory Orders`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `SUP-`
 - Task ID prefix: `TASK-SUP-`
 - Review file: `docs/reviews/modules/SUP-suppliers-factory.md`
@@ -200,7 +200,7 @@
 - Dependencies:
   - `SUP-003`
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-007`
 
 ## [SUP-008] Test coverage cua SUP qua mong
@@ -223,13 +223,13 @@
 - Dependencies:
   - `SUP-001`, `SUP-002`, `SUP-004`, `SUP-005`, `SUP-006`, `SUP-007`
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-SUP-008`
 
 # Summary
 
 - Open critical count: 0
 - Open high count: 0
-- Open medium count: 2
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: fix `SUP-007` de dua report labo ve dung datasource, sau do chot `SUP-008` de day du regression suite cho SUP.
+- Next recommended action: Khong con open issue baseline. Rollout tiep theo la `php artisan migrate` va smoke test report labo/supplier backfill tren du lieu that.
