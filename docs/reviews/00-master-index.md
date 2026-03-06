@@ -37,7 +37,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
 | FIN | Finance / Payments / Wallet / Installments | Clean Baseline Reached | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | B | Khong con open blocker baseline; tiep tuc theo doi drift giua finance, inventory va KPI bang full-suite regression | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Clean Baseline Reached | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | B | Khong con open code blocker baseline; follow-up van hanh la chay migrate + schema gate inventory tren DB dang drift | GOV, TRT, FIN, SUP, KPI |
-| SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
+| SUP | Suppliers / Factory Orders | In Fix | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | D | Branch consistency, supplier canonical link va order number race van con mo | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Pending Review | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | TBD | TODO | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Pending Review | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | TBD | TODO | GOV, APPT, CLIN, ZNS, OPS |
@@ -53,7 +53,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `TRT` da dat clean baseline; batch-safe material usage, workflow state machine, branch-scoped assignment va destructive guard da duoc khoa bang regression test.
 - `FIN` da dat clean baseline; wallet authorization, invoice workflow, refund idempotency va canonical payment boundary da duoc khoa bang regression test.
 - `INV` da dat clean baseline; canonical mutation boundary, regression suite va schema gate inventory da duoc khoa. Follow-up con lai la rollout migration/schema gate tren DB thuc te.
-- `SUP` nen duoc review sau khi `INV` khoa batch-safe inventory baseline.
+- `SUP` dang o phase `In Fix`; auth boundary va supplier destructive surface da khoa, con mo branch consistency, supplier canonical link va order number race.
 
 # 4. Priority overview
 
@@ -64,7 +64,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `SUP` - nen duoc review va lap plan tiep ngay sau khi `INV` dat clean baseline.
+- `SUP` - dang active fix; batch tiep theo la `TASK-SUP-002`.
 
 # 6. Modules needing re-audit
 
@@ -72,8 +72,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `SUP` - review tiep sau khi `INV` khoa xong batch-safe inventory baseline.
+- `CARE` - co the review tiep song song sau khi SUP qua duoc branch/create boundary.
 
 # 8. Suggested next module to fix
 
-- `SUP` - sau khi xong review/issues/plan thi day la module fix ke tiep vi phu thuoc truc tiep vao inventory baseline.
+- `SUP` - tiep tuc `TASK-SUP-002` de khoa patient/branch/doctor consistency.

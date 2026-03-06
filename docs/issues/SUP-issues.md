@@ -2,36 +2,234 @@
 
 - Module code: `SUP`
 - Module name: `Suppliers / Factory Orders`
-- Current status: `Pending Review`
-- Current verdict: `TBD`
+- Current status: `In Fix`
+- Current verdict: `D`
 - Issue ID prefix: `SUP-`
 - Task ID prefix: `TASK-SUP-`
 - Review file: `docs/reviews/modules/SUP-suppliers-factory.md`
 - Plan file: `docs/planning/SUP-plan.md`
 - Dependencies: `INV, FIN, GOV`
-- Last updated: `TBD`
+- Last updated: `2026-03-06`
 
 # Issue Backlog
 
-## [SUP-001] [TODO]
-- Severity: TODO
-- Category: TODO
+## [SUP-001] FactoryOrderResource thieu policy va mo quyen qua rong
+- Severity: Critical
+- Category: Security
 - Module: SUP
 - Description:
+  - `FactoryOrderResource` hien khong co `FactoryOrderPolicy` rieng.
+  - Runtime check cho thay `doctor` dang `canViewAny()` va `canCreate()` duoc resource nay.
 - Why it matters:
+  - Lenh labo la du lieu van hanh va chi phi nhay cam; quyen view/create sai role se mo rong tam thao tac nghiep vu khong mong muon.
 - Evidence:
+  - `app/Filament/Resources/FactoryOrders/FactoryOrderResource.php`
+  - runtime tinker: `FactoryOrderResource::canViewAny()` va `canCreate()` tra `true` cho `doctor`
 - Suggested fix:
+  - tao `FactoryOrderPolicy` branch-aware, xac dinh ro role nao duoc view/create/update/delete
+  - scope record route binding va page actions theo policy thay vi chi dua vao query scope
 - Affected areas:
+  - factory order resource/pages
+  - policy/auth matrix
 - Tests needed:
+  - feature test auth matrix cho admin/manager/doctor
+  - feature test route/page access cho create/edit/list
 - Dependencies:
-- Suggested order:
+  - `GOV`
+- Suggested order: 1
+- Current status: Resolved
+- Linked task IDs: `TASK-SUP-001`
+
+## [SUP-002] Factory order khong enforce consistency giua patient, branch va doctor
+- Severity: High
+- Category: Domain Logic
+- Module: SUP
+- Description:
+  - `FactoryOrder` khong enforce patient branch phai trung voi `branch_id` cua order.
+  - `doctor_id` selector chi loc theo role `Doctor`, khong scope theo branch cua order.
+- Why it matters:
+  - Tao lenh labo sai branch se lam lech ownership, theo doi tien do va bao cao chi nhanh.
+- Evidence:
+  - `app/Models/FactoryOrder.php`
+  - `app/Filament/Resources/FactoryOrders/Schemas/FactoryOrderForm.php`
+- Suggested fix:
+  - validate patient-branch consistency o model/service layer
+  - branch-scope doctor selector va sanitize payload server-side
+- Affected areas:
+  - factory order model/form/pages
+- Tests needed:
+  - feature test cross-branch patient/order rejection
+  - feature test doctor outside branch bi chan
+- Dependencies:
+  - `GOV`, `PAT`
+- Suggested order: 2
+- Current status: Resolved
+- Linked task IDs: `TASK-SUP-002`
+
+## [SUP-003] Supplier master khong la canonical identity cho factory orders
+- Severity: High
+- Category: Data Integrity
+- Module: SUP
+- Description:
+  - `factory_orders` chi luu `vendor_name` free text thay vi `supplier_id`.
+  - Supplier resource va factory workflow hien khong map ve cung mot master identity.
+- Why it matters:
+  - Mat traceability theo supplier, kho doi chieu payment terms/contact/history va de sinh duplicate supplier naming.
+- Evidence:
+  - schema `factory_orders`
+  - `app/Filament/Resources/FactoryOrders/Schemas/FactoryOrderForm.php`
+  - `app/Models/Supplier.php`
+- Suggested fix:
+  - them `supplier_id` vao `factory_orders`
+  - backfill tu `vendor_name` neu mapping ro, giu truong override text neu can cho vendor ngoai he thong
+- Affected areas:
+  - factory orders migration/model/form/report
+  - supplier module
+- Tests needed:
+  - feature test supplier canonical selection
+  - backfill migration tests neu co mapping
+- Dependencies:
+  - `INV`, `FIN`
+- Suggested order: 3
 - Current status: Open
-- Linked task IDs:
+- Linked task IDs: `TASK-SUP-003`
+
+## [SUP-004] Sinh order number dang race-prone voi unique index
+- Severity: High
+- Category: Concurrency
+- Module: SUP
+- Description:
+  - `FactoryOrder::generateOrderNo()` doc order cuoi ngay roi tang sequence trong PHP, khong co lock hay retry boundary.
+- Why it matters:
+  - Hai request tao dong thoi co the sinh cung `order_no` va fail unique, hoac tao trai nghiem khong on dinh cho user.
+- Evidence:
+  - `app/Models/FactoryOrder.php`
+- Suggested fix:
+  - dua create lenh labo ve service transaction-safe co retry
+  - can nhac lock/counter strategy cho sequence theo ngay
+- Affected areas:
+  - factory order create flow
+  - unique key handling
+- Tests needed:
+  - concurrency test cho create order
+  - regression test retry uniqueness
+- Dependencies:
+  - `SUP-001`
+- Suggested order: 4
+- Current status: Open
+- Linked task IDs: `TASK-SUP-004`
+
+## [SUP-005] Order va item mutation surfaces mo sau khi qua phase editable
+- Severity: High
+- Category: Domain Logic
+- Module: SUP
+- Description:
+  - table actions chuyen status bang `save()` truc tiep
+  - relation manager item cho create/edit/delete bat ke order status
+  - item status co the lech order status
+- Why it matters:
+  - Tao invalid state, mat audit va de phat sinh chinh sua ngoc sau khi order da di vao van hanh.
+- Evidence:
+  - `app/Filament/Resources/FactoryOrders/Tables/FactoryOrdersTable.php`
+  - `app/Filament/Resources/FactoryOrders/RelationManagers/ItemsRelationManager.php`
+- Suggested fix:
+  - tao `FactoryOrderWorkflowService`
+  - khoa item CRUD theo `isEditable()`
+  - route status transitions qua workflow service + audit
+- Affected areas:
+  - factory order table/actions
+  - relation manager items
+  - model/service layer
+- Tests needed:
+  - feature test invalid mutation sau ordered/delivered/cancelled
+  - workflow transition tests
+- Dependencies:
+  - `SUP-001`, `SUP-002`
+- Suggested order: 5
+- Current status: Open
+- Linked task IDs: `TASK-SUP-005`
+
+## [SUP-006] Supplier destructive surfaces mo va co the cat dut procurement provenance
+- Severity: High
+- Category: Data Integrity
+- Module: SUP
+- Description:
+  - `SupplierResource` mo delete/force-delete/restore surfaces tren UI.
+  - `materials.supplier_id` va `material_batches.supplier_id` dang `set null` khi supplier bi xoa.
+  - Runtime check cho thay `SupplierResource::canDeleteAny()` dang bat thuong.
+- Why it matters:
+  - Xoa supplier sau khi da co inventory history se cat dut provenance procurement va lam yeu traceability.
+- Evidence:
+  - `app/Filament/Resources/Suppliers/Tables/SuppliersTable.php`
+  - `app/Filament/Resources/Suppliers/Pages/EditSupplier.php`
+  - schema `materials`, `material_batches`
+  - runtime tinker: `SupplierResource::canDeleteAny()`
+- Suggested fix:
+  - bo destructive surfaces
+  - khoa delete/restore/force-delete o policy + model layer, chuyen sang archive/inactive neu can
+- Affected areas:
+  - supplier resource/policy/model
+  - inventory provenance
+- Tests needed:
+  - feature test destructive surface guard
+  - feature test supplier khong bi delete sau khi co linked materials/batches
+- Dependencies:
+  - `INV`, `GOV`
+- Suggested order: 6
+- Current status: Open
+- Linked task IDs: `TASK-SUP-006`
+
+## [SUP-007] Bao cao labo dang query sai datasource
+- Severity: Medium
+- Category: Maintainability
+- Module: SUP
+- Description:
+  - `FactoryStatistical` hien query `TreatmentSession` thay vi `FactoryOrder`/`FactoryOrderItem`.
+- Why it matters:
+  - Bao cao sai nghiep vu lam quan ly ra quyet dinh dua tren du lieu khong dung boundary.
+- Evidence:
+  - `app/Filament/Pages/Reports/FactoryStatistical.php`
+- Suggested fix:
+  - doi report datasource ve `FactoryOrder`/`FactoryOrderItem`
+  - bo sung filter branch/status/supplier/due_at
+- Affected areas:
+  - report page
+  - KPI/procurement reporting
+- Tests needed:
+  - feature test report query/datasource
+- Dependencies:
+  - `SUP-003`
+- Suggested order: 7
+- Current status: Open
+- Linked task IDs: `TASK-SUP-007`
+
+## [SUP-008] Test coverage cua SUP qua mong
+- Severity: Medium
+- Category: Maintainability
+- Module: SUP
+- Description:
+  - Hien chi co 1 test state transition factory order trong `Pm52ToPm60ModulesTest`; thieu coverage cho auth, branch mismatch, destructive surface, report correctness va order number concurrency.
+- Why it matters:
+  - Regression se quay lai rat nhanh khi refactor resource/workflow neu khong co suite rieng cho `SUP`.
+- Evidence:
+  - `tests/Feature/Pm52ToPm60ModulesTest.php`
+  - `rg` tren `tests/Feature` cho `Supplier|FactoryOrder`
+- Suggested fix:
+  - bo sung feature tests rieng cho supplier/factory order/report
+- Affected areas:
+  - `tests/Feature/*`
+- Tests needed:
+  - chinh issue nay la backlog test
+- Dependencies:
+  - `SUP-001`, `SUP-002`, `SUP-004`, `SUP-005`, `SUP-006`, `SUP-007`
+- Suggested order: 8
+- Current status: Open
+- Linked task IDs: `TASK-SUP-008`
 
 # Summary
 
-- Open critical count: TODO
-- Open high count: TODO
-- Open medium count: TODO
-- Open low count: TODO
-- Next recommended action: TODO
+- Open critical count: 0
+- Open high count: 4
+- Open medium count: 2
+- Open low count: 0
+- Next recommended action: fix `SUP-002` de khoa patient/branch/doctor consistency, sau do chot `SUP-003` va `SUP-004`.

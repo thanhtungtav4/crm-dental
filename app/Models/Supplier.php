@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class Supplier extends Model
 {
@@ -30,6 +31,21 @@ class Supplier extends Model
     protected $casts = [
         'active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'supplier' => 'Nha cung cap khong ho tro xoa truc tiep. Vui long chuyen sang inactive neu can.',
+            ]);
+        });
+
+        static::restoring(function (): void {
+            throw ValidationException::withMessages([
+                'supplier' => 'Nha cung cap khong ho tro khoi phuc tu thao tac xoa.',
+            ]);
+        });
+    }
 
     /**
      * Relationships

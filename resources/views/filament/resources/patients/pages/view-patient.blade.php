@@ -481,12 +481,14 @@
                                     <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
                                     <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
                                 </div>
-                                <a
-                                    href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
-                                    class="crm-btn crm-btn-primary crm-btn-md"
-                                    style="color: #ffffff;">
-                                    Tạo lệnh labo
-                                </a>
+                                @can('create', \App\Models\FactoryOrder::class)
+                                    <a
+                                        href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                        class="crm-btn crm-btn-primary crm-btn-md"
+                                        style="color: #ffffff;">
+                                        Tạo lệnh labo
+                                    </a>
+                                @endcan
                             </div>
                         </div>
 
@@ -530,12 +532,16 @@
                                                 </td>
                                                 <td>{{ number_format((int) ($order->items_count ?? 0), 0, ',', '.') }}</td>
                                                 <td>
-                                                    <a
-                                                        href="{{ route('filament.admin.resources.factory-orders.edit', ['record' => $order->id]) }}"
-                                                        class="text-sm font-medium text-primary-600 hover:underline"
-                                                    >
-                                                        Chi tiết
-                                                    </a>
+                                                    @can('update', $order)
+                                                        <a
+                                                            href="{{ route('filament.admin.resources.factory-orders.edit', ['record' => $order->id]) }}"
+                                                            class="text-sm font-medium text-primary-600 hover:underline"
+                                                        >
+                                                            Chi tiết
+                                                        </a>
+                                                    @else
+                                                        <span class="text-sm text-gray-500">Khong co quyen</span>
+                                                    @endcan
                                                 </td>
                                             </tr>
                                         @empty

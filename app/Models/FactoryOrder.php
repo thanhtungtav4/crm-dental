@@ -187,6 +187,19 @@ class FactoryOrder extends Model
         return $query->whereIn('branch_id', $branchIds);
     }
 
+    public function isVisibleTo(User $user): bool
+    {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (! is_numeric($this->branch_id)) {
+            return false;
+        }
+
+        return in_array((int) $this->branch_id, $user->accessibleBranchIds(), true);
+    }
+
     protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool
     {
         if ($fromStatus === $toStatus) {

@@ -49,7 +49,9 @@ class FactoryOrderResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()
+            ->with(['patient', 'branch', 'doctor'])
+            ->withCount('items');
         $authUser = auth()->user();
 
         if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
@@ -57,6 +59,11 @@ class FactoryOrderResource extends Resource
         }
 
         return $query->branchAccessible();
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 
     public static function getPages(): array
