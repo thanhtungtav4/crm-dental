@@ -35,7 +35,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | APPT | Appointments / Calendar | Clean Baseline Reached | [Review](modules/APPT-appointments-calendar.md) | [Issues](../issues/APPT-issues.md) | [Plan](../planning/APPT-plan.md) | B | Khong con open blocker baseline; residual risk la theo doi queue worker health cho appointment side-effects after-commit | GOV, PAT, CLIN, TRT, CARE, ZNS, INT |
 | CLIN | Clinical Records / Consent | Clean Baseline Reached | [Review](modules/CLIN-clinical-records.md) | [Issues](../issues/CLIN-issues.md) | [Plan](../planning/CLIN-plan.md) | B | Khong con open blocker baseline; follow-up sau baseline la UX consent production-grade va imaging upload guidance | GOV, PAT, APPT, TRT, FIN, INT |
 | TRT | Treatment Plans / Sessions / Materials usage | Clean Baseline Reached | [Review](modules/TRT-treatment.md) | [Issues](../issues/TRT-issues.md) | [Plan](../planning/TRT-plan.md) | B | Khong con open blocker baseline; theo doi tiep drift giua treatment, inventory va finance bang full-suite regression | PAT, APPT, CLIN, INV, FIN |
-| FIN | Finance / Payments / Wallet / Installments | Pending Review | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | TBD | TODO | GOV, PAT, APPT, TRT, INV, KPI |
+| FIN | Finance / Payments / Wallet / Installments | Planning | [Review](modules/FIN-finance.md) | [Issues](../issues/FIN-issues.md) | [Plan](../planning/FIN-plan.md) | D | Wallet resource khong co policy; invoice cancel workflow dang ho; refund/reversal chua lock-safe | GOV, PAT, APPT, TRT, INV, KPI |
 | INV | Inventory / Batches / Stock | Pending Review | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | TBD | TODO | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Pending Review | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | TBD | TODO | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Pending Review | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | TBD | TODO | PAT, APPT, FIN, ZNS, KPI |
@@ -51,7 +51,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `APPT` da dat clean baseline; scheduling, overbooking auth, reschedule audit, encrypted search va observer side-effects da duoc khoa bang regression test.
 - `CLIN` da dat clean baseline; EMR PHI, consent lifecycle, session idempotency, branch-scoped doctor assignment va audit timeline reader da duoc khoa bang regression test.
 - `TRT` da dat clean baseline; batch-safe material usage, workflow state machine, branch-scoped assignment va destructive guard da duoc khoa bang regression test.
-- `FIN` va `INV` hien la 2 module tiep theo can review/fix sau de dong boundary thanh toan va ton kho quanh hot path dieu tri.
+- `FIN` da co review + issue + plan; open blockers lon nhat cua module nay nam o wallet authorization, invoice lifecycle va refund concurrency.
+- `INV` la module phu thuoc gan nhat sau khi `FIN` khoa xong payment/invoice boundary.
 
 # 4. Priority overview
 
@@ -62,8 +63,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `FIN` - payment, invoice, wallet va installment boundary hien la diem rui ro nghiep vu lon nhat tiep theo.
-- `INV` - inventory batch/stock tiep tuc la module phu thuoc gan nhat sau khi `TRT` da on dinh.
+- `FIN` - da co review va plan day du; day la module nen tiep theo de fix sau `TRT`.
+- `INV` - inventory batch/stock la module phu thuoc gan nhat sau khi `FIN` khoa xong payment/invoice boundary.
 
 # 6. Modules needing re-audit
 
@@ -71,8 +72,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `FIN` - module co impact nghiep vu cao nhat tiep theo va phu thuoc truc tiep vao `TRT`.
+- `INV` - module tiep theo nen duoc review sau khi `FIN` da co plan va dang fix.
 
 # 8. Suggested next module to fix
 
-- `FIN` - vao review/issue/plan truoc, sau do fix payment idempotency va invoice integrity.
+- `FIN` - vao `TASK-FIN-001`, `TASK-FIN-002`, `TASK-FIN-003` de khoa wallet auth, invoice workflow va refund concurrency.
