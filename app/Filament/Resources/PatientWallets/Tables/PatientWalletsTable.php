@@ -4,9 +4,8 @@ namespace App\Filament\Resources\PatientWallets\Tables;
 
 use App\Models\PatientWallet;
 use App\Services\PatientWalletService;
+use App\Support\ActionPermission;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -51,6 +50,7 @@ class PatientWalletsTable
                     ->label('Điều chỉnh')
                     ->icon('heroicon-o-adjustments-horizontal')
                     ->color('warning')
+                    ->visible(fn (): bool => auth()->user()?->can(ActionPermission::WALLET_ADJUST) ?? false)
                     ->form([
                         TextInput::make('amount')
                             ->label('Số tiền điều chỉnh (+/-)')
@@ -69,11 +69,6 @@ class PatientWalletsTable
                             actorId: auth()->id(),
                         );
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

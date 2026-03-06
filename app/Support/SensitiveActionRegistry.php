@@ -24,6 +24,15 @@ class SensitiveActionRegistry
                     ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::PAYMENT_REVERSAL'],
                 ],
             ],
+            ActionPermission::WALLET_ADJUST => [
+                'allowed_roles' => ['Admin', 'Manager'],
+                'guard_markers' => [
+                    ['path' => 'app/Services/PatientWalletService.php', 'contains' => 'ActionPermission::WALLET_ADJUST'],
+                ],
+                'authorization_test_markers' => [
+                    ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::WALLET_ADJUST'],
+                ],
+            ],
             ActionPermission::APPOINTMENT_OVERRIDE => [
                 'allowed_roles' => ['Admin', 'Manager', 'Doctor'],
                 'guard_markers' => [

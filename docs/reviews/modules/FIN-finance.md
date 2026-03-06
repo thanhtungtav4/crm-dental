@@ -2,7 +2,7 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Review file: `docs/reviews/modules/FIN-finance.md`
 - Issue file: `docs/issues/FIN-issues.md`
@@ -290,4 +290,4 @@
 
 # Current Status
 
-- Planning
+- In Fix

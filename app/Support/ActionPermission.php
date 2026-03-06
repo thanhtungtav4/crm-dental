@@ -6,6 +6,8 @@ class ActionPermission
 {
     public const PAYMENT_REVERSAL = 'Action:PaymentReversal';
 
+    public const WALLET_ADJUST = 'Action:WalletAdjust';
+
     public const APPOINTMENT_OVERRIDE = 'Action:AppointmentOverride';
 
     public const PLAN_APPROVAL = 'Action:PlanApproval';
@@ -35,6 +37,7 @@ class ActionPermission
     {
         return [
             self::PAYMENT_REVERSAL,
+            self::WALLET_ADJUST,
             self::APPOINTMENT_OVERRIDE,
             self::PLAN_APPROVAL,
             self::AUTOMATION_RUN,

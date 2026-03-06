@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\PatientWallet;
 use App\Models\Payment;
 use App\Models\WalletLedgerEntry;
+use App\Support\ActionGate;
+use App\Support\ActionPermission;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class PatientWalletService
@@ -94,6 +98,12 @@ class PatientWalletService
     public function adjustBalance(PatientWallet $wallet, float $amount, string $note, ?int $actorId = null): WalletLedgerEntry
     {
         return DB::transaction(function () use ($wallet, $amount, $note, $actorId): WalletLedgerEntry {
+            Gate::authorize('update', $wallet);
+            ActionGate::authorize(
+                ActionPermission::WALLET_ADJUST,
+                'Bạn không có quyền điều chỉnh số dư ví bệnh nhân.',
+            );
+
             $wallet = PatientWallet::query()
                 ->whereKey($wallet->getKey())
                 ->lockForUpdate()
@@ -123,6 +133,22 @@ class PatientWalletService
 
             $wallet->balance = $balanceAfter;
             $wallet->save();
+
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_PATIENT_WALLET,
+                entityId: $wallet->id,
+                action: AuditLog::ACTION_UPDATE,
+                actorId: $actorId ?? auth()->id(),
+                metadata: [
+                    'patient_id' => $wallet->patient_id,
+                    'branch_id' => $wallet->resolveBranchId(),
+                    'wallet_entry_id' => $entry->id,
+                    'adjustment_amount' => $amount,
+                    'note' => $note,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ],
+            );
 
             return $entry;
         }, 3);

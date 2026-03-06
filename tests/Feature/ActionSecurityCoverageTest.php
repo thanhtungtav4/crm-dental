@@ -9,6 +9,7 @@ it('keeps sensitive action registry in sync with action permissions', function (
     $registryPermissions = array_keys(SensitiveActionRegistry::definitions());
     $matrixAnchors = [
         ActionPermission::PAYMENT_REVERSAL,
+        ActionPermission::WALLET_ADJUST,
         ActionPermission::APPOINTMENT_OVERRIDE,
         ActionPermission::PLAN_APPROVAL,
         ActionPermission::AUTOMATION_RUN,
@@ -78,6 +79,7 @@ it('enforces role action matrix for all sensitive actions', function (string $pe
 it('passes strict security checklist review command', function () {
     $this->artisan('security:review-sensitive-actions', ['--strict' => true])
         ->expectsOutputToContain('Action:PaymentReversal')
+        ->expectsOutputToContain('Action:WalletAdjust')
         ->expectsOutputToContain('Action:MpiDedupeReview')
         ->expectsOutputToContain('Action:PatientBranchTransfer')
         ->expectsOutputToContain('Action:EmrClinicalWrite')

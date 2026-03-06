@@ -70,6 +70,13 @@ class PatientWallet extends Model
         return $this->hasMany(WalletLedgerEntry::class);
     }
 
+    public function resolveBranchId(): ?int
+    {
+        $branchId = $this->branch_id ?? $this->patient?->first_branch_id;
+
+        return $branchId !== null ? (int) $branchId : null;
+    }
+
     public function scopeBranchAccessible(Builder $query): Builder
     {
         $authUser = auth()->user();

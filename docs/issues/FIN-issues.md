@@ -2,7 +2,7 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Issue ID prefix: `FIN-`
 - Task ID prefix: `TASK-FIN-`
@@ -44,7 +44,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 1
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-FIN-001`
 
 ## [FIN-002] Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh

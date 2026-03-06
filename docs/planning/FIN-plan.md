@@ -2,7 +2,7 @@
 
 - Module code: `FIN`
 - Module name: `Finance / Payments / Wallet / Installments`
-- Current status: `Planning`
+- Current status: `In Fix`
 - Current verdict: `D`
 - Task ID prefix: `TASK-FIN-`
 - Source review: `docs/reviews/modules/FIN-finance.md`

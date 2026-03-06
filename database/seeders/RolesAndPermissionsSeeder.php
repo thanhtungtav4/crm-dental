@@ -45,6 +45,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'TreatmentMaterial',
             'Invoice',
             'Payment',
+            'PatientWallet',
             'Prescription',
             'PatientPhoto',
             'ClinicalMediaAsset',
@@ -112,6 +113,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $managerPerms[] = 'View:IntegrationSettingsAuditLog';
         $managerPerms = array_merge($managerPerms, [
             ActionPermission::PAYMENT_REVERSAL,
+            ActionPermission::WALLET_ADJUST,
             ActionPermission::APPOINTMENT_OVERRIDE,
             ActionPermission::PLAN_APPROVAL,
             ActionPermission::AUTOMATION_RUN,
