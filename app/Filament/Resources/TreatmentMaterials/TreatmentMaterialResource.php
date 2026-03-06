@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\TreatmentMaterials;
 
 use App\Filament\Resources\TreatmentMaterials\Pages\CreateTreatmentMaterial;
-use App\Filament\Resources\TreatmentMaterials\Pages\EditTreatmentMaterial;
 use App\Filament\Resources\TreatmentMaterials\Pages\ListTreatmentMaterials;
 use App\Filament\Resources\TreatmentMaterials\Schemas\TreatmentMaterialForm;
 use App\Filament\Resources\TreatmentMaterials\Tables\TreatmentMaterialsTable;
@@ -70,7 +69,6 @@ class TreatmentMaterialResource extends Resource
         return [
             'index' => ListTreatmentMaterials::route('/'),
             'create' => CreateTreatmentMaterial::route('/create'),
-            'edit' => EditTreatmentMaterial::route('/{record}/edit'),
         ];
     }
 }

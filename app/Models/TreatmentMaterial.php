@@ -11,6 +11,8 @@ class TreatmentMaterial extends Model
 {
     use HasFactory;
 
+    protected static int $managedPersistenceDepth = 0;
+
     protected $fillable = [
         'treatment_session_id',
         'material_id',
@@ -21,113 +23,69 @@ class TreatmentMaterial extends Model
     ];
 
     protected $casts = [
+        'batch_id' => 'integer',
         'quantity' => 'integer',
         'cost' => 'decimal:2',
+        'used_by' => 'integer',
     ];
 
     protected static function booted(): void
     {
         static::creating(function (self $usage): void {
-            $quantity = (int) $usage->quantity;
-
-            if ($quantity <= 0) {
+            if (! static::isManagedPersistence()) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Số lượng vật tư phải lớn hơn 0.',
+                    'treatment_material' => 'TreatmentMaterial changes must go through TreatmentMaterialUsageService.',
                 ]);
             }
 
-            $material = Material::query()->find($usage->material_id);
-
-            if (! $material) {
-                return;
-            }
-
-            $session = TreatmentSession::query()
-                ->with('treatmentPlan:id,branch_id')
-                ->find($usage->treatment_session_id);
-
-            $sessionBranchId = $session?->treatmentPlan?->branch_id;
-            $materialBranchId = $material->branch_id;
-
-            if ($sessionBranchId !== null && $materialBranchId !== null && (int) $sessionBranchId !== (int) $materialBranchId) {
+            if ((int) $usage->quantity <= 0) {
                 throw ValidationException::withMessages([
-                    'material_id' => 'Vật tư không cùng chi nhánh với phiên điều trị đã chọn.',
+                    'quantity' => 'So luong vat tu phai lon hon 0.',
                 ]);
             }
 
-            $authUser = auth()->user();
-            $resolvedBranchId = $sessionBranchId !== null ? (int) $sessionBranchId : ($materialBranchId !== null ? (int) $materialBranchId : null);
-
-            if ($authUser instanceof User && ! $authUser->canAccessBranch($resolvedBranchId)) {
+            if (! is_numeric($usage->batch_id)) {
                 throw ValidationException::withMessages([
-                    'treatment_session_id' => 'Bạn không có quyền ghi nhận vật tư cho chi nhánh này.',
+                    'batch_id' => 'Vui long chon lo vat tu de dam bao truy vet ton kho.',
                 ]);
             }
 
-            if (blank($usage->used_by) && $authUser instanceof User) {
-                $usage->used_by = $authUser->id;
-            }
-
-            if ((int) $material->stock_qty < $quantity) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'Số lượng sử dụng vượt quá tồn kho hiện tại.',
-                ]);
-            }
-
-            if ($usage->cost === null) {
-                $usage->cost = round(((float) ($material->cost_price ?? $material->sale_price ?? 0)) * $quantity, 2);
+            if (blank($usage->used_by) && is_numeric(auth()->id())) {
+                $usage->used_by = (int) auth()->id();
             }
         });
 
         static::updating(function (): void {
             throw ValidationException::withMessages([
-                'treatment_material' => 'Không hỗ trợ chỉnh sửa vật tư đã ghi nhận để tránh sai lệch tồn kho. Vui lòng xóa và tạo lại.',
+                'treatment_material' => 'Khong ho tro chinh sua vat tu da ghi nhan de tranh sai lech ton kho. Vui long xoa va tao lai.',
             ]);
         });
 
-        static::created(function (self $usage) {
-            if (! $usage->material_id || ! $usage->quantity) {
+        static::deleting(function (): void {
+            if (static::isManagedPersistence()) {
                 return;
             }
 
-            $material = Material::query()->find($usage->material_id);
-            if ($material) {
-                $material->decrement('stock_qty', (int) $usage->quantity);
-
-                InventoryTransaction::query()->create([
-                    'material_id' => $material->id,
-                    'branch_id' => $material->branch_id,
-                    'treatment_session_id' => $usage->treatment_session_id,
-                    'type' => 'out',
-                    'quantity' => (int) $usage->quantity,
-                    'unit_cost' => (float) ($material->cost_price ?? $material->sale_price ?? 0),
-                    'note' => 'Auto: used in treatment',
-                    'created_by' => $usage->used_by,
-                ]);
-            }
+            throw ValidationException::withMessages([
+                'treatment_material' => 'TreatmentMaterial changes must go through TreatmentMaterialUsageService.',
+            ]);
         });
+    }
 
-        static::deleted(function (self $usage) {
-            if (! $usage->material_id || ! $usage->quantity) {
-                return;
-            }
+    public static function runWithinManagedPersistence(callable $callback): mixed
+    {
+        static::$managedPersistenceDepth++;
 
-            $material = Material::query()->find($usage->material_id);
-            if ($material) {
-                $material->increment('stock_qty', (int) $usage->quantity);
+        try {
+            return $callback();
+        } finally {
+            static::$managedPersistenceDepth = max(0, static::$managedPersistenceDepth - 1);
+        }
+    }
 
-                InventoryTransaction::query()->create([
-                    'material_id' => $material->id,
-                    'branch_id' => $material->branch_id,
-                    'treatment_session_id' => $usage->treatment_session_id,
-                    'type' => 'adjust',
-                    'quantity' => (int) $usage->quantity,
-                    'unit_cost' => (float) ($material->cost_price ?? $material->sale_price ?? 0),
-                    'note' => 'Auto: revert usage delete',
-                    'created_by' => $usage->used_by,
-                ]);
-            }
-        });
+    protected static function isManagedPersistence(): bool
+    {
+        return static::$managedPersistenceDepth > 0;
     }
 
     public function session(): BelongsTo

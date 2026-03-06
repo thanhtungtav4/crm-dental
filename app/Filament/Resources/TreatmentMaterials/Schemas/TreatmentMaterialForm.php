@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentMaterials\Schemas;
 
 use App\Models\Material;
+use App\Models\MaterialBatch;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use Filament\Forms;
@@ -31,9 +32,10 @@ class TreatmentMaterialForm
                     ->preload()
                     ->required()
                     ->live()
-                    ->default(fn () => request()->integer('treatment_session_id') ?: null)
+                    ->default(fn (): ?int => request()->integer('treatment_session_id') ?: null)
                     ->afterStateUpdated(function (Set $set): void {
                         $set('material_id', null);
+                        $set('batch_id', null);
                     }),
                 Forms\Components\Select::make('material_id')
                     ->label('Vật tư')
@@ -41,8 +43,20 @@ class TreatmentMaterialForm
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->live()
                     ->disabled(fn (Get $get): bool => ! is_numeric($get('treatment_session_id')))
-                    ->helperText('Danh sách vật tư tự lọc theo chi nhánh của phiên điều trị đã chọn.'),
+                    ->helperText('Chi hien vat tu cung chi nhanh va con lo hoat dong de ghi nhan.')
+                    ->afterStateUpdated(function (Set $set): void {
+                        $set('batch_id', null);
+                    }),
+                Forms\Components\Select::make('batch_id')
+                    ->label('Lô vật tư')
+                    ->options(fn (Get $get): array => self::batchOptionsForMaterial($get('material_id')))
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->disabled(fn (Get $get): bool => ! is_numeric($get('material_id')))
+                    ->helperText('Bat buoc chon lo vat tu de truy vet ton kho va han dung.'),
                 Forms\Components\TextInput::make('quantity')
                     ->numeric()
                     ->minValue(1)
@@ -53,10 +67,10 @@ class TreatmentMaterialForm
                     ->label('Chi phí'),
                 Forms\Components\Select::make('used_by')
                     ->relationship('user', 'name')
-                    ->label('Người dùng')
-                    ->searchable()
-                    ->preload()
-                    ->default(fn () => auth()->id()),
+                    ->label('Người ghi nhận')
+                    ->default(fn (): ?int => auth()->id())
+                    ->disabled()
+                    ->dehydrated(),
             ]);
     }
 
@@ -74,6 +88,7 @@ class TreatmentMaterialForm
         }
 
         $branchIds = $authUser->accessibleBranchIds();
+
         if ($branchIds === []) {
             return $query->whereRaw('1 = 0');
         }
@@ -88,7 +103,18 @@ class TreatmentMaterialForm
      */
     protected static function materialOptionsForSession(mixed $sessionId): array
     {
-        $query = Material::query()->orderBy('name');
+        $query = Material::query()
+            ->whereHas('batches', function (Builder $batchQuery): void {
+                $batchQuery
+                    ->where('status', 'active')
+                    ->where('quantity', '>', 0)
+                    ->where(function (Builder $expiryQuery): void {
+                        $expiryQuery
+                            ->whereNull('expiry_date')
+                            ->orWhereDate('expiry_date', '>=', today()->toDateString());
+                    });
+            })
+            ->orderBy('name');
 
         $sessionBranchId = null;
 
@@ -124,6 +150,39 @@ class TreatmentMaterialForm
                 $unit = filled($material->unit) ? " {$material->unit}" : '';
 
                 return [(int) $material->id => "{$material->name} (Tồn: {$stock}{$unit})"];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function batchOptionsForMaterial(mixed $materialId): array
+    {
+        if (! is_numeric($materialId)) {
+            return [];
+        }
+
+        return MaterialBatch::query()
+            ->where('material_id', (int) $materialId)
+            ->where('status', 'active')
+            ->where('quantity', '>', 0)
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereNull('expiry_date')
+                    ->orWhereDate('expiry_date', '>=', today()->toDateString());
+            })
+            ->orderBy('expiry_date')
+            ->orderBy('batch_number')
+            ->limit(200)
+            ->get(['id', 'batch_number', 'expiry_date', 'quantity'])
+            ->mapWithKeys(function (MaterialBatch $batch): array {
+                $expiry = $batch->expiry_date instanceof Carbon
+                    ? $batch->expiry_date->format('d/m/Y')
+                    : 'Khong ro';
+                $quantity = number_format((int) $batch->quantity, 0, ',', '.');
+
+                return [(int) $batch->id => "{$batch->batch_number} · HSD {$expiry} · Ton {$quantity}"];
             })
             ->all();
     }

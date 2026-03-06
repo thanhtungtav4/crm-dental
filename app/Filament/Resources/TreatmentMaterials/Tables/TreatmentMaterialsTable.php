@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\TreatmentMaterials\Tables;
 
-use Filament\Actions\DeleteAction;
+use App\Models\TreatmentMaterial;
+use App\Services\TreatmentMaterialUsageService;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -17,6 +19,7 @@ class TreatmentMaterialsTable
                 'session.treatmentPlan.patient:id,full_name',
                 'session.treatmentPlan.branch:id,name',
                 'material:id,name,unit',
+                'batch:id,material_id,batch_number,expiry_date',
                 'user:id,name',
             ]))
             ->columns([
@@ -29,20 +32,37 @@ class TreatmentMaterialsTable
                 BadgeColumn::make('session.treatmentPlan.branch.name')
                     ->label('Chi nhánh')
                     ->color('info'),
-                TextColumn::make('material.name')->label('Vật tư')->searchable(),
+                TextColumn::make('material.name')
+                    ->label('Vật tư')
+                    ->searchable(),
+                TextColumn::make('batch.batch_number')
+                    ->label('Lô')
+                    ->placeholder('-')
+                    ->searchable(),
                 TextColumn::make('quantity')
                     ->label('SL')
-                    ->suffix(fn ($record): string => filled($record->material?->unit) ? " {$record->material->unit}" : '')
+                    ->suffix(fn (TreatmentMaterial $record): string => filled($record->material?->unit) ? " {$record->material->unit}" : '')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('cost')->label('Chi phí')->money('VND')->sortable(),
-                TextColumn::make('user.name')->label('Người dùng')->toggleable(),
+                TextColumn::make('cost')
+                    ->label('Chi phí')
+                    ->money('VND')
+                    ->sortable(),
+                TextColumn::make('user.name')
+                    ->label('Người dùng')
+                    ->toggleable(),
             ])
             ->recordActions([
-                DeleteAction::make()
-                    ->label('Xóa để tạo lại')
-                    ->tooltip('Vật tư đã ghi nhận không hỗ trợ sửa trực tiếp để đảm bảo tồn kho chính xác.')
-                    ->requiresConfirmation(),
+                Action::make('delete_usage')
+                    ->label('Hoan tac ghi nhan')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->successNotificationTitle('Da hoan tac ghi nhan vat tu')
+                    ->visible(fn (TreatmentMaterial $record): bool => auth()->user()?->can('delete', $record) ?? false)
+                    ->action(function (TreatmentMaterial $record): void {
+                        app(TreatmentMaterialUsageService::class)->delete($record);
+                    }),
             ]);
     }
 }

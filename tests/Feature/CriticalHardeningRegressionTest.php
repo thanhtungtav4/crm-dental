@@ -12,7 +12,6 @@ use App\Models\MaterialIssueNote;
 use App\Models\Patient;
 use App\Models\PatientWallet;
 use App\Models\Payment;
-use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
@@ -21,6 +20,7 @@ use App\Policies\MaterialBatchPolicy;
 use App\Policies\MaterialPolicy;
 use App\Policies\TreatmentMaterialPolicy;
 use App\Services\PatientWalletService;
+use App\Services\TreatmentMaterialUsageService;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
@@ -172,15 +172,26 @@ it('blocks treatment material updates to protect stock consistency', function ()
         'cost_price' => 25_000,
     ]);
 
-    $usage = TreatmentMaterial::query()->create([
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'BATCH-TREAT-001',
+        'expiry_date' => now()->addMonths(6)->toDateString(),
+        'quantity' => 12,
+        'purchase_price' => 25_000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $usage = app(TreatmentMaterialUsageService::class)->create([
         'treatment_session_id' => $session->id,
         'material_id' => $material->id,
+        'batch_id' => $batch->id,
         'quantity' => 2,
         'used_by' => $manager->id,
     ]);
 
     expect(fn () => $usage->update(['quantity' => 1]))
-        ->toThrow(ValidationException::class, 'Không hỗ trợ chỉnh sửa vật tư đã ghi nhận');
+        ->toThrow(ValidationException::class, 'Khong ho tro chinh sua vat tu da ghi nhan');
 
     $policy = app(TreatmentMaterialPolicy::class);
 
