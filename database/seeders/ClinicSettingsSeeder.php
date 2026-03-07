@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
 use App\Models\ClinicSetting;
 use Illuminate\Database\Seeder;
 
@@ -9,6 +10,11 @@ class ClinicSettingsSeeder extends Seeder
 {
     public function run(): void
     {
+        $defaultBranchCode = Branch::query()
+            ->where('active', true)
+            ->orderBy('id')
+            ->value('code') ?? '';
+
         $items = [
             // Zalo OA
             ['group' => 'zalo', 'key' => 'zalo.enabled', 'label' => 'Bật tích hợp Zalo OA', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 10, 'description' => 'Bật/tắt đồng bộ Zalo OA.'],
@@ -61,7 +67,7 @@ class ClinicSettingsSeeder extends Seeder
             // Web lead API
             ['group' => 'web_lead', 'key' => 'web_lead.enabled', 'label' => 'Bật API nhận lead từ web', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 460],
             ['group' => 'web_lead', 'key' => 'web_lead.api_token', 'label' => 'Web lead API token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 470],
-            ['group' => 'web_lead', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định cho web lead', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 480],
+            ['group' => 'web_lead', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định cho web lead', 'value' => $defaultBranchCode, 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 480],
             ['group' => 'web_lead', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request web lead / phút', 'value' => 60, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 490],
             ['group' => 'web_lead', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime web lead', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 492],
             ['group' => 'web_lead', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime web lead', 'value' => ['CSKH'], 'value_type' => 'json', 'is_secret' => false, 'sort_order' => 493],
@@ -73,19 +79,42 @@ class ClinicSettingsSeeder extends Seeder
         ];
 
         foreach ($items as $item) {
-            ClinicSetting::setValue(
-                key: $item['key'],
-                value: $item['value'],
-                meta: [
-                    'group' => $item['group'],
-                    'label' => $item['label'],
-                    'value_type' => $item['value_type'],
-                    'is_secret' => $item['is_secret'],
-                    'is_active' => true,
-                    'sort_order' => $item['sort_order'],
-                    'description' => $item['description'] ?? null,
-                ],
-            );
+            $this->seedSetting($item);
         }
+    }
+
+    /**
+     * @param  array{
+     *     group: string,
+     *     key: string,
+     *     label: string,
+     *     value: mixed,
+     *     value_type: string,
+     *     is_secret: bool,
+     *     sort_order: int,
+     *     description?: string|null
+     * }  $item
+     */
+    private function seedSetting(array $item): void
+    {
+        ClinicSetting::flushRuntimeCache($item['key']);
+
+        $value = ClinicSetting::query()->where('key', $item['key'])->exists()
+            ? ClinicSetting::getValue($item['key'], $item['value'])
+            : $item['value'];
+
+        ClinicSetting::setValue(
+            key: $item['key'],
+            value: $value,
+            meta: [
+                'group' => $item['group'],
+                'label' => $item['label'],
+                'value_type' => $item['value_type'],
+                'is_secret' => $item['is_secret'],
+                'is_active' => true,
+                'sort_order' => $item['sort_order'],
+                'description' => $item['description'] ?? null,
+            ],
+        );
     }
 }
