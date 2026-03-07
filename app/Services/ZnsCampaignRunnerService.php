@@ -33,29 +33,15 @@ class ZnsCampaignRunnerService
      */
     public function runCampaign(ZnsCampaign $campaign): array
     {
-        $campaign->refresh();
         $this->assertZnsReadyForRun();
+        $claim = $this->claimCampaign($campaign);
 
-        $runnableStatuses = [
-            ZnsCampaign::STATUS_DRAFT,
-            ZnsCampaign::STATUS_SCHEDULED,
-            ZnsCampaign::STATUS_RUNNING,
-            ZnsCampaign::STATUS_FAILED,
-        ];
-
-        if (! in_array($campaign->status, $runnableStatuses, true)) {
+        if ($claim === null) {
             return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
-        if (
-            $campaign->status === ZnsCampaign::STATUS_SCHEDULED
-            && $campaign->scheduled_at !== null
-            && $campaign->scheduled_at->isFuture()
-        ) {
-            return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
-        }
-
-        $campaign = $this->workflowService->markRunning($campaign);
+        $campaign = $claim['campaign'];
+        $campaignProcessingToken = $claim['processing_token'];
 
         $processed = 0;
         $sent = 0;
@@ -118,6 +104,11 @@ class ZnsCampaignRunnerService
             );
 
             throw $exception;
+        } finally {
+            $this->releaseCampaignClaim(
+                campaignId: (int) $campaign->id,
+                processingToken: $campaignProcessingToken,
+            );
         }
 
         return [
@@ -126,6 +117,59 @@ class ZnsCampaignRunnerService
             'failed' => $failed,
             'skipped' => $skipped,
         ];
+    }
+
+    /**
+     * @return array{campaign:ZnsCampaign,processing_token:string}|null
+     */
+    protected function claimCampaign(ZnsCampaign $campaign): ?array
+    {
+        return DB::transaction(function () use ($campaign): ?array {
+            $lockedCampaign = ZnsCampaign::query()
+                ->lockForUpdate()
+                ->find($campaign->getKey());
+
+            if (! $lockedCampaign instanceof ZnsCampaign) {
+                return null;
+            }
+
+            $runnableStatuses = [
+                ZnsCampaign::STATUS_DRAFT,
+                ZnsCampaign::STATUS_SCHEDULED,
+                ZnsCampaign::STATUS_RUNNING,
+                ZnsCampaign::STATUS_FAILED,
+            ];
+
+            if (! in_array($lockedCampaign->status, $runnableStatuses, true)) {
+                return null;
+            }
+
+            if (
+                $lockedCampaign->status === ZnsCampaign::STATUS_SCHEDULED
+                && $lockedCampaign->scheduled_at !== null
+                && $lockedCampaign->scheduled_at->isFuture()
+            ) {
+                return null;
+            }
+
+            if ($lockedCampaign->hasActiveProcessingLock()) {
+                return null;
+            }
+
+            $processingToken = (string) Str::uuid();
+
+            $lockedCampaign->forceFill([
+                'processing_token' => $processingToken,
+                'locked_at' => now(),
+            ])->save();
+
+            $lockedCampaign = $this->workflowService->markRunning($lockedCampaign);
+
+            return [
+                'campaign' => $lockedCampaign,
+                'processing_token' => $processingToken,
+            ];
+        }, 3);
     }
 
     protected function prepareDeliveriesForAudience(ZnsCampaign $campaign, string $templateId, int $maxDeliveryAttempts): int
@@ -398,6 +442,26 @@ class ZnsCampaignRunnerService
             hasOutstandingQueuedOrLocked: $hasOutstandingQueuedOrLocked,
             hasRetryableFailures: $hasRetryableFailures,
         );
+    }
+
+    protected function releaseCampaignClaim(int $campaignId, string $processingToken): void
+    {
+        DB::transaction(function () use ($campaignId, $processingToken): void {
+            $campaign = ZnsCampaign::query()
+                ->whereKey($campaignId)
+                ->where('processing_token', $processingToken)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $campaign instanceof ZnsCampaign) {
+                return;
+            }
+
+            $campaign->forceFill([
+                'processing_token' => null,
+                'locked_at' => null,
+            ])->save();
+        }, 3);
     }
 
     protected function reclaimStaleProcessingDeliveries(ZnsCampaign $campaign, int $maxDeliveryAttempts): int

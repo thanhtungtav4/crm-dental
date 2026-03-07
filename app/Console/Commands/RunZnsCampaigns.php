@@ -40,6 +40,7 @@ class RunZnsCampaigns extends Command
         $hasValidationFailure = false;
 
         $query = ZnsCampaign::query()
+            ->runnerClaimable()
             ->when(
                 filled($campaignId),
                 fn ($builder) => $builder->whereKey((int) $campaignId),

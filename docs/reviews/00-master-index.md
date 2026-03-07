@@ -39,7 +39,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | INV | Inventory / Batches / Stock | Clean Baseline Reached | [Review](modules/INV-inventory.md) | [Issues](../issues/INV-issues.md) | [Plan](../planning/INV-plan.md) | B | Khong con open code blocker baseline; follow-up van hanh la chay migrate + schema gate inventory tren DB dang drift | GOV, TRT, FIN, SUP, KPI |
 | SUP | Suppliers / Factory Orders | Clean Baseline Reached | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la chay migrate va smoke test supplier backfill + factory report tren du lieu that | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Clean Baseline Reached | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | B | Khong con open blocker baseline; follow-up la rollout migration `notes.ticket_key` va review `ZNS/KPI` de khoa tiep outbound side-effects/report coupling | PAT, APPT, FIN, ZNS, KPI |
-| ZNS | Zalo / ZNS | In Fix | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | D | Auth/workflow/cancel-guard/payload governance da khoa; campaign-level lock va triage UX van mo | PAT, APPT, CARE, INT, OPS |
+| ZNS | Zalo / ZNS | In Fix | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | D | Auth/workflow/cancel-guard/payload governance, runner lock va regression suite da khoa; triage UX van mo | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Pending Review | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | TBD | TODO | GOV, APPT, CLIN, ZNS, OPS |
 | KPI | Reports / KPI | Pending Review | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | TBD | TODO | FIN, INV, CARE, OPS |
 | OPS | Production readiness / backup / observability | Pending Review | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | TBD | TODO | GOV, INT, KPI, ZNS, FIN, INV |
@@ -55,7 +55,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `INV` da dat clean baseline; canonical mutation boundary, regression suite va schema gate inventory da duoc khoa. Follow-up con lai la rollout migration/schema gate tren DB thuc te.
 - `SUP` da dat clean baseline; supplier canonical link, numbering, workflow boundary va report datasource da duoc khoa bang regression test. Follow-up con lai la rollout migration va smoke test tren du lieu that.
 - `CARE` da dat clean baseline; page/report auth, ticket invariant, birthday dedupe, canonical datasource va regression suite da duoc khoa. Follow-up tiep theo la rollout `notes.ticket_key` va review `ZNS/KPI`.
-- `ZNS` dang o phase fix; auth boundary, workflow campaign canonical, cancel-processing guard va payload governance da duoc khoa, nhung campaign-level lock va triage UX van con mo.
+- `ZNS` dang o phase fix; auth boundary, workflow campaign canonical, cancel-processing guard, payload governance, runner lock va regression suite da duoc khoa, nhung triage UX van con mo.
 
 # 4. Priority overview
 
@@ -66,7 +66,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 5. Modules ready for deep fix
 
-- `ZNS` - dang trong phase fix; tiep theo la `TASK-ZNS-005`, `TASK-ZNS-007`, `TASK-ZNS-008`.
+- `ZNS` - dang trong phase fix; tiep theo la `TASK-ZNS-006`, sau do re-audit.
 
 # 6. Modules needing re-audit
 
@@ -78,4 +78,4 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 8. Suggested next module to fix
 
-- `ZNS` - dang fix; tiep tuc `TASK-ZNS-005`, `TASK-ZNS-007`, `TASK-ZNS-008`.
+- `ZNS` - dang fix; tiep tuc `TASK-ZNS-006`, sau do re-audit.

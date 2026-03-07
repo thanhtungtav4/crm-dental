@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,8 @@ class ZnsCampaign extends Model
     public const STATUS_FAILED = 'failed';
 
     public const STATUS_CANCELLED = 'cancelled';
+
+    public const PROCESSING_LOCK_TTL_MINUTES = 15;
 
     protected const STATUS_TRANSITIONS = [
         self::STATUS_DRAFT => [self::STATUS_SCHEDULED, self::STATUS_RUNNING, self::STATUS_CANCELLED],
@@ -73,6 +76,7 @@ class ZnsCampaign extends Model
             'finished_at' => 'datetime',
             'sent_count' => 'integer',
             'failed_count' => 'integer',
+            'locked_at' => 'datetime',
             'created_by' => 'integer',
             'updated_by' => 'integer',
         ];
@@ -232,6 +236,20 @@ class ZnsCampaign extends Model
         return $query->whereIn('branch_id', $branchIds);
     }
 
+    public function scopeRunnerClaimable(
+        Builder $query,
+        ?CarbonInterface $referenceTime = null,
+        int $ttlMinutes = self::PROCESSING_LOCK_TTL_MINUTES,
+    ): Builder {
+        $lockedBefore = ($referenceTime ?? now())->copy()->subMinutes($ttlMinutes);
+
+        return $query->where(function (Builder $lockQuery) use ($lockedBefore): void {
+            $lockQuery->whereNull('processing_token')
+                ->orWhereNull('locked_at')
+                ->orWhere('locked_at', '<=', $lockedBefore);
+        });
+    }
+
     public static function canAccessModule(?User $authUser): bool
     {
         return $authUser instanceof User
@@ -274,6 +292,17 @@ class ZnsCampaign extends Model
     protected static function isManagedWorkflow(): bool
     {
         return static::$managedWorkflowDepth > 0;
+    }
+
+    public function hasActiveProcessingLock(
+        ?CarbonInterface $referenceTime = null,
+        int $ttlMinutes = self::PROCESSING_LOCK_TTL_MINUTES,
+    ): bool {
+        if (blank($this->processing_token) || ! $this->locked_at instanceof CarbonInterface) {
+            return false;
+        }
+
+        return $this->locked_at->gt(($referenceTime ?? now())->copy()->subMinutes($ttlMinutes));
     }
 
     protected static function assertWorkflowControlledFields(self $campaign): void

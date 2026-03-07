@@ -138,7 +138,7 @@
 - Dependencies:
   - ZNS-002
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-005`
 
 ## [ZNS-006] RunZnsCampaigns khong duoc bao ve bang action permission
@@ -210,13 +210,13 @@
 - Dependencies:
   - ZNS-001 -> ZNS-007
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-008`
 
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
-- Open medium count: 2
+- Open high count: 0
+- Open medium count: 1
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-ZNS-005`, sau do khoa `TASK-ZNS-007` va dong `TASK-ZNS-008` truoc khi re-audit module.
+- Next recommended action: tiep tuc `TASK-ZNS-006`, sau do re-audit module.
