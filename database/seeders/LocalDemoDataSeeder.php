@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\BranchLog;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
+use App\Models\DoctorBranchAssignment;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PlanItem;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\Hash;
 class LocalDemoDataSeeder extends Seeder
 {
     use WithoutModelEvents;
+
+    public const DEFAULT_DEMO_PASSWORD = 'Demo@123456';
 
     public function run(): void
     {
@@ -87,58 +90,98 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'email' => 'admin@demo.nhakhoaanphuc.test',
                 'name' => 'Quan tri he thong',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
+                'phone' => '0909000001',
                 'role' => 'Admin',
+                'specialty' => null,
+            ],
+            [
+                'email' => 'automation.bot@demo.nhakhoaanphuc.test',
+                'name' => 'Automation Service Bot',
+                'branch_id' => null,
+                'phone' => null,
+                'role' => 'AutomationService',
+                'specialty' => null,
             ],
             [
                 'email' => 'manager.q1@demo.nhakhoaanphuc.test',
                 'name' => 'Quan ly Quan 1',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
+                'phone' => '0909000011',
                 'role' => 'Manager',
+                'specialty' => null,
+            ],
+            [
+                'email' => 'manager.cg@demo.nhakhoaanphuc.test',
+                'name' => 'Quan ly Cau Giay',
+                'branch_id' => $branchIdsByCode['HN-CG'],
+                'phone' => '0909000012',
+                'role' => 'Manager',
+                'specialty' => null,
+            ],
+            [
+                'email' => 'manager.hc@demo.nhakhoaanphuc.test',
+                'name' => 'Quan ly Hai Chau',
+                'branch_id' => $branchIdsByCode['DN-HC'],
+                'phone' => '0909000013',
+                'role' => 'Manager',
+                'specialty' => null,
             ],
             [
                 'email' => 'doctor.q1@demo.nhakhoaanphuc.test',
                 'name' => 'Bac si Tran Minh Khoi',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
+                'phone' => '0909000021',
                 'role' => 'Doctor',
+                'specialty' => 'Implant',
             ],
             [
                 'email' => 'doctor.cg@demo.nhakhoaanphuc.test',
                 'name' => 'Bac si Nguyen Ngoc Lan',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HN-CG'],
+                'phone' => '0909000022',
                 'role' => 'Doctor',
+                'specialty' => 'Nieng rang',
             ],
             [
                 'email' => 'doctor.hc@demo.nhakhoaanphuc.test',
                 'name' => 'Bac si Le Quoc Bao',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['DN-HC'],
+                'phone' => '0909000023',
                 'role' => 'Doctor',
+                'specialty' => 'Tong quat',
+            ],
+            [
+                'email' => 'doctor.float@demo.nhakhoaanphuc.test',
+                'name' => 'Bac si Tran Phuong Linh',
+                'branch_id' => $branchIdsByCode['HCM-Q1'],
+                'phone' => '0909000024',
+                'role' => 'Doctor',
+                'specialty' => 'Phuc hinh',
             ],
             [
                 'email' => 'cskh.q1@demo.nhakhoaanphuc.test',
                 'name' => 'CSKH Pham Thu Ha',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
+                'phone' => '0909000031',
                 'role' => 'CSKH',
+                'specialty' => null,
             ],
             [
                 'email' => 'cskh.cg@demo.nhakhoaanphuc.test',
                 'name' => 'CSKH Vo Thao My',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['HN-CG'],
+                'phone' => '0909000032',
                 'role' => 'CSKH',
+                'specialty' => null,
             ],
             [
                 'email' => 'cskh.hc@demo.nhakhoaanphuc.test',
                 'name' => 'CSKH Nguyen Bao Tram',
-                'password' => Hash::make('password'),
                 'branch_id' => $branchIdsByCode['DN-HC'],
+                'phone' => '0909000033',
                 'role' => 'CSKH',
+                'specialty' => null,
             ],
         ];
 
@@ -149,10 +192,7 @@ class LocalDemoDataSeeder extends Seeder
             $role = $account['role'];
             unset($account['role']);
 
-            $user = User::query()->updateOrCreate(
-                ['email' => $account['email']],
-                $account,
-            );
+            $user = $this->upsertDemoUser($account);
 
             $user->syncRoles([$role]);
 
@@ -161,7 +201,77 @@ class LocalDemoDataSeeder extends Seeder
             }
         }
 
-        return $admin ?? User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+        $admin ??= User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+
+        $this->seedDoctorAssignments($branchIdsByCode, $admin->id);
+
+        return $admin;
+    }
+
+    /**
+     * @param  array{name:string,email:string,branch_id:int|null,phone:?string,specialty:?string}  $attributes
+     */
+    protected function upsertDemoUser(array $attributes): User
+    {
+        $user = User::query()->firstOrNew([
+            'email' => $attributes['email'],
+        ]);
+
+        $user->fill($attributes);
+
+        if (! Hash::check(self::DEFAULT_DEMO_PASSWORD, (string) $user->password)) {
+            $user->password = self::DEFAULT_DEMO_PASSWORD;
+        }
+
+        $user->email_verified_at ??= now();
+        $user->save();
+
+        return $user;
+    }
+
+    protected function seedDoctorAssignments(Collection $branchIdsByCode, int $adminId): void
+    {
+        $doctor = User::query()->where('email', 'doctor.float@demo.nhakhoaanphuc.test')->first();
+
+        if (! $doctor instanceof User) {
+            return;
+        }
+
+        $assignmentDefinitions = [
+            [
+                'branch_code' => 'HCM-Q1',
+                'is_primary' => true,
+                'note' => 'Bac si phu trach co so chinh Quan 1.',
+            ],
+            [
+                'branch_code' => 'HN-CG',
+                'is_primary' => false,
+                'note' => 'Bac si ho tro lich hen lien chi nhanh cho demo branch scope.',
+            ],
+        ];
+
+        foreach ($assignmentDefinitions as $assignment) {
+            $branchId = $branchIdsByCode->get($assignment['branch_code']);
+
+            if (! is_numeric($branchId)) {
+                continue;
+            }
+
+            DoctorBranchAssignment::query()->updateOrCreate(
+                [
+                    'user_id' => $doctor->id,
+                    'branch_id' => (int) $branchId,
+                ],
+                [
+                    'is_active' => true,
+                    'is_primary' => $assignment['is_primary'],
+                    'assigned_from' => now()->startOfMonth()->toDateString(),
+                    'assigned_until' => null,
+                    'created_by' => $adminId,
+                    'note' => $assignment['note'],
+                ],
+            );
+        }
     }
 
     protected function seedCustomers(

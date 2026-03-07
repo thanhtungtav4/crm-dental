@@ -18,6 +18,7 @@ Cap nhat: 2026-03-07
 - OPS review: `docs/reviews/modules/OPS-production-readiness.md`
 - OPS issues: `docs/issues/OPS-issues.md`
 - OPS plan: `docs/planning/OPS-plan.md`
+- Local demo accounts: `docs/LOCAL_DEMO_USERS.md`
 
 ## 3. Quick deploy checklist
 
