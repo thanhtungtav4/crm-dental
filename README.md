@@ -8,6 +8,17 @@ Hệ thống CRM nha khoa đa chi nhánh, xây bằng Laravel 12 + Filament 4 + 
 - Governance cho production (RBAC, Audit log, Data lineage, Release gates)
 - EMR sync một chiều: `CRM -> EMR`
 
+## 0) Trạng thái repo hiện tại
+
+- Toàn bộ `13/13` module trong `docs/reviews/00-master-index.md` đã đạt `Clean Baseline Reached`.
+- Production seeding đã tách riêng khỏi local demo seeding:
+  - production: `Database\\Seeders\\ProductionMasterDataSeeder`
+  - local/testing demo: `Database\\Seeders\\DatabaseSeeder` -> `Database\\Seeders\\LocalDemoDataSeeder`
+- Repo đã có sẵn:
+  - runbook deploy production: `docs/PRODUCTION_OPERATIONS_RUNBOOK.md`
+  - danh sách user và scenario demo local: `docs/LOCAL_DEMO_USERS.md`
+  - full review pipeline theo module: `docs/reviews/REVIEW-PIPELINE.md`
+
 ## 1) Bài toán sản phẩm
 
 CRM này giải quyết các điểm khó phổ biến của phòng khám nha khoa:
@@ -382,8 +393,10 @@ Hệ thống áp dụng các nguyên tắc:
 - `app/Filament`: admin panel pages/resources
 - `app/Console/Commands`: ops gates, reconciliation, automation commands
 - `database/migrations`: schema và hardening migrations
+- `database/seeders`: production master-data seed và local demo seed
 - `tests/Feature`: business/regression tests theo module
-- `docs`: specification, gap analysis, PM backlog
+- `docs/reviews`: review, issue, plan, master index theo module
+- `docs`: specification, runbook production, local demo guide, backlog lịch sử
 
 ## 9) Cài đặt local
 
@@ -391,9 +404,28 @@ Hệ thống áp dụng các nguyên tắc:
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan migrate --seed
 npm install
+php artisan migrate:fresh --seed
 npm run dev
+```
+
+Lệnh trên sẽ tạo đầy đủ local demo dataset, gồm:
+
+- chi nhánh demo `HCM-Q1`, `HN-CG`, `DN-HC`
+- bộ user demo deterministic
+- patient / appointment / finance / labo / ZNS scenarios mẫu
+
+Nếu schema đã có sẵn và chỉ muốn nạp lại demo data local:
+
+```bash
+php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
+```
+
+Trên production, không dùng `DatabaseSeeder`. Thay vào đó:
+
+```bash
+php artisan migrate --force
+php artisan db:seed --class=Database\\Seeders\\ProductionMasterDataSeeder --force
 ```
 
 Nếu frontend không phản ánh thay đổi mới:
@@ -411,6 +443,7 @@ vendor/bin/pint --dirty
 php artisan migrate:status
 php artisan schema:assert-no-pending-migrations
 php artisan schema:assert-critical-foreign-keys
+php artisan test tests/Feature/VietnamMarketSeedersTest.php
 php artisan test
 ```
 
@@ -465,15 +498,21 @@ Kết quả:
 
 Đọc theo thứ tự:
 
-1. `docs/DENTAL_CRM_SPECIFICATION.md`
-2. `docs/GAP_ANALYSIS.md`
-3. `docs/IMPLEMENTATION_SPRINT_BACKLOG.md`
-4. `docs/PM_DENTAL_FLOW_BACKLOG.md`
-5. `DATABASE_SCHEMA.md`
+1. `docs/reviews/00-master-index.md`
+2. `docs/PRODUCTION_OPERATIONS_RUNBOOK.md`
+3. `docs/LOCAL_DEMO_USERS.md`
+4. `docs/reviews/REVIEW-PIPELINE.md`
+5. `docs/DENTAL_CRM_SPECIFICATION.md`
+6. `DATABASE_SCHEMA.md`
+7. `docs/GAP_ANALYSIS.md`
+8. `docs/IMPLEMENTATION_SPRINT_BACKLOG.md`
+9. `docs/PM_DENTAL_FLOW_BACKLOG.md`
 
 ## 13) Ghi chú vận hành production
 
 - Không bỏ qua release gates và readiness report trước deploy.
 - Luôn chạy migrate trong maintenance window có backup/restore drill.
+- Chỉ seed production bằng `ProductionMasterDataSeeder`.
+- Không chạy `php artisan migrate:fresh --seed` trên production.
 - Mọi thay đổi logic nhạy cảm phải có test hồi quy tương ứng.
 - Ưu tiên quan sát log `audit`, `security`, `finance`, `emr sync` sau mỗi lần release.
