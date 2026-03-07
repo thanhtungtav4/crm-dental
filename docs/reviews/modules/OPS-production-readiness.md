@@ -258,7 +258,7 @@
 
 # Recommended Next Steps
 
-1. Rollout smoke test tren ha tang that cho backup artifact, restore drill va release readiness report.
+1. Dung runbook `docs/PRODUCTION_OPERATIONS_RUNBOOK.md` de chay migrate, production seed, backup/restore, release gates va QA/PM signoff tren ha tang that.
 2. Theo doi khung gio backup/restore va error budget observability sau deploy dau tien.
 3. Neu ha tang thay doi KMS/DB client, cap nhat SOP van hanh truoc khi chay release gate tiep theo.
 

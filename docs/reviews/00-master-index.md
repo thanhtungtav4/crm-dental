@@ -8,6 +8,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - Giu source of truth cho review, issue, plan, va verdict
 - Tong hop top open risks tren toan bo chuong trinh review
 - Huong dan AI sau doc lai nhanh va biet module nao review tiep, module nao fix tiep
+- Huong dan doi van hanh chay rollout theo runbook: `docs/PRODUCTION_OPERATIONS_RUNBOOK.md`
 
 ## Phase enum
 
@@ -59,6 +60,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `INT` da dat clean baseline; page auth, EMR internal scope, settings revision/transaction, payload governance, retention va secret rotation grace window da duoc khoa bang regression suite. Follow-up la rollout migration va smoke test voi client ngoai thuc te.
 - `KPI` da dat clean baseline; page auth, branch scope, automation scope, aggregate freshness, owner resolver va regression suite da duoc khoa. Follow-up la monitor runtime snapshot tren production dataset.
 - `OPS` da dat clean baseline; release gate verify-only, encrypted backup artifact, restore sandbox, signer validation va observability whitelist da duoc khoa bang regression suite.
+- Runbook van hanh production sau baseline nam tai `docs/PRODUCTION_OPERATIONS_RUNBOOK.md`.
 
 # 4. Priority overview
 
