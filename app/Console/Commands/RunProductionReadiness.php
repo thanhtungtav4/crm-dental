@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
+use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -23,8 +25,17 @@ class RunProductionReadiness extends Command
 
     protected $description = 'Chay go-live readiness pack mot lenh (release gates production + optional test suite).';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền chạy production readiness pack.',
+        );
+
         $strictFull = (bool) $this->option('strict-full');
         if ($strictFull && filled($this->option('test-filter'))) {
             $this->warn('STRICT_FULL_MODE: --test-filter se bi bo qua, command se chay full suite.');
@@ -72,6 +83,21 @@ class RunProductionReadiness extends Command
             $report['duration_ms'] = (int) round(max(0, (microtime(true) - $startedAtMicro) * 1000));
             $this->writeReport($reportPath, $report);
             $this->line('PRODUCTION_READINESS_REPORT: '.$reportPath);
+
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: $actorId,
+                metadata: [
+                    'command' => 'ops:run-production-readiness',
+                    'report_path' => $reportPath,
+                    'status' => 'dry_run',
+                    'strict_full' => $strictFull,
+                    'with_finance' => (bool) $this->option('with-finance'),
+                    'run_tests' => (bool) $report['run_tests'],
+                ],
+            );
 
             return self::SUCCESS;
         }
@@ -151,6 +177,22 @@ class RunProductionReadiness extends Command
             $this->writeReport($reportPath, $report);
             $this->line('PRODUCTION_READINESS_REPORT: '.$reportPath);
 
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_FAIL,
+                actorId: $actorId,
+                metadata: [
+                    'command' => 'ops:run-production-readiness',
+                    'report_path' => $reportPath,
+                    'status' => 'fail',
+                    'failures' => $failures,
+                    'strict_full' => $strictFull,
+                    'with_finance' => (bool) $this->option('with-finance'),
+                    'run_tests' => (bool) $report['run_tests'],
+                ],
+            );
+
             return self::FAILURE;
         }
 
@@ -160,6 +202,21 @@ class RunProductionReadiness extends Command
         $report['duration_ms'] = (int) round(max(0, (microtime(true) - $startedAtMicro) * 1000));
         $this->writeReport($reportPath, $report);
         $this->line('PRODUCTION_READINESS_REPORT: '.$reportPath);
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: 0,
+            action: AuditLog::ACTION_RUN,
+            actorId: $actorId,
+            metadata: [
+                'command' => 'ops:run-production-readiness',
+                'report_path' => $reportPath,
+                'status' => 'pass',
+                'strict_full' => $strictFull,
+                'with_finance' => (bool) $this->option('with-finance'),
+                'run_tests' => (bool) $report['run_tests'],
+            ],
+        );
 
         return self::SUCCESS;
     }

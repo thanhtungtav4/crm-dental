@@ -42,7 +42,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | ZNS | Zalo / ZNS | Clean Baseline Reached | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration ZNS moi va smoke test page van hanh/command pruning tren du lieu that | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Clean Baseline Reached | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration INT moi va smoke test grace token rotation/revoke tren he thong ngoai thuc te | GOV, APPT, CLIN, ZNS, OPS |
 | KPI | Reports / KPI | Clean Baseline Reached | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la smoke test report/export tren production dataset va theo doi runtime snapshot commands sau deploy | FIN, INV, CARE, OPS |
-| OPS | Production readiness / backup / observability | Pending Review | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | TBD | TODO | GOV, INT, KPI, ZNS, FIN, INV |
+| OPS | Production readiness / backup / observability | In Fix | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | D | Release gate verify-only da duoc khoa; blocker con lai la backup plaintext, restore drill copy-only va command auth/audit chua dong het | GOV, INT, KPI, ZNS, FIN, INV |
 
 # 3. Cross-module risks
 
@@ -58,18 +58,19 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `ZNS` da dat clean baseline; auth boundary, workflow campaign canonical, cancel-processing guard, payload governance, runner lock, triage UX va regression suite da duoc khoa. Follow-up la rollout migration va smoke test tren du lieu that.
 - `INT` da dat clean baseline; page auth, EMR internal scope, settings revision/transaction, payload governance, retention va secret rotation grace window da duoc khoa bang regression suite. Follow-up la rollout migration va smoke test voi client ngoai thuc te.
 - `KPI` da dat clean baseline; page auth, branch scope, automation scope, aggregate freshness, owner resolver va regression suite da duoc khoa. Follow-up la monitor runtime snapshot tren production dataset.
+- `OPS` dang la module cuoi con mo; release gate verify-only da duoc khoa, nhung backup plaintext, restore drill copy-only va command authorization chua dong het van la 3 blocker baseline lon nhat con lai.
 
 # 4. Priority overview
 
 - Critical modules: Chua co module critical dang mo trong baseline hien tai
 - High priority modules: `OPS`
-- Modules co artifact day du va san sang fix: Chua co module nao ngoai `OPS` sau khi review xong
+- Modules co artifact day du va san sang fix: `OPS`
 - Medium priority modules: `OPS`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- Chua co module nao san sang fix; `OPS` can duoc review xong truoc.
+- `OPS` - dang fix, uu tien chot `TASK-OPS-004` roi di tiep `TASK-OPS-002` -> `TASK-OPS-003`.
 
 # 6. Modules needing re-audit
 
@@ -77,8 +78,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `OPS` - module cuoi de chot production readiness, backup, observability va release gate tren baseline da duoc khoa o GOV -> KPI.
+- Khong con module nao can review; toan bo 13 module da co artifact review. Tap trung chot `OPS` bang fix + re-audit.
 
 # 8. Suggested next module to fix
 
-- `OPS` - sau khi co review/issues/plan, day se la module tiep theo can fix de chot baseline toan CRM.
+- `OPS` - uu tien `TASK-OPS-004` -> `TASK-OPS-002` -> `TASK-OPS-003` de dong actor boundary va backup/restore truoc khi re-audit toan CRM.

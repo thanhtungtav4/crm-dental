@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AuditLog;
+use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -22,8 +24,17 @@ class RunReleaseGates extends Command
 
     protected $description = 'Chạy checklist release gate cho CRM multi-branch trước deploy.';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền chạy release gates.',
+        );
+
         $profile = $this->normalizeProfile((string) $this->option('profile'));
 
         if ($profile === null) {
@@ -44,6 +55,7 @@ class RunReleaseGates extends Command
         }
 
         $this->line('RELEASE_GATE_PROFILE: '.$profile);
+        $this->line('RELEASE_GATE_MODE: verify_only');
         $this->table(
             ['#', 'Gate', 'Command', 'Args'],
             collect($steps)->values()->map(function (array $step, int $index): array {
@@ -57,6 +69,20 @@ class RunReleaseGates extends Command
         );
 
         if ((bool) $this->option('dry-run')) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_RUN,
+                actorId: $actorId,
+                metadata: [
+                    'command' => 'ops:run-release-gates',
+                    'profile' => $profile,
+                    'with_finance' => (bool) $this->option('with-finance'),
+                    'dry_run' => true,
+                    'steps' => $steps,
+                ],
+            );
+
             $this->info('Dry-run completed. Không thực thi command nào.');
 
             return self::SUCCESS;
@@ -86,6 +112,19 @@ class RunReleaseGates extends Command
         }
 
         if ($failedSteps !== []) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_AUTOMATION,
+                entityId: 0,
+                action: AuditLog::ACTION_FAIL,
+                actorId: $actorId,
+                metadata: [
+                    'command' => 'ops:run-release-gates',
+                    'profile' => $profile,
+                    'with_finance' => (bool) $this->option('with-finance'),
+                    'failed_steps' => $failedSteps,
+                ],
+            );
+
             $this->newLine();
             $this->error('Release gate: FAIL.');
 
@@ -100,6 +139,19 @@ class RunReleaseGates extends Command
 
             return self::FAILURE;
         }
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: 0,
+            action: AuditLog::ACTION_RUN,
+            actorId: $actorId,
+            metadata: [
+                'command' => 'ops:run-release-gates',
+                'profile' => $profile,
+                'with_finance' => (bool) $this->option('with-finance'),
+                'failed_steps' => [],
+            ],
+        );
 
         $this->newLine();
         $this->info('Release gate: PASS. Tất cả gate đã đạt.');
@@ -126,7 +178,7 @@ class RunReleaseGates extends Command
             [
                 'name' => 'Action permission baseline gate',
                 'command' => 'security:assert-action-permission-baseline',
-                'arguments' => ['--sync' => true],
+                'arguments' => [],
             ],
             [
                 'name' => 'Clinical media reconcile gate',

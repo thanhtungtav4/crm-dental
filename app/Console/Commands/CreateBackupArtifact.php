@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
@@ -18,8 +19,17 @@ class CreateBackupArtifact extends Command
 
     protected $description = 'Tao backup artifact toi thieu de phuc vu release gate va restore drill.';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền tạo backup artifact.',
+        );
+
         $backupPath = (string) ($this->option('path') ?: storage_path('app/backups'));
         $connectionName = (string) ($this->option('connection') ?: config('database.default'));
         $connection = config('database.connections.'.$connectionName);
@@ -30,6 +40,7 @@ class CreateBackupArtifact extends Command
                 backupPath: $backupPath,
                 connectionName: $connectionName,
                 driver: null,
+                actorId: $actorId,
             );
         }
 
@@ -62,6 +73,7 @@ class CreateBackupArtifact extends Command
                     backupPath: $backupPath,
                     connectionName: $connectionName,
                     driver: $driver,
+                    actorId: $actorId,
                 );
             }
         } catch (Throwable $throwable) {
@@ -84,7 +96,7 @@ class CreateBackupArtifact extends Command
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
             action: $successful ? AuditLog::ACTION_RUN : AuditLog::ACTION_FAIL,
-            actorId: auth()->id(),
+            actorId: $actorId,
             metadata: [
                 'command' => 'ops:create-backup-artifact',
                 'status' => $status,
@@ -210,7 +222,7 @@ class CreateBackupArtifact extends Command
         return base_path($database);
     }
 
-    protected function failBackupArtifact(string $message, string $backupPath, string $connectionName, ?string $driver): int
+    protected function failBackupArtifact(string $message, string $backupPath, string $connectionName, ?string $driver, ?int $actorId): int
     {
         $this->line('BACKUP_ARTIFACT_STATUS: failed');
         $this->line('BACKUP_ARTIFACT_CONNECTION: '.$connectionName);
@@ -223,7 +235,7 @@ class CreateBackupArtifact extends Command
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
             action: AuditLog::ACTION_FAIL,
-            actorId: auth()->id(),
+            actorId: $actorId,
             metadata: [
                 'command' => 'ops:create-backup-artifact',
                 'status' => 'failed',

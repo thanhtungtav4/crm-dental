@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\OpsCommandAuthorizer;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -16,8 +17,17 @@ class CheckBackupHealth extends Command
 
     protected $description = 'Kiem tra suc khoe backup truoc release gate (ton tai + do moi).';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền kiểm tra backup health.',
+        );
+
         $path = (string) ($this->option('path') ?: storage_path('app/backups'));
         $maxAgeHours = max(1, (int) $this->option('max-age-hours'));
 
@@ -55,7 +65,7 @@ class CheckBackupHealth extends Command
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
             action: AuditLog::ACTION_RUN,
-            actorId: auth()->id(),
+            actorId: $actorId,
             metadata: [
                 'command' => 'ops:check-backup-health',
                 'status' => $status,

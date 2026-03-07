@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -21,8 +22,17 @@ class ExplainOpsHotpaths extends Command
 
     protected $description = 'Sinh EXPLAIN baseline cho hot-path queries của care/appointment/finance.';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền chạy explain hot-path baseline.',
+        );
+
         $branchId = $this->option('branch_id') !== null
             ? (int) $this->option('branch_id')
             : (int) (Branch::query()->value('id') ?? 0);
@@ -105,7 +115,7 @@ class ExplainOpsHotpaths extends Command
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
             action: AuditLog::ACTION_RUN,
-            actorId: auth()->id(),
+            actorId: $actorId,
             metadata: [
                 'command' => 'reports:explain-ops-hotpaths',
                 'driver' => $driver,

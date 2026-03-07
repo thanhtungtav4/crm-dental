@@ -15,6 +15,7 @@ it('shows planned steps in dry-run production profile', function (): void {
         '--dry-run' => true,
     ])
         ->expectsOutputToContain('RELEASE_GATE_PROFILE: production')
+        ->expectsOutputToContain('RELEASE_GATE_MODE: verify_only')
         ->expectsOutputToContain('schema:assert-critical-foreign-keys')
         ->expectsOutputToContain('emr:reconcile-clinical-media')
         ->expectsOutputToContain('security:check-automation-actor')
@@ -25,6 +26,7 @@ it('shows planned steps in dry-run production profile', function (): void {
         ->expectsOutputToContain('emr:check-dicom-readiness')
         ->expectsOutputToContain('finance:reconcile-branch-attribution')
         ->expectsOutputToContain('--strict')
+        ->doesntExpectOutputToContain('--sync')
         ->expectsOutputToContain('Dry-run completed')
         ->assertSuccessful();
 });

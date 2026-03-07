@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -20,8 +21,17 @@ class VerifyProductionReadinessReport extends Command
 
     protected $description = 'Validate schema report readiness va ky checklist QA/PM truoc deploy.';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
+        $actorId = $this->authorizer->authorize(
+            'Bạn không có quyền xác nhận production readiness report.',
+        );
+
         $inputPath = (string) $this->argument('report');
         $reportPath = $this->resolveReportPath($inputPath);
 
@@ -43,6 +53,7 @@ class VerifyProductionReadinessReport extends Command
                 reportPath: $reportPath,
                 issues: ['invalid_json'],
                 signoffPath: null,
+                actorId: $actorId,
             );
 
             return self::FAILURE;
@@ -62,6 +73,7 @@ class VerifyProductionReadinessReport extends Command
                 reportPath: $reportPath,
                 issues: $validator->errors()->all(),
                 signoffPath: null,
+                actorId: $actorId,
             );
 
             return self::FAILURE;
@@ -114,6 +126,7 @@ class VerifyProductionReadinessReport extends Command
                 reportPath: $reportPath,
                 issues: $issues,
                 signoffPath: null,
+                actorId: $actorId,
             );
 
             return self::FAILURE;
@@ -124,7 +137,7 @@ class VerifyProductionReadinessReport extends Command
 
         $signoff = [
             'verified_at' => now()->toDateTimeString(),
-            'verified_by_user_id' => auth()->id(),
+            'verified_by_user_id' => $actorId,
             'strict_mode' => (bool) $this->option('strict'),
             'report_path' => $reportPath,
             'report_sha256' => hash_file('sha256', $reportPath) ?: null,
@@ -170,6 +183,7 @@ class VerifyProductionReadinessReport extends Command
             reportPath: $reportPath,
             issues: [],
             signoffPath: $resolvedOutputPath,
+            actorId: $actorId,
         );
 
         return self::SUCCESS;
@@ -377,13 +391,13 @@ class VerifyProductionReadinessReport extends Command
     /**
      * @param  array<int, string>  $issues
      */
-    protected function recordAudit(string $status, string $reportPath, array $issues, ?string $signoffPath): void
+    protected function recordAudit(string $status, string $reportPath, array $issues, ?string $signoffPath, ?int $actorId): void
     {
         AuditLog::record(
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
             action: $status === 'pass' ? AuditLog::ACTION_APPROVE : AuditLog::ACTION_FAIL,
-            actorId: auth()->id(),
+            actorId: $actorId,
             metadata: [
                 'command' => 'ops:verify-production-readiness-report',
                 'status' => $status,

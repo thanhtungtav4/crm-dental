@@ -2,36 +2,231 @@
 
 - Module code: `OPS`
 - Module name: `Production readiness / backup / observability`
-- Current status: `Pending Review`
-- Current verdict: `TBD`
+- Current status: `In Fix`
+- Current verdict: `D`
 - Issue ID prefix: `OPS-`
 - Task ID prefix: `TASK-OPS-`
 - Review file: `docs/reviews/modules/OPS-production-readiness.md`
 - Plan file: `docs/planning/OPS-plan.md`
 - Dependencies: `GOV, INT, KPI, ZNS, FIN, INV`
-- Last updated: `TBD`
+- Last updated: `2026-03-07`
 
 # Issue Backlog
 
-## [OPS-001] [TODO]
-- Severity: TODO
-- Category: TODO
+## [OPS-001] Release gates dang mutate permission baseline bang `--sync`
+- Severity: Critical
+- Category: Security
 - Module: OPS
 - Description:
+  - `ops:run-release-gates` dang goi `security:assert-action-permission-baseline` voi `--sync`, bien lenh release verify thanh lenh vua verify vua mutate state.
 - Why it matters:
+  - Release gate phai la assert-only. Neu gate tu dong sua permission baseline, ket qua verify khong con phan biet duoc he thong truoc deploy co sach hay khong.
 - Evidence:
+  - `app/Console/Commands/RunReleaseGates.php:127-130`
 - Suggested fix:
+  - Bo `--sync` khoi release gate. Neu can remediation, tao lane rieng `repair`/`sync` explicit.
 - Affected areas:
+  - `ops:run-release-gates`
+  - `ops:run-production-readiness`
+  - production release SOP
 - Tests needed:
+  - feature test xac nhan release gates khong truyen `--sync`
+  - feature test release gate fail khi baseline drift thay vi auto-fix
 - Dependencies:
-- Suggested order:
+  - GOV
+- Suggested order: 1
+- Current status: Resolved
+- Linked task IDs: `TASK-OPS-001`
+
+## [OPS-002] Backup artifact duoc tao dang plaintext, khong co encryption/manifest
+- Severity: Critical
+- Category: Security
+- Module: OPS
+- Description:
+  - `ops:create-backup-artifact` ghi dump `.sql/.bak` plaintext vao `storage/app/backups`, khong co encryption state, manifest checksum hay metadata file rieng.
+- Why it matters:
+  - Backup artifact chua PHI, finance va du lieu van hanh. Plaintext dump lam tang blast radius neu filesystem/backup bucket bi truy cap trai phep.
+- Evidence:
+  - `app/Console/Commands/CreateBackupArtifact.php:23-24`
+  - `app/Console/Commands/CreateBackupArtifact.php:184-199`
+  - `tests/Feature/BackupArtifactCommandTest.php:8-80`
+- Suggested fix:
+  - Tao encrypted artifact + manifest checksum/version; backup health va restore drill doc tu manifest thay vi doan file raw.
+- Affected areas:
+  - backup command
+  - backup health gate
+  - restore drill
+- Tests needed:
+  - feature test tao encrypted artifact + manifest
+  - feature test plaintext dump khong con duoc xem la success
+- Dependencies:
+  - INT, CLIN
+- Suggested order: 2
+- Current status: In Fix
+- Linked task IDs: `TASK-OPS-002`
+
+## [OPS-003] Restore drill chi copy file, chua verify restore that
+- Severity: High
+- Category: Domain Logic
+- Module: OPS
+- Description:
+  - `ops:run-restore-drill` hien tai copy file backup sang thu muc khac va so checksum, khong import dump vao sandbox de xac minh recoverability.
+- Why it matters:
+  - Restore drill pass hien tai khong dam bao co the phuc hoi he thong khi co su co that.
+- Evidence:
+  - `app/Console/Commands/RunRestoreDrill.php:49-65`
+  - `tests/Feature/RestoreDrillCommandTest.php:5-24`
+- Suggested fix:
+  - Tao restore sandbox flow: copy -> giai ma/verify manifest -> import/restore -> smoke check schema/row contract -> cleanup.
+- Affected areas:
+  - restore drill command/service
+  - release gates
+- Tests needed:
+  - feature test restore sandbox pass/fail
+  - feature test strict mode fail khi import khong thanh cong
+- Dependencies:
+  - OPS-002
+- Suggested order: 3
 - Current status: Open
-- Linked task IDs:
+- Linked task IDs: `TASK-OPS-003`
+
+## [OPS-004] OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat
+- Severity: High
+- Category: Security
+- Module: OPS
+- Description:
+  - Nhieu lenh control-plane quan trong khong authorize qua `ActionGate` va ghi audit voi `actor_id = auth()->id()` du console actor co the la `null`.
+- Why it matters:
+  - Backup/release/signoff la thao tac van hanh nhay cam. Khong co boundary actor ro rang se yeu ve least-privilege va auditability.
+- Evidence:
+  - `app/Console/Commands/CreateBackupArtifact.php:83-98`
+  - `app/Console/Commands/CheckBackupHealth.php:54-68`
+  - `app/Console/Commands/RunProductionReadiness.php:26-165`
+  - `app/Console/Commands/VerifyProductionReadinessReport.php:125-173`
+  - `app/Console/Commands/RunReleaseGates.php:25-107`
+- Suggested fix:
+  - Chuan hoa moi OPS command quan trong qua `ActionGate::authorize(ActionPermission::AUTOMATION_RUN, ...)` hoac permission control-plane rieng; actor audit bat buoc co gia tri.
+- Affected areas:
+  - OPS commands
+  - automation actor health
+  - audit logs
+- Tests needed:
+  - feature test command bi fail khi actor khong hop le
+  - feature test actor id duoc ghi vao audit metadata/log
+- Dependencies:
+  - GOV
+- Suggested order: 4
+- Current status: Open
+- Linked task IDs: `TASK-OPS-004`
+
+## [OPS-005] Backup health gate chi check age, khong check size/checksum/manifest
+- Severity: High
+- Category: Data Integrity
+- Module: OPS
+- Description:
+  - `ops:check-backup-health` danh gia `healthy` dua tren file moi nhat co extension hop le va tuoi file <= threshold, nhung khong check size > 0, checksum, manifest hoac encryption state.
+- Why it matters:
+  - Backup file rong/hu/human copy nham van co the duoc gate danh dau healthy.
+- Evidence:
+  - `app/Console/Commands/CheckBackupHealth.php:24-43`
+  - `tests/Feature/BackupHealthGateTest.php:5-35`
+- Suggested fix:
+  - Chuyen health contract sang doc manifest va check `size > 0`, checksum, artifact version, encrypted state.
+- Affected areas:
+  - backup health gate
+  - backup artifact command
+  - release gates
+- Tests needed:
+  - feature test fail voi zero-byte artifact
+  - feature test fail khi checksum/manifest mismatch
+- Dependencies:
+  - OPS-002
+- Suggested order: 5
+- Current status: Open
+- Linked task IDs: `TASK-OPS-005`
+
+## [OPS-006] Readiness signoff chua rang buoc signer vao user/role hop le
+- Severity: Medium
+- Category: Maintainability
+- Module: OPS
+- Description:
+  - `ops:verify-production-readiness-report` nhan `--qa` va `--pm` dang free-text, khong map signer vao user/role/xac thuc noi bo.
+- Why it matters:
+  - Signoff artifact la bang chung release quan trong; traceability yeu se khong dat audit/compliance.
+- Evidence:
+  - `app/Console/Commands/VerifyProductionReadinessReport.php:88-100`
+  - `app/Console/Commands/VerifyProductionReadinessReport.php:125-149`
+- Suggested fix:
+  - Yeu cau signer map vao user id/email noi bo hop le va co role duoc phep; ghi immutable audit event cho signoff.
+- Affected areas:
+  - verify readiness report
+  - audit trail
+  - release SOP
+- Tests needed:
+  - feature test signer invalid bi reject
+  - feature test signer dung role duoc accept va audit duoc ghi
+- Dependencies:
+  - GOV
+- Suggested order: 6
+- Current status: Open
+- Linked task IDs: `TASK-OPS-006`
+
+## [OPS-007] Observability health gom nham moi automation fail vao cung error budget
+- Severity: Medium
+- Category: Performance
+- Module: OPS
+- Description:
+  - `recent_automation_failures` dang dem tat ca `AuditLog::ENTITY_AUTOMATION` + `ACTION_FAIL` trong cua so lookback, gom ca alert control-plane va failure nghiep vu khac nhau.
+- Why it matters:
+  - Error budget co the bi nhieu do noise, dan den false positive release gate va kho triage.
+- Evidence:
+  - `app/Console/Commands/CheckObservabilityHealth.php:67-71`
+  - `tests/Feature/ObservabilityHealthCommandTest.php:9-77`
+- Suggested fix:
+  - Tach metric theo `channel/category` hoac whitelist command classes can theo doi cho budget nay.
+- Affected areas:
+  - observability health command
+  - runtime settings budgets
+- Tests needed:
+  - feature test bo qua failure channel khong thuoc budget
+  - feature test chi dem category duoc track
+- Dependencies:
+  - KPI, INT, ZNS
+- Suggested order: 7
+- Current status: Open
+- Linked task IDs: `TASK-OPS-007`
+
+## [OPS-008] Regression suite chua khoa backup encryption, signoff auth va command authorization matrix
+- Severity: Medium
+- Category: Maintainability
+- Module: OPS
+- Description:
+  - Test hien tai cover dry-run/happy path cho backup, restore, readiness va release gates, nhung chua khoa cac negative path quan trong sau khi harden baseline.
+- Why it matters:
+  - `OPS` la module cuoi chot baseline. Neu regression o day bi lot, toan bo release pipeline co the tro nen vo nghia.
+- Evidence:
+  - `tests/Feature/BackupArtifactCommandTest.php`
+  - `tests/Feature/RestoreDrillCommandTest.php`
+  - `tests/Feature/RunReleaseGatesCommandTest.php`
+  - `tests/Feature/VerifyProductionReadinessReportCommandTest.php`
+- Suggested fix:
+  - Mo rong regression suite cho verify-only gate, encrypted backup artifact, manifest mismatch, signer validation va command auth matrix.
+- Affected areas:
+  - `tests/Feature/*Ops*`
+  - `tests/Feature/*Backup*`
+  - `tests/Feature/*Readiness*`
+- Tests needed:
+  - chinh issue nay la regression backlog
+- Dependencies:
+  - OPS-001 -> OPS-007
+- Suggested order: 8
+- Current status: Open
+- Linked task IDs: `TASK-OPS-008`
 
 # Summary
 
-- Open critical count: TODO
-- Open high count: TODO
-- Open medium count: TODO
-- Open low count: TODO
-- Next recommended action: TODO
+- Open critical count: 1
+- Open high count: 2
+- Open medium count: 3
+- Open low count: 0
+- Next recommended action: Tiep tuc `TASK-OPS-004`, sau do uu tien `TASK-OPS-002` va `TASK-OPS-003` de khoa encrypted backup + restore drill that.
