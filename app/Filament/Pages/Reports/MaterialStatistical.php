@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\Material;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class MaterialStatistical extends BaseReportPage
@@ -25,7 +26,18 @@ class MaterialStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return Material::query()->with('supplier');
+        return $this->applyDirectBranchScope(
+            Material::query()->with('supplier'),
+        );
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -71,7 +83,7 @@ class MaterialStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = Material::query();
+        $baseQuery = $this->applyDirectBranchScope(Material::query());
         $this->applyDateRange($baseQuery, 'created_at');
 
         $totalMaterials = (clone $baseQuery)->count();

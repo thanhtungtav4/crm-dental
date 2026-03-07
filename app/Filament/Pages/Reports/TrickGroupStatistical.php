@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\PlanItem;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class TrickGroupStatistical extends BaseReportPage
@@ -25,11 +26,22 @@ class TrickGroupStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return PlanItem::query()
+        $query = PlanItem::query()
             ->join('services', 'services.id', '=', 'plan_items.service_id')
             ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
             ->selectRaw('services.category_id as category_id, service_categories.name as category_name, count(*) as total_count, sum(plan_items.final_amount) as total_revenue, max(plan_items.created_at) as created_at')
             ->groupBy('services.category_id', 'service_categories.name');
+
+        return $this->applyRelatedBranchScope($query, 'treatmentPlan');
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -61,7 +73,7 @@ class TrickGroupStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = PlanItem::query();
+        $baseQuery = $this->applyRelatedBranchScope(PlanItem::query(), 'treatmentPlan');
         $this->applyDateRange($baseQuery, 'created_at');
 
         $totalProcedures = (clone $baseQuery)->count();
@@ -69,7 +81,7 @@ class TrickGroupStatistical extends BaseReportPage
 
         return [
             ['label' => 'Tổng thủ thuật', 'value' => number_format($totalProcedures)],
-            ['label' => 'Tổng doanh thu', 'value' => number_format($totalRevenue) . ' đ'],
+            ['label' => 'Tổng doanh thu', 'value' => number_format($totalRevenue).' đ'],
         ];
     }
 }

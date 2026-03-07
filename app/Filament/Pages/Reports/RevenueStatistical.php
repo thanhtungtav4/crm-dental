@@ -2,9 +2,9 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Branch;
 use App\Models\PlanItem;
 use App\Models\ReportRevenueDailyAggregate;
+use App\Services\HotReportAggregateReadinessService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,19 +21,37 @@ class RevenueStatistical extends BaseReportPage
 
     protected static ?string $slug = 'revenue-statistical';
 
-    protected ?bool $usesRevenueAggregateCache = null;
+    /**
+     * @var array{key:string,value:bool}|null
+     */
+    protected ?array $usesRevenueAggregateDecision = null;
 
     protected function getDateColumn(): ?string
     {
         return $this->usesRevenueAggregate()
             ? 'snapshot_date'
-            : 'created_at';
+            : 'plan_items.created_at';
+    }
+
+    protected function applyTableDateRangeFilter(Builder $query, array $data): Builder
+    {
+        return $this->applyDateRangeFilter(
+            $query,
+            $data,
+            $this->usesRevenueAggregate() ? 'snapshot_date' : 'plan_items.created_at',
+        );
     }
 
     protected function getTableQuery(): Builder
     {
         if ($this->usesRevenueAggregate()) {
-            $scopeId = $this->selectedBranchScopeId();
+            $scopeIds = $this->resolvedRevenueScopeIds();
+
+            if ($scopeIds === []) {
+                return ReportRevenueDailyAggregate::query()
+                    ->from('report_revenue_daily_aggregates as revenue_daily')
+                    ->whereRaw('1 = 0');
+            }
 
             $query = ReportRevenueDailyAggregate::query()
                 ->from('report_revenue_daily_aggregates as revenue_daily')
@@ -45,13 +63,13 @@ class RevenueStatistical extends BaseReportPage
                     SUM(revenue_daily.total_revenue) as total_revenue,
                     MAX(revenue_daily.snapshot_date) as snapshot_date
                 ')
-                ->where('revenue_daily.branch_scope_id', $scopeId)
+                ->whereIn('revenue_daily.branch_scope_id', $scopeIds)
                 ->groupBy('revenue_daily.service_id');
 
             return $query;
         }
 
-        return PlanItem::query()
+        $query = PlanItem::query()
             ->selectRaw('
                 plan_items.service_id as service_id,
                 COALESCE(services.name, CONCAT("Service #", plan_items.service_id)) as service_name,
@@ -61,14 +79,9 @@ class RevenueStatistical extends BaseReportPage
             ')
             ->join('services', 'services.id', '=', 'plan_items.service_id')
             ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
-            ->when(
-                filled($this->getFilterValue('branch_id')),
-                fn (Builder $query) => $query->whereHas(
-                    'treatmentPlan',
-                    fn (Builder $innerQuery) => $innerQuery->where('branch_id', (int) $this->getFilterValue('branch_id'))
-                )
-            )
             ->groupBy('plan_items.service_id', 'services.name', 'service_categories.name');
+
+        return $this->applyRelatedBranchScope($query, 'treatmentPlan');
     }
 
     protected function getTableColumns(): array
@@ -98,7 +111,7 @@ class RevenueStatistical extends BaseReportPage
         return array_merge(parent::getTableFilters(), [
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all()),
+                ->options(fn (): array => $this->branchFilterOptions()),
         ]);
     }
 
@@ -117,21 +130,22 @@ class RevenueStatistical extends BaseReportPage
         if ($this->usesRevenueAggregate()) {
             $baseQuery = ReportRevenueDailyAggregate::query();
             $this->applyDateRange($baseQuery, 'snapshot_date');
-            $baseQuery->where('branch_scope_id', $this->selectedBranchScopeId());
+            $scopeIds = $this->resolvedRevenueScopeIds();
+
+            if ($scopeIds === []) {
+                return [
+                    ['label' => 'Tổng số lượng thủ thuật', 'value' => number_format(0)],
+                    ['label' => 'Tổng thực thu', 'value' => number_format(0).' đ'],
+                ];
+            }
+
+            $baseQuery->whereIn('branch_scope_id', $scopeIds);
 
             $totalProcedures = (int) (clone $baseQuery)->sum('total_count');
             $totalRevenue = (float) (clone $baseQuery)->sum('total_revenue');
         } else {
-            $baseQuery = PlanItem::query();
-            $this->applyDateRange($baseQuery, 'created_at');
-
-            $branchId = $this->getFilterValue('branch_id');
-            if (filled($branchId)) {
-                $baseQuery->whereHas(
-                    'treatmentPlan',
-                    fn (Builder $innerQuery) => $innerQuery->where('branch_id', (int) $branchId)
-                );
-            }
+            $baseQuery = $this->applyRelatedBranchScope(PlanItem::query(), 'treatmentPlan');
+            $this->applyDateRange($baseQuery, 'plan_items.created_at');
 
             $totalProcedures = (clone $baseQuery)->count();
             $totalRevenue = (float) (clone $baseQuery)->sum('final_amount');
@@ -143,28 +157,46 @@ class RevenueStatistical extends BaseReportPage
         ];
     }
 
-    protected function getFilterValue(string $filterName): mixed
-    {
-        return data_get($this->tableFilters ?? [], "{$filterName}.value");
-    }
-
     protected function usesRevenueAggregate(): bool
     {
-        if ($this->usesRevenueAggregateCache !== null) {
-            return $this->usesRevenueAggregateCache;
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $scopeIds = $this->resolvedRevenueScopeIds();
+        $decisionKey = md5(json_encode([
+            'from' => $from,
+            'until' => $until,
+            'scope_ids' => $scopeIds,
+        ]) ?: '');
+
+        if (($this->usesRevenueAggregateDecision['key'] ?? null) === $decisionKey) {
+            return (bool) $this->usesRevenueAggregateDecision['value'];
         }
 
-        $this->usesRevenueAggregateCache = ReportRevenueDailyAggregate::query()->exists();
+        $usesAggregate = app(HotReportAggregateReadinessService::class)
+            ->shouldUseRevenueAggregate($scopeIds, $from, $until);
 
-        return $this->usesRevenueAggregateCache;
+        $this->usesRevenueAggregateDecision = [
+            'key' => $decisionKey,
+            'value' => $usesAggregate,
+        ];
+
+        return $usesAggregate;
     }
 
-    protected function selectedBranchScopeId(): int
+    /**
+     * @return array<int, int>
+     */
+    protected function resolvedRevenueScopeIds(): array
     {
-        $branchId = $this->getFilterValue('branch_id');
+        $selectedBranchId = $this->rawSelectedBranchId();
 
-        return filled($branchId)
-            ? (int) $branchId
-            : 0;
+        if ($this->isAdmin()) {
+            return $selectedBranchId !== null
+                ? [$selectedBranchId]
+                : [0];
+        }
+
+        $branchIds = $this->resolvedVisibleBranchIds();
+
+        return $branchIds ?? [];
     }
 }

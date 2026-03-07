@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\Invoice;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class OwedStatistical extends BaseReportPage
@@ -25,7 +26,18 @@ class OwedStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return Invoice::query()->with(['patient']);
+        return $this->applyDirectBranchScope(
+            Invoice::query()->with(['patient']),
+        );
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -73,7 +85,7 @@ class OwedStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = Invoice::query();
+        $baseQuery = $this->applyDirectBranchScope(Invoice::query());
         $this->applyDateRange($baseQuery, 'issued_at');
 
         $totalAmount = (clone $baseQuery)->sum('total_amount');
@@ -81,9 +93,9 @@ class OwedStatistical extends BaseReportPage
         $balance = $totalAmount - $paidAmount;
 
         return [
-            ['label' => 'Tổng phải thanh toán', 'value' => number_format($totalAmount) . ' đ'],
-            ['label' => 'Đã thanh toán', 'value' => number_format($paidAmount) . ' đ'],
-            ['label' => 'Công nợ', 'value' => number_format($balance) . ' đ'],
+            ['label' => 'Tổng phải thanh toán', 'value' => number_format($totalAmount).' đ'],
+            ['label' => 'Đã thanh toán', 'value' => number_format($paidAmount).' đ'],
+            ['label' => 'Công nợ', 'value' => number_format($balance).' đ'],
         ];
     }
 }

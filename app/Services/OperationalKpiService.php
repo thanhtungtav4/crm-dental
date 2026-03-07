@@ -69,15 +69,15 @@ class OperationalKpiService
             ->count();
 
         $receiptsQuery = Payment::query()
-            ->where('direction', 'receipt')
-            ->whereBetween('paid_at', [$from, $to])
+            ->where('payments.direction', 'receipt')
+            ->whereBetween('payments.paid_at', [$from, $to])
             ->when(
                 $branchId !== null,
                 function (Builder $query) use ($branchId): void {
                     $query->where(function (Builder $innerQuery) use ($branchId): void {
-                        $innerQuery->where('branch_id', $branchId)
+                        $innerQuery->where('payments.branch_id', $branchId)
                             ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
-                                $fallbackQuery->whereNull('branch_id')
+                                $fallbackQuery->whereNull('payments.branch_id')
                                     ->whereHas('invoice', function (Builder $invoiceQuery) use ($branchId): void {
                                         $invoiceQuery->where('branch_id', $branchId)
                                             ->orWhereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
@@ -88,13 +88,7 @@ class OperationalKpiService
             );
 
         $receiptsAmount = (float) (clone $receiptsQuery)->sum('amount');
-        $payingPatients = (int) (clone $receiptsQuery)
-            ->with('invoice:id,patient_id')
-            ->get()
-            ->pluck('invoice.patient_id')
-            ->filter()
-            ->unique()
-            ->count();
+        $payingPatients = $this->countDistinctReceiptPatients($receiptsQuery);
 
         $plannedChairMinutes = (float) ((clone $episodesQuery)->sum('planned_duration_minutes') ?: 0);
         $actualChairMinutes = (float) ((clone $episodesQuery)->sum('chair_minutes') ?: 0);
@@ -113,14 +107,14 @@ class OperationalKpiService
             ->count();
 
         $lifetimeReceiptsQuery = Payment::query()
-            ->where('direction', 'receipt')
+            ->where('payments.direction', 'receipt')
             ->when(
                 $branchId !== null,
                 function (Builder $query) use ($branchId): void {
                     $query->where(function (Builder $innerQuery) use ($branchId): void {
-                        $innerQuery->where('branch_id', $branchId)
+                        $innerQuery->where('payments.branch_id', $branchId)
                             ->orWhere(function (Builder $fallbackQuery) use ($branchId): void {
-                                $fallbackQuery->whereNull('branch_id')
+                                $fallbackQuery->whereNull('payments.branch_id')
                                     ->whereHas('invoice', function (Builder $invoiceQuery) use ($branchId): void {
                                         $invoiceQuery->where('branch_id', $branchId)
                                             ->orWhereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
@@ -131,13 +125,7 @@ class OperationalKpiService
             );
 
         $lifetimeReceipts = (float) (clone $lifetimeReceiptsQuery)->sum('amount');
-        $lifetimePatients = (int) (clone $lifetimeReceiptsQuery)
-            ->with('invoice:id,patient_id')
-            ->get()
-            ->pluck('invoice.patient_id')
-            ->filter()
-            ->unique()
-            ->count();
+        $lifetimePatients = $this->countDistinctReceiptPatients($lifetimeReceiptsQuery);
 
         $doctorBenchmark = $this->buildDoctorBenchmark($from, $to, $branchId);
         $kpiDictionary = OperationalKpiDictionary::toArray();
@@ -190,11 +178,22 @@ class OperationalKpiService
      */
     protected function buildDoctorBenchmark(Carbon $from, Carbon $to, ?int $branchId = null): array
     {
-        $appointments = Appointment::query()
+        $bookingByDoctor = Appointment::query()
             ->whereBetween('date', [$from, $to])
             ->whereNotNull('doctor_id')
             ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId))
-            ->get(['doctor_id', 'status']);
+            ->selectRaw('doctor_id, COUNT(*) as booking_count')
+            ->groupBy('doctor_id')
+            ->pluck('booking_count', 'doctor_id');
+
+        $noShowByDoctor = Appointment::query()
+            ->whereBetween('date', [$from, $to])
+            ->whereNotNull('doctor_id')
+            ->when($branchId !== null, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
+            ->selectRaw('doctor_id, COUNT(*) as no_show_count')
+            ->groupBy('doctor_id')
+            ->pluck('no_show_count', 'doctor_id');
 
         $arrivedByDoctor = VisitEpisode::query()
             ->whereBetween('scheduled_at', [$from, $to])
@@ -212,13 +211,13 @@ class OperationalKpiService
             ->groupBy('doctor_id')
             ->pluck('arrived_count', 'doctor_id');
 
-        if ($appointments->isEmpty() && $arrivedByDoctor->isEmpty()) {
+        if ($bookingByDoctor->isEmpty() && $arrivedByDoctor->isEmpty() && $noShowByDoctor->isEmpty()) {
             return [];
         }
 
-        $doctorIds = $appointments->pluck('doctor_id')
-            ->filter()
+        $doctorIds = $bookingByDoctor->keys()
             ->map(fn ($id): int => (int) $id)
+            ->merge($noShowByDoctor->keys()->map(fn ($id): int => (int) $id))
             ->merge($arrivedByDoctor->keys()->map(fn ($id): int => (int) $id))
             ->unique()
             ->values()
@@ -229,17 +228,10 @@ class OperationalKpiService
             ->pluck('name', 'id');
 
         return collect($doctorIds)
-            ->map(function (int $doctorId) use ($appointments, $doctorNames, $arrivedByDoctor): array {
-                $rows = $appointments->where('doctor_id', $doctorId);
-                $bookingCount = (int) $rows->count();
+            ->map(function (int $doctorId) use ($arrivedByDoctor, $bookingByDoctor, $doctorNames, $noShowByDoctor): array {
+                $bookingCount = (int) ($bookingByDoctor->get($doctorId) ?? 0);
                 $attendedCount = (int) ($arrivedByDoctor->get($doctorId) ?? 0);
-                $noShowCount = (int) $rows
-                    ->filter(fn (Appointment $appointment) => in_array(
-                        $appointment->status,
-                        Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]),
-                        true,
-                    ))
-                    ->count();
+                $noShowCount = (int) ($noShowByDoctor->get($doctorId) ?? 0);
 
                 return [
                     'doctor_id' => $doctorId,
@@ -258,6 +250,15 @@ class OperationalKpiService
             ->values()
             ->take(5)
             ->all();
+    }
+
+    protected function countDistinctReceiptPatients(Builder $query): int
+    {
+        return (int) (clone $query)
+            ->join('invoices', 'invoices.id', '=', 'payments.invoice_id')
+            ->whereNotNull('invoices.patient_id')
+            ->distinct()
+            ->count('invoices.patient_id');
     }
 
     protected function ratioPercent(float|int $numerator, float|int $denominator): float

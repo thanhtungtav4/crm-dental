@@ -2,11 +2,10 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Branch;
 use App\Models\Note;
 use App\Models\ReportCareQueueDailyAggregate;
 use App\Models\User;
-use App\Support\BranchAccess;
+use App\Services\HotReportAggregateReadinessService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -24,7 +23,10 @@ class CustomsCareStatistical extends BaseReportPage
 
     protected static ?string $slug = 'customs-care-statistical';
 
-    protected ?bool $usesCareAggregateCache = null;
+    /**
+     * @var array{key:string,value:bool}|null
+     */
+    protected ?array $usesCareAggregateDecision = null;
 
     public static function canAccess(): bool
     {
@@ -40,6 +42,15 @@ class CustomsCareStatistical extends BaseReportPage
         return $this->usesCareAggregate()
             ? 'snapshot_date'
             : 'care_at';
+    }
+
+    protected function applyTableDateRangeFilter(Builder $query, array $data): Builder
+    {
+        return $this->applyDateRangeFilter(
+            $query,
+            $data,
+            $this->usesCareAggregate() ? 'snapshot_date' : 'care_at',
+        );
     }
 
     protected function getTableQuery(): Builder
@@ -78,21 +89,10 @@ class CustomsCareStatistical extends BaseReportPage
 
     protected function getTableFilters(): array
     {
-        $branchIds = $this->accessibleBranchIds();
-
         return array_merge(parent::getTableFilters(), [
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()
-                    ->when(
-                        ! $this->isAdmin(),
-                        fn (Builder $query) => $branchIds === []
-                            ? $query->whereRaw('1 = 0')
-                            : $query->whereIn('id', $branchIds),
-                    )
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all())
+                ->options(fn (): array => $this->branchFilterOptions())
                 ->query(fn (Builder $query): Builder => $query),
         ]);
     }
@@ -204,37 +204,44 @@ class CustomsCareStatistical extends BaseReportPage
         return Note::careStatusOptions();
     }
 
-    protected function getFilterValue(string $filterName): mixed
-    {
-        return data_get($this->tableFilters ?? [], "{$filterName}.value");
-    }
-
     protected function usesCareAggregate(): bool
     {
-        if ($this->usesCareAggregateCache !== null) {
-            return $this->usesCareAggregateCache;
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $scopeIds = $this->selectedBranchScopeIds();
+        $decisionKey = md5(json_encode([
+            'from' => $from,
+            'until' => $until,
+            'scope_ids' => $scopeIds,
+        ]) ?: '');
+
+        if (($this->usesCareAggregateDecision['key'] ?? null) === $decisionKey) {
+            return (bool) $this->usesCareAggregateDecision['value'];
         }
 
-        $this->usesCareAggregateCache = ReportCareQueueDailyAggregate::query()->exists();
+        $usesAggregate = app(HotReportAggregateReadinessService::class)
+            ->shouldUseCareAggregate($scopeIds, $from, $until);
 
-        return $this->usesCareAggregateCache;
+        $this->usesCareAggregateDecision = [
+            'key' => $decisionKey,
+            'value' => $usesAggregate,
+        ];
+
+        return $usesAggregate;
     }
 
     protected function selectedBranchScopeIds(): array
     {
-        $branchId = $this->getFilterValue('branch_id');
+        $branchId = $this->rawSelectedBranchId();
 
         if ($this->isAdmin()) {
-            return filled($branchId)
-                ? [(int) $branchId]
+            return $branchId !== null
+                ? [$branchId]
                 : [0];
         }
 
         $accessibleBranchIds = $this->accessibleBranchIds();
 
-        if (filled($branchId)) {
-            $branchId = (int) $branchId;
-
+        if ($branchId !== null) {
             return in_array($branchId, $accessibleBranchIds, true)
                 ? [$branchId]
                 : [];
@@ -246,13 +253,13 @@ class CustomsCareStatistical extends BaseReportPage
     protected function applyNoteBranchScope(Builder $query): Builder
     {
         if ($this->isAdmin()) {
-            $branchId = $this->getFilterValue('branch_id');
+            $branchId = $this->rawSelectedBranchId();
 
-            if (! filled($branchId)) {
+            if ($branchId === null) {
                 return $query;
             }
 
-            return $this->applyBranchConstraint($query, (int) $branchId);
+            return $this->applyBranchConstraint($query, $branchId);
         }
 
         $accessibleBranchIds = $this->accessibleBranchIds();
@@ -261,11 +268,9 @@ class CustomsCareStatistical extends BaseReportPage
             return $query->whereRaw('1 = 0');
         }
 
-        $branchId = $this->getFilterValue('branch_id');
+        $branchId = $this->rawSelectedBranchId();
 
-        if (filled($branchId)) {
-            $branchId = (int) $branchId;
-
+        if ($branchId !== null) {
             if (! in_array($branchId, $accessibleBranchIds, true)) {
                 return $query->whereRaw('1 = 0');
             }
@@ -291,23 +296,5 @@ class CustomsCareStatistical extends BaseReportPage
                         ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
                 });
         });
-    }
-
-    protected function accessibleBranchIds(): array
-    {
-        $authUser = auth()->user();
-
-        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
-            return [];
-        }
-
-        return BranchAccess::accessibleBranchIds($authUser);
-    }
-
-    protected function isAdmin(): bool
-    {
-        $authUser = auth()->user();
-
-        return $authUser instanceof User && $authUser->hasRole('Admin');
     }
 }

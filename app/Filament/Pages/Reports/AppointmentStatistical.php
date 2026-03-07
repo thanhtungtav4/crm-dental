@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Models\Appointment;
 use App\Models\VisitEpisode;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class AppointmentStatistical extends BaseReportPage
@@ -26,7 +27,18 @@ class AppointmentStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return Appointment::query()->with(['patient', 'doctor', 'visitEpisode']);
+        return $this->applyDirectBranchScope(
+            Appointment::query()->with(['patient', 'doctor', 'visitEpisode']),
+        );
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -95,7 +107,7 @@ class AppointmentStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = Appointment::query();
+        $baseQuery = $this->applyDirectBranchScope(Appointment::query());
         $this->applyDateRange($baseQuery, 'date');
 
         $total = (clone $baseQuery)->count();
@@ -103,7 +115,7 @@ class AppointmentStatistical extends BaseReportPage
         $cancelled = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CANCELLED]))->count();
         $completed = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))->count();
 
-        $episodeQuery = VisitEpisode::query()
+        $episodeQuery = $this->applyDirectBranchScope(VisitEpisode::query())
             ->whereHas('appointment', function (Builder $query): void {
                 $this->applyDateRange($query, 'date');
             });

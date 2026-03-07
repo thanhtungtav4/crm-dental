@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Branch;
 use App\Models\Note;
 use App\Models\PatientRiskProfile;
 use Filament\Tables\Columns\TextColumn;
@@ -28,8 +27,11 @@ class RiskScoringDashboard extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return PatientRiskProfile::query()
-            ->with(['patient.branch']);
+        return $this->applyRelatedBranchScope(
+            PatientRiskProfile::query()->with(['patient.branch']),
+            'patient',
+            'first_branch_id',
+        );
     }
 
     protected function getTableColumns(): array
@@ -88,7 +90,7 @@ class RiskScoringDashboard extends BaseReportPage
                 ]),
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all())
+                ->options(fn (): array => $this->branchFilterOptions())
                 ->query(function (Builder $query, array $data): Builder {
                     if (! filled($data['value'] ?? null)) {
                         return $query;
@@ -129,12 +131,21 @@ class RiskScoringDashboard extends BaseReportPage
         $activeInterventionTickets = Note::query()
             ->where('care_type', 'risk_high_follow_up')
             ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()))
-            ->when(filled($this->getFilterValue('branch_id')), function (Builder $noteQuery): void {
-                $noteQuery->whereHas('patient', function (Builder $patientQuery): void {
-                    $patientQuery->where('first_branch_id', (int) $this->getFilterValue('branch_id'));
-                });
-            })
             ->count();
+
+        $branchIds = $this->resolvedVisibleBranchIds();
+
+        if ($branchIds !== null) {
+            if ($branchIds === []) {
+                $activeInterventionTickets = 0;
+            } else {
+                $activeInterventionTickets = Note::query()
+                    ->where('care_type', 'risk_high_follow_up')
+                    ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()))
+                    ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds))
+                    ->count();
+            }
+        }
 
         return [
             ['label' => 'Tổng profile', 'value' => number_format($total)],
@@ -149,7 +160,11 @@ class RiskScoringDashboard extends BaseReportPage
 
     protected function buildFilteredRiskQuery(): Builder
     {
-        $query = PatientRiskProfile::query();
+        $query = $this->applyRelatedBranchScope(
+            PatientRiskProfile::query(),
+            'patient',
+            'first_branch_id',
+        );
         $this->applyDateRange($query, 'as_of_date');
 
         $riskLevel = $this->getFilterValue('risk_level');
@@ -157,19 +172,7 @@ class RiskScoringDashboard extends BaseReportPage
             $query->where('risk_level', $riskLevel);
         }
 
-        $branchId = $this->getFilterValue('branch_id');
-        if (filled($branchId)) {
-            $query->whereHas('patient', function (Builder $patientQuery) use ($branchId): void {
-                $patientQuery->where('first_branch_id', (int) $branchId);
-            });
-        }
-
         return $query;
-    }
-
-    protected function getFilterValue(string $filterName): mixed
-    {
-        return data_get($this->tableFilters ?? [], "{$filterName}.value");
     }
 
     protected function formatRiskLevel(?string $riskLevel): string

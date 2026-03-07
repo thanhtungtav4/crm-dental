@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Branch;
 use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
 use Filament\Tables\Columns\TextColumn;
@@ -28,15 +27,17 @@ class OperationalKpiPack extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return ReportSnapshot::query()
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->with('branch')
-            ->withCount([
-                'alerts as active_alerts_count' => fn (Builder $query) => $query->whereIn('status', [
-                    OperationalKpiAlert::STATUS_NEW,
-                    OperationalKpiAlert::STATUS_ACK,
+        return $this->applySnapshotBranchScope(
+            ReportSnapshot::query()
+                ->where('snapshot_key', 'operational_kpi_pack')
+                ->with('branch')
+                ->withCount([
+                    'alerts as active_alerts_count' => fn (Builder $query) => $query->whereIn('status', [
+                        OperationalKpiAlert::STATUS_NEW,
+                        OperationalKpiAlert::STATUS_ACK,
+                    ]),
                 ]),
-            ]);
+        );
     }
 
     protected function getTableColumns(): array
@@ -109,7 +110,7 @@ class OperationalKpiPack extends BaseReportPage
         return array_merge(parent::getTableFilters(), [
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all()),
+                ->options(fn (): array => $this->branchFilterOptions()),
             SelectFilter::make('status')
                 ->label('Trạng thái snapshot')
                 ->options([
@@ -214,12 +215,8 @@ class OperationalKpiPack extends BaseReportPage
         $query = ReportSnapshot::query()
             ->where('snapshot_key', 'operational_kpi_pack');
 
+        $this->applySnapshotBranchScope($query);
         $this->applyDateRange($query, 'snapshot_date');
-
-        $branchId = $this->getFilterValue('branch_id');
-        if (filled($branchId)) {
-            $query->where('branch_id', (int) $branchId);
-        }
 
         $status = $this->getFilterValue('status');
         if (filled($status)) {
@@ -232,11 +229,6 @@ class OperationalKpiPack extends BaseReportPage
         }
 
         return $query;
-    }
-
-    protected function getFilterValue(string $filterName): mixed
-    {
-        return data_get($this->tableFilters ?? [], "{$filterName}.value");
     }
 
     protected function snapshotStatusLabel(?string $status): string
@@ -278,11 +270,12 @@ class OperationalKpiPack extends BaseReportPage
             return null;
         }
 
-        $peerSnapshots = ReportSnapshot::query()
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->whereDate('snapshot_date', $snapshot->snapshot_date)
-            ->whereNotNull('branch_id')
-            ->get(['id', 'payload']);
+        $peerSnapshots = $this->applySnapshotBranchScope(
+            ReportSnapshot::query()
+                ->where('snapshot_key', 'operational_kpi_pack')
+                ->whereDate('snapshot_date', $snapshot->snapshot_date)
+                ->whereNotNull('branch_id')
+        )->get(['id', 'payload']);
 
         if ($peerSnapshots->count() < 2) {
             return null;
@@ -308,5 +301,20 @@ class OperationalKpiPack extends BaseReportPage
         $prefix = $value > 0 ? '+' : '';
 
         return $prefix.number_format($value, 2).'%';
+    }
+
+    protected function applySnapshotBranchScope(Builder $query): Builder
+    {
+        $branchIds = $this->resolvedVisibleBranchIds();
+
+        if ($branchIds === null) {
+            return $query;
+        }
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('branch_id', $branchIds);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Models\ReportSnapshot;
+use App\Services\ReportAutomationBranchScopeResolver;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -15,6 +16,11 @@ class CheckSnapshotSla extends Command
     protected $signature = 'reports:check-snapshot-sla {--date= : Ngày snapshot cần kiểm tra (Y-m-d)} {--key=operational_kpi_pack : Snapshot key} {--branch_id= : Branch id} {--dry-run : Chỉ preview, không ghi DB}';
 
     protected $description = 'Đánh giá SLA cho report snapshots (on_time/late/stale/missing).';
+
+    public function __construct(protected ReportAutomationBranchScopeResolver $scopeResolver)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -29,12 +35,75 @@ class CheckSnapshotSla extends Command
             : now()->toDateString();
 
         $snapshotKey = (string) $this->option('key');
-        $branchId = $this->option('branch_id') !== null
+        $requestedBranchId = $this->option('branch_id') !== null
             ? (int) $this->option('branch_id')
             : null;
+        $authUser = auth()->user();
+        $branchIds = $this->scopeResolver->resolveQueryBranchIds(
+            $authUser instanceof \App\Models\User ? $authUser : null,
+            $requestedBranchId,
+        );
+        $snapshotDateCarbon = Carbon::parse($snapshotDate);
 
         $staleCutoff = now()->subHours(ClinicRuntimeSettings::reportSnapshotStaleAfterHours());
 
+        $onTime = 0;
+        $late = 0;
+        $stale = 0;
+        $missing = 0;
+
+        foreach ($branchIds ?? [null] as $branchId) {
+            $metrics = $this->processBranchScope(
+                snapshotKey: $snapshotKey,
+                snapshotDate: $snapshotDate,
+                snapshotDateCarbon: $snapshotDateCarbon,
+                branchId: $branchId,
+                dryRun: $dryRun,
+                staleCutoff: $staleCutoff,
+            );
+
+            $onTime += $metrics['on_time'];
+            $late += $metrics['late'];
+            $stale += $metrics['stale'];
+            $missing += $metrics['missing'];
+        }
+
+        if (! $dryRun) {
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_REPORT_SNAPSHOT,
+                entityId: 0,
+                action: AuditLog::ACTION_SLA_CHECK,
+                actorId: auth()->id(),
+                metadata: [
+                    'snapshot_key' => $snapshotKey,
+                    'snapshot_date' => $snapshotDate,
+                    'branch_id' => $requestedBranchId,
+                    'branch_ids' => $branchIds,
+                    'on_time' => $onTime,
+                    'late' => $late,
+                    'stale' => $stale,
+                    'missing' => $missing,
+                ],
+            );
+        }
+
+        $mode = $dryRun ? 'DRY RUN' : 'APPLY';
+        $this->info("[{$mode}] Snapshot SLA checked. on_time={$onTime}, late={$late}, stale={$stale}, missing={$missing}");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array{on_time:int,late:int,stale:int,missing:int}
+     */
+    protected function processBranchScope(
+        string $snapshotKey,
+        string $snapshotDate,
+        Carbon $snapshotDateCarbon,
+        ?int $branchId,
+        bool $dryRun,
+        Carbon $staleCutoff,
+    ): array {
         $query = ReportSnapshot::query()
             ->where('snapshot_key', $snapshotKey)
             ->whereDate('snapshot_date', $snapshotDate)
@@ -58,7 +127,8 @@ class CheckSnapshotSla extends Command
                     'status' => ReportSnapshot::STATUS_FAILED,
                     'sla_status' => ReportSnapshot::SLA_MISSING,
                     'generated_at' => null,
-                    'sla_due_at' => Carbon::parse($snapshotDate)
+                    'sla_due_at' => $snapshotDateCarbon
+                        ->copy()
                         ->endOfDay()
                         ->addHours(ClinicRuntimeSettings::reportSnapshotSlaHours()),
                     'payload' => [],
@@ -66,8 +136,8 @@ class CheckSnapshotSla extends Command
                         'generated_at' => null,
                         'branch_id' => $branchId,
                         'window' => [
-                            'from' => Carbon::parse($snapshotDate)->startOfDay()->toDateTimeString(),
-                            'to' => Carbon::parse($snapshotDate)->endOfDay()->toDateTimeString(),
+                            'from' => $snapshotDateCarbon->copy()->startOfDay()->toDateTimeString(),
+                            'to' => $snapshotDateCarbon->copy()->endOfDay()->toDateTimeString(),
                         ],
                         'sources' => [],
                     ],
@@ -75,6 +145,13 @@ class CheckSnapshotSla extends Command
                     'created_by' => auth()->id(),
                 ]);
             }
+
+            return [
+                'on_time' => 0,
+                'late' => 0,
+                'stale' => 0,
+                'missing' => 1,
+            ];
         }
 
         foreach ($snapshots as $snapshot) {
@@ -99,27 +176,11 @@ class CheckSnapshotSla extends Command
             }
         }
 
-        if (! $dryRun) {
-            AuditLog::record(
-                entityType: AuditLog::ENTITY_REPORT_SNAPSHOT,
-                entityId: 0,
-                action: AuditLog::ACTION_SLA_CHECK,
-                actorId: auth()->id(),
-                metadata: [
-                    'snapshot_key' => $snapshotKey,
-                    'snapshot_date' => $snapshotDate,
-                    'branch_id' => $branchId,
-                    'on_time' => $onTime,
-                    'late' => $late,
-                    'stale' => $stale,
-                    'missing' => $missing,
-                ],
-            );
-        }
-
-        $mode = $dryRun ? 'DRY RUN' : 'APPLY';
-        $this->info("[{$mode}] Snapshot SLA checked. on_time={$onTime}, late={$late}, stale={$stale}, missing={$missing}");
-
-        return self::SUCCESS;
+        return [
+            'on_time' => $onTime,
+            'late' => $late,
+            'stale' => $stale,
+            'missing' => $missing,
+        ];
     }
 }

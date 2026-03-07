@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\Branch;
 use App\Services\HotReportAggregateService;
+use App\Services\ReportAutomationBranchScopeResolver;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Carbon\Carbon;
@@ -21,6 +21,7 @@ class SnapshotHotReportAggregates extends Command
 
     public function __construct(
         protected HotReportAggregateService $aggregateService,
+        protected ReportAutomationBranchScopeResolver $scopeResolver,
     ) {
         parent::__construct();
     }
@@ -36,16 +37,14 @@ class SnapshotHotReportAggregates extends Command
         $snapshotDate = $this->option('date')
             ? Carbon::parse((string) $this->option('date'))->startOfDay()
             : now()->startOfDay();
-        $branchOption = $this->option('branch_id');
-
-        $branchIds = [];
-
-        if ($branchOption !== null) {
-            $branchIds[] = (int) $branchOption;
-        } else {
-            $branchIds = Branch::query()->pluck('id')->all();
-            array_unshift($branchIds, null);
-        }
+        $requestedBranchId = $this->option('branch_id') !== null
+            ? (int) $this->option('branch_id')
+            : null;
+        $authUser = auth()->user();
+        $branchIds = $this->scopeResolver->resolveSnapshotBranchIds(
+            $authUser instanceof \App\Models\User ? $authUser : null,
+            $requestedBranchId,
+        );
 
         $totalRevenueRows = 0;
         $totalCareRows = 0;
@@ -72,7 +71,8 @@ class SnapshotHotReportAggregates extends Command
                     'branch_count' => count($branchIds),
                     'revenue_rows' => $totalRevenueRows,
                     'care_rows' => $totalCareRows,
-                    'branch_id' => $branchOption !== null ? (int) $branchOption : null,
+                    'branch_id' => $requestedBranchId,
+                    'branch_ids' => $branchIds,
                 ],
             );
         }

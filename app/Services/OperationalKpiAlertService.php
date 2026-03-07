@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
-use App\Models\User;
 use App\Support\ClinicRuntimeSettings;
 
 class OperationalKpiAlertService
 {
+    public function __construct(protected KpiAlertOwnerResolver $ownerResolver) {}
+
     /**
      * @return array{triggered:int,auto_resolved:int,active_alerts:int}
      */
@@ -64,7 +65,7 @@ class OperationalKpiAlertService
                 'snapshot_key' => (string) $snapshot->snapshot_key,
                 'snapshot_date' => $snapshot->snapshot_date,
                 'branch_id' => $snapshot->branch_id,
-                'owner_user_id' => $this->resolveOwnerUserId($snapshot->branch_id),
+                'owner_user_id' => $this->ownerResolver->resolve($snapshot->branch_id),
                 'threshold_direction' => $definition['direction'],
                 'threshold_value' => $thresholdValue,
                 'observed_value' => $observedValue,
@@ -154,32 +155,6 @@ class OperationalKpiAlertService
                 'title' => 'Treatment acceptance dưới ngưỡng',
             ],
         ];
-    }
-
-    protected function resolveOwnerUserId(?int $branchId): ?int
-    {
-        $branchManagerId = User::query()
-            ->where('branch_id', $branchId)
-            ->whereHas('roles', fn ($query) => $query->where('name', 'Manager'))
-            ->value('id');
-
-        if ($branchManagerId) {
-            return (int) $branchManagerId;
-        }
-
-        $managerId = User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'Manager'))
-            ->value('id');
-
-        if ($managerId) {
-            return (int) $managerId;
-        }
-
-        $adminId = User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))
-            ->value('id');
-
-        return $adminId ? (int) $adminId : null;
     }
 
     protected function resolveSeverity(string $direction, float $thresholdValue, float $observedValue): string

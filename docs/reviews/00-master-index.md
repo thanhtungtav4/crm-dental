@@ -41,7 +41,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | CARE | Customer Care / Automation | Clean Baseline Reached | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | B | Khong con open blocker baseline; follow-up la rollout migration `notes.ticket_key` va review `ZNS/KPI` de khoa tiep outbound side-effects/report coupling | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Clean Baseline Reached | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration ZNS moi va smoke test page van hanh/command pruning tren du lieu that | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Clean Baseline Reached | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration INT moi va smoke test grace token rotation/revoke tren he thong ngoai thuc te | GOV, APPT, CLIN, ZNS, OPS |
-| KPI | Reports / KPI | Pending Review | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | TBD | TODO | FIN, INV, CARE, OPS |
+| KPI | Reports / KPI | Clean Baseline Reached | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la smoke test report/export tren production dataset va theo doi runtime snapshot commands sau deploy | FIN, INV, CARE, OPS |
 | OPS | Production readiness / backup / observability | Pending Review | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | TBD | TODO | GOV, INT, KPI, ZNS, FIN, INV |
 
 # 3. Cross-module risks
@@ -57,17 +57,19 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `CARE` da dat clean baseline; page/report auth, ticket invariant, birthday dedupe, canonical datasource va regression suite da duoc khoa. Follow-up tiep theo la rollout `notes.ticket_key` va review `ZNS/KPI`.
 - `ZNS` da dat clean baseline; auth boundary, workflow campaign canonical, cancel-processing guard, payload governance, runner lock, triage UX va regression suite da duoc khoa. Follow-up la rollout migration va smoke test tren du lieu that.
 - `INT` da dat clean baseline; page auth, EMR internal scope, settings revision/transaction, payload governance, retention va secret rotation grace window da duoc khoa bang regression suite. Follow-up la rollout migration va smoke test voi client ngoai thuc te.
+- `KPI` da dat clean baseline; page auth, branch scope, automation scope, aggregate freshness, owner resolver va regression suite da duoc khoa. Follow-up la monitor runtime snapshot tren production dataset.
 
 # 4. Priority overview
 
 - Critical modules: Chua co module critical dang mo trong baseline hien tai
-- High priority modules: `KPI`, `OPS`
-- Medium priority modules: `KPI`, `OPS`
+- High priority modules: `OPS`
+- Modules co artifact day du va san sang fix: Chua co module nao ngoai `OPS` sau khi review xong
+- Medium priority modules: `OPS`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- Chua co module nao san sang deep fix cho den khi `KPI` hoac `OPS` duoc review xong.
+- Chua co module nao san sang fix; `OPS` can duoc review xong truoc.
 
 # 6. Modules needing re-audit
 
@@ -75,8 +77,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `KPI` - hop ly de review tiep sau khi `INT` da dat baseline, vi KPI se can doc data lineage tu `FIN`, `INV`, `CARE`, `INT`.
+- `OPS` - module cuoi de chot production readiness, backup, observability va release gate tren baseline da duoc khoa o GOV -> KPI.
 
 # 8. Suggested next module to fix
 
-- `KPI` - sau khi review xong, se la module tiep theo co gia tri cao vi no tong hop du lieu tu cac module loi da duoc khoa baseline.
+- `OPS` - sau khi co review/issues/plan, day se la module tiep theo can fix de chot baseline toan CRM.

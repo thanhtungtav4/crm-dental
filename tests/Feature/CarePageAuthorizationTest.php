@@ -97,6 +97,8 @@ it('scopes care statistical aggregates to accessible branches when no branch fil
     $this->actingAs($manager);
 
     $stats = Livewire::test(CustomsCareStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
         ->instance()
         ->getStats();
 
@@ -129,6 +131,8 @@ it('returns empty care statistical aggregates when a non-admin forges an inacces
     $this->actingAs($manager);
 
     $component = Livewire::test(CustomsCareStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
         ->set('tableFilters.branch_id.value', $branchB->id);
 
     $stats = $component->instance()->getStats();

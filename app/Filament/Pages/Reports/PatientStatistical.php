@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\Patient;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class PatientStatistical extends BaseReportPage
@@ -25,10 +26,23 @@ class PatientStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return Patient::query()
+        $query = Patient::query();
+
+        $this->applyDirectBranchScope($query, 'first_branch_id');
+
+        return $query
             ->selectRaw('primary_doctor_id, count(*) as total_patients')
             ->with('primaryDoctor')
             ->groupBy('primary_doctor_id');
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -56,6 +70,7 @@ class PatientStatistical extends BaseReportPage
     public function getStats(): array
     {
         $baseQuery = Patient::query();
+        $this->applyDirectBranchScope($baseQuery, 'first_branch_id');
         $this->applyDateRange($baseQuery, 'created_at');
 
         $totalPatients = (clone $baseQuery)->count();

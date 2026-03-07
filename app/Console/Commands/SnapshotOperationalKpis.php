@@ -3,10 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\Branch;
 use App\Models\ReportSnapshot;
 use App\Services\OperationalKpiAlertService;
 use App\Services\OperationalKpiService;
+use App\Services\ReportAutomationBranchScopeResolver;
 use App\Services\ReportSnapshotLineageService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -27,6 +27,7 @@ class SnapshotOperationalKpis extends Command
         protected OperationalKpiService $kpiService,
         protected OperationalKpiAlertService $alertService,
         protected ReportSnapshotLineageService $lineageService,
+        protected ReportAutomationBranchScopeResolver $scopeResolver,
     ) {
         parent::__construct();
     }
@@ -44,16 +45,14 @@ class SnapshotOperationalKpis extends Command
             : now()->startOfDay();
 
         $snapshotKey = (string) $this->option('key');
-        $branchOption = $this->option('branch_id');
-
-        $branchIds = [];
-
-        if ($branchOption !== null) {
-            $branchIds = [(int) $branchOption];
-        } else {
-            $branchIds = Branch::query()->pluck('id')->all();
-            array_unshift($branchIds, null);
-        }
+        $branchOption = $this->option('branch_id') !== null
+            ? (int) $this->option('branch_id')
+            : null;
+        $authUser = auth()->user();
+        $branchIds = $this->scopeResolver->resolveSnapshotBranchIds(
+            $authUser instanceof \App\Models\User ? $authUser : null,
+            $branchOption,
+        );
 
         $from = $snapshotDate->copy()->startOfDay();
         $to = $snapshotDate->copy()->endOfDay();

@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\ReceiptExpense;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema;
 
@@ -32,12 +33,24 @@ class RevenueExpenditure extends BaseReportPage
             return ReceiptExpense::query()->whereRaw('1 = 0');
         }
 
-        return ReceiptExpense::query()
-            ->selectRaw(
-                'payment_method, sum(case when voucher_type = ? then amount else 0 end) as total_expense, sum(case when voucher_type = ? then 0 else amount end) as total_receipt',
-                ['expense', 'expense']
-            )
-            ->groupBy('payment_method');
+        return $this->applyDirectBranchScope(
+            ReceiptExpense::query()
+                ->selectRaw(
+                    'payment_method, sum(case when voucher_type = ? then amount else 0 end) as total_expense, sum(case when voucher_type = ? then 0 else amount end) as total_receipt',
+                    ['expense', 'expense']
+                )
+                ->groupBy('payment_method'),
+            'clinic_id',
+        );
+    }
+
+    protected function getTableFilters(): array
+    {
+        return array_merge(parent::getTableFilters(), [
+            SelectFilter::make('branch_id')
+                ->label('Chi nhánh')
+                ->options(fn (): array => $this->branchFilterOptions()),
+        ]);
     }
 
     protected function getTableColumns(): array
@@ -80,16 +93,16 @@ class RevenueExpenditure extends BaseReportPage
             ];
         }
 
-        $baseQuery = ReceiptExpense::query();
+        $baseQuery = $this->applyDirectBranchScope(ReceiptExpense::query(), 'clinic_id');
         $this->applyDateRange($baseQuery, 'voucher_date');
 
         $totalReceipt = (clone $baseQuery)->where('voucher_type', '!=', 'expense')->sum('amount');
         $totalExpense = (clone $baseQuery)->where('voucher_type', 'expense')->sum('amount');
 
         return [
-            ['label' => 'Tổng thu', 'value' => number_format($totalReceipt) . ' đ'],
-            ['label' => 'Tổng chi', 'value' => number_format($totalExpense) . ' đ'],
-            ['label' => 'Biến động', 'value' => number_format($totalReceipt - $totalExpense) . ' đ'],
+            ['label' => 'Tổng thu', 'value' => number_format($totalReceipt).' đ'],
+            ['label' => 'Tổng chi', 'value' => number_format($totalExpense).' đ'],
+            ['label' => 'Biến động', 'value' => number_format($totalReceipt - $totalExpense).' đ'],
         ];
     }
 
