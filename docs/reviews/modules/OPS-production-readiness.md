@@ -2,8 +2,8 @@
 
 - Module code: `OPS`
 - Module name: `Production readiness / backup / observability`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/OPS-production-readiness.md`
 - Issue file: `docs/issues/OPS-issues.md`
 - Plan file: `docs/planning/OPS-plan.md`
@@ -235,13 +235,13 @@
 | Issue ID | Severity | Category | Title | Status | Short note |
 | --- | --- | --- | --- | --- | --- |
 | OPS-001 | Critical | Security | Release gates dang mutate permission baseline bang `--sync` | Resolved | Release gate da tro thanh verify-only, khong con mutate baseline trong lane readiness. |
-| OPS-002 | Critical | Security | Backup artifact duoc tao dang plaintext, khong co encryption/manfest | In Fix | Command tao artifact da chuyen sang encrypted payload + manifest; can chot backup health/restore flow quanh contract moi. |
-| OPS-003 | High | Domain Logic | Restore drill chi copy file, chua verify restore that | In Fix | Restore drill da doc manifest, decrypt artifact va verify sandbox theo driver; can chot regression va rollout behavior cho moi lane. |
-| OPS-004 | High | Security | OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat | In Fix | Release gates/readiness/backup commands da co actor boundary; can chot not yet covered commands va regression. |
-| OPS-005 | High | Data Integrity | Backup health gate chi check age, khong check size/checksum/manifest | Open | File moi nhat hop extension chua du de goi la healthy. |
-| OPS-006 | Medium | Maintainability | Readiness signoff chua rang buoc signer vao user/role hop le | Open | QA/PM signoff hien la free-text, traceability yeu. |
-| OPS-007 | Medium | Performance | Observability health gom nham moi automation fail vao cung budget | Open | Noise budget co the cao hon thuc te. |
-| OPS-008 | Medium | Maintainability | Regression suite chua khoa cac edge case backup encryption/signoff/authorization | Open | Test hien tai cover happy path nhieu hon blast-radius path. |
+| OPS-002 | Critical | Security | Backup artifact duoc tao dang plaintext, khong co encryption/manfest | Resolved | Backup artifact da duoc ma hoa, co manifest checksum/version va health gate doc contract moi. |
+| OPS-003 | High | Domain Logic | Restore drill chi copy file, chua verify restore that | Resolved | Restore drill da doc manifest, giai ma artifact va verify sandbox theo driver thay vi pass gia. |
+| OPS-004 | High | Security | OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat | Resolved | OPS control-plane commands da duoc dua qua `OpsCommandAuthorizer` va ghi actor audit nhat quan. |
+| OPS-005 | High | Data Integrity | Backup health gate chi check age, khong check size/checksum/manifest | Resolved | Backup health da fail-safe theo manifest, size va checksum thay vi latest raw file. |
+| OPS-006 | Medium | Maintainability | Readiness signoff chua rang buoc signer vao user/role hop le | Resolved | QA/PM signoff da map vao user noi bo hop le va ghi signer metadata vao artifact + audit log. |
+| OPS-007 | Medium | Performance | Observability health gom nham moi automation fail vao cung budget | Resolved | Recent automation failure budget da duoc gioi han vao control-plane whitelist, loai bo noise nghiep vu. |
+| OPS-008 | Medium | Maintainability | Regression suite chua khoa cac edge case backup encryption/signoff/authorization | Resolved | Regression suite OPS da cover verify-only, encrypted backup, restore sandbox, signer validation va observability filter. |
 
 # Dependencies
 
@@ -258,10 +258,10 @@
 
 # Recommended Next Steps
 
-1. Chot batch `TASK-OPS-003`, rerun regression va commit.
-2. Uu tien phan con lai cua `TASK-OPS-004` va `TASK-OPS-005` de dong command auth/audit va signoff contract.
-3. Sau khi dong `OPS`, chay re-audit tong va full suite de chot baseline toan CRM.
+1. Rollout smoke test tren ha tang that cho backup artifact, restore drill va release readiness report.
+2. Theo doi khung gio backup/restore va error budget observability sau deploy dau tien.
+3. Neu ha tang thay doi KMS/DB client, cap nhat SOP van hanh truoc khi chay release gate tiep theo.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

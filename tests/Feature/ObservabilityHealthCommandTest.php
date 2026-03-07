@@ -76,6 +76,66 @@ it('passes strict mode when all observability metrics are within budget', functi
         ->assertSuccessful();
 });
 
+it('ignores unrelated automation failures outside observability control plane budget', function (): void {
+    seedObservabilityBudgets(
+        deadLetterBudget: 0,
+        retryableFailureBudget: 0,
+        openKpiAlertBudget: 0,
+        snapshotSlaBudget: 0,
+        recentAutomationFailureBudget: 0,
+    );
+
+    AuditLog::record(
+        entityType: AuditLog::ENTITY_AUTOMATION,
+        entityId: 0,
+        action: AuditLog::ACTION_FAIL,
+        actorId: null,
+        metadata: [
+            'command' => 'care:send-birthday-message',
+            'channel' => 'birthday_automation',
+            'status' => 'failed',
+        ],
+    );
+
+    $this->artisan('ops:check-observability-health', [
+        '--strict' => true,
+        '--window-hours' => 1,
+    ])
+        ->expectsOutputToContain('OBS_RECENT_AUTOMATION_FAILURES: 0')
+        ->expectsOutputToContain('OBS_HEALTH_STATUS: healthy')
+        ->assertSuccessful();
+});
+
+it('counts tracked ops control plane failures in recent automation failure budget', function (): void {
+    seedObservabilityBudgets(
+        deadLetterBudget: 0,
+        retryableFailureBudget: 0,
+        openKpiAlertBudget: 0,
+        snapshotSlaBudget: 0,
+        recentAutomationFailureBudget: 0,
+    );
+
+    AuditLog::record(
+        entityType: AuditLog::ENTITY_AUTOMATION,
+        entityId: 0,
+        action: AuditLog::ACTION_FAIL,
+        actorId: null,
+        metadata: [
+            'command' => 'ops:create-backup-artifact',
+            'status' => 'failed',
+        ],
+    );
+
+    $this->artisan('ops:check-observability-health', [
+        '--strict' => true,
+        '--window-hours' => 1,
+    ])
+        ->expectsOutputToContain('OBS_RECENT_AUTOMATION_FAILURES: 1')
+        ->expectsOutputToContain('recent_automation_failures')
+        ->expectsOutputToContain('OBS_HEALTH_STATUS: unhealthy')
+        ->assertFailed();
+});
+
 function seedObservabilityBudgets(
     int $deadLetterBudget,
     int $retryableFailureBudget,

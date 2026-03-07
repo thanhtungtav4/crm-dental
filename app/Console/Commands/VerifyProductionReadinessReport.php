@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use App\Services\OpsCommandAuthorizer;
+use App\Services\ProductionReadinessSignerResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -13,16 +15,18 @@ class VerifyProductionReadinessReport extends Command
 {
     protected $signature = 'ops:verify-production-readiness-report
         {report : Duong dan report JSON tu ops:run-production-readiness}
-        {--qa= : Nguoi ky QA (email/username/ho ten)}
-        {--pm= : Nguoi ky PM (email/username/ho ten)}
+        {--qa= : Nguoi ky QA (email hoac ten user noi bo)}
+        {--pm= : Nguoi ky PM (email hoac ten user noi bo)}
         {--release-ref= : Ma release/ticket de truy vet}
         {--strict : Bat buoc report dat full gate (status pass, strict_full, with_finance, run_tests)}
         {--output= : Duong dan signed checklist artifact JSON}';
 
     protected $description = 'Validate schema report readiness va ky checklist QA/PM truoc deploy.';
 
-    public function __construct(protected OpsCommandAuthorizer $authorizer)
-    {
+    public function __construct(
+        protected OpsCommandAuthorizer $authorizer,
+        protected ProductionReadinessSignerResolver $signerResolver,
+    ) {
         parent::__construct();
     }
 
@@ -54,6 +58,11 @@ class VerifyProductionReadinessReport extends Command
                 issues: ['invalid_json'],
                 signoffPath: null,
                 actorId: $actorId,
+                qaSigner: null,
+                pmSigner: null,
+                qaInput: null,
+                pmInput: null,
+                releaseRef: null,
             );
 
             return self::FAILURE;
@@ -74,6 +83,11 @@ class VerifyProductionReadinessReport extends Command
                 issues: $validator->errors()->all(),
                 signoffPath: null,
                 actorId: $actorId,
+                qaSigner: null,
+                pmSigner: null,
+                qaInput: null,
+                pmInput: null,
+                releaseRef: null,
             );
 
             return self::FAILURE;
@@ -97,16 +111,20 @@ class VerifyProductionReadinessReport extends Command
             $issues = array_merge($issues, $this->collectMissingGateIssues($decoded));
         }
 
-        $qaSigner = trim((string) ($this->option('qa') ?? ''));
-        $pmSigner = trim((string) ($this->option('pm') ?? ''));
+        $qaSignerInput = trim((string) ($this->option('qa') ?? ''));
+        $pmSignerInput = trim((string) ($this->option('pm') ?? ''));
         $releaseRef = trim((string) ($this->option('release-ref') ?? ''));
+        $qaResolution = $this->signerResolver->resolve($qaSignerInput, 'qa');
+        $pmResolution = $this->signerResolver->resolve($pmSignerInput, 'pm');
+        $qaSigner = $qaResolution['user'];
+        $pmSigner = $pmResolution['user'];
 
-        if ($qaSigner === '') {
-            $issues[] = 'thieu_nguoi_ky_qa';
+        if (is_string($qaResolution['issue'])) {
+            $issues[] = $qaResolution['issue'];
         }
 
-        if ($pmSigner === '') {
-            $issues[] = 'thieu_nguoi_ky_pm';
+        if (is_string($pmResolution['issue'])) {
+            $issues[] = $pmResolution['issue'];
         }
 
         if ((bool) $this->option('strict') && $releaseRef === '') {
@@ -127,6 +145,11 @@ class VerifyProductionReadinessReport extends Command
                 issues: $issues,
                 signoffPath: null,
                 actorId: $actorId,
+                qaSigner: $qaSigner,
+                pmSigner: $pmSigner,
+                qaInput: $qaSignerInput,
+                pmInput: $pmSignerInput,
+                releaseRef: $releaseRef !== '' ? $releaseRef : null,
             );
 
             return self::FAILURE;
@@ -143,11 +166,17 @@ class VerifyProductionReadinessReport extends Command
             'report_sha256' => hash_file('sha256', $reportPath) ?: null,
             'report_status' => (string) ($decoded['status'] ?? 'unknown'),
             'qa_signoff' => [
-                'signer' => $qaSigner,
+                'user_id' => $qaSigner?->getKey(),
+                'name' => $qaSigner?->name,
+                'email' => $qaSigner?->email,
+                'roles' => $qaSigner?->getRoleNames()->values()->all(),
                 'signed_at' => now()->toDateTimeString(),
             ],
             'pm_signoff' => [
-                'signer' => $pmSigner,
+                'user_id' => $pmSigner?->getKey(),
+                'name' => $pmSigner?->name,
+                'email' => $pmSigner?->email,
+                'roles' => $pmSigner?->getRoleNames()->values()->all(),
                 'signed_at' => now()->toDateTimeString(),
             ],
             'release_ref' => $releaseRef !== '' ? $releaseRef : null,
@@ -174,8 +203,8 @@ class VerifyProductionReadinessReport extends Command
         $this->info('READINESS_REPORT_STATUS: PASS');
         $this->line('READINESS_REPORT_PATH: '.$reportPath);
         $this->line('READINESS_SIGNOFF_PATH: '.$resolvedOutputPath);
-        $this->line('READINESS_SIGNOFF_QA: '.$qaSigner);
-        $this->line('READINESS_SIGNOFF_PM: '.$pmSigner);
+        $this->line('READINESS_SIGNOFF_QA: '.($qaSigner?->email ?: $qaSignerInput));
+        $this->line('READINESS_SIGNOFF_PM: '.($pmSigner?->email ?: $pmSignerInput));
         $this->line('READINESS_RELEASE_REF: '.($releaseRef !== '' ? $releaseRef : '-'));
 
         $this->recordAudit(
@@ -184,6 +213,11 @@ class VerifyProductionReadinessReport extends Command
             issues: [],
             signoffPath: $resolvedOutputPath,
             actorId: $actorId,
+            qaSigner: $qaSigner,
+            pmSigner: $pmSigner,
+            qaInput: $qaSignerInput,
+            pmInput: $pmSignerInput,
+            releaseRef: $releaseRef !== '' ? $releaseRef : null,
         );
 
         return self::SUCCESS;
@@ -391,8 +425,18 @@ class VerifyProductionReadinessReport extends Command
     /**
      * @param  array<int, string>  $issues
      */
-    protected function recordAudit(string $status, string $reportPath, array $issues, ?string $signoffPath, ?int $actorId): void
-    {
+    protected function recordAudit(
+        string $status,
+        string $reportPath,
+        array $issues,
+        ?string $signoffPath,
+        ?int $actorId,
+        ?User $qaSigner,
+        ?User $pmSigner,
+        ?string $qaInput,
+        ?string $pmInput,
+        ?string $releaseRef,
+    ): void {
         AuditLog::record(
             entityType: AuditLog::ENTITY_AUTOMATION,
             entityId: 0,
@@ -405,7 +449,28 @@ class VerifyProductionReadinessReport extends Command
                 'issues' => $issues,
                 'signoff_path' => $signoffPath,
                 'strict' => (bool) $this->option('strict'),
+                'release_ref' => $releaseRef,
+                'qa_signer' => $this->signerAuditPayload($qaSigner, $qaInput),
+                'pm_signer' => $this->signerAuditPayload($pmSigner, $pmInput),
             ],
         );
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function signerAuditPayload(?User $user, ?string $input): ?array
+    {
+        if (! $user instanceof User && ($input === null || trim($input) === '')) {
+            return null;
+        }
+
+        return [
+            'input' => $input,
+            'user_id' => $user?->getKey(),
+            'email' => $user?->email,
+            'name' => $user?->name,
+            'roles' => $user?->getRoleNames()->values()->all(),
+        ];
     }
 }

@@ -42,7 +42,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | ZNS | Zalo / ZNS | Clean Baseline Reached | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration ZNS moi va smoke test page van hanh/command pruning tren du lieu that | PAT, APPT, CARE, INT, OPS |
 | INT | Integrations | Clean Baseline Reached | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration INT moi va smoke test grace token rotation/revoke tren he thong ngoai thuc te | GOV, APPT, CLIN, ZNS, OPS |
 | KPI | Reports / KPI | Clean Baseline Reached | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la smoke test report/export tren production dataset va theo doi runtime snapshot commands sau deploy | FIN, INV, CARE, OPS |
-| OPS | Production readiness / backup / observability | In Fix | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | D | Release gate verify-only da duoc khoa; encrypted backup + manifest da duoc dua vao baseline, restore sandbox dang duoc chot va command auth/audit/signoff van chua dong het | GOV, INT, KPI, ZNS, FIN, INV |
+| OPS | Production readiness / backup / observability | Clean Baseline Reached | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | B | Khong con open blocker baseline; follow-up la rollout smoke test backup/restore/release readiness tren ha tang that | GOV, INT, KPI, ZNS, FIN, INV |
 
 # 3. Cross-module risks
 
@@ -58,28 +58,28 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `ZNS` da dat clean baseline; auth boundary, workflow campaign canonical, cancel-processing guard, payload governance, runner lock, triage UX va regression suite da duoc khoa. Follow-up la rollout migration va smoke test tren du lieu that.
 - `INT` da dat clean baseline; page auth, EMR internal scope, settings revision/transaction, payload governance, retention va secret rotation grace window da duoc khoa bang regression suite. Follow-up la rollout migration va smoke test voi client ngoai thuc te.
 - `KPI` da dat clean baseline; page auth, branch scope, automation scope, aggregate freshness, owner resolver va regression suite da duoc khoa. Follow-up la monitor runtime snapshot tren production dataset.
-- `OPS` dang la module cuoi con mo; release gate verify-only va encrypted backup contract da duoc khoa, con restore sandbox finalization va command authorization/signoff la 2 blocker baseline lon nhat con lai.
+- `OPS` da dat clean baseline; release gate verify-only, encrypted backup artifact, restore sandbox, signer validation va observability whitelist da duoc khoa bang regression suite.
 
 # 4. Priority overview
 
-- Critical modules: Chua co module critical dang mo trong baseline hien tai
-- High priority modules: `OPS`
-- Modules co artifact day du va san sang fix: `OPS`
-- Medium priority modules: `OPS`
-- Low priority modules: Chua xac dinh cho den khi co review chi tiet.
+- Critical modules: Khong con module baseline dang mo
+- High priority modules: Khong con module baseline dang mo
+- Modules co artifact day du va san sang fix: Khong con module baseline dang mo
+- Medium priority modules: Khong con module baseline dang mo
+- Low priority modules: Follow-up con lai la rollout va smoke test tren ha tang that
 
 # 5. Modules ready for deep fix
 
-- `OPS` - dang fix, uu tien chot `TASK-OPS-003` roi di tiep phan con lai cua `TASK-OPS-004` va `TASK-OPS-005`.
+- Khong con module nao dang cho deep fix trong baseline hien tai.
 
 # 6. Modules needing re-audit
 
-- Chua co module nao can re-audit ngay luc nay.
+- Khong con module nao can re-audit ngay luc nay.
 
 # 7. Suggested next module to review
 
-- Khong con module nao can review; toan bo 13 module da co artifact review. Tap trung chot `OPS` bang fix + re-audit.
+- Khong con module nao can review; toan bo 13 module da dat clean baseline cho scope hien tai.
 
 # 8. Suggested next module to fix
 
-- `OPS` - uu tien `TASK-OPS-003` -> phan con lai cua `TASK-OPS-004` -> `TASK-OPS-005` de dong restore, actor boundary va signoff truoc khi re-audit toan CRM.
+- Khong con module nao can fix o baseline hien tai; uu tien tiep theo la rollout migrate/smoke test va van hanh sau deploy.

@@ -2,8 +2,8 @@
 
 - Module code: `OPS`
 - Module name: `Production readiness / backup / observability`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `OPS-`
 - Task ID prefix: `TASK-OPS-`
 - Review file: `docs/reviews/modules/OPS-production-readiness.md`
@@ -62,7 +62,7 @@
 - Dependencies:
   - INT, CLIN
 - Suggested order: 2
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-002`
 
 ## [OPS-003] Restore drill chi copy file, chua verify restore that
@@ -87,7 +87,7 @@
 - Dependencies:
   - OPS-002
 - Suggested order: 3
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-003`
 
 ## [OPS-004] OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat
@@ -116,7 +116,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 4
-- Current status: In Fix
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-004`
 
 ## [OPS-005] Backup health gate chi check age, khong check size/checksum/manifest
@@ -142,7 +142,7 @@
 - Dependencies:
   - OPS-002
 - Suggested order: 5
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-005`
 
 ## [OPS-006] Readiness signoff chua rang buoc signer vao user/role hop le
@@ -168,7 +168,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 6
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-006`
 
 ## [OPS-007] Observability health gom nham moi automation fail vao cung error budget
@@ -193,7 +193,7 @@
 - Dependencies:
   - KPI, INT, ZNS
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-007`
 
 ## [OPS-008] Regression suite chua khoa backup encryption, signoff auth va command authorization matrix
@@ -220,13 +220,13 @@
 - Dependencies:
   - OPS-001 -> OPS-007
 - Suggested order: 8
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-OPS-008`
 
 # Summary
 
 - Open critical count: 0
-- Open high count: 1
-- Open medium count: 3
+- Open high count: 0
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: Chot `TASK-OPS-003`, sau do dong not yet covered command auth/signoff trong `TASK-OPS-004` va `TASK-OPS-005`.
+- Next recommended action: Khong con open code task trong baseline OPS. Tiep theo la rollout smoke test tren ha tang that va theo doi backup/restore windows sau deploy.

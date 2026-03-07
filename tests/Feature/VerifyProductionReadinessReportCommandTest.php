@@ -1,10 +1,14 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\File;
 
 it('validates report schema and creates QA PM signoff artifact', function (): void {
     $reportPath = storage_path('app/testing/readiness-verify/pass-report.json');
     $signoffPath = storage_path('app/testing/readiness-verify/pass-signoff.json');
+    $qaSigner = readinessSigner('Manager', 'qa.lead@clinic.test', 'QA Lead');
+    $pmSigner = readinessSigner('Admin', 'pm.owner@clinic.test', 'PM Owner');
+
     File::ensureDirectoryExists(dirname($reportPath));
     File::ensureDirectoryExists(dirname($signoffPath));
 
@@ -31,8 +35,10 @@ it('validates report schema and creates QA PM signoff artifact', function (): vo
     $signoff = json_decode((string) file_get_contents($signoffPath), true, flags: JSON_THROW_ON_ERROR);
     expect($signoff)->toBeArray()
         ->and(data_get($signoff, 'report_path'))->toBe($reportPath)
-        ->and(data_get($signoff, 'qa_signoff.signer'))->toBe('qa.lead@clinic.test')
-        ->and(data_get($signoff, 'pm_signoff.signer'))->toBe('pm.owner@clinic.test')
+        ->and(data_get($signoff, 'qa_signoff.user_id'))->toBe($qaSigner->id)
+        ->and(data_get($signoff, 'qa_signoff.email'))->toBe('qa.lead@clinic.test')
+        ->and(data_get($signoff, 'pm_signoff.user_id'))->toBe($pmSigner->id)
+        ->and(data_get($signoff, 'pm_signoff.email'))->toBe('pm.owner@clinic.test')
         ->and(data_get($signoff, 'release_ref'))->toBe('REL-2026-03-02');
 });
 
@@ -53,6 +59,8 @@ it('fails when schema is invalid', function (): void {
 
 it('fails strict mode when full strict checklist conditions are not met', function (): void {
     $reportPath = storage_path('app/testing/readiness-verify/non-strict-full-report.json');
+    readinessSigner('Manager', 'qa.lead@clinic.test', 'QA Lead');
+    readinessSigner('Admin', 'pm.owner@clinic.test', 'PM Owner');
     File::ensureDirectoryExists(dirname($reportPath));
 
     $report = validReadinessReport();
@@ -73,6 +81,8 @@ it('fails strict mode when full strict checklist conditions are not met', functi
 
 it('fails strict mode when required release gate commands are missing in report contract', function (): void {
     $reportPath = storage_path('app/testing/readiness-verify/missing-required-gates-report.json');
+    readinessSigner('Manager', 'qa.lead@clinic.test', 'QA Lead');
+    readinessSigner('Admin', 'pm.owner@clinic.test', 'PM Owner');
     File::ensureDirectoryExists(dirname($reportPath));
 
     $report = validReadinessReport();
@@ -90,6 +100,37 @@ it('fails strict mode when required release gate commands are missing in report 
         ->expectsOutputToContain('missing_required_gate_schema_assert_critical_foreign_keys')
         ->assertFailed();
 });
+
+it('fails when signers do not map to active governance users', function (): void {
+    $reportPath = storage_path('app/testing/readiness-verify/invalid-signers-report.json');
+    File::ensureDirectoryExists(dirname($reportPath));
+    file_put_contents($reportPath, json_encode(validReadinessReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    readinessSigner('Doctor', 'doctor.signer@clinic.test', 'Doctor Signer');
+
+    $this->artisan('ops:verify-production-readiness-report', [
+        'report' => $reportPath,
+        '--qa' => 'doctor.signer@clinic.test',
+        '--pm' => 'missing.pm@clinic.test',
+        '--release-ref' => 'REL-2026-03-02',
+        '--strict' => true,
+    ])
+        ->expectsOutputToContain('READINESS_REPORT_STATUS: FAIL')
+        ->expectsOutputToContain('nguoi_ky_qa_khong_dung_vai_tro')
+        ->expectsOutputToContain('khong_tim_thay_nguoi_ky_pm')
+        ->assertFailed();
+});
+
+function readinessSigner(string $role, string $email, string $name): User
+{
+    $user = User::factory()->create([
+        'email' => $email,
+        'name' => $name,
+    ]);
+    $user->assignRole($role);
+
+    return $user;
+}
 
 /**
  * @return array<string, mixed>

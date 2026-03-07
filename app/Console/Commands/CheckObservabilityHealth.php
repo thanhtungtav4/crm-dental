@@ -8,10 +8,10 @@ use App\Models\GoogleCalendarSyncEvent;
 use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
 use App\Models\ZnsAutomationEvent;
-use App\Support\ActionGate;
-use App\Support\ActionPermission;
+use App\Services\OpsCommandAuthorizer;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class CheckObservabilityHealth extends Command
@@ -24,10 +24,14 @@ class CheckObservabilityHealth extends Command
 
     protected $description = 'Kiểm tra observability cross-module (SLO/error budget/runbook) cho release gate production.';
 
+    public function __construct(protected OpsCommandAuthorizer $authorizer)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
-        ActionGate::authorize(
-            ActionPermission::AUTOMATION_RUN,
+        $actorId = $this->authorizer->authorize(
             'Bạn không có quyền kiểm tra observability cross-module.',
         );
 
@@ -68,6 +72,15 @@ class CheckObservabilityHealth extends Command
                 ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
                 ->where('action', AuditLog::ACTION_FAIL)
                 ->where('created_at', '>=', $windowStartedAt)
+                ->where(function (Builder $query): void {
+                    foreach ($this->trackedAutomationFailureCommands() as $command) {
+                        $query->orWhere('metadata->command', $command);
+                    }
+
+                    foreach ($this->trackedAutomationFailureChannels() as $channel) {
+                        $query->orWhere('metadata->channel', $channel);
+                    }
+                })
                 ->count(),
         ];
 
@@ -158,7 +171,7 @@ class CheckObservabilityHealth extends Command
                 entityType: AuditLog::ENTITY_AUTOMATION,
                 entityId: 0,
                 action: $healthy ? AuditLog::ACTION_RUN : AuditLog::ACTION_FAIL,
-                actorId: auth()->id(),
+                actorId: $actorId,
                 metadata: [
                     'channel' => 'observability_health',
                     'command' => 'ops:check-observability-health',
@@ -170,6 +183,8 @@ class CheckObservabilityHealth extends Command
                     'metrics' => $metrics,
                     'budgets' => $budgets,
                     'breaches' => $breaches,
+                    'tracked_failure_commands' => $this->trackedAutomationFailureCommands(),
+                    'tracked_failure_channels' => $this->trackedAutomationFailureChannels(),
                     'missing_runbook_categories' => $missingRunbookCategories,
                     'runbook_category' => 'cross_module_observability',
                     'runbook' => (string) data_get($runbookMap, 'cross_module_observability.runbook', ''),
@@ -207,5 +222,36 @@ class CheckObservabilityHealth extends Command
         }
 
         return Carbon::parse($rawDate)->toDateString();
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function trackedAutomationFailureCommands(): array
+    {
+        return [
+            'ops:create-backup-artifact',
+            'ops:check-backup-health',
+            'ops:run-restore-drill',
+            'ops:run-release-gates',
+            'ops:run-production-readiness',
+            'ops:verify-production-readiness-report',
+            'reports:explain-ops-hotpaths',
+            'ops:check-alert-runbook-map',
+            'ops:check-observability-health',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function trackedAutomationFailureChannels(): array
+    {
+        return [
+            'backup_artifact',
+            'release_gates',
+            'production_readiness',
+            'observability_health',
+        ];
     }
 }

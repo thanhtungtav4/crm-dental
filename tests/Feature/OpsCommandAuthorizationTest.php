@@ -34,6 +34,13 @@ dataset('restrictedOpsCommands', [
             '--target' => __DIR__.'/../../storage/app/testing/ops-auth/restore-artifacts',
         ],
     ],
+    'observability health' => [
+        'command' => 'ops:check-observability-health',
+        'arguments' => [
+            '--window-hours' => 1,
+            '--strict' => true,
+        ],
+    ],
 ]);
 
 it('denies manager from running restricted ops commands', function (string $command, array $arguments): void {
@@ -123,6 +130,16 @@ function provisionOpsEncryptedBackupArtifact(string $backupPath, string $payload
 it('records admin actor audit for readiness signoff verification', function (): void {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
+    $qaSigner = User::factory()->create([
+        'email' => 'qa.ops@clinic.test',
+        'name' => 'QA Ops',
+    ]);
+    $qaSigner->assignRole('Manager');
+    $pmSigner = User::factory()->create([
+        'email' => 'pm.ops@clinic.test',
+        'name' => 'PM Ops',
+    ]);
+    $pmSigner->assignRole('Admin');
 
     $reportPath = storage_path('app/testing/ops-auth/readiness-report.json');
     $signoffPath = storage_path('app/testing/ops-auth/readiness-signoff.json');
@@ -137,8 +154,8 @@ it('records admin actor audit for readiness signoff verification', function (): 
 
     $this->artisan('ops:verify-production-readiness-report', [
         'report' => $reportPath,
-        '--qa' => 'qa.lead@clinic.test',
-        '--pm' => 'pm.owner@clinic.test',
+        '--qa' => $qaSigner->email,
+        '--pm' => $pmSigner->email,
         '--release-ref' => 'REL-OPS-001',
         '--strict' => true,
         '--output' => $signoffPath,
@@ -153,7 +170,9 @@ it('records admin actor audit for readiness signoff verification', function (): 
 
     expect($audit)->not->toBeNull()
         ->and((int) $audit->actor_id)->toBe($admin->id)
-        ->and((string) data_get($audit?->metadata, 'status'))->toBe('pass');
+        ->and((string) data_get($audit?->metadata, 'status'))->toBe('pass')
+        ->and((int) data_get($audit?->metadata, 'qa_signer.user_id'))->toBe($qaSigner->id)
+        ->and((int) data_get($audit?->metadata, 'pm_signer.user_id'))->toBe($pmSigner->id);
 });
 
 /**
