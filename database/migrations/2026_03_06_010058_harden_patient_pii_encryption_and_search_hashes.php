@@ -26,6 +26,8 @@ return new class extends Migration
             }
         });
 
+        $this->dropLegacyIndexes();
+
         Schema::table('patients', function (Blueprint $table) {
             $table->text('phone')->nullable()->change();
             $table->text('email')->nullable()->change();
@@ -73,6 +75,24 @@ return new class extends Migration
                 $table->dropColumn('email_search_hash');
             }
         });
+    }
+
+    protected function dropLegacyIndexes(): void
+    {
+        $indexes = [
+            'idx_patients_phone',
+            'idx_patients_email',
+        ];
+
+        foreach ($indexes as $index) {
+            try {
+                Schema::table('patients', function (Blueprint $table) use ($index): void {
+                    $table->dropIndex($index);
+                });
+            } catch (\Throwable) {
+                // Ignore when the legacy index does not exist in a given environment.
+            }
+        }
     }
 
     protected function plainValue(mixed $value): ?string
