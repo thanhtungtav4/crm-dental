@@ -116,7 +116,7 @@
 - Dependencies:
   - GOV
 - Suggested order: 4
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-OPS-004`
 
 ## [OPS-005] Backup health gate chi check age, khong check size/checksum/manifest
@@ -226,7 +226,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 2
+- Open high count: 1
 - Open medium count: 3
 - Open low count: 0
-- Next recommended action: Chot `TASK-OPS-002`, sau do uu tien `TASK-OPS-003` va `TASK-OPS-004` de dong backup/restore va actor boundary con lai.
+- Next recommended action: Chot `TASK-OPS-003`, sau do dong not yet covered command auth/signoff trong `TASK-OPS-004` va `TASK-OPS-005`.

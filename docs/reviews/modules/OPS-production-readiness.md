@@ -236,7 +236,7 @@
 | --- | --- | --- | --- | --- | --- |
 | OPS-001 | Critical | Security | Release gates dang mutate permission baseline bang `--sync` | Resolved | Release gate da tro thanh verify-only, khong con mutate baseline trong lane readiness. |
 | OPS-002 | Critical | Security | Backup artifact duoc tao dang plaintext, khong co encryption/manfest | In Fix | Command tao artifact da chuyen sang encrypted payload + manifest; can chot backup health/restore flow quanh contract moi. |
-| OPS-003 | High | Domain Logic | Restore drill chi copy file, chua verify restore that | Open | `pass` hien tai chua chung minh recoverability. |
+| OPS-003 | High | Domain Logic | Restore drill chi copy file, chua verify restore that | In Fix | Restore drill da doc manifest, decrypt artifact va verify sandbox theo driver; can chot regression va rollout behavior cho moi lane. |
 | OPS-004 | High | Security | OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat | In Fix | Release gates/readiness/backup commands da co actor boundary; can chot not yet covered commands va regression. |
 | OPS-005 | High | Data Integrity | Backup health gate chi check age, khong check size/checksum/manifest | Open | File moi nhat hop extension chua du de goi la healthy. |
 | OPS-006 | Medium | Maintainability | Readiness signoff chua rang buoc signer vao user/role hop le | Open | QA/PM signoff hien la free-text, traceability yeu. |
@@ -258,8 +258,8 @@
 
 # Recommended Next Steps
 
-1. Chot batch `TASK-OPS-002`, rerun regression va commit.
-2. Uu tien `TASK-OPS-003` va phan con lai cua `TASK-OPS-004` de bien backup/restore va command auth thanh contract co the tin cay.
+1. Chot batch `TASK-OPS-003`, rerun regression va commit.
+2. Uu tien phan con lai cua `TASK-OPS-004` va `TASK-OPS-005` de dong command auth/audit va signoff contract.
 3. Sau khi dong `OPS`, chay re-audit tong va full suite de chot baseline toan CRM.
 
 # Current Status

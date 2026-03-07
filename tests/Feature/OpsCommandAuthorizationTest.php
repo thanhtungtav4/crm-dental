@@ -27,6 +27,13 @@ dataset('restrictedOpsCommands', [
             '--path' => __DIR__.'/../../storage/app/testing/ops-auth/backups',
         ],
     ],
+    'restore drill' => [
+        'command' => 'ops:run-restore-drill',
+        'arguments' => [
+            '--path' => __DIR__.'/../../storage/app/testing/ops-auth/restore-backups',
+            '--target' => __DIR__.'/../../storage/app/testing/ops-auth/restore-artifacts',
+        ],
+    ],
 ]);
 
 it('denies manager from running restricted ops commands', function (string $command, array $arguments): void {
