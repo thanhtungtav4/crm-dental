@@ -2,8 +2,8 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Issue ID prefix: `ZNS-`
 - Task ID prefix: `TASK-ZNS-`
 - Review file: `docs/reviews/modules/ZNS-zalo-zns.md`
@@ -186,7 +186,7 @@
 - Dependencies:
   - ZNS-002
 - Suggested order: 7
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-007`
 
 ## [ZNS-008] Coverage thieu auth matrix, cancel-processing race va payload governance
@@ -217,6 +217,6 @@
 
 - Open critical count: 0
 - Open high count: 0
-- Open medium count: 1
+- Open medium count: 0
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-ZNS-006`, sau do re-audit module.
+- Next recommended action: Khong con issue baseline mo. Tiep theo la rollout migration ZNS moi va smoke test page `ZaloZns` tren du lieu that.

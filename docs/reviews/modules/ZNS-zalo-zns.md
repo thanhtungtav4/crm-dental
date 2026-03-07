@@ -2,8 +2,8 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Review file: `docs/reviews/modules/ZNS-zalo-zns.md`
 - Issue file: `docs/issues/ZNS-issues.md`
 - Plan file: `docs/planning/ZNS-plan.md`
@@ -55,6 +55,24 @@
   - Workflow campaign dang cho sua `status` truc tiep tren form/table/page, khong co workflow service + audit boundary.
   - `cancelAppointmentReminder()` co the danh dau event la `dead` trong khi worker da claim va van co the gui ra provider truoc khi finalize.
   - `zns_automation_events`, `zns_campaign_deliveries`, `zns_automation_logs` dang luu so dien thoai va payload provider dang plaintext.
+
+# Re-audit Update
+
+- Verdict hien tai: `B`
+- Clean baseline status: `Yes`
+- Issue da dong:
+  - `ZNS-001` auth boundary page/resource/command
+  - `ZNS-002` workflow canonical cho campaign
+  - `ZNS-003` cancel-processing coordination
+  - `ZNS-004` payload governance + retention
+  - `ZNS-005` campaign-level runner lock
+  - `ZNS-006` command auth gate
+  - `ZNS-007` operational UX va triage filters
+  - `ZNS-008` regression suite cho auth/race/payload governance
+- Follow-up con lai la rollout:
+  - chay migration `2026_03_07_025006_harden_zns_operational_payload_governance.php`
+  - chay migration `2026_03_07_084346_add_processing_lock_to_zns_campaigns_table.php`
+  - smoke test page `ZaloZns`, command `zns:run-campaigns`, command `zns:prune-operational-data` tren du lieu that
 
 # Architecture Findings
 
@@ -257,7 +275,7 @@
 | ZNS-004 | High | Security | Outbox/delivery/log dang luu phone va payload ZNS plaintext | Resolved | Phone/payload da duoc ma hoa, request-response chi con ban rut gon va co prune command |
 | ZNS-005 | High | Concurrency | Campaign runner chua co campaign-level lock | Resolved | Runner da claim campaign bang `processing_token + locked_at`, stale lock duoc reclaim va command bo qua campaign dang duoc worker khac xu ly |
 | ZNS-006 | High | Security | `RunZnsCampaigns` khong duoc bao ve bang action permission | Resolved | Command da duoc khoa bang `ActionGate::authorize(ActionPermission::AUTOMATION_RUN)` |
-| ZNS-007 | Medium | UX | Filament UX cho ZNS de thao tac sai va thieu triage view | Open | `status` editable raw, `ZaloZns` chi la placeholder, deliveries thieu filters |
+| ZNS-007 | Medium | UX | Filament UX cho ZNS de thao tac sai va thieu triage view | Resolved | `ZaloZns` da thanh operational page, deliveries co filter retry/dead-letter/provider code va raw status khong con la duong thao tac van hanh |
 | ZNS-008 | Medium | Maintainability | Coverage thieu auth matrix, cancel-processing race va payload governance | Resolved | Module da co suite rieng cho auth surface, cancel-processing, payload governance, runner lock va scheduler wiring |
 
 # Dependencies
@@ -276,10 +294,10 @@
 
 # Recommended Next Steps
 
-1. Sinh issue file canonical cho module.
-2. Tiep tuc `TASK-ZNS-006` de them triage UX va filters van hanh.
-3. Sau do re-audit module.
+1. Chay migrate tren moi truong that cho 2 migration ZNS moi.
+2. Smoke test `ZaloZns`, `zns:run-campaigns`, `zns:prune-operational-data` tren du lieu production-like.
+3. Chuyen sang review module `INT` de khoa provider/runtime coupling lien quan Zalo, Google va EMR.
 
 # Current Status
 
-- In Fix
+- Clean Baseline Reached

@@ -14,6 +14,9 @@ it('uses placeholder instead of default fallback for sent_at datetime column in 
         ->toContain("TextColumn::make('sent_at')")
         ->and($tableConfig)->toContain("->dateTime('d/m/Y H:i')")
         ->and($tableConfig)->toContain("->placeholder('-')")
+        ->and($tableConfig)->toContain("SelectFilter::make('provider_status_code')")
+        ->and($tableConfig)->toContain("Filter::make('retry_due')")
+        ->and($tableConfig)->toContain("TextColumn::make('next_retry_at')")
         ->and($tableConfig)->not->toContain("->dateTime('d/m/Y H:i')\n                    ->default('-')");
 });
 

@@ -2,13 +2,13 @@
 
 - Module code: `ZNS`
 - Module name: `Zalo / ZNS`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-ZNS-`
 - Source review: `docs/reviews/modules/ZNS-zalo-zns.md`
 - Source issues: `docs/issues/ZNS-issues.md`
 - Dependencies: `PAT, APPT, CARE, INT, OPS`
-- Last updated: `2026-03-06`
+- Last updated: `2026-03-07`
 
 # Objective
 
