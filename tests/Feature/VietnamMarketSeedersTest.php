@@ -1,12 +1,18 @@
 <?php
 
+use App\Models\Appointment;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\DoctorBranchAssignment;
+use App\Models\FactoryOrder;
+use App\Models\Invoice;
 use App\Models\Material;
 use App\Models\MaterialBatch;
+use App\Models\Note;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\ZnsCampaign;
+use App\Models\ZnsCampaignDelivery;
 use Database\Seeders\ClinicSettingsSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\InventorySeeder;
@@ -117,6 +123,24 @@ it('seeds the local demo user pack with deterministic roles and cross-branch doc
             ->where('is_active', true)
             ->exists())->toBeTrue()
         ->and(Hash::check(LocalDemoDataSeeder::DEFAULT_DEMO_PASSWORD, (string) User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->value('password')))->toBeTrue();
+});
+
+it('seeds deterministic crm demo scenarios across appointments finance care labo and zns', function (): void {
+    $this->seed(DatabaseSeeder::class);
+
+    expect(Appointment::query()->count())->toBe(6)
+        ->and(Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('status', Appointment::STATUS_COMPLETED)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('status', Appointment::STATUS_NO_SHOW)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('status', Appointment::STATUS_RESCHEDULED)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('status', Appointment::STATUS_CANCELLED)->exists())->toBeTrue()
+        ->and(Note::query()->where('care_type', 'no_show_recovery')->exists())->toBeTrue()
+        ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-Q1-001')->where('status', Invoice::STATUS_PARTIAL)->exists())->toBeTrue()
+        ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-Q1-002')->where('status', Invoice::STATUS_PAID)->exists())->toBeTrue()
+        ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-CG-001')->where('status', Invoice::STATUS_OVERDUE)->exists())->toBeTrue()
+        ->and(FactoryOrder::query()->count())->toBe(2)
+        ->and(ZnsCampaign::query()->where('code', 'ZNS-DEMO-Q1-RECALL')->where('status', ZnsCampaign::STATUS_COMPLETED)->exists())->toBeTrue()
+        ->and(ZnsCampaignDelivery::query()->where('idempotency_key', 'ZNS-DEMO-Q1-RECALL-01')->exists())->toBeTrue();
 });
 
 it('keeps production master data seeding free from local demo records', function (): void {

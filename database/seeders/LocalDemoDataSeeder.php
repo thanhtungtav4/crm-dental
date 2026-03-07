@@ -8,14 +8,21 @@ use App\Models\BranchLog;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
 use App\Models\DoctorBranchAssignment;
+use App\Models\FactoryOrder;
+use App\Models\FactoryOrderItem;
+use App\Models\Invoice;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\PlanItem;
 use App\Models\PromotionGroup;
 use App\Models\Service;
+use App\Models\Supplier;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Models\ZnsCampaign;
+use App\Models\ZnsCampaignDelivery;
 use App\Support\PatientCodeGenerator;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -45,7 +52,14 @@ class LocalDemoDataSeeder extends Seeder
 
         $this->seedCustomers($branchesByCode, $customerGroupIds, $promotionGroupIds, $usersByEmail);
         $this->seedPatients($branchesByCode, $customerGroupIds, $promotionGroupIds, $usersByEmail);
-        $this->seedTreatmentJourney($branches);
+        $customersByPhone = Customer::query()
+            ->get()
+            ->keyBy(fn (Customer $customer): string => (string) $customer->phone);
+        $patientsByPhone = Patient::query()
+            ->get()
+            ->keyBy(fn (Patient $patient): string => (string) $patient->phone);
+
+        $this->seedTreatmentJourney($branches, $usersByEmail, $patientsByPhone, $customersByPhone);
     }
 
     protected function seedBranches(): Collection
@@ -390,18 +404,15 @@ class LocalDemoDataSeeder extends Seeder
         }
     }
 
-    protected function seedTreatmentJourney(Collection $branches): void
-    {
-        if (
-            Appointment::query()->exists()
-            || TreatmentPlan::query()->exists()
-            || Note::query()->exists()
-            || BranchLog::query()->exists()
-        ) {
+    protected function seedTreatmentJourney(
+        Collection $branches,
+        Collection $usersByEmail,
+        Collection $patientsByPhone,
+        Collection $customersByPhone,
+    ): void {
+        if (TreatmentPlan::query()->exists()) {
             return;
         }
-
-        Appointment::factory()->count(10)->create();
 
         $availableServices = Service::query()
             ->where('active', true)
@@ -452,8 +463,604 @@ class LocalDemoDataSeeder extends Seeder
             $plan->update(['total_estimated_cost' => $estimatedTotal]);
         });
 
-        Note::factory()->count(12)->create();
-        BranchLog::factory()->count(3)->create();
+        $this->seedAppointments($usersByEmail, $patientsByPhone);
+        $this->seedCareNotes($usersByEmail, $patientsByPhone, $customersByPhone);
+        $this->seedBranchLogs($usersByEmail, $patientsByPhone, $branches);
+        $this->seedInvoicesAndPayments($usersByEmail, $patientsByPhone);
+        $this->seedFactoryOrders($usersByEmail, $patientsByPhone);
+        $this->seedZnsCampaigns($usersByEmail, $patientsByPhone, $customersByPhone);
+    }
+
+    protected function seedAppointments(Collection $usersByEmail, Collection $patientsByPhone): void
+    {
+        if (Appointment::query()->exists()) {
+            return;
+        }
+
+        $definitions = [
+            [
+                'patient_phone' => '0909123001',
+                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'date' => now()->addDay()->setTime(9, 0),
+                'status' => Appointment::STATUS_CONFIRMED,
+                'duration_minutes' => 60,
+                'appointment_type' => 'consultation',
+                'appointment_kind' => 'booking',
+                'chief_complaint' => 'Tu van implant rang 46',
+                'note' => 'Da xac nhan qua Zalo, can xem phim CT.',
+                'confirmed_at' => now()->subHours(3),
+                'reminder_hours' => 24,
+                'cancellation_reason' => null,
+                'reschedule_reason' => null,
+            ],
+            [
+                'patient_phone' => '0909123002',
+                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'date' => now()->subDay()->setTime(18, 30),
+                'status' => Appointment::STATUS_COMPLETED,
+                'duration_minutes' => 90,
+                'appointment_type' => 'treatment',
+                'appointment_kind' => 'booking',
+                'chief_complaint' => 'Gan rang su tam',
+                'note' => 'Benh nhan da chap nhan lich tai kham sau 7 ngay.',
+                'confirmed_at' => now()->subDays(2),
+                'reminder_hours' => 4,
+                'cancellation_reason' => null,
+                'reschedule_reason' => null,
+            ],
+            [
+                'patient_phone' => '0912123004',
+                'doctor_email' => 'doctor.float@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'date' => now()->addDays(2)->setTime(10, 0),
+                'status' => Appointment::STATUS_SCHEDULED,
+                'duration_minutes' => 45,
+                'appointment_type' => 'follow_up',
+                'appointment_kind' => 're_exam',
+                'chief_complaint' => 'Kham nha chu va cao voi',
+                'note' => 'Demo doctor da chi nhanh o Cau Giay.',
+                'confirmed_at' => null,
+                'reminder_hours' => 24,
+                'cancellation_reason' => null,
+                'reschedule_reason' => null,
+            ],
+            [
+                'patient_phone' => '0912123005',
+                'doctor_email' => 'doctor.cg@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'date' => now()->addDays(5)->setTime(14, 30),
+                'status' => Appointment::STATUS_RESCHEDULED,
+                'duration_minutes' => 60,
+                'appointment_type' => 'consultation',
+                'appointment_kind' => 'booking',
+                'chief_complaint' => 'Chot phac do nieng rang khay trong',
+                'note' => 'Khach de nghi doi lich sau hop cong ty.',
+                'confirmed_at' => now()->subDay(),
+                'reminder_hours' => 24,
+                'cancellation_reason' => null,
+                'reschedule_reason' => 'Khach ban dot xuat buoi chieu, doi sang thu Hai tuan sau.',
+            ],
+            [
+                'patient_phone' => '0935123007',
+                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'date' => now()->subDays(2)->setTime(16, 0),
+                'status' => Appointment::STATUS_NO_SHOW,
+                'duration_minutes' => 45,
+                'appointment_type' => 'consultation',
+                'appointment_kind' => 'booking',
+                'chief_complaint' => 'Tay trang truoc dam cuoi',
+                'note' => 'No-show, can CSKH goi lai.',
+                'confirmed_at' => now()->subDays(3),
+                'reminder_hours' => 12,
+                'cancellation_reason' => null,
+                'reschedule_reason' => null,
+            ],
+            [
+                'patient_phone' => '0935123008',
+                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'date' => now()->addDays(3)->setTime(11, 15),
+                'status' => Appointment::STATUS_CANCELLED,
+                'duration_minutes' => 90,
+                'appointment_type' => 'treatment',
+                'appointment_kind' => 'booking',
+                'chief_complaint' => 'Danh gia dat tru implant',
+                'note' => 'Da huy slot de doi phim X-quang bo sung.',
+                'confirmed_at' => now()->subDay(),
+                'reminder_hours' => 24,
+                'cancellation_reason' => 'Benh nhan can bo sung xet nghiem duong huyet truoc phau thuat.',
+                'reschedule_reason' => null,
+            ],
+        ];
+
+        foreach ($definitions as $definition) {
+            $patient = $patientsByPhone->get($definition['patient_phone']);
+
+            if (! $patient instanceof Patient) {
+                continue;
+            }
+
+            Appointment::query()->create([
+                'customer_id' => $patient->customer_id,
+                'patient_id' => $patient->id,
+                'doctor_id' => $usersByEmail->get($definition['doctor_email']),
+                'assigned_to' => $usersByEmail->get($definition['assigned_to_email']),
+                'branch_id' => $patient->first_branch_id,
+                'date' => $definition['date'],
+                'appointment_type' => $definition['appointment_type'],
+                'appointment_kind' => $definition['appointment_kind'],
+                'duration_minutes' => $definition['duration_minutes'],
+                'status' => $definition['status'],
+                'note' => $definition['note'],
+                'chief_complaint' => $definition['chief_complaint'],
+                'cancellation_reason' => $definition['cancellation_reason'],
+                'reschedule_reason' => $definition['reschedule_reason'],
+                'reminder_hours' => $definition['reminder_hours'],
+                'confirmed_at' => $definition['confirmed_at'],
+                'confirmed_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'is_walk_in' => false,
+                'is_emergency' => false,
+                'is_overbooked' => false,
+            ]);
+        }
+    }
+
+    protected function seedCareNotes(
+        Collection $usersByEmail,
+        Collection $patientsByPhone,
+        Collection $customersByPhone,
+    ): void {
+        if (Note::query()->exists()) {
+            return;
+        }
+
+        $appointmentIdsByPatientId = Appointment::query()
+            ->get()
+            ->groupBy('patient_id')
+            ->map(fn (Collection $appointments): ?int => $appointments->sortByDesc('date')->first()?->id);
+
+        $definitions = [
+            [
+                'patient_phone' => '0909123001',
+                'customer_phone' => '0909123001',
+                'user_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'care_type' => 'implant_followup',
+                'care_channel' => 'zalo',
+                'care_status' => Note::CARE_STATUS_IN_PROGRESS,
+                'care_mode' => 'manual',
+                'is_recurring' => false,
+                'content' => 'Da gui bao gia implant va hen goi lai sau khi benh nhan xem phim CT.',
+                'source_type' => Appointment::class,
+            ],
+            [
+                'patient_phone' => '0912123005',
+                'customer_phone' => '0912123005',
+                'user_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'care_type' => 'orthodontic_followup',
+                'care_channel' => 'call',
+                'care_status' => Note::CARE_STATUS_NEED_FOLLOWUP,
+                'care_mode' => 'manual',
+                'is_recurring' => false,
+                'content' => 'Khach xin doi lich chot phac do, can nhac lai sau 2 ngay.',
+                'source_type' => Patient::class,
+            ],
+            [
+                'patient_phone' => '0935123007',
+                'customer_phone' => '0935123007',
+                'user_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'care_type' => 'no_show_recovery',
+                'care_channel' => 'phone',
+                'care_status' => Note::CARE_STATUS_NOT_STARTED,
+                'care_mode' => 'automation',
+                'is_recurring' => true,
+                'content' => 'No-show whitening, can goi lai de xep lich bu toi.',
+                'source_type' => Appointment::class,
+            ],
+            [
+                'patient_phone' => null,
+                'customer_phone' => '0935123009',
+                'user_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'care_type' => 'web_lead_followup',
+                'care_channel' => 'zalo',
+                'care_status' => Note::CARE_STATUS_DONE,
+                'care_mode' => 'manual',
+                'is_recurring' => false,
+                'content' => 'Lead moi da duoc xac nhan slot lay cao rang sau 18h.',
+                'source_type' => Customer::class,
+            ],
+        ];
+
+        foreach ($definitions as $definition) {
+            $patient = filled($definition['patient_phone']) ? $patientsByPhone->get($definition['patient_phone']) : null;
+            $customer = $customersByPhone->get($definition['customer_phone']);
+
+            if (! $customer instanceof Customer) {
+                continue;
+            }
+
+            $sourceId = match ($definition['source_type']) {
+                Appointment::class => $patient instanceof Patient ? $appointmentIdsByPatientId->get($patient->id) : null,
+                Patient::class => $patient?->id,
+                Customer::class => $customer->id,
+                default => null,
+            };
+
+            Note::query()->create([
+                'patient_id' => $patient?->id,
+                'branch_id' => $patient?->first_branch_id ?? $customer->branch_id,
+                'customer_id' => $customer->id,
+                'user_id' => $usersByEmail->get($definition['user_email']),
+                'type' => Note::TYPE_GENERAL,
+                'care_type' => $definition['care_type'],
+                'care_channel' => $definition['care_channel'],
+                'care_status' => $definition['care_status'],
+                'care_at' => now()->subHours(6),
+                'care_mode' => $definition['care_mode'],
+                'is_recurring' => $definition['is_recurring'],
+                'content' => $definition['content'],
+                'source_type' => $definition['source_type'],
+                'source_id' => $sourceId,
+                'ticket_key' => $sourceId !== null
+                    ? Note::ticketKey(
+                        $definition['source_type'],
+                        $sourceId,
+                        $definition['care_type'],
+                        (string) ($patient?->first_branch_id ?? $customer->branch_id),
+                    )
+                    : null,
+            ]);
+        }
+    }
+
+    protected function seedBranchLogs(Collection $usersByEmail, Collection $patientsByPhone, Collection $branches): void
+    {
+        if (BranchLog::query()->exists()) {
+            return;
+        }
+
+        $patient = $patientsByPhone->get('0912123004');
+        $toBranchId = $branches->firstWhere('code', 'DN-HC')?->id;
+
+        if (! $patient instanceof Patient || ! is_numeric($toBranchId)) {
+            return;
+        }
+
+        BranchLog::query()->create([
+            'patient_id' => $patient->id,
+            'from_branch_id' => $patient->first_branch_id,
+            'to_branch_id' => (int) $toBranchId,
+            'moved_by' => $usersByEmail->get('manager.cg@demo.nhakhoaanphuc.test'),
+            'note' => 'Ban giao benh nhan cho chi nhanh Da Nang de tiep tuc lich phuc hinh khi cong tac dai ngay.',
+        ]);
+    }
+
+    protected function seedInvoicesAndPayments(Collection $usersByEmail, Collection $patientsByPhone): void
+    {
+        if (Invoice::query()->exists() || Payment::query()->exists()) {
+            return;
+        }
+
+        $plansByPatientId = TreatmentPlan::query()->orderBy('id')->get()->keyBy('patient_id');
+        $sessionsByPlanId = TreatmentSession::query()
+            ->orderBy('id')
+            ->get()
+            ->groupBy('treatment_plan_id')
+            ->map(fn (Collection $sessions): ?TreatmentSession => $sessions->first());
+
+        $invoiceDefinitions = [
+            [
+                'patient_phone' => '0909123001',
+                'invoice_no' => 'INV-DEMO-Q1-001',
+                'subtotal' => 18000000,
+                'discount_amount' => 1000000,
+                'tax_amount' => 0,
+                'due_date' => now()->addDays(7)->toDateString(),
+                'payments' => [
+                    [
+                        'amount' => 5000000,
+                        'method' => 'transfer',
+                        'note' => 'Dat coc implant dot 1',
+                        'paid_at' => now()->subDay(),
+                    ],
+                ],
+            ],
+            [
+                'patient_phone' => '0909123002',
+                'invoice_no' => 'INV-DEMO-Q1-002',
+                'subtotal' => 9500000,
+                'discount_amount' => 500000,
+                'tax_amount' => 0,
+                'due_date' => now()->addDays(3)->toDateString(),
+                'payments' => [
+                    [
+                        'amount' => 9000000,
+                        'method' => 'vnpay',
+                        'note' => 'Thanh toan du rang su',
+                        'paid_at' => now()->subHours(8),
+                    ],
+                ],
+            ],
+            [
+                'patient_phone' => '0912123005',
+                'invoice_no' => 'INV-DEMO-CG-001',
+                'subtotal' => 35000000,
+                'discount_amount' => 2000000,
+                'tax_amount' => 0,
+                'due_date' => now()->subDays(5)->toDateString(),
+                'payments' => [],
+            ],
+            [
+                'patient_phone' => '0935123008',
+                'invoice_no' => 'INV-DEMO-HC-001',
+                'subtotal' => 22000000,
+                'discount_amount' => 0,
+                'tax_amount' => 0,
+                'due_date' => now()->addDays(10)->toDateString(),
+                'payments' => [],
+            ],
+        ];
+
+        foreach ($invoiceDefinitions as $definition) {
+            $patient = $patientsByPhone->get($definition['patient_phone']);
+
+            if (! $patient instanceof Patient) {
+                continue;
+            }
+
+            /** @var TreatmentPlan|null $plan */
+            $plan = $plansByPatientId->get($patient->id);
+            /** @var TreatmentSession|null $session */
+            $session = $plan instanceof TreatmentPlan ? $sessionsByPlanId->get($plan->id) : null;
+
+            $invoice = Invoice::query()->create([
+                'treatment_session_id' => $session?->id,
+                'treatment_plan_id' => $plan?->id,
+                'patient_id' => $patient->id,
+                'branch_id' => $patient->first_branch_id,
+                'invoice_no' => $definition['invoice_no'],
+                'subtotal' => $definition['subtotal'],
+                'discount_amount' => $definition['discount_amount'],
+                'tax_amount' => $definition['tax_amount'],
+                'total_amount' => Invoice::calculateTotalAmount(
+                    $definition['subtotal'],
+                    $definition['discount_amount'],
+                    $definition['tax_amount'],
+                ),
+                'paid_amount' => 0,
+                'status' => Invoice::STATUS_ISSUED,
+                'issued_at' => now()->subDays(2),
+                'due_date' => $definition['due_date'],
+            ]);
+
+            foreach ($definition['payments'] as $paymentDefinition) {
+                Payment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'branch_id' => $invoice->branch_id,
+                    'amount' => $paymentDefinition['amount'],
+                    'direction' => 'receipt',
+                    'is_deposit' => false,
+                    'method' => $paymentDefinition['method'],
+                    'transaction_ref' => sprintf('DEMO-%s-%s', $invoice->invoice_no, strtoupper($paymentDefinition['method'])),
+                    'payment_source' => 'patient',
+                    'paid_at' => $paymentDefinition['paid_at'],
+                    'received_by' => $usersByEmail->get('manager.q1@demo.nhakhoaanphuc.test')
+                        ?? $usersByEmail->get('manager.cg@demo.nhakhoaanphuc.test')
+                        ?? $usersByEmail->get('manager.hc@demo.nhakhoaanphuc.test'),
+                    'note' => $paymentDefinition['note'],
+                ]);
+            }
+
+            $invoice->refresh();
+            $invoice->updatePaidAmount();
+        }
+    }
+
+    protected function seedFactoryOrders(Collection $usersByEmail, Collection $patientsByPhone): void
+    {
+        if (FactoryOrder::query()->exists()) {
+            return;
+        }
+
+        $supplierIdsByCode = Supplier::query()->pluck('id', 'code');
+        $serviceIdsByName = Service::query()->pluck('id', 'name');
+
+        $definitions = [
+            [
+                'order_no' => 'FO-DEMO-Q1-001',
+                'patient_phone' => '0909123002',
+                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
+                'requester_email' => 'manager.q1@demo.nhakhoaanphuc.test',
+                'supplier_code' => 'SGDS',
+                'status' => FactoryOrder::STATUS_ORDERED,
+                'priority' => 'high',
+                'due_at' => now()->addDays(6),
+                'notes' => 'Rang su zirconia cho 2 rang cua, uu tien giao truoc cuoi tuan.',
+                'items' => [
+                    [
+                        'item_name' => 'Rang su Zirconia 11',
+                        'service_name' => 'Bọc răng sứ',
+                        'tooth_number' => '11',
+                        'material' => 'Zirconia',
+                        'shade' => 'A2',
+                        'quantity' => 1,
+                        'unit_price' => 1800000,
+                        'status' => 'ordered',
+                        'notes' => 'Can mau sat rang that ben canh.',
+                    ],
+                ],
+            ],
+            [
+                'order_no' => 'FO-DEMO-HC-001',
+                'patient_phone' => '0935123008',
+                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
+                'requester_email' => 'manager.hc@demo.nhakhoaanphuc.test',
+                'supplier_code' => 'MEDIDN',
+                'status' => FactoryOrder::STATUS_IN_PROGRESS,
+                'priority' => 'urgent',
+                'due_at' => now()->addDays(3),
+                'notes' => 'Abutment implant va khung su can doi mau theo phim chup moi nhat.',
+                'items' => [
+                    [
+                        'item_name' => 'Abutment implant 26',
+                        'service_name' => 'Implant nha khoa',
+                        'tooth_number' => '26',
+                        'material' => 'Titan',
+                        'shade' => null,
+                        'quantity' => 1,
+                        'unit_price' => 3200000,
+                        'status' => 'in_progress',
+                        'notes' => 'Lab dang gia cong phan ket noi.',
+                    ],
+                ],
+            ],
+        ];
+
+        foreach ($definitions as $definition) {
+            $patient = $patientsByPhone->get($definition['patient_phone']);
+
+            if (! $patient instanceof Patient) {
+                continue;
+            }
+
+            $order = FactoryOrder::query()->create([
+                'order_no' => $definition['order_no'],
+                'patient_id' => $patient->id,
+                'branch_id' => $patient->first_branch_id,
+                'doctor_id' => $usersByEmail->get($definition['doctor_email']),
+                'supplier_id' => $supplierIdsByCode->get($definition['supplier_code']),
+                'requested_by' => $usersByEmail->get($definition['requester_email']),
+                'status' => $definition['status'],
+                'priority' => $definition['priority'],
+                'ordered_at' => now()->subDay(),
+                'due_at' => $definition['due_at'],
+                'notes' => $definition['notes'],
+            ]);
+
+            foreach ($definition['items'] as $itemDefinition) {
+                FactoryOrderItem::query()->create([
+                    'factory_order_id' => $order->id,
+                    'item_name' => $itemDefinition['item_name'],
+                    'service_id' => $serviceIdsByName->get($itemDefinition['service_name']),
+                    'tooth_number' => $itemDefinition['tooth_number'],
+                    'material' => $itemDefinition['material'],
+                    'shade' => $itemDefinition['shade'],
+                    'quantity' => $itemDefinition['quantity'],
+                    'unit_price' => $itemDefinition['unit_price'],
+                    'status' => $itemDefinition['status'],
+                    'notes' => $itemDefinition['notes'],
+                ]);
+            }
+        }
+    }
+
+    protected function seedZnsCampaigns(
+        Collection $usersByEmail,
+        Collection $patientsByPhone,
+        Collection $customersByPhone,
+    ): void {
+        if (ZnsCampaign::query()->exists() || ZnsCampaignDelivery::query()->exists()) {
+            return;
+        }
+
+        $campaignDefinitions = [
+            [
+                'code' => 'ZNS-DEMO-Q1-RECALL',
+                'name' => 'Recall implant Quan 1',
+                'branch_id' => $patientsByPhone->get('0909123001')?->first_branch_id,
+                'status' => ZnsCampaign::STATUS_COMPLETED,
+                'scheduled_at' => now()->subDays(2),
+                'started_at' => now()->subDays(2)->addHour(),
+                'finished_at' => now()->subDays(2)->addHours(2),
+                'sent_count' => 1,
+                'failed_count' => 0,
+                'template_key' => 'implant_recall',
+                'template_id' => 'TPL-IMPLANT-001',
+                'deliveries' => [
+                    [
+                        'patient_phone' => '0909123001',
+                        'customer_phone' => '0909123001',
+                        'status' => ZnsCampaignDelivery::STATUS_SENT,
+                        'provider_message_id' => 'ZNS-MSG-001',
+                        'sent_at' => now()->subDays(2)->addHour(),
+                    ],
+                ],
+            ],
+            [
+                'code' => 'ZNS-DEMO-CG-NOSHOW',
+                'name' => 'No-show recovery Cau Giay',
+                'branch_id' => $patientsByPhone->get('0912123005')?->first_branch_id,
+                'status' => ZnsCampaign::STATUS_SCHEDULED,
+                'scheduled_at' => now()->addHours(6),
+                'started_at' => null,
+                'finished_at' => null,
+                'sent_count' => 0,
+                'failed_count' => 0,
+                'template_key' => 'no_show_recovery',
+                'template_id' => 'TPL-RECALL-002',
+                'deliveries' => [
+                    [
+                        'patient_phone' => '0912123005',
+                        'customer_phone' => '0912123005',
+                        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+                        'provider_message_id' => null,
+                        'sent_at' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        foreach ($campaignDefinitions as $campaignDefinition) {
+            $campaign = ZnsCampaign::query()->create([
+                'code' => $campaignDefinition['code'],
+                'name' => $campaignDefinition['name'],
+                'branch_id' => $campaignDefinition['branch_id'],
+                'audience_source' => 'patient_list',
+                'audience_last_visit_before_days' => 30,
+                'template_key' => $campaignDefinition['template_key'],
+                'template_id' => $campaignDefinition['template_id'],
+                'audience_payload' => ['scope' => 'demo'],
+                'message_payload' => ['scope' => 'demo'],
+                'status' => $campaignDefinition['status'],
+                'scheduled_at' => $campaignDefinition['scheduled_at'],
+                'started_at' => $campaignDefinition['started_at'],
+                'finished_at' => $campaignDefinition['finished_at'],
+                'sent_count' => $campaignDefinition['sent_count'],
+                'failed_count' => $campaignDefinition['failed_count'],
+                'created_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'updated_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+            ]);
+
+            foreach ($campaignDefinition['deliveries'] as $index => $deliveryDefinition) {
+                $patient = $patientsByPhone->get($deliveryDefinition['patient_phone']);
+                $customer = $customersByPhone->get($deliveryDefinition['customer_phone']);
+
+                ZnsCampaignDelivery::query()->create([
+                    'zns_campaign_id' => $campaign->id,
+                    'patient_id' => $patient?->id,
+                    'customer_id' => $customer?->id,
+                    'branch_id' => $patient?->first_branch_id ?? $customer?->branch_id,
+                    'phone' => $patient?->phone ?? $customer?->phone,
+                    'normalized_phone' => $patient?->phone ?? $customer?->phone,
+                    'idempotency_key' => sprintf('%s-%02d', $campaign->code, $index + 1),
+                    'status' => $deliveryDefinition['status'],
+                    'attempt_count' => $deliveryDefinition['status'] === ZnsCampaignDelivery::STATUS_QUEUED ? 0 : 1,
+                    'provider_message_id' => $deliveryDefinition['provider_message_id'],
+                    'provider_status_code' => $deliveryDefinition['status'] === ZnsCampaignDelivery::STATUS_SENT ? '200' : null,
+                    'provider_response' => $deliveryDefinition['status'] === ZnsCampaignDelivery::STATUS_SENT
+                        ? ['message' => 'accepted']
+                        : null,
+                    'error_message' => null,
+                    'sent_at' => $deliveryDefinition['sent_at'],
+                    'next_retry_at' => null,
+                    'payload' => ['scope' => 'demo'],
+                    'template_key_snapshot' => $campaignDefinition['template_key'],
+                    'template_id_snapshot' => $campaignDefinition['template_id'],
+                ]);
+            }
+        }
     }
 
     /**

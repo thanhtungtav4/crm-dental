@@ -59,6 +59,59 @@ php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
   - la service account, khong dung de login Filament panel
   - dung de test command, scheduler, va OPS actor boundary neu can
 
+## Du lieu nghiep vu demo co san
+
+### Benh nhan mau
+
+| Ho ten | So dien thoai | Chi nhanh | Muc dich demo |
+| --- | --- | --- | --- |
+| `Nguyen Hoang Minh` | `0909123001` | `HCM-Q1` | Tu van implant, co lich hen confirmed, invoice partial, ZNS recall completed |
+| `Tran Bao Chau` | `0909123002` | `HCM-Q1` | Dieu tri rang su, co lich completed, invoice paid, factory order dang ordered |
+| `Le Gia Han` | `0912123004` | `HN-CG` | Demo doctor da chi nhanh tai Cau Giay, co branch transfer log |
+| `Pham Quynh Nhu` | `0912123005` | `HN-CG` | No-show recovery / reschedule / invoice overdue / ZNS scheduled |
+| `Vo Minh Anh` | `0935123007` | `DN-HC` | No-show case cho luong CSKH goi lai |
+| `Do Quoc Tuan` | `0935123008` | `DN-HC` | Ca implant / labo urgent / lich hen cancelled |
+
+### Lich hen demo
+
+| Patient phone | Trang thai | Loai | Phan loai | Ghi chu |
+| --- | --- | --- | --- | --- |
+| `0909123001` | `confirmed` | `consultation` | `booking` | Tu van implant Quan 1, da confirm qua Zalo |
+| `0909123002` | `completed` | `treatment` | `booking` | Dieu tri rang su da hoan tat |
+| `0912123004` | `scheduled` | `follow_up` | `re_exam` | Demo `doctor.float` phuc vu tai `HN-CG` |
+| `0912123005` | `rescheduled` | `consultation` | `booking` | Khach doi lich vi ban hop cong ty |
+| `0935123007` | `no_show` | `consultation` | `booking` | Dau vao cho queue CSKH no-show recovery |
+| `0935123008` | `cancelled` | `treatment` | `booking` | Huy do chua du phim/xet nghiem |
+
+### Care note demo
+
+- Co ticket `no_show_recovery` cho patient `0935123007`
+- Co ticket follow-up cho patient `0912123005`
+- Co note lien ket customer/patient/appointment de demo customer care queue
+
+### Tai chinh demo
+
+| Invoice no | Patient phone | Trang thai | Tinh huong |
+| --- | --- | --- | --- |
+| `INV-DEMO-Q1-001` | `0909123001` | `partial` | Dat coc implant dot 1 |
+| `INV-DEMO-Q1-002` | `0909123002` | `paid` | Thanh toan du rang su |
+| `INV-DEMO-CG-001` | `0912123005` | `overdue` | Cong no qua han chua thu |
+| `INV-DEMO-HC-001` | `0935123008` | `issued` | Hoa don da xuat, chua thanh toan |
+
+### Labo demo
+
+| Order no | Patient phone | Trang thai | Nha cung cap | Ghi chu |
+| --- | --- | --- | --- | --- |
+| `FO-DEMO-Q1-001` | `0909123002` | `ordered` | `SGDS` | Rang su zirconia Quan 1 |
+| `FO-DEMO-HC-001` | `0935123008` | `in_progress` | `MEDIDN` | Implant urgent Hai Chau |
+
+### ZNS demo
+
+| Campaign code | Trang thai | Doi tuong | Ghi chu |
+| --- | --- | --- | --- |
+| `ZNS-DEMO-Q1-RECALL` | `completed` | Patient `0909123001` | Recall implant da gui thanh cong |
+| `ZNS-DEMO-CG-NOSHOW` | `scheduled` | Patient `0912123005` | No-show recovery dang cho xu ly |
+
 ## Luong demo de xuat
 
 ### Demo governance
@@ -76,11 +129,26 @@ php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
 
 - Login bang `cskh.q1@demo.nhakhoaanphuc.test`
 - Xem customer care queue, recall va birthday automation
+- Dung patient `0935123007` de demo no-show recovery
+- Dung patient `0912123005` de demo callback va lich doi
 
 ### Demo bac si
 
 - Login bang `doctor.cg@demo.nhakhoaanphuc.test`
 - Mo patient workspace, clinical/treatment tab va lich hen cua `HN-CG`
+
+### Demo finance va labo
+
+- Login bang `manager.q1@demo.nhakhoaanphuc.test`
+- Mo `INV-DEMO-Q1-001`, `INV-DEMO-Q1-002`, `FO-DEMO-Q1-001`
+- Login bang `manager.hc@demo.nhakhoaanphuc.test`
+- Mo `INV-DEMO-HC-001`, `FO-DEMO-HC-001`
+
+### Demo ZNS
+
+- Login bang `admin@demo.nhakhoaanphuc.test`
+- Mo campaign `ZNS-DEMO-Q1-RECALL` va `ZNS-DEMO-CG-NOSHOW`
+- Kiem tra relation deliveries va triage page
 
 ## Luu y
 
