@@ -2,6 +2,7 @@
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\BackupArtifactService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 
@@ -66,11 +67,7 @@ it('records automation service actor audit for backup health command', function 
     $actor->assignRole('AutomationService');
 
     $backupPath = storage_path('app/testing/ops-auth/backup-health');
-    File::ensureDirectoryExists($backupPath);
-
-    $backupFile = $backupPath.'/crm-backup-pass.sql';
-    File::put($backupFile, '-- backup fixture');
-    touch($backupFile, now()->subHour()->getTimestamp());
+    provisionOpsEncryptedBackupArtifact($backupPath, 'ops-auth-backup-fixture');
 
     $this->actingAs($actor);
 
@@ -91,6 +88,30 @@ it('records automation service actor audit for backup health command', function 
         ->and((int) $audit->actor_id)->toBe($actor->id)
         ->and((string) data_get($audit?->metadata, 'status'))->toBe('healthy');
 });
+
+function provisionOpsEncryptedBackupArtifact(string $backupPath, string $payload): void
+{
+    $sourceDirectory = $backupPath.'/source';
+    $databasePath = $sourceDirectory.'/database.sqlite';
+    $connectionName = 'sqlite_ops_auth_'.str()->random(10);
+
+    File::deleteDirectory($backupPath);
+    File::ensureDirectoryExists($sourceDirectory);
+    File::put($databasePath, $payload);
+
+    config()->set('database.connections.'.$connectionName, [
+        'driver' => 'sqlite',
+        'database' => $databasePath,
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]);
+
+    app(BackupArtifactService::class)->create(
+        connection: config('database.connections.'.$connectionName),
+        connectionName: $connectionName,
+        backupPath: $backupPath,
+    );
+}
 
 it('records admin actor audit for readiness signoff verification', function (): void {
     $admin = User::factory()->create();

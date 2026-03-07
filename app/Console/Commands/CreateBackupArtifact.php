@@ -3,12 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\BackupArtifactService;
 use App\Services\OpsCommandAuthorizer;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Str;
-use Throwable;
 
 class CreateBackupArtifact extends Command
 {
@@ -17,10 +14,12 @@ class CreateBackupArtifact extends Command
         {--connection= : Database connection backup (mac dinh: database.default)}
         {--strict : Fail command neu tao backup artifact khong thanh cong}';
 
-    protected $description = 'Tao backup artifact toi thieu de phuc vu release gate va restore drill.';
+    protected $description = 'Tao encrypted backup artifact va manifest de phuc vu release gate va restore drill.';
 
-    public function __construct(protected OpsCommandAuthorizer $authorizer)
-    {
+    public function __construct(
+        protected OpsCommandAuthorizer $authorizer,
+        protected BackupArtifactService $backupArtifactService,
+    ) {
         parent::__construct();
     }
 
@@ -44,52 +43,31 @@ class CreateBackupArtifact extends Command
             );
         }
 
-        $driver = strtolower((string) ($connection['driver'] ?? ''));
-        File::ensureDirectoryExists($backupPath);
-
-        $timestamp = now()->format('Ymd_His');
-        $artifactPath = null;
+        $artifact = null;
         $error = null;
+        $driver = strtolower((string) ($connection['driver'] ?? ''));
 
         try {
-            if ($driver === 'sqlite') {
-                $artifactPath = $this->backupSqliteConnection(
-                    connection: $connection,
-                    connectionName: $connectionName,
-                    backupPath: $backupPath,
-                    timestamp: $timestamp,
-                );
-            } elseif (in_array($driver, ['mysql', 'mariadb', 'pgsql'], true)) {
-                $artifactPath = $this->backupProcessConnection(
-                    connection: $connection,
-                    connectionName: $connectionName,
-                    backupPath: $backupPath,
-                    timestamp: $timestamp,
-                    driver: $driver,
-                );
-            } else {
-                return $this->failBackupArtifact(
-                    message: 'Driver khong duoc ho tro backup artifact: '.$driver,
-                    backupPath: $backupPath,
-                    connectionName: $connectionName,
-                    driver: $driver,
-                    actorId: $actorId,
-                );
-            }
-        } catch (Throwable $throwable) {
+            $artifact = $this->backupArtifactService->create(
+                connection: $connection,
+                connectionName: $connectionName,
+                backupPath: $backupPath,
+            );
+        } catch (\Throwable $throwable) {
             $error = $throwable->getMessage();
         }
 
-        $artifactExists = is_string($artifactPath) && File::exists($artifactPath);
-        $artifactSize = $artifactExists ? (int) File::size($artifactPath) : 0;
-        $successful = $artifactExists && $artifactSize > 0 && $error === null;
+        $successful = is_array($artifact) && $error === null;
         $status = $successful ? 'success' : 'failed';
 
         $this->line('BACKUP_ARTIFACT_STATUS: '.$status);
         $this->line('BACKUP_ARTIFACT_CONNECTION: '.$connectionName);
         $this->line('BACKUP_ARTIFACT_DRIVER: '.($driver !== '' ? $driver : '-'));
-        $this->line('BACKUP_ARTIFACT_PATH: '.($artifactPath ?? '-'));
-        $this->line('BACKUP_ARTIFACT_SIZE_BYTES: '.($artifactExists ? (string) $artifactSize : '-'));
+        $this->line('BACKUP_ARTIFACT_PATH: '.($artifact['artifact_path'] ?? '-'));
+        $this->line('BACKUP_ARTIFACT_SIZE_BYTES: '.(isset($artifact['artifact_size_bytes']) ? (string) $artifact['artifact_size_bytes'] : '-'));
+        $this->line('BACKUP_ARTIFACT_MANIFEST_PATH: '.($artifact['manifest_path'] ?? '-'));
+        $this->line('BACKUP_ARTIFACT_ENCRYPTED: '.($successful ? 'yes' : '-'));
+        $this->line('BACKUP_ARTIFACT_CHECKSUM_SHA256: '.($artifact['artifact_checksum_sha256'] ?? '-'));
         $this->line('BACKUP_ARTIFACT_ERROR: '.($error ?? '-'));
 
         AuditLog::record(
@@ -103,8 +81,17 @@ class CreateBackupArtifact extends Command
                 'backup_path' => $backupPath,
                 'connection' => $connectionName,
                 'driver' => $driver !== '' ? $driver : null,
-                'artifact_file' => $artifactPath ? basename($artifactPath) : null,
-                'artifact_size_bytes' => $artifactSize,
+                'artifact_id' => $artifact['artifact_id'] ?? null,
+                'artifact_file' => isset($artifact['artifact_path']) ? basename((string) $artifact['artifact_path']) : null,
+                'artifact_size_bytes' => $artifact['artifact_size_bytes'] ?? 0,
+                'artifact_checksum_sha256' => $artifact['artifact_checksum_sha256'] ?? null,
+                'manifest_file' => isset($artifact['manifest_path']) ? basename((string) $artifact['manifest_path']) : null,
+                'plaintext_size_bytes' => $artifact['plaintext_size_bytes'] ?? null,
+                'plaintext_checksum_sha256' => $artifact['plaintext_checksum_sha256'] ?? null,
+                'encrypted' => $artifact['encrypted'] ?? false,
+                'encryption_driver' => $artifact['encryption_driver'] ?? null,
+                'payload_encoding' => $artifact['payload_encoding'] ?? null,
+                'source_format' => $artifact['source_format'] ?? null,
                 'error' => $error,
             ],
         );
@@ -118,110 +105,6 @@ class CreateBackupArtifact extends Command
         return $successful ? self::SUCCESS : self::FAILURE;
     }
 
-    /**
-     * @param  array<string, mixed>  $connection
-     */
-    protected function backupSqliteConnection(
-        array $connection,
-        string $connectionName,
-        string $backupPath,
-        string $timestamp,
-    ): string {
-        $database = trim((string) ($connection['database'] ?? ''));
-
-        if ($database === '' || $database === ':memory:') {
-            throw new \RuntimeException('SQLite database path khong hop le.');
-        }
-
-        $sourcePath = $this->resolveDatabasePath($database);
-
-        if (! File::exists($sourcePath)) {
-            throw new \RuntimeException('Khong tim thay SQLite database file: '.$sourcePath);
-        }
-
-        $artifactPath = $backupPath.'/crm-backup-'.$connectionName.'-'.$timestamp.'.bak';
-        File::copy($sourcePath, $artifactPath);
-
-        return $artifactPath;
-    }
-
-    /**
-     * @param  array<string, mixed>  $connection
-     */
-    protected function backupProcessConnection(
-        array $connection,
-        string $connectionName,
-        string $backupPath,
-        string $timestamp,
-        string $driver,
-    ): string {
-        $database = trim((string) ($connection['database'] ?? ''));
-        $host = trim((string) ($connection['host'] ?? '127.0.0.1'));
-        $port = (string) ($connection['port'] ?? ($driver === 'pgsql' ? 5432 : 3306));
-        $username = trim((string) ($connection['username'] ?? ''));
-        $password = (string) ($connection['password'] ?? '');
-
-        if ($database === '' || $username === '') {
-            throw new \RuntimeException('Thong tin ket noi database khong day du de tao dump.');
-        }
-
-        if ($driver === 'pgsql') {
-            $command = [
-                'pg_dump',
-                '--format=plain',
-                '--no-owner',
-                '--no-privileges',
-                '--host='.$host,
-                '--port='.$port,
-                '--username='.$username,
-                $database,
-            ];
-            $env = ['PGPASSWORD' => $password];
-            $extension = 'sql';
-        } else {
-            $command = [
-                'mysqldump',
-                '--single-transaction',
-                '--quick',
-                '--skip-lock-tables',
-                '--host='.$host,
-                '--port='.$port,
-                '--user='.$username,
-                $database,
-            ];
-            $env = ['MYSQL_PWD' => $password];
-            $extension = 'sql';
-        }
-
-        $result = Process::path(base_path())
-            ->timeout(600)
-            ->env($env)
-            ->run($command);
-
-        if (! $result->successful()) {
-            throw new \RuntimeException('Dump command fail: '.Str::limit(trim($result->errorOutput()), 500));
-        }
-
-        $output = $result->output();
-        if (! is_string($output) || trim($output) === '') {
-            throw new \RuntimeException('Dump output rong, khong tao duoc backup artifact.');
-        }
-
-        $artifactPath = $backupPath.'/crm-backup-'.$connectionName.'-'.$timestamp.'.'.$extension;
-        File::put($artifactPath, $output);
-
-        return $artifactPath;
-    }
-
-    protected function resolveDatabasePath(string $database): string
-    {
-        if (Str::startsWith($database, ['/', '\\']) || preg_match('/^[A-Za-z]:[\\\\\\/]/', $database) === 1) {
-            return $database;
-        }
-
-        return base_path($database);
-    }
-
     protected function failBackupArtifact(string $message, string $backupPath, string $connectionName, ?string $driver, ?int $actorId): int
     {
         $this->line('BACKUP_ARTIFACT_STATUS: failed');
@@ -229,6 +112,9 @@ class CreateBackupArtifact extends Command
         $this->line('BACKUP_ARTIFACT_DRIVER: '.($driver ?? '-'));
         $this->line('BACKUP_ARTIFACT_PATH: -');
         $this->line('BACKUP_ARTIFACT_SIZE_BYTES: -');
+        $this->line('BACKUP_ARTIFACT_MANIFEST_PATH: -');
+        $this->line('BACKUP_ARTIFACT_ENCRYPTED: -');
+        $this->line('BACKUP_ARTIFACT_CHECKSUM_SHA256: -');
         $this->line('BACKUP_ARTIFACT_ERROR: '.$message);
 
         AuditLog::record(

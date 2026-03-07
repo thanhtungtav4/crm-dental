@@ -1,15 +1,18 @@
 <?php
 
+use App\Services\BackupArtifactService;
 use Illuminate\Contracts\Process\ProcessResult as ProcessResultContract;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 
-it('creates sqlite backup artifact by copying database file', function (): void {
+it('creates sqlite backup artifact with encrypted payload and manifest', function (): void {
     $sourceDirectory = storage_path('app/testing/backup-artifact/sqlite-source');
     $backupDirectory = storage_path('app/testing/backup-artifact/sqlite-output');
     $sourceFile = $sourceDirectory.'/database.sqlite';
 
+    File::deleteDirectory($sourceDirectory);
+    File::deleteDirectory($backupDirectory);
     File::ensureDirectoryExists($sourceDirectory);
     File::ensureDirectoryExists($backupDirectory);
     File::put($sourceFile, 'sqlite-backup-fixture');
@@ -27,18 +30,31 @@ it('creates sqlite backup artifact by copying database file', function (): void 
         '--strict' => true,
     ])
         ->expectsOutputToContain('BACKUP_ARTIFACT_STATUS: success')
+        ->expectsOutputToContain('BACKUP_ARTIFACT_ENCRYPTED: yes')
         ->assertSuccessful();
 
     $artifact = collect(File::files($backupDirectory))
-        ->sortByDesc(fn (\SplFileInfo $file): int => $file->getMTime())
-        ->first();
+        ->first(fn (\SplFileInfo $file): bool => $file->getExtension() === 'bak');
+    $manifest = collect(File::files($backupDirectory))
+        ->first(fn (\SplFileInfo $file): bool => str($file->getFilename())->endsWith('.manifest.json'));
 
-    expect($artifact)->not->toBeNull();
-    expect(File::get($artifact->getPathname()))->toBe('sqlite-backup-fixture');
+    expect($artifact)->not->toBeNull()
+        ->and($manifest)->not->toBeNull()
+        ->and(File::get($artifact->getPathname()))->not->toBe('sqlite-backup-fixture');
+
+    $decrypted = app(BackupArtifactService::class)->decryptArtifact($artifact->getPathname());
+    $manifestPayload = json_decode(File::get($manifest->getPathname()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($decrypted)->toBe('sqlite-backup-fixture')
+        ->and((bool) ($manifestPayload['encrypted'] ?? false))->toBeTrue()
+        ->and((string) ($manifestPayload['artifact_file'] ?? ''))->toBe($artifact->getFilename())
+        ->and((string) ($manifestPayload['plaintext_checksum_sha256'] ?? ''))->toBe(hash('sha256', 'sqlite-backup-fixture'));
 });
 
-it('creates mysql backup artifact from mysqldump process output', function (): void {
+it('creates mysql backup artifact from mysqldump process output and records manifest', function (): void {
     $backupDirectory = storage_path('app/testing/backup-artifact/mysql-output');
+
+    File::deleteDirectory($backupDirectory);
     File::ensureDirectoryExists($backupDirectory);
 
     Process::fake([
@@ -64,6 +80,7 @@ it('creates mysql backup artifact from mysqldump process output', function (): v
         '--strict' => true,
     ])
         ->expectsOutputToContain('BACKUP_ARTIFACT_STATUS: success')
+        ->expectsOutputToContain('BACKUP_ARTIFACT_ENCRYPTED: yes')
         ->assertSuccessful();
 
     Process::assertRan(function (PendingProcess $process, ProcessResultContract $result): bool {
@@ -73,15 +90,22 @@ it('creates mysql backup artifact from mysqldump process output', function (): v
     });
 
     $artifact = collect(File::files($backupDirectory))
-        ->sortByDesc(fn (\SplFileInfo $file): int => $file->getMTime())
-        ->first();
+        ->first(fn (\SplFileInfo $file): bool => $file->getExtension() === 'bak');
+    $manifest = collect(File::files($backupDirectory))
+        ->first(fn (\SplFileInfo $file): bool => str($file->getFilename())->endsWith('.manifest.json'));
 
-    expect($artifact)->not->toBeNull();
-    expect(File::get($artifact->getPathname()))->toContain('-- mysql dump fixture');
+    expect($artifact)->not->toBeNull()
+        ->and($manifest)->not->toBeNull();
+
+    $decrypted = app(BackupArtifactService::class)->decryptArtifact($artifact->getPathname());
+
+    expect($decrypted)->toContain('-- mysql dump fixture');
 });
 
 it('fails strict mode when dump process fails', function (): void {
     $backupDirectory = storage_path('app/testing/backup-artifact/fail-output');
+
+    File::deleteDirectory($backupDirectory);
     File::ensureDirectoryExists($backupDirectory);
 
     Process::fake([

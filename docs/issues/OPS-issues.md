@@ -87,7 +87,7 @@
 - Dependencies:
   - OPS-002
 - Suggested order: 3
-- Current status: Open
+- Current status: In Fix
 - Linked task IDs: `TASK-OPS-003`
 
 ## [OPS-004] OPS commands quan trong chua qua ActionGate va actor audit khong dong nhat
@@ -225,8 +225,8 @@
 
 # Summary
 
-- Open critical count: 1
+- Open critical count: 0
 - Open high count: 2
 - Open medium count: 3
 - Open low count: 0
-- Next recommended action: Tiep tuc `TASK-OPS-004`, sau do uu tien `TASK-OPS-002` va `TASK-OPS-003` de khoa encrypted backup + restore drill that.
+- Next recommended action: Chot `TASK-OPS-002`, sau do uu tien `TASK-OPS-003` va `TASK-OPS-004` de dong backup/restore va actor boundary con lai.

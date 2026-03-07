@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\BackupArtifactManifestService;
 use App\Services\OpsCommandAuthorizer;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -15,10 +15,12 @@ class CheckBackupHealth extends Command
         {--max-age-hours=26 : Gioi han tuoi backup moi nhat}
         {--strict : Fail command neu backup khong healthy}';
 
-    protected $description = 'Kiem tra suc khoe backup truoc release gate (ton tai + do moi).';
+    protected $description = 'Kiem tra suc khoe backup dua tren encrypted artifact + manifest truoc release gate.';
 
-    public function __construct(protected OpsCommandAuthorizer $authorizer)
-    {
+    public function __construct(
+        protected OpsCommandAuthorizer $authorizer,
+        protected BackupArtifactManifestService $manifestService,
+    ) {
         parent::__construct();
     }
 
@@ -30,36 +32,58 @@ class CheckBackupHealth extends Command
 
         $path = (string) ($this->option('path') ?: storage_path('app/backups'));
         $maxAgeHours = max(1, (int) $this->option('max-age-hours'));
-
         $directoryExists = is_dir($path);
-        $backupFiles = $directoryExists
-            ? collect(File::files($path))
-                ->filter(function (\SplFileInfo $file): bool {
-                    $extension = strtolower($file->getExtension());
-
-                    return in_array($extension, ['sql', 'gz', 'zip', 'tar', 'bak'], true);
-                })
-                ->sortByDesc(fn (\SplFileInfo $file): int => $file->getMTime())
-                ->values()
-            : collect();
-
-        $latestFile = $backupFiles->first();
-        $latestTimestamp = $latestFile ? Carbon::createFromTimestamp($latestFile->getMTime()) : null;
-        $latestAgeHours = $latestTimestamp ? abs(now()->diffInHours($latestTimestamp)) : null;
-
+        $latestManifest = $this->manifestService->latest($path);
+        $manifestPath = is_array($latestManifest) ? $latestManifest['path'] ?? null : null;
+        $manifest = is_array($latestManifest) ? ($latestManifest['data'] ?? null) : null;
+        $validationErrors = $this->manifestService->validate(is_array($manifest) ? $manifest : null);
+        $artifactPath = is_array($manifest) ? $this->manifestService->artifactPath($path, $manifest) : null;
+        $artifactExists = is_string($artifactPath) && File::exists($artifactPath);
+        $artifactSizeBytes = $artifactExists ? (int) File::size($artifactPath) : 0;
+        $artifactChecksum = $artifactExists && is_string($artifactPath)
+            ? $this->manifestService->checksum($artifactPath)
+            : null;
+        $expectedChecksum = is_array($manifest) ? (string) ($manifest['artifact_checksum_sha256'] ?? '') : '';
+        $checksumValid = $artifactChecksum !== null && $expectedChecksum !== '' && hash_equals($expectedChecksum, $artifactChecksum);
+        $expectedArtifactSize = is_array($manifest) ? (int) ($manifest['artifact_size_bytes'] ?? 0) : 0;
+        $sizeValid = $artifactExists && $artifactSizeBytes > 0 && $expectedArtifactSize > 0 && $artifactSizeBytes === $expectedArtifactSize;
+        $createdAt = is_array($manifest) ? $this->manifestService->createdAt($manifest) : null;
+        $latestAgeHours = $createdAt?->diffInHours(now(), absolute: true);
         $healthy = $directoryExists
-            && $latestFile !== null
+            && $manifestPath !== null
+            && $validationErrors === []
+            && $artifactExists
+            && $sizeValid
+            && $checksumValid
             && $latestAgeHours !== null
             && $latestAgeHours <= $maxAgeHours;
-
         $status = $healthy ? 'healthy' : 'unhealthy';
+        $errorCode = $healthy ? null : $this->resolveErrorCode(
+            directoryExists: $directoryExists,
+            manifestPath: $manifestPath,
+            validationErrors: $validationErrors,
+            artifactExists: $artifactExists,
+            sizeValid: $sizeValid,
+            checksumValid: $checksumValid,
+            latestAgeHours: $latestAgeHours,
+            maxAgeHours: $maxAgeHours,
+        );
+        $manifestCount = $directoryExists
+            ? collect(File::files($path))
+                ->filter(fn (\SplFileInfo $file): bool => $this->manifestService->isManifestFile($file))
+                ->count()
+            : 0;
 
         $this->line('BACKUP_HEALTH_STATUS: '.$status);
         $this->line('BACKUP_DIRECTORY: '.$path);
-        $this->line('BACKUP_FILE_COUNT: '.(string) $backupFiles->count());
-        $this->line('BACKUP_LATEST_FILE: '.($latestFile?->getFilename() ?? '-'));
+        $this->line('BACKUP_MANIFEST_COUNT: '.(string) $manifestCount);
+        $this->line('BACKUP_LATEST_MANIFEST: '.(is_string($manifestPath) ? basename($manifestPath) : '-'));
+        $this->line('BACKUP_LATEST_FILE: '.($artifactExists && is_string($artifactPath) ? basename($artifactPath) : '-'));
         $this->line('BACKUP_LATEST_AGE_HOURS: '.($latestAgeHours !== null ? (string) $latestAgeHours : '-'));
         $this->line('BACKUP_MAX_AGE_HOURS: '.(string) $maxAgeHours);
+        $this->line('BACKUP_ARTIFACT_ENCRYPTED: '.(is_array($manifest) && ($manifest['encrypted'] ?? false) === true ? 'yes' : 'no'));
+        $this->line('BACKUP_ARTIFACT_CHECKSUM_VALID: '.($checksumValid ? 'yes' : 'no'));
+        $this->line('BACKUP_HEALTH_ERROR: '.($errorCode ?? '-'));
 
         AuditLog::record(
             entityType: AuditLog::ENTITY_AUTOMATION,
@@ -70,10 +94,15 @@ class CheckBackupHealth extends Command
                 'command' => 'ops:check-backup-health',
                 'status' => $status,
                 'path' => $path,
-                'file_count' => $backupFiles->count(),
-                'latest_file' => $latestFile?->getFilename(),
+                'manifest_count' => $manifestCount,
+                'manifest_file' => is_string($manifestPath) ? basename($manifestPath) : null,
+                'artifact_file' => $artifactExists && is_string($artifactPath) ? basename($artifactPath) : null,
+                'artifact_checksum_valid' => $checksumValid,
+                'artifact_size_valid' => $sizeValid,
                 'latest_age_hours' => $latestAgeHours,
                 'max_age_hours' => $maxAgeHours,
+                'error_code' => $errorCode,
+                'validation_errors' => $validationErrors,
             ],
         );
 
@@ -84,5 +113,49 @@ class CheckBackupHealth extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  list<string>  $validationErrors
+     */
+    protected function resolveErrorCode(
+        bool $directoryExists,
+        ?string $manifestPath,
+        array $validationErrors,
+        bool $artifactExists,
+        bool $sizeValid,
+        bool $checksumValid,
+        ?int $latestAgeHours,
+        int $maxAgeHours,
+    ): string {
+        if (! $directoryExists) {
+            return 'backup_directory_missing';
+        }
+
+        if ($manifestPath === null) {
+            return 'backup_manifest_missing';
+        }
+
+        if ($validationErrors !== []) {
+            return $validationErrors[0];
+        }
+
+        if (! $artifactExists) {
+            return 'backup_artifact_missing';
+        }
+
+        if (! $sizeValid) {
+            return 'backup_artifact_size_invalid';
+        }
+
+        if (! $checksumValid) {
+            return 'backup_artifact_checksum_mismatch';
+        }
+
+        if ($latestAgeHours === null || $latestAgeHours > $maxAgeHours) {
+            return 'backup_artifact_stale';
+        }
+
+        return 'backup_unhealthy';
     }
 }
