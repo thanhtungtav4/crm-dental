@@ -9,7 +9,7 @@
 - Review file: `docs/reviews/modules/ZNS-zalo-zns.md`
 - Plan file: `docs/planning/ZNS-plan.md`
 - Dependencies: `PAT, APPT, CARE, INT, OPS`
-- Last updated: `2026-03-06`
+- Last updated: `2026-03-07`
 
 # Issue Backlog
 
@@ -115,7 +115,7 @@
 - Dependencies:
   - PAT, OPS
 - Suggested order: 4
-- Current status: Open
+- Current status: Resolved
 - Linked task IDs: `TASK-ZNS-004`
 
 ## [ZNS-005] Campaign runner chua co campaign-level lock
@@ -216,7 +216,7 @@
 # Summary
 
 - Open critical count: 0
-- Open high count: 2
+- Open high count: 1
 - Open medium count: 2
 - Open low count: 0
-- Next recommended action: tiep tuc `TASK-ZNS-004`, sau do khoa `TASK-ZNS-005` va `TASK-ZNS-007` truoc khi re-audit module.
+- Next recommended action: tiep tuc `TASK-ZNS-005`, sau do khoa `TASK-ZNS-007` va dong `TASK-ZNS-008` truoc khi re-audit module.

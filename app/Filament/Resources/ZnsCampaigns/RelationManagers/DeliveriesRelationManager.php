@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\ZnsCampaigns\RelationManagers;
 
+use App\Models\ZnsCampaignDelivery;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class DeliveriesRelationManager extends RelationManager
 {
@@ -31,7 +33,15 @@ class DeliveriesRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('phone')
                     ->label('Số điện thoại')
-                    ->searchable(),
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $phoneHash = ZnsCampaignDelivery::phoneSearchHash($search);
+
+                        if ($phoneHash === null) {
+                            return $query->whereRaw('1 = 0');
+                        }
+
+                        return $query->where('phone_search_hash', $phoneHash);
+                    }),
                 TextColumn::make('patient.full_name')
                     ->label('Bệnh nhân')
                     ->default('-'),

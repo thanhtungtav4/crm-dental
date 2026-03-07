@@ -10,7 +10,7 @@
 - Issue ID prefix: `ZNS-`
 - Task ID prefix: `TASK-ZNS-`
 - Dependencies: `PAT, APPT, CARE, INT, OPS`
-- Last updated: `2026-03-06`
+- Last updated: `2026-03-07`
 
 # Scope
 
@@ -254,7 +254,7 @@
 | ZNS-001 | Critical | Security | ZNS page/resource khong co auth boundary dung | Resolved | `ZnsCampaignPolicy` + `ZaloZns::canAccess()` da khoa `Doctor` khoi page/resource |
 | ZNS-002 | Critical | Domain Logic | Campaign workflow dang mutate status truc tiep, khong qua service canonical | Resolved | `ZnsCampaignWorkflowService` da khoa form/page/table va bo delete surface |
 | ZNS-003 | Critical | Concurrency | Appointment reminder cancel co the race voi worker dang processing va van gui tin | Resolved | Claim da co `processing_token`, cancel/supersede xoa token va worker co pre-send guard truoc khi goi provider |
-| ZNS-004 | High | Security | Outbox/delivery/log dang luu phone va payload ZNS plaintext | Open | PII va payload provider hien dang luu raw o 3 bang van hanh |
+| ZNS-004 | High | Security | Outbox/delivery/log dang luu phone va payload ZNS plaintext | Resolved | Phone/payload da duoc ma hoa, request-response chi con ban rut gon va co prune command |
 | ZNS-005 | High | Concurrency | Campaign runner chua co campaign-level lock | Open | Hai worker co the cung scan audience va flap campaign summary |
 | ZNS-006 | High | Security | `RunZnsCampaigns` khong duoc bao ve bang action permission | Resolved | Command da duoc khoa bang `ActionGate::authorize(ActionPermission::AUTOMATION_RUN)` |
 | ZNS-007 | Medium | UX | Filament UX cho ZNS de thao tac sai va thieu triage view | Open | `status` editable raw, `ZaloZns` chi la placeholder, deliveries thieu filters |
@@ -277,8 +277,8 @@
 # Recommended Next Steps
 
 1. Sinh issue file canonical cho module.
-2. Tiep tuc `TASK-ZNS-004` de giam PII/payload plaintext trong outbox va log.
-3. Sau do lam `TASK-ZNS-005` de khoa campaign-level lock truoc khi re-audit module.
+2. Tiep tuc `TASK-ZNS-005` de khoa campaign-level lock truoc khi re-audit module.
+3. Sau do lam `TASK-ZNS-007` de them triage UX va filters van hanh.
 
 # Current Status
 

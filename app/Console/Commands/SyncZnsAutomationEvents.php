@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
+use App\Services\ZnsPayloadSanitizer;
 use App\Services\ZnsProviderClient;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -25,6 +26,7 @@ class SyncZnsAutomationEvents extends Command
 
     public function __construct(
         protected ZnsProviderClient $znsProviderClient,
+        protected ZnsPayloadSanitizer $payloadSanitizer,
     ) {
         parent::__construct();
     }
@@ -306,14 +308,16 @@ class SyncZnsAutomationEvents extends Command
         $responsePayload = is_array($sendResult['response'] ?? null)
             ? $sendResult['response']
             : null;
+        $sanitizedProviderPayload = $this->payloadSanitizer->sanitizeProviderRequest($providerPayload);
+        $sanitizedResponsePayload = $this->payloadSanitizer->sanitizeProviderResponse($responsePayload);
 
         return DB::transaction(function () use (
             $claim,
-            $providerPayload,
+            $sanitizedProviderPayload,
             $sendResult,
             $isSuccess,
             $httpStatus,
-            $responsePayload,
+            $sanitizedResponsePayload,
             $retryable,
         ): string {
             $event = ZnsAutomationEvent::query()
@@ -335,8 +339,8 @@ class SyncZnsAutomationEvents extends Command
                 'attempt' => (int) $event->attempts,
                 'status' => $isSuccess ? ZnsAutomationEvent::STATUS_SENT : ZnsAutomationEvent::STATUS_FAILED,
                 'http_status' => $httpStatus,
-                'request_payload' => $providerPayload,
-                'response_payload' => $responsePayload,
+                'request_payload' => $sanitizedProviderPayload,
+                'response_payload' => $sanitizedResponsePayload,
                 'error_message' => $isSuccess ? null : (string) ($sendResult['error'] ?? 'ZNS provider request failed.'),
                 'attempted_at' => now(),
             ]);
@@ -346,7 +350,7 @@ class SyncZnsAutomationEvents extends Command
                     providerMessageId: $sendResult['provider_message_id'] ?? null,
                     providerStatusCode: $sendResult['provider_status_code'] ?? null,
                     httpStatus: $httpStatus,
-                    providerResponse: $responsePayload,
+                    providerResponse: $sanitizedResponsePayload,
                 );
 
                 return ZnsAutomationEvent::STATUS_SENT;
@@ -357,7 +361,7 @@ class SyncZnsAutomationEvents extends Command
                 message: (string) ($sendResult['error'] ?? 'ZNS provider request failed.'),
                 retryable: $retryable,
                 providerStatusCode: $sendResult['provider_status_code'] ?? null,
-                providerResponse: $responsePayload,
+                providerResponse: $sanitizedResponsePayload,
             );
 
             return (string) ($event->fresh()?->status ?? ZnsAutomationEvent::STATUS_FAILED);

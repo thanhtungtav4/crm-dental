@@ -390,6 +390,14 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function znsOperationalRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('zns.retention_days', 90),
+        );
+    }
+
     public static function popupAnnouncementsEnabled(): bool
     {
         return static::boolean('popup.enabled', false);

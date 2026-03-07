@@ -53,6 +53,7 @@ $scheduleAutomation('emr:reconcile-clinical-media')->hourlyAt(45);
 $scheduleAutomation('google-calendar:sync-events', ['--strict-exit'])->everyTenMinutes();
 $scheduleAutomation('zns:run-campaigns')->everyTenMinutes();
 $scheduleAutomation('zns:sync-automation-events', ['--strict-exit'])->everyFiveMinutes();
+$scheduleAutomation('zns:prune-operational-data')->dailyAt('03:40');
 $scheduleAutomation('popups:dispatch-due')->everyMinute();
 $scheduleAutomation('popups:prune')->dailyAt('03:30');
 $scheduleAutomation('photos:prune')->dailyAt('03:10');

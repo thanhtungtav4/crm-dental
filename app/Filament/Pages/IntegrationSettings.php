@@ -105,6 +105,7 @@ class IntegrationSettings extends Page
                     ['state' => 'zns_send_endpoint', 'key' => 'zns.send_endpoint', 'label' => 'ZNS send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::znsSendEndpoint(), 'sort_order' => 160],
                     ['state' => 'zns_request_timeout_seconds', 'key' => 'zns.request_timeout_seconds', 'label' => 'Timeout gọi ZNS (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsRequestTimeoutSeconds(), 'sort_order' => 170],
                     ['state' => 'zns_campaign_delivery_max_attempts', 'key' => 'zns.campaign_delivery_max_attempts', 'label' => 'Số lần retry tối đa cho mỗi người nhận campaign', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsCampaignDeliveryMaxAttempts(), 'sort_order' => 171],
+                    ['state' => 'zns_retention_days', 'key' => 'zns.retention_days', 'label' => 'Giữ dữ liệu vận hành ZNS (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::znsOperationalRetentionDays(), 'sort_order' => 172],
                 ],
             ],
             [
@@ -552,6 +553,12 @@ class IntegrationSettings extends Page
 
                 if (($field['key'] ?? null) === 'zns.campaign_delivery_max_attempts') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:10'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zns.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
 
                     continue;
                 }

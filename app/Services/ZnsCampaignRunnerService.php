@@ -24,6 +24,7 @@ class ZnsCampaignRunnerService
 
     public function __construct(
         private readonly ZnsProviderClient $providerClient,
+        private readonly ZnsPayloadSanitizer $payloadSanitizer,
         private readonly ZnsCampaignWorkflowService $workflowService,
     ) {}
 
@@ -618,7 +619,9 @@ class ZnsCampaignRunnerService
                 ? ($sendResult['provider_message_id'] ?? null)
                 : null;
             $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
-            $delivery->provider_response = $sendResult['response'] ?? null;
+            $delivery->provider_response = $this->payloadSanitizer->sanitizeProviderResponse(
+                is_array($sendResult['response'] ?? null) ? $sendResult['response'] : null,
+            );
             $delivery->error_message = $status === ZnsCampaignDelivery::STATUS_SENT
                 ? null
                 : (string) ($sendResult['error'] ?? 'ZNS provider request failed.');
@@ -627,7 +630,7 @@ class ZnsCampaignRunnerService
             $delivery->payload = $providerPayload === null
                 ? $delivery->payload
                 : array_merge(is_array($delivery->payload) ? $delivery->payload : [], [
-                    'provider_request' => $providerPayload,
+                    'provider_request_summary' => $this->payloadSanitizer->sanitizeProviderRequest($providerPayload),
                 ]);
             $delivery->processing_token = null;
             $delivery->locked_at = null;

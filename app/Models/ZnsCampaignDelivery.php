@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
+use App\Casts\NullableEncryptedWithPlaintextFallback;
+use App\Services\ZnsPayloadSanitizer;
+use App\Support\PatientIdentityNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +26,7 @@ class ZnsCampaignDelivery extends Model
         'branch_id',
         'phone',
         'normalized_phone',
+        'phone_search_hash',
         'idempotency_key',
         'status',
         'processing_token',
@@ -52,9 +57,34 @@ class ZnsCampaignDelivery extends Model
             'sent_at' => 'datetime',
             'next_retry_at' => 'datetime',
             'locked_at' => 'datetime',
-            'payload' => 'array',
-            'provider_response' => 'array',
+            'phone' => NullableEncryptedWithPlaintextFallback::class,
+            'normalized_phone' => NullableEncryptedWithPlaintextFallback::class,
+            'payload' => NullableEncryptedArray::class,
+            'provider_response' => NullableEncryptedArray::class,
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $delivery): void {
+            $delivery->phone_search_hash = self::phoneSearchHash(
+                $delivery->normalized_phone ?: $delivery->phone,
+            );
+        });
+    }
+
+    public static function phoneSearchHash(?string $phone): ?string
+    {
+        $normalized = PatientIdentityNormalizer::normalizePhone($phone);
+
+        return $normalized === null
+            ? null
+            : hash('sha256', 'zns-phone|'.$normalized);
+    }
+
+    public function maskedPhone(): ?string
+    {
+        return app(ZnsPayloadSanitizer::class)->maskPhone($this->normalized_phone ?: $this->phone);
     }
 
     public function campaign(): BelongsTo

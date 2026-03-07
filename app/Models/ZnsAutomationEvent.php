@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
+use App\Casts\NullableEncryptedWithPlaintextFallback;
+use App\Support\PatientIdentityNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +42,7 @@ class ZnsAutomationEvent extends Model
         'branch_id',
         'phone',
         'normalized_phone',
+        'phone_search_hash',
         'payload',
         'payload_checksum',
         'status',
@@ -65,8 +69,10 @@ class ZnsAutomationEvent extends Model
             'patient_id' => 'integer',
             'customer_id' => 'integer',
             'branch_id' => 'integer',
-            'payload' => 'array',
-            'provider_response' => 'array',
+            'phone' => NullableEncryptedWithPlaintextFallback::class,
+            'normalized_phone' => NullableEncryptedWithPlaintextFallback::class,
+            'payload' => NullableEncryptedArray::class,
+            'provider_response' => NullableEncryptedArray::class,
             'attempts' => 'integer',
             'max_attempts' => 'integer',
             'next_retry_at' => 'datetime',
@@ -74,6 +80,24 @@ class ZnsAutomationEvent extends Model
             'processed_at' => 'datetime',
             'last_http_status' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $event): void {
+            $event->phone_search_hash = self::phoneSearchHash(
+                $event->normalized_phone ?: $event->phone,
+            );
+        });
+    }
+
+    public static function phoneSearchHash(?string $phone): ?string
+    {
+        $normalized = PatientIdentityNormalizer::normalizePhone($phone);
+
+        return $normalized === null
+            ? null
+            : hash('sha256', 'zns-phone|'.$normalized);
     }
 
     public function appointment(): BelongsTo
