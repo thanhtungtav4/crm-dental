@@ -9,6 +9,7 @@ use App\Models\EmrSyncEvent;
 use App\Models\EmrSyncLog;
 use App\Services\EmrAuditLogger;
 use App\Services\EmrIntegrationService;
+use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -28,6 +29,7 @@ class SyncEmrEvents extends Command
     public function __construct(
         protected EmrIntegrationService $emrIntegrationService,
         protected EmrAuditLogger $emrAuditLogger,
+        protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
     ) {
         parent::__construct();
     }
@@ -260,8 +262,8 @@ class SyncEmrEvents extends Command
                 'attempt' => (int) $event->attempts,
                 'status' => $isSuccess ? EmrSyncEvent::STATUS_SYNCED : EmrSyncEvent::STATUS_FAILED,
                 'http_status' => $httpStatus,
-                'request_payload' => $event->payload,
-                'response_payload' => $responsePayload,
+                'request_payload' => $this->payloadSanitizer->sanitizeEmrSyncLogRequest($event),
+                'response_payload' => $this->payloadSanitizer->sanitizeEmrSyncLogResponse($responsePayload),
                 'error_message' => $isSuccess ? null : (string) ($integrationResult['message'] ?? 'Sync failed'),
                 'attempted_at' => now(),
             ]);

@@ -74,6 +74,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $extraPermissions = [
             'View:IntegrationSettingsAuditLog',
+            'Manage:IntegrationRuntimeSettings',
+            'Manage:IntegrationSecrets',
         ];
 
         // Ensure permissions exist (compatible with Shield)

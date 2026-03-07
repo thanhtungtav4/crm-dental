@@ -7,6 +7,7 @@ use App\Models\GoogleCalendarEventMap;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Services\GoogleCalendarIntegrationService;
+use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -26,6 +27,7 @@ class SyncGoogleCalendarEvents extends Command
 
     public function __construct(
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
+        protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
     ) {
         parent::__construct();
     }
@@ -286,8 +288,8 @@ class SyncGoogleCalendarEvents extends Command
                 'attempt' => (int) $event->attempts,
                 'status' => $isSuccess ? GoogleCalendarSyncEvent::STATUS_SYNCED : GoogleCalendarSyncEvent::STATUS_FAILED,
                 'http_status' => $httpStatus,
-                'request_payload' => is_array($event->payload) ? $event->payload : null,
-                'response_payload' => $responsePayload,
+                'request_payload' => $this->payloadSanitizer->sanitizeGoogleCalendarLogRequest($event),
+                'response_payload' => $this->payloadSanitizer->sanitizeGoogleCalendarLogResponse($responsePayload),
                 'error_message' => $isSuccess ? null : (string) ($integrationResult['message'] ?? 'Sync failed'),
                 'attempted_at' => now(),
             ]);

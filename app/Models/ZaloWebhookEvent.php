@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 
 class ZaloWebhookEvent extends Model
@@ -22,7 +23,7 @@ class ZaloWebhookEvent extends Model
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
+            'payload' => NullableEncryptedArray::class,
             'received_at' => 'datetime',
             'processed_at' => 'datetime',
         ];

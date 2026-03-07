@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,8 +24,8 @@ class GoogleCalendarSyncLog extends Model
         return [
             'attempt' => 'integer',
             'http_status' => 'integer',
-            'request_payload' => 'array',
-            'response_payload' => 'array',
+            'request_payload' => NullableEncryptedArray::class,
+            'response_payload' => NullableEncryptedArray::class,
             'attempted_at' => 'datetime',
         ];
     }

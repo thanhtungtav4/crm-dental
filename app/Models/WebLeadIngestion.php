@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,8 +42,8 @@ class WebLeadIngestion extends Model
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
-            'response' => 'array',
+            'payload' => NullableEncryptedArray::class,
+            'response' => NullableEncryptedArray::class,
             'received_at' => 'datetime',
             'processed_at' => 'datetime',
         ];

@@ -19,8 +19,11 @@ class AutomationActorResolver
      *     issues:array<int, array{severity:string, code:string, message:string}>
      * }
      */
-    public function healthReport(string $permission, bool $enforceRequiredRole = true): array
-    {
+    public function healthReport(
+        string $permission,
+        bool $enforceRequiredRole = true,
+        bool $failOnPrivilegedRoles = false,
+    ): array {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $issues = [];
@@ -87,7 +90,7 @@ class AutomationActorResolver
                 && $privilegedRoles !== []
             ) {
                 $issues[] = [
-                    'severity' => 'warning',
+                    'severity' => $failOnPrivilegedRoles ? 'error' : 'warning',
                     'code' => 'privileged_roles_attached',
                     'message' => 'Scheduler actor đang có role vận hành: '.implode(', ', $privilegedRoles).'.',
                 ];
@@ -115,11 +118,15 @@ class AutomationActorResolver
         ];
     }
 
-    public function resolveForPermission(string $permission, bool $enforceRequiredRole = true): ?User
-    {
+    public function resolveForPermission(
+        string $permission,
+        bool $enforceRequiredRole = true,
+        bool $failOnPrivilegedRoles = false,
+    ): ?User {
         $report = $this->healthReport(
             permission: $permission,
             enforceRequiredRole: $enforceRequiredRole,
+            failOnPrivilegedRoles: $failOnPrivilegedRoles,
         );
 
         $actor = $report['actor'] ?? null;

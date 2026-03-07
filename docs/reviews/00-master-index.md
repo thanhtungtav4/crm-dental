@@ -40,7 +40,7 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 | SUP | Suppliers / Factory Orders | Clean Baseline Reached | [Review](modules/SUP-suppliers-factory.md) | [Issues](../issues/SUP-issues.md) | [Plan](../planning/SUP-plan.md) | B | Khong con open blocker baseline; rollout tiep theo la chay migrate va smoke test supplier backfill + factory report tren du lieu that | INV, FIN, GOV |
 | CARE | Customer Care / Automation | Clean Baseline Reached | [Review](modules/CARE-customer-care-automation.md) | [Issues](../issues/CARE-issues.md) | [Plan](../planning/CARE-plan.md) | B | Khong con open blocker baseline; follow-up la rollout migration `notes.ticket_key` va review `ZNS/KPI` de khoa tiep outbound side-effects/report coupling | PAT, APPT, FIN, ZNS, KPI |
 | ZNS | Zalo / ZNS | Clean Baseline Reached | [Review](modules/ZNS-zalo-zns.md) | [Issues](../issues/ZNS-issues.md) | [Plan](../planning/ZNS-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration ZNS moi va smoke test page van hanh/command pruning tren du lieu that | PAT, APPT, CARE, INT, OPS |
-| INT | Integrations | Pending Review | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | TBD | TODO | GOV, APPT, CLIN, ZNS, OPS |
+| INT | Integrations | Clean Baseline Reached | [Review](modules/INT-integrations.md) | [Issues](../issues/INT-issues.md) | [Plan](../planning/INT-plan.md) | B | Khong con open blocker baseline; follow-up la rollout 2 migration INT moi va smoke test grace token rotation/revoke tren he thong ngoai thuc te | GOV, APPT, CLIN, ZNS, OPS |
 | KPI | Reports / KPI | Pending Review | [Review](modules/KPI-reports-kpi.md) | [Issues](../issues/KPI-issues.md) | [Plan](../planning/KPI-plan.md) | TBD | TODO | FIN, INV, CARE, OPS |
 | OPS | Production readiness / backup / observability | Pending Review | [Review](modules/OPS-production-readiness.md) | [Issues](../issues/OPS-issues.md) | [Plan](../planning/OPS-plan.md) | TBD | TODO | GOV, INT, KPI, ZNS, FIN, INV |
 
@@ -56,17 +56,18 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - `SUP` da dat clean baseline; supplier canonical link, numbering, workflow boundary va report datasource da duoc khoa bang regression test. Follow-up con lai la rollout migration va smoke test tren du lieu that.
 - `CARE` da dat clean baseline; page/report auth, ticket invariant, birthday dedupe, canonical datasource va regression suite da duoc khoa. Follow-up tiep theo la rollout `notes.ticket_key` va review `ZNS/KPI`.
 - `ZNS` da dat clean baseline; auth boundary, workflow campaign canonical, cancel-processing guard, payload governance, runner lock, triage UX va regression suite da duoc khoa. Follow-up la rollout migration va smoke test tren du lieu that.
+- `INT` da dat clean baseline; page auth, EMR internal scope, settings revision/transaction, payload governance, retention va secret rotation grace window da duoc khoa bang regression suite. Follow-up la rollout migration va smoke test voi client ngoai thuc te.
 
 # 4. Priority overview
 
-- Critical modules: Chua co module critical dang mo sau khi `FIN` dat baseline
-- High priority modules: `INT`, `OPS`, `KPI`
-- Medium priority modules: `INT`, `OPS`, `KPI`
+- Critical modules: Chua co module critical dang mo trong baseline hien tai
+- High priority modules: `KPI`, `OPS`
+- Medium priority modules: `KPI`, `OPS`
 - Low priority modules: Chua xac dinh cho den khi co review chi tiet.
 
 # 5. Modules ready for deep fix
 
-- `INT` - nen fix sau khi review xong, vi dang nam giua provider/runtime coupling cua `ZNS`, Google Calendar va EMR.
+- Chua co module nao san sang deep fix cho den khi `KPI` hoac `OPS` duoc review xong.
 
 # 6. Modules needing re-audit
 
@@ -74,8 +75,8 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 
 # 7. Suggested next module to review
 
-- `INT` - hop ly de review tiep sau `ZNS`, vi token/runtime/provider coupling cua Zalo, Google va EMR deu quy ve module nay.
+- `KPI` - hop ly de review tiep sau khi `INT` da dat baseline, vi KPI se can doc data lineage tu `FIN`, `INV`, `CARE`, `INT`.
 
 # 8. Suggested next module to fix
 
-- `INT` - nen vao fix ngay sau khi xong review, vi day la module lien thong tat ca integration va se anh huong truc tiep toi `ZNS`, `APPT`, `CLIN`, `OPS`.
+- `KPI` - sau khi review xong, se la module tiep theo co gia tri cao vi no tong hop du lieu tu cac module loi da duoc khoa baseline.

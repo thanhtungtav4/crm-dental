@@ -140,6 +140,47 @@
     </style>
 
     <form wire:submit="save" class="space-y-6">
+        @unless($this->canManageRuntimeSettings())
+            <x-filament::section>
+                <div class="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-900/60 dark:bg-warning-950/40 dark:text-warning-200">
+                    Bạn đang ở chế độ chỉ xem. Chỉ người có quyền quản lý runtime settings hoặc integration secrets mới được lưu thay đổi.
+                </div>
+            </x-filament::section>
+        @endunless
+
+        @if($this->canManageSecrets())
+            <x-filament::section>
+                <div class="rounded-lg border border-info-200 bg-info-50 px-4 py-3 text-sm text-info-800 dark:border-info-900/60 dark:bg-info-950/40 dark:text-info-200">
+                    Khi đổi `Web Lead API Token`, `Zalo Webhook Verify Token` hoặc `EMR API Key`, hệ thống sẽ giữ token cũ trong grace window để client bên ngoài có thời gian rollover. Sau khi grace window hết hạn, command `integrations:revoke-rotated-secrets` sẽ tự thu hồi token cũ.
+                </div>
+            </x-filament::section>
+        @endif
+
+        @if($this->getActiveSecretRotations()->isNotEmpty())
+            <x-filament::section heading="Grace window đang hoạt động" description="Các token cũ dưới đây vẫn còn hiệu lực tạm thời để tránh outage trong lúc rollout.">
+                <div class="grid gap-3 md:grid-cols-2">
+                    @foreach($this->getActiveSecretRotations() as $rotation)
+                        <div class="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-100">
+                            <div class="font-semibold">{{ $rotation['display_name'] }}</div>
+                            <div>Grace tới: {{ \Illuminate\Support\Carbon::parse($rotation['grace_expires_at'])->format('d/m/Y H:i') }}</div>
+                            <div>Còn lại khoảng {{ $rotation['remaining_minutes'] }} phút.</div>
+                            @if(filled($rotation['rotation_reason'] ?? null))
+                                <div class="text-xs text-warning-800/80 dark:text-warning-200/80">Lý do: {{ $rotation['rotation_reason'] }}</div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </x-filament::section>
+        @endif
+
+        @error('settingsRevision')
+            <x-filament::section>
+                <div class="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-800 dark:border-danger-900/60 dark:bg-danger-950/40 dark:text-danger-200">
+                    {{ $message }}
+                </div>
+            </x-filament::section>
+        @enderror
+
         @foreach($this->getProviders() as $provider)
             <x-filament::section :heading="$provider['title']" :description="$provider['description']">
                 <div class="grid gap-4 md:grid-cols-2">
@@ -435,30 +476,36 @@
                 @endif
 
                 @if(($provider['group'] ?? null) === 'google_calendar')
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testGoogleCalendarConnection">
-                            Test Google Calendar
-                        </x-filament::button>
-                    </div>
+                    @if($this->canManageSecrets())
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testGoogleCalendarConnection">
+                                Test Google Calendar
+                            </x-filament::button>
+                        </div>
+                    @endif
                 @endif
 
                 @if(($provider['group'] ?? null) === 'emr')
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testEmrConnection">
-                            Test EMR
-                        </x-filament::button>
-                        <x-filament::button type="button" color="info" icon="heroicon-o-arrow-top-right-on-square" wire:click="openEmrConfigUrl">
-                            Mở config EMR
-                        </x-filament::button>
-                    </div>
+                    @if($this->canManageSecrets())
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testEmrConnection">
+                                Test EMR
+                            </x-filament::button>
+                            <x-filament::button type="button" color="info" icon="heroicon-o-arrow-top-right-on-square" wire:click="openEmrConfigUrl">
+                                Mở config EMR
+                            </x-filament::button>
+                        </div>
+                    @endif
                 @endif
 
                 @if(($provider['group'] ?? null) === 'web_lead')
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <x-filament::button type="button" color="gray" icon="heroicon-o-key" wire:click="generateWebLeadApiToken">
-                            Tạo API Token
-                        </x-filament::button>
-                    </div>
+                    @if($this->canManageSecrets())
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <x-filament::button type="button" color="gray" icon="heroicon-o-key" wire:click="generateWebLeadApiToken">
+                                Tạo API Token
+                            </x-filament::button>
+                        </div>
+                    @endif
 
                     <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
                         <div class="mb-2 text-sm font-semibold">Hướng dẫn tích hợp Web Lead API</div>
@@ -498,11 +545,13 @@
             </x-filament::section>
         @endforeach
 
-        <div class="flex justify-end">
-            <x-filament::button type="submit" icon="heroicon-o-check-circle">
-                Lưu cài đặt tích hợp
-            </x-filament::button>
-        </div>
+        @if($this->canManageRuntimeSettings())
+            <div class="flex justify-end">
+                <x-filament::button type="submit" icon="heroicon-o-check-circle">
+                    Lưu cài đặt tích hợp
+                </x-filament::button>
+            </div>
+        @endif
     </form>
 
     @if($this->canViewAuditLogs())
@@ -530,6 +579,14 @@
                                 <td class="px-3 py-2 text-gray-800 dark:text-gray-100">
                                     <div class="font-medium">{{ $log->setting_label ?: $log->setting_key }}</div>
                                     <div class="text-xs text-gray-500">{{ $log->setting_key }}</div>
+                                    @if(filled($log->change_reason ?? null))
+                                        <div class="text-xs text-warning-700 dark:text-warning-300">{{ $log->change_reason }}</div>
+                                    @endif
+                                    @if(filled(data_get($log->context, 'grace_expires_at')))
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            Grace tới {{ \Illuminate\Support\Carbon::parse((string) data_get($log->context, 'grace_expires_at'))->format('d/m/Y H:i') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ $log->old_value }}</td>
                                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ $log->new_value }}</td>

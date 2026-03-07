@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\IntegrationSettings;
 use App\Models\ClinicSetting;
+use App\Models\User;
 use App\Services\ZaloIntegrationService;
 use Livewire\Livewire;
 
@@ -173,6 +174,8 @@ it('applies throttle middleware to zalo webhook endpoint', function (): void {
 });
 
 it('validates required zalo fields when enabling zalo oa', function (): void {
+    actingAsZaloIntegrationSettingsAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('settings.zalo_enabled', true)
         ->set('settings.zalo_oa_id', '')
@@ -189,6 +192,8 @@ it('validates required zalo fields when enabling zalo oa', function (): void {
 });
 
 it('validates zns tokens and templates when zns is enabled', function (): void {
+    actingAsZaloIntegrationSettingsAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('settings.zns_enabled', true)
         ->set('settings.zns_access_token', '')
@@ -206,6 +211,8 @@ it('validates zns tokens and templates when zns is enabled', function (): void {
 });
 
 it('validates zns automation templates when corresponding toggles are enabled', function (): void {
+    actingAsZaloIntegrationSettingsAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('settings.zns_enabled', true)
         ->set('settings.zns_access_token', 'zns_access_token_001')
@@ -237,3 +244,13 @@ it('produces zalo readiness report with webhook endpoint', function (): void {
     expect($report['score'])->toBeGreaterThanOrEqual(80)
         ->and($report['webhook_url'])->toContain('/api/v1/integrations/zalo/webhook');
 });
+
+function actingAsZaloIntegrationSettingsAdmin(): User
+{
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    test()->actingAs($admin);
+
+    return $admin;
+}

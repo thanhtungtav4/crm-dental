@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\ClinicalNote;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AmendClinicalNoteRequest extends FormRequest
@@ -18,7 +19,13 @@ class AmendClinicalNoteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $clinicalNote = $this->route('clinicalNote');
+
+        if (! $clinicalNote instanceof ClinicalNote) {
+            return false;
+        }
+
+        return (bool) $this->user()?->can('update', $clinicalNote);
     }
 
     /**

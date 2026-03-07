@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\IntegrationSettings;
 use App\Models\ClinicSetting;
+use App\Models\User;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
@@ -84,7 +85,31 @@ it('exposes web lead realtime notification toggle and role selector fields', fun
         ->toContain('Bật thông báo realtime khi có web lead mới');
 });
 
+it('exposes secret rotation grace window fields for inbound integrations', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+
+    $zaloFields = collect($providers->firstWhere('group', 'zalo')['fields'] ?? [])
+        ->pluck('key')
+        ->values()
+        ->all();
+    $emrFields = collect($providers->firstWhere('group', 'emr')['fields'] ?? [])
+        ->pluck('key')
+        ->values()
+        ->all();
+    $webLeadFields = collect($providers->firstWhere('group', 'web_lead')['fields'] ?? [])
+        ->pluck('key')
+        ->values()
+        ->all();
+
+    expect($zaloFields)->toContain('zalo.webhook_token_grace_minutes')
+        ->and($emrFields)->toContain('emr.api_key_grace_minutes')
+        ->and($webLeadFields)->toContain('web_lead.api_token_grace_minutes');
+});
+
 it('can autogenerate web lead api token in form state', function () {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $component = Livewire::test(IntegrationSettings::class)
         ->set('settings.web_lead_api_token', '')
         ->call('generateWebLeadApiToken');
@@ -121,6 +146,8 @@ it('auto generates catalog key from label for new row', function (): void {
 });
 
 it('auto generates and persists key on save when key is empty', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_customer_sources_json', [
             ['key' => '', 'label' => 'Nguồn thử nghiệm', 'enabled' => true],
@@ -154,6 +181,8 @@ it('allows deleting exam indication rows including ext and int', function (): vo
 });
 
 it('does not re-insert ext and int when saving exam indication catalog', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_exam_indications_json', [
             ['key' => 'panorama', 'label' => 'Panorama'],
@@ -170,6 +199,8 @@ it('does not re-insert ext and int when saving exam indication catalog', functio
 });
 
 it('does not persist disabled catalog rows', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_customer_sources_json', [
             ['key' => 'walkin', 'label' => 'Khách vãng lai', 'enabled' => true],
@@ -247,3 +278,13 @@ it('exposes only supported google calendar sync mode options in integration sett
             'one_way_to_google' => 'Một chiều: CRM -> Google (đã hỗ trợ)',
         ]);
 });
+
+function actingAsIntegrationSettingsProvidersAdmin(): User
+{
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    test()->actingAs($admin);
+
+    return $admin;
+}

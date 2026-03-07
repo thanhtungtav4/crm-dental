@@ -136,6 +136,79 @@ it('returns validation error when expected version is stale', function () {
     ])->assertUnprocessable();
 });
 
+it('forbids internal emr mutation for a clinical note outside the automation actor branch scope', function () {
+    $context = seedInternalEmrApiContext();
+    /** @var User $actor */
+    $actor = $context['actor'];
+    $token = 'internal-emr-token-out-of-scope';
+
+    $otherBranch = Branch::factory()->create();
+    $otherDoctor = User::factory()->create([
+        'branch_id' => $otherBranch->id,
+    ]);
+    $otherCustomer = Customer::factory()->create([
+        'branch_id' => $otherBranch->id,
+    ]);
+    $otherPatient = Patient::factory()->create([
+        'customer_id' => $otherCustomer->id,
+        'first_branch_id' => $otherBranch->id,
+        'full_name' => $otherCustomer->full_name,
+        'phone' => $otherCustomer->phone,
+        'email' => $otherCustomer->email,
+    ]);
+    $otherEncounter = VisitEpisode::query()->create([
+        'patient_id' => $otherPatient->id,
+        'doctor_id' => $otherDoctor->id,
+        'branch_id' => $otherBranch->id,
+        'status' => VisitEpisode::STATUS_SCHEDULED,
+        'scheduled_at' => '2026-03-14 09:00:00',
+        'planned_duration_minutes' => 30,
+    ]);
+    $otherNote = ClinicalNote::query()->create([
+        'patient_id' => $otherPatient->id,
+        'visit_episode_id' => $otherEncounter->id,
+        'doctor_id' => $otherDoctor->id,
+        'branch_id' => $otherBranch->id,
+        'date' => '2026-03-14',
+        'general_exam_notes' => 'Khám ngoài scope',
+        'created_by' => $otherDoctor->id,
+        'updated_by' => $otherDoctor->id,
+    ]);
+
+    configureInternalEmrApiRuntime($actor, $token);
+
+    $this->withHeaders([
+        'Authorization' => 'Bearer '.$token,
+        'X-Idempotency-Key' => 'emr-api-out-of-scope-1',
+    ])->postJson(route('api.v1.emr.internal.clinical-notes.amend', [
+        'clinicalNote' => $otherNote->id,
+    ]), [
+        'expected_version' => 1,
+        'general_exam_notes' => 'Không được phép',
+    ])->assertForbidden();
+});
+
+it('rejects privileged automation actors for internal emr mutation', function () {
+    $context = seedInternalEmrApiContext();
+    /** @var User $actor */
+    $actor = $context['actor'];
+    $note = $context['note'];
+    $actor->assignRole('Admin');
+
+    configureInternalEmrApiRuntime($actor, 'internal-emr-token-privileged');
+
+    $this->withHeaders([
+        'Authorization' => 'Bearer internal-emr-token-privileged',
+        'X-Idempotency-Key' => 'emr-api-privileged-1',
+    ])->postJson(route('api.v1.emr.internal.clinical-notes.amend', [
+        'clinicalNote' => $note->id,
+    ]), [
+        'expected_version' => 1,
+        'general_exam_notes' => 'Should fail',
+    ])->assertStatus(503)
+        ->assertJsonPath('message', 'Không có service account hợp lệ cho EMR internal API.');
+});
+
 /**
  * @return array{actor: User, note: ClinicalNote}
  */

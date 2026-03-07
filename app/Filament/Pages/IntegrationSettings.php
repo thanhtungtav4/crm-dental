@@ -6,17 +6,23 @@ use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Services\EmrIntegrationService;
 use App\Services\GoogleCalendarIntegrationService;
+use App\Services\IntegrationSecretRotationService;
 use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Spatie\Permission\Models\Role;
 use UnitEnum;
 
@@ -25,6 +31,10 @@ class IntegrationSettings extends Page
     use HasPageShield;
 
     public const AUDIT_LOG_PERMISSION = 'View:IntegrationSettingsAuditLog';
+
+    public const MANAGE_RUNTIME_PERMISSION = 'Manage:IntegrationRuntimeSettings';
+
+    public const MANAGE_SECRETS_PERMISSION = 'Manage:IntegrationSecrets';
 
     private const EXAM_INDICATIONS_STATE = 'catalog_exam_indications_json';
 
@@ -41,6 +51,9 @@ class IntegrationSettings extends Page
     protected string $view = 'filament.pages.integration-settings';
 
     public array $settings = [];
+
+    #[Locked]
+    public string $settingsRevision = '';
 
     /**
      * @var array<string, array<int, array{key: string, label: string, enabled: bool}>>
@@ -83,7 +96,9 @@ class IntegrationSettings extends Page
                     ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
                     ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
                     ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
+                    ['state' => 'zalo_webhook_token_grace_minutes', 'key' => 'zalo.webhook_token_grace_minutes', 'label' => 'Grace window webhook token cũ (phút)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookTokenGraceMinutes(), 'sort_order' => 51],
                     ['state' => 'zalo_webhook_rate_limit_per_minute', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook/phút', 'type' => 'integer', 'default' => 120, 'sort_order' => 55],
+                    ['state' => 'zalo_webhook_retention_days', 'key' => 'zalo.webhook_retention_days', 'label' => 'Giữ webhook Zalo (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookRetentionDays(), 'sort_order' => 56],
                 ],
             ],
             [
@@ -128,6 +143,7 @@ class IntegrationSettings extends Page
                         'options' => ClinicRuntimeSettings::googleCalendarSyncModeOptions(),
                         'sort_order' => 250,
                     ],
+                    ['state' => 'google_calendar_retention_days', 'key' => 'google_calendar.retention_days', 'label' => 'Giữ dữ liệu vận hành Google Calendar (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::googleCalendarOperationalRetentionDays(), 'sort_order' => 260],
                 ],
             ],
             [
@@ -139,6 +155,7 @@ class IntegrationSettings extends Page
                     ['state' => 'emr_provider', 'key' => 'emr.provider', 'label' => 'Nhà cung cấp', 'type' => 'text', 'default' => 'internal', 'sort_order' => 420],
                     ['state' => 'emr_base_url', 'key' => 'emr.base_url', 'label' => 'Base URL', 'type' => 'url', 'default' => '', 'sort_order' => 430],
                     ['state' => 'emr_api_key', 'key' => 'emr.api_key', 'label' => 'API Key', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 440],
+                    ['state' => 'emr_api_key_grace_minutes', 'key' => 'emr.api_key_grace_minutes', 'label' => 'Grace window API key cũ (phút)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::emrApiKeyGraceMinutes(), 'sort_order' => 441],
                     ['state' => 'emr_clinic_code', 'key' => 'emr.clinic_code', 'label' => 'Mã cơ sở', 'type' => 'text', 'default' => '', 'sort_order' => 450],
                     [
                         'state' => 'emr_media_storage_disk',
@@ -159,6 +176,7 @@ class IntegrationSettings extends Page
                     ['state' => 'emr_dicom_facility_code', 'key' => 'emr.dicom.facility_code', 'label' => 'DICOM facility code', 'type' => 'text', 'default' => config('care.emr_dicom_facility_code', ''), 'sort_order' => 459],
                     ['state' => 'emr_dicom_timeout_seconds', 'key' => 'emr.dicom.timeout_seconds', 'label' => 'DICOM timeout (giây)', 'type' => 'integer', 'default' => config('care.emr_dicom_timeout_seconds', 10), 'sort_order' => 460],
                     ['state' => 'emr_dicom_auth_token', 'key' => 'emr.dicom.auth_token', 'label' => 'DICOM auth token', 'type' => 'text', 'default' => config('care.emr_dicom_auth_token', ''), 'is_secret' => true, 'sort_order' => 461],
+                    ['state' => 'emr_retention_days', 'key' => 'emr.retention_days', 'label' => 'Giữ dữ liệu vận hành EMR (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::emrOperationalRetentionDays(), 'sort_order' => 462],
                 ],
             ],
             [
@@ -168,10 +186,12 @@ class IntegrationSettings extends Page
                 'fields' => [
                     ['state' => 'web_lead_enabled', 'key' => 'web_lead.enabled', 'label' => 'Bật API nhận lead từ web', 'type' => 'boolean', 'default' => config('services.web_lead.enabled', false), 'sort_order' => 460],
                     ['state' => 'web_lead_api_token', 'key' => 'web_lead.api_token', 'label' => 'API Token', 'type' => 'text', 'default' => config('services.web_lead.token', ''), 'is_secret' => true, 'sort_order' => 470],
+                    ['state' => 'web_lead_api_token_grace_minutes', 'key' => 'web_lead.api_token_grace_minutes', 'label' => 'Grace window API token cũ (phút)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::webLeadApiTokenGraceMinutes(), 'sort_order' => 471],
                     ['state' => 'web_lead_default_branch_code', 'key' => 'web_lead.default_branch_code', 'label' => 'Chi nhánh mặc định khi web không gửi branch_code', 'type' => 'text', 'default' => '', 'sort_order' => 480],
                     ['state' => 'web_lead_rate_limit_per_minute', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request/phút', 'type' => 'integer', 'default' => config('services.web_lead.rate_limit_per_minute', 60), 'sort_order' => 490],
                     ['state' => 'web_lead_realtime_notification_enabled', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime khi có web lead mới', 'type' => 'boolean', 'default' => false, 'sort_order' => 492],
                     ['state' => 'web_lead_realtime_notification_roles', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime', 'type' => 'roles', 'default' => ['CSKH'], 'options' => $this->roleOptions(), 'sort_order' => 493],
+                    ['state' => 'web_lead_retention_days', 'key' => 'web_lead.retention_days', 'label' => 'Giữ log web lead ingestion (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::webLeadOperationalRetentionDays(), 'sort_order' => 498],
                 ],
             ],
             [
@@ -497,7 +517,11 @@ class IntegrationSettings extends Page
 
     public function save(): void
     {
+        $this->authorizeManageRuntimeSettings();
+        $this->resetValidation('settingsRevision');
+
         $catalogPayloads = $this->validateAndNormalizeCatalogEditors();
+        $rotationNotifications = [];
 
         foreach ($catalogPayloads as $state => $catalog) {
             $this->settings[$state] = json_encode($catalog, JSON_UNESCAPED_UNICODE) ?: '{}';
@@ -545,6 +569,18 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
+                if (($field['key'] ?? null) === 'zalo.webhook_token_grace_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:5', 'max:10080'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'zalo.webhook_retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
                 if (($field['key'] ?? null) === 'zns.request_timeout_seconds') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:30'];
 
@@ -558,6 +594,12 @@ class IntegrationSettings extends Page
                 }
 
                 if (($field['key'] ?? null) === 'zns.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'google_calendar.retention_days') {
                     $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
 
                     continue;
@@ -591,6 +633,30 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
+                if (($field['key'] ?? null) === 'emr.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'emr.api_key_grace_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:5', 'max:10080'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.retention_days') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:3650'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.api_token_grace_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:5', 'max:10080'];
+
+                    continue;
+                }
+
                 if (($field['type'] ?? null) === 'roles') {
                     $rules[$attribute] = ['array'];
                     $rules["{$attribute}.*"] = ['string', Rule::exists('roles', 'name')];
@@ -614,70 +680,130 @@ class IntegrationSettings extends Page
         $validated = $this->validate($rules);
         $this->validateZaloAndZnsDependencies($validated);
 
-        foreach ($this->getProviders() as $provider) {
-            foreach ($provider['fields'] as $field) {
-                $statePath = "settings.{$field['state']}";
-                $valueType = match ($field['type']) {
-                    'url', 'email', 'select', 'color' => 'text',
-                    'roles' => 'json',
-                    default => $field['type'],
-                };
-                $value = data_get($validated, $statePath, $field['default'] ?? null);
+        try {
+            Cache::lock('integration-settings:save', 15)->block(5, function () use ($validated, &$rotationNotifications): void {
+                DB::transaction(function () use ($validated, &$rotationNotifications): void {
+                    $fieldDefinitions = $this->settingFieldDefinitions();
+                    $currentRevision = $this->currentSettingsRevision();
+                    $rotationService = app(IntegrationSecretRotationService::class);
 
-                if (($field['type'] ?? null) === 'json') {
-                    $value = $this->decodeJsonFieldValue($value);
-                }
+                    if (! hash_equals($currentRevision, $this->settingsRevision)) {
+                        throw ValidationException::withMessages([
+                            'settingsRevision' => 'Cài đặt tích hợp đã được cập nhật bởi phiên khác. Tải lại trang rồi lưu lại để tránh ghi đè dữ liệu mới hơn.',
+                        ]);
+                    }
 
-                if (($field['type'] ?? null) === 'roles') {
-                    $value = collect(is_array($value) ? $value : [])
-                        ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
-                        ->map(static fn (string $item): string => trim($item))
-                        ->unique()
-                        ->values()
-                        ->all();
-                }
+                    $currentValues = ClinicSetting::resolveValuesForDefinitions(
+                        collect($fieldDefinitions)
+                            ->map(static fn (array $field): array => [
+                                'key' => $field['key'],
+                                'default' => $field['default'] ?? null,
+                            ])
+                            ->all(),
+                    );
 
-                $normalizedNewValue = $this->normalizeValueForCompare($value, $valueType);
-                $oldValue = ClinicSetting::getValue(
-                    key: $field['key'],
-                    default: $field['default'] ?? null,
-                );
-                $normalizedOldValue = $this->normalizeValueForCompare($oldValue, $valueType);
+                    foreach ($fieldDefinitions as $field) {
+                        $statePath = "settings.{$field['state']}";
+                        $valueType = $this->valueTypeForField($field);
+                        $value = data_get($validated, $statePath, $field['default'] ?? null);
 
-                $record = ClinicSetting::setValue(
-                    key: $field['key'],
-                    value: $value,
-                    meta: [
-                        'group' => $provider['group'],
-                        'label' => $field['label'],
-                        'value_type' => $valueType,
-                        'is_secret' => (bool) ($field['is_secret'] ?? false),
-                        'is_active' => true,
-                        'sort_order' => (int) ($field['sort_order'] ?? 0),
-                    ],
-                );
+                        if (($field['type'] ?? null) === 'json') {
+                            $value = $this->decodeJsonFieldValue($value);
+                        }
 
-                if ($normalizedOldValue === $normalizedNewValue) {
-                    continue;
-                }
+                        if (($field['type'] ?? null) === 'roles') {
+                            $value = collect(is_array($value) ? $value : [])
+                                ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+                                ->map(static fn (string $item): string => trim($item))
+                                ->unique()
+                                ->values()
+                                ->all();
+                        }
 
-                $this->logSettingChange(
-                    setting: $record,
-                    oldValue: $normalizedOldValue,
-                    newValue: $normalizedNewValue,
-                    isSecret: (bool) ($field['is_secret'] ?? false),
-                );
-            }
+                        $normalizedNewValue = $this->normalizeValueForCompare($value, $valueType);
+                        $oldValue = $currentValues[$field['key']] ?? ($field['default'] ?? null);
+                        $normalizedOldValue = $this->normalizeValueForCompare($oldValue, $valueType);
+
+                        if (($field['is_secret'] ?? false) && $normalizedOldValue !== $normalizedNewValue) {
+                            $this->authorizeManageSecrets();
+                        }
+
+                        if (
+                            $rotationService->isRotatable((string) $field['key'])
+                            && $normalizedOldValue !== $normalizedNewValue
+                        ) {
+                            $rotationNotifications[] = $rotationService->rotate(
+                                settingKey: (string) $field['key'],
+                                newSecret: filled($value) ? (string) $value : '',
+                                actorId: auth()->id(),
+                                reason: 'Secret rotated from IntegrationSettings.',
+                            );
+
+                            continue;
+                        }
+
+                        $record = ClinicSetting::setValue(
+                            key: $field['key'],
+                            value: $value,
+                            meta: [
+                                'group' => $field['group'],
+                                'label' => $field['label'],
+                                'value_type' => $valueType,
+                                'is_secret' => (bool) ($field['is_secret'] ?? false),
+                                'is_active' => true,
+                                'sort_order' => (int) ($field['sort_order'] ?? 0),
+                            ],
+                        );
+
+                        if ($normalizedOldValue === $normalizedNewValue) {
+                            continue;
+                        }
+
+                        $this->logSettingChange(
+                            setting: $record,
+                            oldValue: $normalizedOldValue,
+                            newValue: $normalizedNewValue,
+                            isSecret: (bool) ($field['is_secret'] ?? false),
+                        );
+                    }
+                }, attempts: 5);
+            });
+        } catch (LockTimeoutException) {
+            throw ValidationException::withMessages([
+                'settingsRevision' => 'Một phiên khác đang cập nhật cài đặt tích hợp. Chờ vài giây rồi lưu lại.',
+            ]);
         }
 
-        Notification::make()
-            ->title('Đã lưu cài đặt tích hợp')
+        $this->loadSettingsState();
+
+        $notification = Notification::make()
+            ->title('Đã lưu cài đặt tích hợp');
+
+        $rotationLines = collect($rotationNotifications)
+            ->filter(static fn (array $summary): bool => (bool) ($summary['rotated'] ?? false))
+            ->map(fn (array $summary): string => $this->formatRotationNotificationLine($summary))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($rotationLines !== []) {
+            $notification
+                ->warning()
+                ->body(implode("\n", $rotationLines))
+                ->send();
+
+            return;
+        }
+
+        $notification
             ->success()
             ->send();
     }
 
     public function testEmrConnection(): void
     {
+        $this->authorizeManageSecrets();
+
         $result = app(EmrIntegrationService::class)->authenticate();
 
         if (($result['success'] ?? false) === true) {
@@ -734,6 +860,8 @@ class IntegrationSettings extends Page
 
     public function testGoogleCalendarConnection(): void
     {
+        $this->authorizeManageSecrets();
+
         $result = app(GoogleCalendarIntegrationService::class)->testConnection();
 
         if (($result['success'] ?? false) === true) {
@@ -765,6 +893,8 @@ class IntegrationSettings extends Page
 
     public function openEmrConfigUrl(): void
     {
+        $this->authorizeManageSecrets();
+
         $result = app(EmrIntegrationService::class)->resolveConfigUrl();
 
         if (($result['success'] ?? false) !== true || ! filled($result['url'] ?? null)) {
@@ -782,6 +912,8 @@ class IntegrationSettings extends Page
 
     public function generateWebLeadApiToken(): void
     {
+        $this->authorizeManageSecrets();
+
         $this->settings['web_lead_api_token'] = 'wla_'.Str::random(48);
 
         Notification::make()
@@ -918,6 +1050,50 @@ class IntegrationSettings extends Page
 
         $this->settings = $state;
         $this->catalogEditors = $catalogEditors;
+        $this->settingsRevision = $this->currentSettingsRevision();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function settingFieldDefinitions(): array
+    {
+        return collect($this->getProviders())
+            ->flatMap(static fn (array $provider): Collection => collect($provider['fields'] ?? [])
+                ->map(static fn (array $field): array => [
+                    ...$field,
+                    'group' => $provider['group'],
+                ]))
+            ->values()
+            ->all();
+    }
+
+    protected function currentSettingsRevision(): string
+    {
+        $definitions = collect($this->settingFieldDefinitions())
+            ->map(static fn (array $field): array => [
+                'key' => $field['key'],
+                'default' => $field['default'] ?? null,
+            ])
+            ->all();
+
+        $currentValues = ClinicSetting::resolveValuesForDefinitions($definitions);
+        $snapshot = [];
+
+        foreach ($this->settingFieldDefinitions() as $field) {
+            $key = (string) $field['key'];
+            $snapshot[$key] = $this->normalizeValueForCompare(
+                $currentValues[$key] ?? ($field['default'] ?? null),
+                $this->valueTypeForField($field),
+            );
+        }
+
+        ksort($snapshot);
+
+        return hash(
+            'sha256',
+            json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}',
+        );
     }
 
     public function getRecentLogs(): Collection
@@ -933,6 +1109,15 @@ class IntegrationSettings extends Page
             ->get();
     }
 
+    public function getActiveSecretRotations(): Collection
+    {
+        if (! $this->canManageSecrets()) {
+            return collect();
+        }
+
+        return app(IntegrationSecretRotationService::class)->activeGraceRotations();
+    }
+
     protected function normalizeValueForCompare(mixed $value, string $type): mixed
     {
         return match ($type) {
@@ -943,17 +1128,31 @@ class IntegrationSettings extends Page
         };
     }
 
+    /**
+     * @param  array<string, mixed>  $field
+     */
+    protected function valueTypeForField(array $field): string
+    {
+        return match ($field['type']) {
+            'url', 'email', 'select', 'color' => 'text',
+            'roles' => 'json',
+            default => $field['type'],
+        };
+    }
+
     protected function logSettingChange(
         ClinicSetting $setting,
         mixed $oldValue,
         mixed $newValue,
         bool $isSecret = false,
+        ?string $reason = null,
+        array $context = [],
     ): void {
         if (! Schema::hasTable('clinic_setting_logs')) {
             return;
         }
 
-        ClinicSettingLog::query()->create([
+        $payload = [
             'clinic_setting_id' => $setting->id,
             'setting_group' => $setting->group ?? 'integration',
             'setting_key' => $setting->key,
@@ -963,12 +1162,56 @@ class IntegrationSettings extends Page
             'is_secret' => $isSecret,
             'changed_by' => auth()->id(),
             'changed_at' => now(),
-        ]);
+        ];
+
+        if (Schema::hasColumn('clinic_setting_logs', 'change_reason')) {
+            $payload['change_reason'] = $reason;
+        }
+
+        if (Schema::hasColumn('clinic_setting_logs', 'context')) {
+            $payload['context'] = $context;
+        }
+
+        ClinicSettingLog::query()->create($payload);
     }
 
     public function canViewAuditLogs(): bool
     {
         return (bool) auth()->user()?->can(static::AUDIT_LOG_PERMISSION);
+    }
+
+    public function canManageRuntimeSettings(): bool
+    {
+        return (bool) auth()->user()?->can(static::MANAGE_RUNTIME_PERMISSION);
+    }
+
+    public function canManageSecrets(): bool
+    {
+        return (bool) auth()->user()?->can(static::MANAGE_SECRETS_PERMISSION);
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    protected function authorizeManageRuntimeSettings(): void
+    {
+        if ($this->canManageRuntimeSettings()) {
+            return;
+        }
+
+        throw new AuthorizationException('Bạn không có quyền cập nhật runtime integration settings.');
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    protected function authorizeManageSecrets(): void
+    {
+        if ($this->canManageSecrets()) {
+            return;
+        }
+
+        throw new AuthorizationException('Bạn không có quyền cập nhật integration secrets.');
     }
 
     protected function valueForAuditLog(mixed $value, bool $isSecret): ?string
@@ -990,6 +1233,32 @@ class IntegrationSettings extends Page
         }
 
         return (string) $value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     */
+    protected function formatRotationNotificationLine(array $summary): string
+    {
+        $displayName = (string) ($summary['display_name'] ?? 'Integration secret');
+
+        if (($summary['grace_applied'] ?? false) && filled($summary['grace_expires_at'] ?? null)) {
+            return sprintf(
+                '%s: token cũ còn hiệu lực tới %s để tránh cắt kết nối đột ngột.',
+                $displayName,
+                \Illuminate\Support\Carbon::parse((string) $summary['grace_expires_at'])->format('d/m/Y H:i'),
+            );
+        }
+
+        if (($summary['initialized'] ?? false) === true) {
+            return $displayName.': secret mới đã được lưu.';
+        }
+
+        if (($summary['rotated'] ?? false) === true) {
+            return $displayName.': secret đã được cập nhật và không còn grace token cũ.';
+        }
+
+        return '';
     }
 
     protected function formatFieldStateValue(array $field, mixed $value): mixed

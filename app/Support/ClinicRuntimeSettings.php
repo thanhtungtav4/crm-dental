@@ -301,6 +301,25 @@ class ClinicRuntimeSettings
             ->all();
     }
 
+    public static function webLeadOperationalRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('web_lead.retention_days', 90),
+        );
+    }
+
+    public static function webLeadApiTokenGraceMinutes(): int
+    {
+        return max(
+            5,
+            min(
+                10080,
+                static::integer('web_lead.api_token_grace_minutes', 1440),
+            ),
+        );
+    }
+
     public static function zaloWebhookRateLimitPerMinute(): int
     {
         return max(
@@ -308,6 +327,25 @@ class ClinicRuntimeSettings
             min(
                 2000,
                 static::integer('zalo.webhook_rate_limit_per_minute', 120),
+            ),
+        );
+    }
+
+    public static function zaloWebhookRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('zalo.webhook_retention_days', 30),
+        );
+    }
+
+    public static function zaloWebhookTokenGraceMinutes(): int
+    {
+        return max(
+            5,
+            min(
+                10080,
+                static::integer('zalo.webhook_token_grace_minutes', 1440),
             ),
         );
     }
@@ -742,6 +780,14 @@ class ClinicRuntimeSettings
         return trim((string) static::get('google_calendar.account_email', ''));
     }
 
+    public static function googleCalendarOperationalRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('google_calendar.retention_days', 30),
+        );
+    }
+
     public static function googleCalendarAllowsPushToGoogle(): bool
     {
         return static::googleCalendarSyncMode() === 'one_way_to_google';
@@ -772,9 +818,28 @@ class ClinicRuntimeSettings
         return trim((string) static::get('emr.api_key', ''));
     }
 
+    public static function emrApiKeyGraceMinutes(): int
+    {
+        return max(
+            5,
+            min(
+                10080,
+                static::integer('emr.api_key_grace_minutes', 1440),
+            ),
+        );
+    }
+
     public static function emrClinicCode(): string
     {
         return trim((string) static::get('emr.clinic_code', ''));
+    }
+
+    public static function emrOperationalRetentionDays(): int
+    {
+        return max(
+            1,
+            static::integer('emr.retention_days', 90),
+        );
     }
 
     public static function dicomIntegrationEnabled(): bool

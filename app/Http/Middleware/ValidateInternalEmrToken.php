@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\ClinicSetting;
 use App\Services\AutomationActorResolver;
+use App\Services\IntegrationSecretRotationService;
 use App\Support\ActionPermission;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -41,7 +42,10 @@ class ValidateInternalEmrToken
 
         $incomingToken = (string) ($request->bearerToken() ?: $request->header('X-EMR-API-KEY', ''));
 
-        if ($incomingToken === '' || ! hash_equals($configuredToken, $incomingToken)) {
+        if (
+            $incomingToken === ''
+            || ! app(IntegrationSecretRotationService::class)->matches('emr.api_key', $incomingToken)
+        ) {
             return new JsonResponse([
                 'message' => 'Token không hợp lệ.',
             ], 401);
@@ -50,6 +54,7 @@ class ValidateInternalEmrToken
         $actor = app(AutomationActorResolver::class)->resolveForPermission(
             permission: ActionPermission::EMR_CLINICAL_WRITE,
             enforceRequiredRole: true,
+            failOnPrivilegedRoles: true,
         );
 
         if (! $actor) {

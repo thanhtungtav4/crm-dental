@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NullableEncryptedArray;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,7 +43,7 @@ class EmrSyncEvent extends Model
     ];
 
     protected $casts = [
-        'payload' => 'array',
+        'payload' => NullableEncryptedArray::class,
         'attempts' => 'integer',
         'max_attempts' => 'integer',
         'next_retry_at' => 'datetime',

@@ -26,7 +26,10 @@ it('fails strict mode when dead-letter error budget is exceeded', function (): v
         'appointment_id' => $appointment->id,
         'branch_id' => $appointment->branch_id,
         'event_type' => GoogleCalendarSyncEvent::EVENT_UPSERT,
-        'payload' => [],
+        'payload' => [
+            'appointment_id' => $appointment->id,
+            'branch_id' => $appointment->branch_id,
+        ],
         'payload_checksum' => hash('sha256', 'obs-dead-'.$appointment->id),
         'status' => GoogleCalendarSyncEvent::STATUS_DEAD,
         'attempts' => 1,

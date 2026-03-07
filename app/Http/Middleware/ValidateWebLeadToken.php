@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\ClinicSetting;
+use App\Services\IntegrationSecretRotationService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,10 @@ class ValidateWebLeadToken
 
         $incomingToken = (string) ($request->bearerToken() ?: $request->header('X-Web-Lead-Token', ''));
 
-        if ($incomingToken === '' || ! hash_equals($configuredToken, $incomingToken)) {
+        if (
+            $incomingToken === ''
+            || ! app(IntegrationSecretRotationService::class)->matches('web_lead.api_token', $incomingToken)
+        ) {
             return new JsonResponse([
                 'message' => 'Token không hợp lệ.',
             ], 401);

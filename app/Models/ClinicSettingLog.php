@@ -16,6 +16,8 @@ class ClinicSettingLog extends Model
         'setting_label',
         'old_value',
         'new_value',
+        'change_reason',
+        'context',
         'is_secret',
         'changed_by',
         'changed_at',
@@ -25,6 +27,7 @@ class ClinicSettingLog extends Model
     {
         return [
             'is_secret' => 'boolean',
+            'context' => 'array',
             'changed_at' => 'datetime',
         ];
     }
@@ -39,4 +42,3 @@ class ClinicSettingLog extends Model
         return $this->belongsTo(User::class, 'changed_by');
     }
 }
-

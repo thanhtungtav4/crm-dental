@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ZaloWebhookEvent;
+use App\Services\IntegrationOperationalPayloadSanitizer;
+use App\Services\IntegrationSecretRotationService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +57,7 @@ class ZaloWebhookController extends Controller
                 'event_name' => $eventName !== '' ? $eventName : null,
                 'event_id' => $eventId !== '' ? $eventId : null,
                 'oa_id' => $oaId !== '' ? $oaId : null,
-                'payload' => $payload,
+                'payload' => app(IntegrationOperationalPayloadSanitizer::class)->sanitizeZaloWebhookPayload($payload),
                 'received_at' => now(),
                 'processed_at' => now(),
             ],
@@ -117,7 +119,11 @@ class ZaloWebhookController extends Controller
         $verifyToken = trim((string) $request->query('hub_verify_token', $request->input('verify_token', '')));
         $expectedToken = trim((string) ClinicRuntimeSettings::get('zalo.webhook_token', ''));
 
-        if ($verifyToken !== '' && $expectedToken !== '' && hash_equals($expectedToken, $verifyToken)) {
+        if (
+            $verifyToken !== ''
+            && $expectedToken !== ''
+            && app(IntegrationSecretRotationService::class)->matches('zalo.webhook_token', $verifyToken)
+        ) {
             return null;
         }
 

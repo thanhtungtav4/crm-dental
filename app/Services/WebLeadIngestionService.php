@@ -19,6 +19,7 @@ class WebLeadIngestionService
     public function __construct(
         protected WebLeadRealtimeNotificationService $webLeadRealtimeNotificationService,
         protected ZnsAutomationEventPublisher $znsAutomationEventPublisher,
+        protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
     ) {}
 
     /**
@@ -152,11 +153,11 @@ class WebLeadIngestionService
             $ingestion->fill([
                 'customer_id' => $customer->id,
                 'status' => $status,
-                'response' => [
+                'response' => $this->payloadSanitizer->sanitizeWebLeadResponse([
                     'customer_id' => $customer->id,
                     'branch_id' => $customer->branch_id,
                     'status' => $status,
-                ],
+                ]),
                 'processed_at' => now(),
             ])->save();
 

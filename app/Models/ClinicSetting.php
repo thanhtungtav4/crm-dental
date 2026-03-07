@@ -99,6 +99,45 @@ class ClinicSetting extends Model
         return $record;
     }
 
+    /**
+     * @param  array<int, array{key: string, default?: mixed}>  $definitions
+     * @return array<string, mixed>
+     */
+    public static function resolveValuesForDefinitions(array $definitions): array
+    {
+        $keys = collect($definitions)
+            ->pluck('key')
+            ->filter(static fn (mixed $key): bool => is_string($key) && trim($key) !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($keys === []) {
+            return [];
+        }
+
+        $records = static::query()
+            ->whereIn('key', $keys)
+            ->get()
+            ->keyBy('key');
+
+        $values = [];
+
+        foreach ($definitions as $definition) {
+            $key = (string) ($definition['key'] ?? '');
+
+            if ($key === '') {
+                continue;
+            }
+
+            /** @var self|null $record */
+            $record = $records->get($key);
+            $values[$key] = $record?->decodeValue($definition['default'] ?? null) ?? ($definition['default'] ?? null);
+        }
+
+        return $values;
+    }
+
     public static function flushRuntimeCache(?string $key = null): void
     {
         if ($key === null) {

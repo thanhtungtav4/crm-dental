@@ -2,9 +2,12 @@
 
 use App\Filament\Pages\IntegrationSettings;
 use App\Models\ClinicSetting;
+use App\Models\User;
 use Livewire\Livewire;
 
 it('validates required google calendar fields when integration is enabled', function (): void {
+    actingAsGoogleCalendarIntegrationSettingsAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('settings.google_calendar_enabled', true)
         ->set('settings.google_calendar_client_id', '')
@@ -21,6 +24,8 @@ it('validates required google calendar fields when integration is enabled', func
 });
 
 it('allows saving google calendar settings when required fields are provided', function (): void {
+    actingAsGoogleCalendarIntegrationSettingsAdmin();
+
     Livewire::test(IntegrationSettings::class)
         ->set('settings.google_calendar_enabled', true)
         ->set('settings.google_calendar_client_id', 'gcal-client-id')
@@ -38,6 +43,8 @@ it('allows saving google calendar settings when required fields are provided', f
 });
 
 it('normalizes legacy google calendar sync mode when loading settings', function (): void {
+    actingAsGoogleCalendarIntegrationSettingsAdmin();
+
     ClinicSetting::setValue('google_calendar.sync_mode', 'two_way', [
         'group' => 'google_calendar',
         'label' => 'Chế độ đồng bộ',
@@ -54,3 +61,13 @@ it('normalizes legacy google calendar sync mode when loading settings', function
     expect(ClinicSetting::getValue('google_calendar.sync_mode'))
         ->toBe('one_way_to_google');
 });
+
+function actingAsGoogleCalendarIntegrationSettingsAdmin(): User
+{
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    test()->actingAs($admin);
+
+    return $admin;
+}
