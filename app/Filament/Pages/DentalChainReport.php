@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
+
 class DentalChainReport extends PlaceholderPage
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
@@ -24,4 +26,18 @@ class DentalChainReport extends PlaceholderPage
         'Tổng số lượng thủ thuật',
         'Tổng doanh thu',
     ];
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasAnyAccessibleBranch()
+            && $authUser->can('View:DentalChainReport');
+    }
 }

@@ -10,10 +10,12 @@ it('loads critical admin pages for treatment and integration flow', function ():
     $patient = Patient::factory()->create();
 
     $pages = [
+        '/admin/patients/create' => 'Chi nhánh',
         "/admin/patients/{$patient->id}?tab=exam-treatment" => 'Kế hoạch điều trị',
         '/admin/treatment-plans/create?plan-step=form.chan-doan-dieu-tri::data::wizard-step' => 'Sơ đồ răng',
         '/admin/integration-settings' => 'Cài đặt tích hợp',
         '/admin/customers' => 'Khách hàng',
+        '/admin/customers/create' => 'Thông tin cá nhân',
     ];
 
     foreach ($pages as $url => $expectedText) {

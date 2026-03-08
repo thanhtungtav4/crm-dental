@@ -17,7 +17,9 @@ pest()->extend(Tests\TestCase::class)
         \App\Models\ClinicSetting::flushRuntimeCache();
         \Pest\Laravel\seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
     })
-    ->in('Feature');
+    ->in('Feature', 'Browser');
+
+pest()->browser()->timeout(15000);
 
 /*
 |--------------------------------------------------------------------------

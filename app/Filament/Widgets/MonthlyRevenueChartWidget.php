@@ -2,26 +2,28 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Payment;
+use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 
 class MonthlyRevenueChartWidget extends ChartWidget
 {
+    use InteractsWithFinancialBranchScope;
+
     protected ?string $heading = 'Doanh thu 12 tháng';
-    
+
     protected static ?int $sort = 3;
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     protected ?string $maxHeight = '300px';
-    
+
     public ?string $filter = 'year';
 
     protected function getData(): array
     {
         $data = $this->getRevenueData();
-        
+
         return [
             'datasets' => [
                 [
@@ -50,7 +52,7 @@ class MonthlyRevenueChartWidget extends ChartWidget
     {
         return 'line';
     }
-    
+
     protected function getOptions(): array
     {
         return [
@@ -106,7 +108,7 @@ class MonthlyRevenueChartWidget extends ChartWidget
             ],
         ];
     }
-    
+
     protected function getFilters(): ?array
     {
         return [
@@ -115,37 +117,37 @@ class MonthlyRevenueChartWidget extends ChartWidget
             '3months' => '3 tháng gần đây',
         ];
     }
-    
+
     private function getRevenueData(): array
     {
-        $months = match($this->filter) {
+        $months = match ($this->filter) {
             '3months' => 3,
             '6months' => 6,
             default => 12,
         };
-        
+
         $revenue = [];
         $count = [];
         $labels = [];
-        
+
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            
-            $monthRevenue = Payment::query()
+
+            $monthRevenue = $this->scopedPaymentQuery()
                 ->whereYear('paid_at', $date->year)
                 ->whereMonth('paid_at', $date->month)
                 ->sum('amount');
-            
-            $monthCount = Payment::query()
+
+            $monthCount = $this->scopedPaymentQuery()
                 ->whereYear('paid_at', $date->year)
                 ->whereMonth('paid_at', $date->month)
                 ->count();
-            
+
             $revenue[] = $monthRevenue;
             $count[] = $monthCount;
             $labels[] = $date->format('m/Y');
         }
-        
+
         return [
             'revenue' => $revenue,
             'count' => $count,

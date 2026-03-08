@@ -16,6 +16,7 @@ use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class PatientsTable
 {
@@ -32,7 +33,9 @@ class PatientsTable
                     ->searchable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'basic-info'])),
+                    ->url(fn ($record): ?string => auth()->user()?->can('view', $record)
+                        ? PatientResource::getUrl('view', ['record' => $record, 'tab' => 'basic-info'])
+                        : null),
                 TextColumn::make('gender')
                     ->label('Giới tính')
                     ->badge()
@@ -76,19 +79,25 @@ class PatientsTable
                     ->counts('appointments')
                     ->badge()
                     ->color('info')
-                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'appointments'])),
+                    ->url(fn ($record): ?string => auth()->user()?->can('view', $record)
+                        ? PatientResource::getUrl('view', ['record' => $record, 'tab' => 'appointments'])
+                        : null),
                 TextColumn::make('treatment_plans_count')
                     ->label('KHĐT')
                     ->counts('treatmentPlans')
                     ->badge()
                     ->color('success')
-                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'exam-treatment'])),
+                    ->url(fn ($record): ?string => auth()->user()?->can('view', $record)
+                        ? PatientResource::getUrl('view', ['record' => $record, 'tab' => 'exam-treatment'])
+                        : null),
                 TextColumn::make('invoices_count')
                     ->label('Hóa đơn')
                     ->counts('invoices')
                     ->badge()
                     ->color('warning')
-                    ->url(fn ($record): string => PatientResource::getUrl('view', ['record' => $record, 'tab' => 'payments'])),
+                    ->url(fn ($record): ?string => auth()->user()?->can('view', $record)
+                        ? PatientResource::getUrl('view', ['record' => $record, 'tab' => 'payments'])
+                        : null),
                 TextColumn::make('created_at')
                     ->label('Ngày tạo')
                     ->dateTime()
@@ -103,11 +112,12 @@ class PatientsTable
                 Action::make('viewAppointments')
                     ->label('Xem lịch hẹn')
                     ->icon('heroicon-o-eye')
-                    ->visible(fn ($record) => Appointment::query()
-                        ->where('patient_id', $record->id)
-                        ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
-                        ->where('date', '>=', now())
-                        ->exists())
+                    ->visible(fn ($record) => (auth()->user()?->can('Update:Appointment') ?? false)
+                        && Appointment::query()
+                            ->where('patient_id', $record->id)
+                            ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
+                            ->where('date', '>=', now())
+                            ->exists())
                     ->modalHeading('Lịch hẹn còn hiệu lực')
                     ->form([
                         \Filament\Forms\Components\Select::make('appointment_id')
@@ -141,6 +151,10 @@ class PatientsTable
                     ->label('Tạo lịch hẹn')
                     ->icon('heroicon-o-calendar')
                     ->modalHeading('Tạo lịch hẹn')
+                    ->visible(fn (Patient $record): bool => (auth()->user()?->can('create', Appointment::class) ?? false)
+                        && (auth()->user()?->can('view', $record) ?? false))
+                    ->authorize(fn (Patient $record): bool => (auth()->user()?->can('create', Appointment::class) ?? false)
+                        && (auth()->user()?->can('view', $record) ?? false))
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
                             ->label('Bác sĩ')
@@ -238,6 +252,9 @@ class PatientsTable
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
+                        Gate::authorize('create', Appointment::class);
+                        Gate::authorize('view', $record);
+
                         $resolvedBranchId = is_numeric($data['branch_id'] ?? null)
                             ? (int) $data['branch_id']
                             : (is_numeric($record->first_branch_id) ? (int) $record->first_branch_id : null);

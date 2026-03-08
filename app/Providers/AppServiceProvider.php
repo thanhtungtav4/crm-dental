@@ -32,15 +32,18 @@ use App\Observers\PrescriptionObserver;
 use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
+use App\Policies\FirewallIpPolicy;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action as FilamentAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use SolutionForest\FilamentFirewall\Models\Ip as FirewallIp;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -57,6 +60,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(FirewallIp::class, FirewallIpPolicy::class);
+
         $this->configureFilamentActionNotifications();
         $this->configureFilamentQuickCopy();
 

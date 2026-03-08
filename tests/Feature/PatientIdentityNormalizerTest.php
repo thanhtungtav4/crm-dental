@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientIdentity;
 use App\Models\Patient;
 use App\Services\MasterPatientIndexService;
@@ -43,4 +45,27 @@ it('persists mpi identities using the shared normalized values', function (): vo
     expect($identities[MasterPatientIdentity::TYPE_PHONE])->toBe('0901333444')
         ->and($identities[MasterPatientIdentity::TYPE_EMAIL])->toBe('mpi@example.com')
         ->and($identities[MasterPatientIdentity::TYPE_CCCD])->toBe('0123456789');
+});
+
+it('does not open mpi cross-branch cases for duplicates inside the same branch', function (): void {
+    $branch = Branch::factory()->create();
+
+    $patientA = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0901444555',
+    ]);
+
+    $patientB = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'phone' => '0901444555',
+    ]);
+
+    $service = app(MasterPatientIndexService::class);
+
+    $service->syncForPatient($patientA, true);
+    $service->syncForPatient($patientB, true);
+
+    expect($service->hasCrossBranchDuplicate($patientA->fresh()))->toBeFalse()
+        ->and($service->hasCrossBranchDuplicate($patientB->fresh()))->toBeFalse()
+        ->and(MasterPatientDuplicate::query()->where('status', MasterPatientDuplicate::STATUS_OPEN)->count())->toBe(0);
 });

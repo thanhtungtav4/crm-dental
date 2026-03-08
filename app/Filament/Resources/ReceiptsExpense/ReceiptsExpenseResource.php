@@ -8,11 +8,13 @@ use App\Filament\Resources\ReceiptsExpense\Pages\ListReceiptsExpense;
 use App\Filament\Resources\ReceiptsExpense\Schemas\ReceiptsExpenseForm;
 use App\Filament\Resources\ReceiptsExpense\Tables\ReceiptsExpenseTable;
 use App\Models\ReceiptExpense;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema as DatabaseSchema;
 
 class ReceiptsExpenseResource extends Resource
@@ -55,6 +57,24 @@ class ReceiptsExpenseResource extends Resource
         return ReceiptsExpenseTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = $authUser->accessibleBranchIds();
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('clinic_id', $branchIds);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -84,5 +104,10 @@ class ReceiptsExpenseResource extends Resource
     public static function hasBackingTable(): bool
     {
         return DatabaseSchema::hasTable('receipts_expense');
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery();
     }
 }

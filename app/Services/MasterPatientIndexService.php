@@ -103,10 +103,17 @@ class MasterPatientIndexService
             return false;
         }
 
-        return MasterPatientIdentity::query()
+        $matchedBranchIds = MasterPatientIdentity::query()
             ->whereIn('identity_hash', $identityHashes)
             ->where('patient_id', '!=', $patient->id)
-            ->exists();
+            ->pluck('branch_id')
+            ->push($patient->first_branch_id)
+            ->filter(fn ($branchId): bool => is_numeric($branchId) && (int) $branchId > 0)
+            ->map(fn ($branchId): int => (int) $branchId)
+            ->unique()
+            ->values();
+
+        return $matchedBranchIds->count() > 1;
     }
 
     /**
@@ -121,6 +128,7 @@ class MasterPatientIndexService
             ->when($identityType !== null, fn ($query) => $query->where('identity_type', $identityType))
             ->groupBy('identity_type', 'identity_hash')
             ->havingRaw('COUNT(DISTINCT patient_id) > 1')
+            ->havingRaw('COUNT(DISTINCT branch_id) > 1')
             ->orderByDesc('patient_count')
             ->get();
     }
@@ -276,6 +284,21 @@ class MasterPatientIndexService
                 ->unique()
                 ->values()
                 ->all();
+
+            if (count($matchedBranchIds) <= 1) {
+                MasterPatientDuplicate::query()
+                    ->where('identity_type', $identity['identity_type'])
+                    ->where('identity_hash', $identity['identity_hash'])
+                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                    ->update([
+                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
+                        'review_note' => 'Auto-ignore do chỉ trùng trong cùng một chi nhánh.',
+                        'reviewed_by' => auth()->id(),
+                        'reviewed_at' => now(),
+                    ]);
+
+                continue;
+            }
 
             $maxConfidence = max(
                 (float) $identity['confidence_score'],

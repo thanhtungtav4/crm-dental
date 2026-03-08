@@ -238,3 +238,103 @@ it('rolls back patient merge and restores previous patient references', function
         ->where('status', MasterPatientMerge::STATUS_APPLIED)
         ->exists())->toBeTrue();
 });
+
+it('restores duplicate case snapshots when rolling back a merge with historical cases', function () {
+    $manager = User::factory()->create();
+    $manager->assignRole('Admin');
+    $this->actingAs($manager);
+
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+    $branchC = Branch::factory()->create();
+
+    $customerA = Customer::factory()->create([
+        'branch_id' => $branchA->id,
+        'phone' => '0900000099',
+    ]);
+
+    $customerB = Customer::factory()->create([
+        'branch_id' => $branchB->id,
+        'phone' => '0900000098',
+    ]);
+
+    $customerC = Customer::factory()->create([
+        'branch_id' => $branchC->id,
+        'phone' => '0900000097',
+    ]);
+
+    $canonicalPatient = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+        'phone' => '0900000099',
+        'status' => 'active',
+    ]);
+
+    $mergedPatient = Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+        'phone' => '0900000099',
+        'status' => 'active',
+    ]);
+
+    $thirdPatient = Patient::factory()->create([
+        'customer_id' => $customerC->id,
+        'first_branch_id' => $branchC->id,
+        'phone' => '0900000099',
+        'status' => 'active',
+    ]);
+
+    $identityHash = hash('sha256', 'phone|0900000099');
+
+    $historicalResolvedCase = MasterPatientDuplicate::query()->create([
+        'patient_id' => $mergedPatient->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'phone',
+        'identity_hash' => $identityHash,
+        'identity_value' => '0900000099',
+        'matched_patient_ids' => [$canonicalPatient->id, $mergedPatient->id, $thirdPatient->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id, $branchC->id],
+        'confidence_score' => 95,
+        'status' => MasterPatientDuplicate::STATUS_RESOLVED,
+        'review_note' => 'Historical resolved case',
+        'reviewed_by' => $manager->id,
+        'reviewed_at' => now(),
+    ]);
+
+    $openDuplicateCase = MasterPatientDuplicate::query()->updateOrCreate(
+        [
+            'identity_type' => 'phone',
+            'identity_hash' => $identityHash,
+            'status' => MasterPatientDuplicate::STATUS_OPEN,
+        ],
+        [
+            'patient_id' => $mergedPatient->id,
+            'branch_id' => $branchB->id,
+            'identity_value' => '0900000099',
+            'matched_patient_ids' => [$canonicalPatient->id, $mergedPatient->id, $thirdPatient->id],
+            'matched_branch_ids' => [$branchA->id, $branchB->id, $branchC->id],
+            'confidence_score' => 95,
+        ],
+    );
+
+    $this->artisan('mpi:merge', [
+        'canonical_patient_id' => $canonicalPatient->id,
+        'merged_patient_id' => $mergedPatient->id,
+        '--duplicate_case_id' => $openDuplicateCase->id,
+        '--reason' => 'Snapshot rollback test',
+    ])->assertSuccessful();
+
+    $merge = MasterPatientMerge::query()->latest('id')->firstOrFail();
+
+    $this->artisan('mpi:merge-rollback', [
+        'merge_id' => $merge->id,
+        '--note' => 'Restore original duplicate snapshots',
+    ])->assertSuccessful();
+
+    expect($openDuplicateCase->fresh()->status)->toBe(MasterPatientDuplicate::STATUS_OPEN)
+        ->and($historicalResolvedCase->fresh()->status)->toBe(MasterPatientDuplicate::STATUS_RESOLVED)
+        ->and($openDuplicateCase->fresh()->matched_patient_ids)->toContain($thirdPatient->id)
+        ->and($historicalResolvedCase->fresh()->matched_patient_ids)->toContain($thirdPatient->id)
+        ->and($openDuplicateCase->fresh()->matched_branch_ids)->toContain($branchC->id)
+        ->and($historicalResolvedCase->fresh()->matched_branch_ids)->toContain($branchC->id);
+});

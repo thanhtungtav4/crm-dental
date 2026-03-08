@@ -227,6 +227,7 @@ class Appointment extends Model
 
             static::assertOperationalOverridePermission($appointment);
             static::assertStatusReasonRequirement($appointment, $normalizedStatus);
+            static::assertTemporalStatusRequirement($appointment, $normalizedStatus);
             static::assertDoctorBranchCompatibility($appointment);
             static::assertOverbookingPolicy($appointment);
         });
@@ -298,6 +299,58 @@ class Appointment extends Model
     public static function statusOptions(): array
     {
         return self::STATUS_LABELS;
+    }
+
+    public function isFutureAppointment(): bool
+    {
+        return $this->date?->isFuture() ?? false;
+    }
+
+    public function canTransitionToStatus(?string $toStatus): bool
+    {
+        $normalizedStatus = static::normalizeStatus($toStatus);
+
+        if ($normalizedStatus === null) {
+            return false;
+        }
+
+        if (! static::canTransition($this->status, $normalizedStatus)) {
+            return false;
+        }
+
+        if (
+            $normalizedStatus !== static::normalizeStatus($this->status)
+            && $this->isFutureAppointment()
+            && static::isOutcomeStatus($normalizedStatus)
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function statusOptionsForManualUpdate(): array
+    {
+        $options = static::statusOptions();
+
+        if (! $this->isFutureAppointment()) {
+            return $options;
+        }
+
+        $currentStatus = static::normalizeStatus($this->status);
+
+        foreach ([self::STATUS_COMPLETED, self::STATUS_NO_SHOW] as $blockedStatus) {
+            if ($currentStatus === $blockedStatus) {
+                continue;
+            }
+
+            unset($options[$blockedStatus]);
+        }
+
+        return $options;
     }
 
     public static function overrideTypeOptions(): array
@@ -437,6 +490,15 @@ class Appointment extends Model
         return array_values(array_unique($aliases));
     }
 
+    protected static function isOutcomeStatus(?string $status): bool
+    {
+        return in_array(
+            static::normalizeStatus($status),
+            [self::STATUS_COMPLETED, self::STATUS_NO_SHOW],
+            true,
+        );
+    }
+
     protected static function assertStatusReasonRequirement(self $appointment, string $status): void
     {
         if (! $appointment->isDirty('status')) {
@@ -461,6 +523,19 @@ class Appointment extends Model
         if ($status === self::STATUS_RESCHEDULED && blank($appointment->reschedule_reason)) {
             throw ValidationException::withMessages([
                 'reschedule_reason' => 'Vui lòng nhập lý do hẹn lại lịch hẹn.',
+            ]);
+        }
+    }
+
+    protected static function assertTemporalStatusRequirement(self $appointment, string $status): void
+    {
+        if (! $appointment->isDirty('status') || ! $appointment->date) {
+            return;
+        }
+
+        if ($appointment->isFutureAppointment() && static::isOutcomeStatus($status)) {
+            throw ValidationException::withMessages([
+                'status' => 'Không thể cập nhật trạng thái hoàn thành hoặc không đến cho lịch hẹn chưa diễn ra.',
             ]);
         }
     }

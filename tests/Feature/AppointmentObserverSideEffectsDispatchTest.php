@@ -41,7 +41,7 @@ it('dispatches conversion-aware orchestration when a lead appointment is complet
         'patient_id' => null,
         'doctor_id' => $doctor->id,
         'branch_id' => $branch->id,
-        'date' => now()->addDay(),
+        'date' => now()->subDay(),
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 

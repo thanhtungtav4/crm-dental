@@ -90,6 +90,17 @@ class PatientConversionService
             $dirtyPatient = true;
         }
 
+        if (
+            $targetBranchId
+            && $patient->first_branch_id
+            && (int) $patient->first_branch_id !== (int) $targetBranchId
+        ) {
+            $patient->branchTransferLogNote = 'Tự động đồng bộ chi nhánh khi tái sử dụng hồ sơ bệnh nhân hiện có từ luồng chuyển đổi khách hàng.';
+            $patient->branchTransferActorId = is_numeric(auth()->id()) ? (int) auth()->id() : null;
+            $patient->first_branch_id = $targetBranchId;
+            $dirtyPatient = true;
+        }
+
         if ($dirtyPatient) {
             $patient->save();
         }
@@ -192,7 +203,13 @@ class PatientConversionService
             return null;
         }
 
-        return $this->findByPhoneAndClinic((string) $customer->phone, $targetBranchId, true);
+        $existingByBranch = $this->findByPhoneAndClinic((string) $customer->phone, $targetBranchId, true);
+
+        if ($existingByBranch) {
+            return $existingByBranch;
+        }
+
+        return $this->findByPhoneAndClinic((string) $customer->phone, null, true);
     }
 
     protected function lockPeerCustomersForIdentity(Customer $customer): void

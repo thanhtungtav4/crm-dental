@@ -70,6 +70,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $pages = [
             'SystemSettings',
             'IntegrationSettings',
+            'FinancialDashboard',
+            'DentalChainReport',
+            'DentalApp',
         ];
 
         $extraPermissions = [
@@ -158,10 +161,20 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $doctor->syncPermissions($doctorPerms);
 
-        // CSKH: Customers & Notes
+        // CSKH: Front-office / tư vấn flow
         $cskhPerms = [];
         foreach (['Customer'] as $res) {
-            foreach (['ViewAny', 'View'] as $prefix) {
+            foreach (['ViewAny', 'View', 'Create', 'Update'] as $prefix) {
+                $cskhPerms[] = $prefix.':'.$res;
+            }
+        }
+        foreach (['Patient'] as $res) {
+            foreach (['ViewAny', 'View', 'Create'] as $prefix) {
+                $cskhPerms[] = $prefix.':'.$res;
+            }
+        }
+        foreach (['Appointment'] as $res) {
+            foreach (['ViewAny', 'View', 'Create', 'Update'] as $prefix) {
                 $cskhPerms[] = $prefix.':'.$res;
             }
         }

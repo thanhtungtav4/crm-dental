@@ -27,82 +27,89 @@ use App\Models\WalletLedgerEntry;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 it('scopes calendar operational metrics by accessible branch for non admin users', function (): void {
-    $branchA = Branch::factory()->create();
-    $branchB = Branch::factory()->create();
+    Carbon::setTestNow(Carbon::parse('2026-03-08 12:00:00'));
 
-    $manager = User::factory()->create([
-        'branch_id' => $branchA->id,
-    ]);
-    $manager->assignRole('Manager');
+    try {
+        $branchA = Branch::factory()->create();
+        $branchB = Branch::factory()->create();
 
-    $doctor = User::factory()->create([
-        'branch_id' => $branchA->id,
-    ]);
-    $doctor->assignRole('Doctor');
+        $manager = User::factory()->create([
+            'branch_id' => $branchA->id,
+        ]);
+        $manager->assignRole('Manager');
 
-    $doctorBranchB = User::factory()->create([
-        'branch_id' => $branchB->id,
-    ]);
-    $doctorBranchB->assignRole('Doctor');
+        $doctor = User::factory()->create([
+            'branch_id' => $branchA->id,
+        ]);
+        $doctor->assignRole('Doctor');
 
-    DoctorBranchAssignment::query()->create([
-        'user_id' => $doctor->id,
-        'branch_id' => $branchA->id,
-        'is_active' => true,
-        'is_primary' => true,
-    ]);
-    DoctorBranchAssignment::query()->create([
-        'user_id' => $doctorBranchB->id,
-        'branch_id' => $branchB->id,
-        'is_active' => true,
-        'is_primary' => true,
-    ]);
+        $doctorBranchB = User::factory()->create([
+            'branch_id' => $branchB->id,
+        ]);
+        $doctorBranchB->assignRole('Doctor');
 
-    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
-    $patientA = Patient::factory()->create([
-        'customer_id' => $customerA->id,
-        'first_branch_id' => $branchA->id,
-    ]);
+        DoctorBranchAssignment::query()->create([
+            'user_id' => $doctor->id,
+            'branch_id' => $branchA->id,
+            'is_active' => true,
+            'is_primary' => true,
+        ]);
+        DoctorBranchAssignment::query()->create([
+            'user_id' => $doctorBranchB->id,
+            'branch_id' => $branchB->id,
+            'is_active' => true,
+            'is_primary' => true,
+        ]);
 
-    $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
-    $patientB = Patient::factory()->create([
-        'customer_id' => $customerB->id,
-        'first_branch_id' => $branchB->id,
-    ]);
+        $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+        $patientA = Patient::factory()->create([
+            'customer_id' => $customerA->id,
+            'first_branch_id' => $branchA->id,
+        ]);
 
-    Appointment::query()->create([
-        'patient_id' => $patientA->id,
-        'doctor_id' => $doctor->id,
-        'branch_id' => $branchA->id,
-        'date' => now()->setTime(10, 0),
-        'status' => Appointment::STATUS_SCHEDULED,
-        'duration_minutes' => 30,
-    ]);
+        $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
+        $patientB = Patient::factory()->create([
+            'customer_id' => $customerB->id,
+            'first_branch_id' => $branchB->id,
+        ]);
 
-    Appointment::query()->create([
-        'patient_id' => $patientB->id,
-        'doctor_id' => $doctorBranchB->id,
-        'branch_id' => $branchB->id,
-        'date' => now()->setTime(11, 0),
-        'status' => Appointment::STATUS_NO_SHOW,
-        'duration_minutes' => 30,
-    ]);
+        Appointment::query()->create([
+            'patient_id' => $patientA->id,
+            'doctor_id' => $doctor->id,
+            'branch_id' => $branchA->id,
+            'date' => now()->setTime(10, 0),
+            'status' => Appointment::STATUS_SCHEDULED,
+            'duration_minutes' => 30,
+        ]);
 
-    $this->actingAs($manager);
+        Appointment::query()->create([
+            'patient_id' => $patientB->id,
+            'doctor_id' => $doctorBranchB->id,
+            'branch_id' => $branchB->id,
+            'date' => now()->setTime(11, 0),
+            'status' => Appointment::STATUS_NO_SHOW,
+            'duration_minutes' => 30,
+        ]);
 
-    $metrics = Livewire::test(CalendarAppointments::class)
-        ->instance()
-        ->getOperationalStatusMetrics();
+        $this->actingAs($manager);
 
-    expect($metrics['total'])->toBe(1)
-        ->and($metrics['scheduled'])->toBe(1)
-        ->and($metrics['no_show'])->toBe(0);
+        $metrics = Livewire::test(CalendarAppointments::class)
+            ->instance()
+            ->getOperationalStatusMetrics();
+
+        expect($metrics['total'])->toBe(1)
+            ->and($metrics['scheduled'])->toBe(1)
+            ->and($metrics['no_show'])->toBe(0);
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('returns conflict warning and supports force reschedule from calendar', function (): void {

@@ -35,9 +35,11 @@ class RunReactivationFlow extends Command
         );
 
         $dryRun = (bool) $this->option('dry-run');
-        $asOf = $this->option('date')
-            ? Carbon::parse((string) $this->option('date'))->endOfDay()
-            : now()->endOfDay();
+        $runDate = $this->option('date')
+            ? Carbon::parse((string) $this->option('date'))
+            : null;
+        $asOf = $runDate?->copy()->endOfDay() ?? now()->endOfDay();
+        $upcomingBookingCutoff = $runDate?->copy()->startOfDay() ?? now();
         $persist = ! $dryRun;
 
         $inactiveDays = ClinicRuntimeSettings::loyaltyReactivationInactiveDays();
@@ -62,6 +64,7 @@ class RunReactivationFlow extends Command
             ->orderBy('id')
             ->chunkById(200, function ($patients) use (
                 $inactiveCutoff,
+                $upcomingBookingCutoff,
                 $inactiveDays,
                 $persist,
                 &$ticketUpserted,
@@ -73,6 +76,12 @@ class RunReactivationFlow extends Command
                         : Carbon::parse($patient->created_at ?? now());
 
                     if ($lastVisitAt->gt($inactiveCutoff)) {
+                        continue;
+                    }
+
+                    if ($this->hasUpcomingBooking($patient->id, $upcomingBookingCutoff)) {
+                        $ticketSkipped++;
+
                         continue;
                     }
 
@@ -181,5 +190,19 @@ class RunReactivationFlow extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    protected function hasUpcomingBooking(int $patientId, Carbon $cutoff): bool
+    {
+        return Appointment::query()
+            ->where('patient_id', $patientId)
+            ->whereIn('status', Appointment::statusesForQuery([
+                Appointment::STATUS_SCHEDULED,
+                Appointment::STATUS_CONFIRMED,
+                Appointment::STATUS_RESCHEDULED,
+                Appointment::STATUS_IN_PROGRESS,
+            ]))
+            ->where('date', '>=', $cutoff)
+            ->exists();
     }
 }

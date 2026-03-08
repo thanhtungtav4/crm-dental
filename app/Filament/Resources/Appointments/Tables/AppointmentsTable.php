@@ -6,12 +6,14 @@ use App\Filament\Resources\Appointments\AppointmentStatusActions;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Models\Patient;
 use App\Services\AppointmentSearchService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class AppointmentsTable
 {
@@ -51,14 +53,14 @@ class AppointmentsTable
                     ->icon(fn ($record) => $record->customer_id && ! $record->patient_id ? 'heroicon-o-user' : 'heroicon-o-check-circle')
                     ->description(fn ($record) => $record->customer_id && ! $record->patient_id ? 'Lead' : 'Bệnh nhân')
                     ->url(function ($record): ?string {
-                        if ($record->patient_id && $record->patient) {
+                        if ($record->patient_id && $record->patient && (auth()->user()?->can('view', $record->patient) ?? false)) {
                             return PatientResource::getUrl('view', [
                                 'record' => $record->patient,
                                 'tab' => 'appointments',
                             ]);
                         }
 
-                        if ($record->customer_id && $record->customer) {
+                        if ($record->customer_id && $record->customer && (auth()->user()?->can('update', $record->customer) ?? false)) {
                             return CustomerResource::getUrl('edit', [
                                 'record' => $record->customer,
                             ]);
@@ -249,7 +251,15 @@ class AppointmentsTable
                     ->label('Chuyển thành bệnh nhân')
                     ->icon('heroicon-o-user-plus')
                     ->color('success')
-                    ->visible(fn ($record) => $record->customer_id && ! $record->patient_id)
+                    ->visible(fn ($record) => $record->customer_id
+                        && ! $record->patient_id
+                        && (auth()->user()?->can('create', Patient::class) ?? false)
+                        && ($record->customer ? (auth()->user()?->can('update', $record->customer) ?? false) : false)
+                        && (auth()->user()?->can('update', $record) ?? false))
+                    ->authorize(fn (Appointment $record): bool => $record->customer !== null
+                        && (auth()->user()?->can('create', Patient::class) ?? false)
+                        && (auth()->user()?->can('update', $record->customer) ?? false)
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->requiresConfirmation()
                     ->modalHeading('Chuyển khách hàng thành bệnh nhân?')
                     ->modalDescription(fn ($record) => "Bạn có chắc muốn chuyển \"{$record->customer?->full_name}\" từ Lead thành Bệnh nhân không?")
@@ -265,6 +275,11 @@ class AppointmentsTable
 
                             return;
                         }
+
+                        Gate::authorize('create', Patient::class);
+                        Gate::authorize('update', $customer);
+                        Gate::authorize('update', $record);
+
                         try {
                             /** @var \App\Services\PatientConversionService $service */
                             $service = app(\App\Services\PatientConversionService::class);

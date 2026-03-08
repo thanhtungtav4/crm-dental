@@ -1,10 +1,14 @@
 <?php
 
-it('does not use legacy v3 layout namespaces in filament schemas', function (): void {
+it('does not use legacy filament namespaces in filament schemas', function (): void {
     $forbiddenPatterns = [
         'Filament\\Forms\\Components\\Section',
         'Filament\\Forms\\Components\\Grid',
         'Filament\\Forms\\Components\\Fieldset',
+        'Filament\\Forms\\Get',
+        'Filament\\Forms\\Set',
+        'Filament\\Forms\\Components\\Utilities\\Get',
+        'Filament\\Forms\\Components\\Utilities\\Set',
         'Filament\\Infolists\\Components\\Section',
         'Filament\\Infolists\\Components\\Grid',
         'Filament\\Infolists\\Components\\Fieldset',

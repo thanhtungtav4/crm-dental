@@ -27,12 +27,28 @@ it('normalizes legacy status aliases including later/rebooked', function () {
 
 it('blocks invalid appointment status transition with APPOINTMENT_STATE_INVALID', function () {
     $appointment = makeAppointmentRecord([
+        'date' => now()->subDay(),
         'status' => Appointment::STATUS_COMPLETED,
     ]);
 
     expect(fn () => $appointment->update([
         'status' => Appointment::STATUS_NO_SHOW,
     ]))->toThrow(ValidationException::class, 'APPOINTMENT_STATE_INVALID');
+});
+
+it('hides future-only outcome statuses from manual update helpers', function () {
+    $appointment = makeAppointmentRecord([
+        'date' => now()->addDay(),
+        'status' => Appointment::STATUS_CONFIRMED,
+    ]);
+
+    expect($appointment->canTransitionToStatus(Appointment::STATUS_COMPLETED))->toBeFalse()
+        ->and($appointment->canTransitionToStatus(Appointment::STATUS_NO_SHOW))->toBeFalse()
+        ->and($appointment->canTransitionToStatus(Appointment::STATUS_IN_PROGRESS))->toBeTrue()
+        ->and($appointment->statusOptionsForManualUpdate())->not->toHaveKeys([
+            Appointment::STATUS_COMPLETED,
+            Appointment::STATUS_NO_SHOW,
+        ]);
 });
 
 it('requires reason when transitioning to cancelled or rescheduled', function () {

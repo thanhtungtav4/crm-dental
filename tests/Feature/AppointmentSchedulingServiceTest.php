@@ -257,6 +257,37 @@ it('transitions appointment status through the scheduling service with guided pa
         ->and($cancelled->cancellation_reason)->toBe('Benh nhan xin huy lich');
 });
 
+it('blocks future appointments from being marked completed or no_show', function () {
+    [$branch, $doctor, $customer, $patient] = makeAppointmentSchedulingContext();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $appointment = Appointment::query()->create([
+        'customer_id' => $customer->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->addDay()->setTime(14, 0),
+        'duration_minutes' => 30,
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    $this->actingAs($manager);
+
+    expect(fn () => app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_NO_SHOW,
+    ))->toThrow(ValidationException::class, 'chưa diễn ra');
+
+    expect(fn () => app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment->fresh(),
+        Appointment::STATUS_COMPLETED,
+    ))->toThrow(ValidationException::class, 'chưa diễn ra');
+});
+
 function makeAppointmentSchedulingContext(): array
 {
     $branch = Branch::factory()->create();

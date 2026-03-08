@@ -22,6 +22,7 @@
 /storage/*.key
 /storage/pail
 /vendor
+tests/Browser/Screenshots
 /.playwright-cli
 **/.playwright-cli/
 /database/migrations_backup_*/

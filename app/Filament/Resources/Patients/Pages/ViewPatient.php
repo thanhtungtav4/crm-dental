@@ -4,8 +4,11 @@ namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
+use App\Models\Appointment;
+use App\Models\Invoice;
 use App\Models\PatientMedicalRecord;
 use App\Models\TreatmentMaterial;
+use App\Models\TreatmentPlan;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -451,6 +454,7 @@ class ViewPatient extends ViewRecord
                 ->label('Tạo kế hoạch điều trị')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->color('success')
+                ->visible(fn (): bool => auth()->user()?->can('create', TreatmentPlan::class) ?? false)
                 ->url(fn () => route('filament.admin.resources.treatment-plans.create', [
                     'patient_id' => $this->record->id,
                     'return_url' => $this->workspaceReturnUrl,
@@ -461,6 +465,7 @@ class ViewPatient extends ViewRecord
                 ->label('Tạo hóa đơn')
                 ->icon('heroicon-o-document-text')
                 ->color('warning')
+                ->visible(fn (): bool => auth()->user()?->can('create', Invoice::class) ?? false)
                 ->url(fn () => route('filament.admin.resources.invoices.create', [
                     'patient_id' => $this->record->id,
                 ]))
@@ -470,6 +475,7 @@ class ViewPatient extends ViewRecord
                 ->label('Đặt lịch hẹn')
                 ->icon('heroicon-o-calendar')
                 ->color('info')
+                ->visible(fn (): bool => auth()->user()?->can('create', Appointment::class) ?? false)
                 ->url(fn () => route('filament.admin.resources.appointments.create', [
                     'patient_id' => $this->record->id,
                 ]))

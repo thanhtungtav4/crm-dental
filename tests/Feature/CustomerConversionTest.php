@@ -113,6 +113,38 @@ it('links appointment to existing deduped patient during conversion', function (
         ->and($appointment->fresh()->patient_id)->toBe($existingPatient->id);
 });
 
+it('reuses an existing patient across branches instead of creating a second record', function () {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $existingCustomer = Customer::factory()->create([
+        'branch_id' => $branchA->id,
+        'phone' => '0900666777',
+    ]);
+
+    $existingPatient = Patient::factory()->create([
+        'customer_id' => $existingCustomer->id,
+        'first_branch_id' => $branchA->id,
+        'phone' => '0900666777',
+    ]);
+
+    $incomingCustomer = Customer::factory()->create([
+        'branch_id' => $branchB->id,
+        'phone' => '0900666777',
+        'status' => 'lead',
+    ]);
+
+    $beforeCount = Patient::count();
+
+    $resolvedPatient = app(PatientConversionService::class)->convert($incomingCustomer);
+
+    expect($resolvedPatient)->not->toBeNull()
+        ->and($resolvedPatient->id)->toBe($existingPatient->id)
+        ->and(Patient::count())->toBe($beforeCount)
+        ->and($resolvedPatient->fresh()->first_branch_id)->toBe($branchB->id)
+        ->and($incomingCustomer->fresh()->status)->toBe('lead');
+});
+
 it('keeps customer conversion idempotent under repeated attempts for the same customer', function () {
     $customer = Customer::factory()->create([
         'status' => 'lead',

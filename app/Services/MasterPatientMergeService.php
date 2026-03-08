@@ -143,7 +143,7 @@ class MasterPatientMergeService
                 canonicalBranchId: $canonical->first_branch_id,
             );
 
-            $resolvedCaseIds = $this->resolveRelatedDuplicateCases(
+            $resolvedCaseResolution = $this->resolveRelatedDuplicateCases(
                 canonicalPatientId: $canonical->id,
                 canonicalBranchId: $canonical->first_branch_id,
                 mergedPatientId: $merged->id,
@@ -151,6 +151,8 @@ class MasterPatientMergeService
                 reviewedBy: $actorId,
                 reason: $reason,
             );
+            $resolvedCaseIds = $resolvedCaseResolution['ids'];
+            $resolvedCaseSnapshots = $resolvedCaseResolution['snapshots'];
 
             $canonicalAfter = $this->snapshotPatient($canonical->fresh());
             $mergedAfter = $this->snapshotPatient($merged->fresh());
@@ -170,6 +172,7 @@ class MasterPatientMergeService
                 'metadata' => array_filter($metadata + [
                     'conflicts' => $conflicts,
                     'resolved_case_ids' => $resolvedCaseIds,
+                    'resolved_case_snapshots' => $resolvedCaseSnapshots,
                 ], fn ($value) => $value !== [] && $value !== null),
                 'merged_by' => $actorId,
                 'merged_at' => now(),
@@ -282,32 +285,12 @@ class MasterPatientMergeService
                 ->unique()
                 ->values()
                 ->all();
+            $resolvedCaseSnapshots = data_get($merge->metadata, 'resolved_case_snapshots', []);
 
-            if ($resolvedCaseIds !== []) {
-                $rollbackMatchedPatientIds = collect([$canonical->id, $merged->id])
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->all();
-
-                $rollbackMatchedBranchIds = collect([$canonical->first_branch_id, $merged->first_branch_id])
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->all();
-
-                MasterPatientDuplicate::query()
-                    ->whereIn('id', $resolvedCaseIds)
-                    ->update([
-                        'patient_id' => $merged->id,
-                        'branch_id' => $merged->first_branch_id,
-                        'matched_patient_ids' => $rollbackMatchedPatientIds,
-                        'matched_branch_ids' => $rollbackMatchedBranchIds,
-                        'status' => MasterPatientDuplicate::STATUS_OPEN,
-                        'review_note' => null,
-                        'reviewed_by' => null,
-                        'reviewed_at' => null,
-                    ]);
+            if (is_array($resolvedCaseSnapshots) && $resolvedCaseSnapshots !== []) {
+                $this->restoreResolvedDuplicateCases($resolvedCaseSnapshots);
+            } elseif ($resolvedCaseIds !== []) {
+                $this->restoreResolvedDuplicateCasesFallback($resolvedCaseIds, $canonical, $merged);
             }
 
             $merge->forceFill([
@@ -594,7 +577,7 @@ class MasterPatientMergeService
     }
 
     /**
-     * @return array<int, int>
+     * @return array{ids: array<int, int>, snapshots: array<int, array<string, mixed>>}
      */
     protected function resolveRelatedDuplicateCases(
         int $canonicalPatientId,
@@ -625,52 +608,319 @@ class MasterPatientMergeService
             $cases->push($duplicateCase);
         }
 
-        $resolvedCaseIds = [];
+        $identityPairs = $cases
+            ->map(fn (MasterPatientDuplicate $case): array => [
+                'identity_type' => (string) $case->identity_type,
+                'identity_hash' => (string) $case->identity_hash,
+            ])
+            ->filter(
+                fn (array $pair): bool => $pair['identity_type'] !== '' && $pair['identity_hash'] !== ''
+            )
+            ->unique(fn (array $pair): string => $pair['identity_type'].'|'.$pair['identity_hash'])
+            ->values();
 
-        foreach ($cases as $case) {
-            $matchedPatientIds = collect($case->matched_patient_ids ?? [])
-                ->map(fn ($patientId) => (int) $patientId)
-                ->map(fn (int $patientId) => $patientId === $mergedPatientId ? $canonicalPatientId : $patientId)
-                ->push($canonicalPatientId)
-                ->filter(fn (int $patientId) => $patientId > 0)
-                ->unique()
-                ->values()
-                ->all();
-
-            $matchedBranchIds = collect($case->matched_branch_ids ?? [])
-                ->map(fn ($branchId) => (int) $branchId)
-                ->filter(fn (int $branchId) => $branchId > 0)
-                ->when(
-                    $canonicalBranchId !== null,
-                    fn (Collection $collection) => $collection->push($canonicalBranchId),
-                )
-                ->unique()
-                ->values()
-                ->all();
-
-            $existingReviewNote = trim((string) $case->review_note);
-            $autoReviewNote = 'Resolved by merge patient #'.$mergedPatientId.' into #'.$canonicalPatientId;
-            if (filled($reason)) {
-                $autoReviewNote .= '; reason: '.trim((string) $reason);
-            }
-
-            $case->forceFill([
-                'patient_id' => $canonicalPatientId,
-                'branch_id' => $canonicalBranchId,
-                'matched_patient_ids' => $matchedPatientIds,
-                'matched_branch_ids' => $matchedBranchIds,
-                'status' => MasterPatientDuplicate::STATUS_RESOLVED,
-                'review_note' => collect([$existingReviewNote, $autoReviewNote])
-                    ->filter(fn (string $line) => trim($line) !== '')
-                    ->implode("\n"),
-                'reviewed_by' => $reviewedBy,
-                'reviewed_at' => now(),
-            ])->save();
-
-            $resolvedCaseIds[] = $case->id;
+        if ($identityPairs->isNotEmpty()) {
+            $cases = MasterPatientDuplicate::query()
+                ->where(function ($query) use ($identityPairs): void {
+                    foreach ($identityPairs as $pair) {
+                        $query->orWhere(function ($innerQuery) use ($pair): void {
+                            $innerQuery
+                                ->where('identity_type', $pair['identity_type'])
+                                ->where('identity_hash', $pair['identity_hash']);
+                        });
+                    }
+                })
+                ->lockForUpdate()
+                ->get();
         }
 
-        return collect($resolvedCaseIds)
+        $resolvedCaseIds = [];
+        $resolvedCaseSnapshots = [];
+
+        $groupedCases = $cases->groupBy(
+            fn (MasterPatientDuplicate $case): string => $case->identity_type.'|'.$case->identity_hash
+        );
+
+        foreach ($groupedCases as $identityCases) {
+            $primaryCase = $duplicateCase
+                ? $identityCases->first(fn (MasterPatientDuplicate $row): bool => $row->id === $duplicateCase->id)
+                : null;
+
+            if (! $primaryCase instanceof MasterPatientDuplicate) {
+                $primaryCase = $identityCases->first(
+                    fn (MasterPatientDuplicate $row): bool => $row->status === MasterPatientDuplicate::STATUS_OPEN
+                );
+            }
+
+            if (! $primaryCase instanceof MasterPatientDuplicate) {
+                $primaryCase = $identityCases->sortByDesc('id')->first();
+            }
+
+            $orderedIdentityCases = $identityCases
+                ->sortBy(function (MasterPatientDuplicate $case) use ($primaryCase): int {
+                    return $primaryCase instanceof MasterPatientDuplicate && (int) $case->id === (int) $primaryCase->id
+                        ? 1
+                        : 0;
+                })
+                ->values();
+
+            foreach ($orderedIdentityCases as $case) {
+                $resolvedCaseSnapshots[(int) $case->id] = [
+                    'patient_id' => is_numeric($case->patient_id) ? (int) $case->patient_id : null,
+                    'branch_id' => is_numeric($case->branch_id) ? (int) $case->branch_id : null,
+                    'identity_type' => (string) $case->identity_type,
+                    'identity_hash' => (string) $case->identity_hash,
+                    'matched_patient_ids' => $this->normalizeIdArray($case->matched_patient_ids ?? []),
+                    'matched_branch_ids' => $this->normalizeIdArray($case->matched_branch_ids ?? []),
+                    'status' => (string) $case->status,
+                    'review_note' => $case->review_note,
+                    'reviewed_by' => is_numeric($case->reviewed_by) ? (int) $case->reviewed_by : null,
+                    'reviewed_at' => $case->reviewed_at?->toDateTimeString(),
+                ];
+
+                $matchedPatientIds = collect($case->matched_patient_ids ?? [])
+                    ->map(fn ($patientId) => (int) $patientId)
+                    ->map(fn (int $patientId) => $patientId === $mergedPatientId ? $canonicalPatientId : $patientId)
+                    ->push($canonicalPatientId)
+                    ->filter(fn (int $patientId) => $patientId > 0)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $matchedBranchIds = collect($case->matched_branch_ids ?? [])
+                    ->map(fn ($branchId) => (int) $branchId)
+                    ->filter(fn (int $branchId) => $branchId > 0)
+                    ->when(
+                        $canonicalBranchId !== null,
+                        fn (Collection $collection) => $collection->push($canonicalBranchId),
+                    )
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $existingReviewNote = trim((string) $case->review_note);
+                $isPrimaryCase = $primaryCase instanceof MasterPatientDuplicate
+                    && (int) $case->id === (int) $primaryCase->id;
+                $nextStatus = $isPrimaryCase
+                    ? MasterPatientDuplicate::STATUS_RESOLVED
+                    : MasterPatientDuplicate::STATUS_IGNORED;
+                $autoReviewNote = $isPrimaryCase
+                    ? 'Resolved by merge patient #'.$mergedPatientId.' into #'.$canonicalPatientId
+                    : 'Ignored because merge resolution was consolidated into case #'.($primaryCase?->id ?? $case->id);
+
+                if (filled($reason)) {
+                    $autoReviewNote .= '; reason: '.trim((string) $reason);
+                }
+
+                $case->forceFill([
+                    'patient_id' => $canonicalPatientId,
+                    'branch_id' => $canonicalBranchId,
+                    'matched_patient_ids' => $matchedPatientIds,
+                    'matched_branch_ids' => $matchedBranchIds,
+                    'status' => $nextStatus,
+                    'review_note' => collect([$existingReviewNote, $autoReviewNote])
+                        ->filter(fn (string $line) => trim($line) !== '')
+                        ->implode("\n"),
+                    'reviewed_by' => $reviewedBy,
+                    'reviewed_at' => now(),
+                ])->save();
+
+                $resolvedCaseIds[] = $case->id;
+            }
+        }
+
+        return [
+            'ids' => collect($resolvedCaseIds)
+                ->unique()
+                ->values()
+                ->all(),
+            'snapshots' => $resolvedCaseSnapshots,
+        ];
+    }
+
+    /**
+     * @param  array<int|string, array<string, mixed>>  $caseSnapshots
+     */
+    protected function restoreResolvedDuplicateCases(array $caseSnapshots): void
+    {
+        if (! Schema::hasTable('master_patient_duplicates')) {
+            return;
+        }
+
+        $caseIds = collect(array_keys($caseSnapshots))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->sortBy(function (int $caseId) use ($caseSnapshots): int {
+                $snapshot = $caseSnapshots[$caseId] ?? $caseSnapshots[(string) $caseId] ?? null;
+                $status = is_array($snapshot) ? (string) ($snapshot['status'] ?? '') : '';
+
+                return $status === MasterPatientDuplicate::STATUS_RESOLVED ? 1 : 0;
+            })
+            ->values()
+            ->all();
+
+        if ($caseIds === []) {
+            return;
+        }
+
+        $cases = MasterPatientDuplicate::query()
+            ->whereIn('id', $caseIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        $identityPairs = collect($caseIds)
+            ->map(function (int $caseId) use ($caseSnapshots): ?array {
+                $snapshot = $caseSnapshots[$caseId] ?? $caseSnapshots[(string) $caseId] ?? null;
+
+                if (! is_array($snapshot)) {
+                    return null;
+                }
+
+                $identityType = trim((string) ($snapshot['identity_type'] ?? ''));
+                $identityHash = trim((string) ($snapshot['identity_hash'] ?? ''));
+
+                if ($identityType === '' || $identityHash === '') {
+                    return null;
+                }
+
+                return [
+                    'identity_type' => $identityType,
+                    'identity_hash' => $identityHash,
+                ];
+            })
+            ->filter()
+            ->unique(fn (array $pair): string => $pair['identity_type'].'|'.$pair['identity_hash'])
+            ->values();
+
+        if ($identityPairs->isNotEmpty()) {
+            $extraCases = MasterPatientDuplicate::query()
+                ->whereNotIn('id', $caseIds)
+                ->where(function ($query) use ($identityPairs): void {
+                    foreach ($identityPairs as $pair) {
+                        $query->orWhere(function ($innerQuery) use ($pair): void {
+                            $innerQuery
+                                ->where('identity_type', $pair['identity_type'])
+                                ->where('identity_hash', $pair['identity_hash']);
+                        });
+                    }
+                })
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($extraCases as $extraCase) {
+                $extraCase->delete();
+            }
+        }
+
+        foreach ($caseIds as $caseId) {
+            $snapshot = $caseSnapshots[$caseId] ?? $caseSnapshots[(string) $caseId] ?? null;
+
+            if (! is_array($snapshot)) {
+                continue;
+            }
+
+            $case = $cases->get($caseId);
+            if (! $case instanceof MasterPatientDuplicate) {
+                continue;
+            }
+
+            $status = in_array(
+                (string) ($snapshot['status'] ?? ''),
+                [
+                    MasterPatientDuplicate::STATUS_OPEN,
+                    MasterPatientDuplicate::STATUS_RESOLVED,
+                    MasterPatientDuplicate::STATUS_IGNORED,
+                ],
+                true,
+            )
+                ? (string) $snapshot['status']
+                : MasterPatientDuplicate::STATUS_OPEN;
+
+            $case->forceFill([
+                'patient_id' => $this->normalizeNullableInt($snapshot['patient_id'] ?? null),
+                'branch_id' => $this->normalizeNullableInt($snapshot['branch_id'] ?? null),
+                'matched_patient_ids' => $this->normalizeIdArray($snapshot['matched_patient_ids'] ?? []),
+                'matched_branch_ids' => $this->normalizeIdArray($snapshot['matched_branch_ids'] ?? []),
+                'status' => $status,
+                'review_note' => $snapshot['review_note'] ?? null,
+                'reviewed_by' => $this->normalizeNullableInt($snapshot['reviewed_by'] ?? null),
+                'reviewed_at' => filled($snapshot['reviewed_at'] ?? null) ? (string) $snapshot['reviewed_at'] : null,
+            ])->save();
+        }
+    }
+
+    /**
+     * @param  array<int, int>  $resolvedCaseIds
+     */
+    protected function restoreResolvedDuplicateCasesFallback(array $resolvedCaseIds, Patient $canonical, Patient $merged): void
+    {
+        if (! Schema::hasTable('master_patient_duplicates')) {
+            return;
+        }
+
+        $cases = MasterPatientDuplicate::query()
+            ->whereIn('id', $resolvedCaseIds)
+            ->lockForUpdate()
+            ->orderBy('id')
+            ->get();
+
+        if ($cases->isEmpty()) {
+            return;
+        }
+
+        $rollbackMatchedPatientIds = collect([$canonical->id, $merged->id])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $rollbackMatchedBranchIds = collect([$canonical->first_branch_id, $merged->first_branch_id])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $primaryCaseId = (int) $cases->first()->id;
+
+        foreach ($cases as $case) {
+            $isPrimaryCase = (int) $case->id === $primaryCaseId;
+            $fallbackNote = 'Rollback fallback without duplicate snapshot.';
+
+            $case->forceFill([
+                'patient_id' => $merged->id,
+                'branch_id' => $merged->first_branch_id,
+                'matched_patient_ids' => $rollbackMatchedPatientIds,
+                'matched_branch_ids' => $rollbackMatchedBranchIds,
+                'status' => $isPrimaryCase
+                    ? MasterPatientDuplicate::STATUS_OPEN
+                    : MasterPatientDuplicate::STATUS_IGNORED,
+                'review_note' => $isPrimaryCase
+                    ? null
+                    : collect([(string) $case->review_note, $fallbackNote])
+                        ->filter(fn (string $line) => trim($line) !== '')
+                        ->implode("\n"),
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+            ])->save();
+        }
+    }
+
+    protected function normalizeNullableInt(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function normalizeIdArray(mixed $value): array
+    {
+        return collect(is_array($value) ? $value : [])
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
             ->unique()
             ->values()
             ->all();

@@ -32,8 +32,7 @@ class AppointmentsRelationManager extends RelationManager
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->weight('bold')
-                    ->color(fn (Appointment $record) => 
-                        $record->date->isPast() ? 'gray' : 'primary'
+                    ->color(fn (Appointment $record) => $record->date->isPast() ? 'gray' : 'primary'
                     ),
 
                 Tables\Columns\TextColumn::make('time_range_label')
@@ -76,7 +75,7 @@ class AppointmentsRelationManager extends RelationManager
                         }
 
                         if ($record->late_arrival_minutes) {
-                            $flags[] = 'Trễ ' . $record->late_arrival_minutes . ' phút';
+                            $flags[] = 'Trễ '.$record->late_arrival_minutes.' phút';
                         }
 
                         return $flags === [] ? 'Bình thường' : implode(' • ', $flags);
@@ -123,6 +122,7 @@ class AppointmentsRelationManager extends RelationManager
                     ->label('Đặt lịch mới')
                     ->icon('heroicon-o-plus')
                     ->color('primary')
+                    ->visible(fn (): bool => auth()->user()?->can('create', Appointment::class) ?? false)
                     ->url(fn (): string => route('filament.admin.resources.appointments.create', [
                         'patient_id' => $this->getOwnerRecord()->id,
                     ])),
@@ -132,8 +132,7 @@ class AppointmentsRelationManager extends RelationManager
                     ->label('')
                     ->tooltip('Sửa lịch hẹn')
                     ->icon('heroicon-o-pencil-square')
-                    ->url(fn (Appointment $record): string => 
-                        route('filament.admin.resources.appointments.edit', ['record' => $record->id])),
+                    ->url(fn (Appointment $record): string => route('filament.admin.resources.appointments.edit', ['record' => $record->id])),
                 DeleteAction::make()
                     ->label('')
                     ->tooltip('Xóa lịch hẹn')
@@ -150,6 +149,7 @@ class AppointmentsRelationManager extends RelationManager
                     ->label('Đặt lịch mới')
                     ->icon('heroicon-o-plus')
                     ->color('primary')
+                    ->visible(fn (): bool => auth()->user()?->can('create', Appointment::class) ?? false)
                     ->url(fn () => route('filament.admin.resources.appointments.create', [
                         'patient_id' => $this->getOwnerRecord()->id,
                     ])),

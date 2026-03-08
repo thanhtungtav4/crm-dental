@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Models\VisitEpisode;
 
 it('builds doctor benchmark and triggers kpi alerts with owner and new status', function () {
-    $snapshotDate = now()->startOfDay()->addHours(10);
+    $snapshotDate = now()->subDay()->startOfDay()->addHours(10);
 
     $branch = Branch::factory()->create();
 
@@ -82,7 +82,7 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
 });
 
 it('auto resolves kpi alerts when metrics are back in threshold', function () {
-    $snapshotDate = now()->startOfDay()->addHours(10);
+    $snapshotDate = now()->subDay()->startOfDay()->addHours(10);
 
     $branch = Branch::factory()->create();
 
@@ -169,16 +169,20 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
         'doctor_id' => $doctor->id,
         'branch_id' => $branch->id,
         'status' => TreatmentPlan::STATUS_APPROVED,
+        'created_at' => $snapshotDate,
+        'updated_at' => $snapshotDate,
     ]);
 
-    PlanItem::query()->create([
+    $approvedPlanItem = PlanItem::query()->create([
         'treatment_plan_id' => $plan->id,
         'name' => 'Điều trị chuẩn',
         'approval_status' => PlanItem::APPROVAL_APPROVED,
         'status' => PlanItem::STATUS_PENDING,
-        'created_at' => now(),
-        'updated_at' => now(),
     ]);
+    $approvedPlanItem->forceFill([
+        'created_at' => $snapshotDate,
+        'updated_at' => $snapshotDate,
+    ])->saveQuietly();
 
     ClinicSetting::setValue('report.kpi_no_show_rate_max', 100, [
         'group' => 'report',

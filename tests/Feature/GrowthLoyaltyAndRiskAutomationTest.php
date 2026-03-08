@@ -157,6 +157,7 @@ it('creates reactivation tickets and awards bonus after successful reactivation'
 
     $ticket->update([
         'care_status' => Note::CARE_STATUS_DONE,
+        'care_at' => now()->subDay(),
     ]);
 
     Appointment::factory()->create([
@@ -164,7 +165,7 @@ it('creates reactivation tickets and awards bonus after successful reactivation'
         'customer_id' => $customer->id,
         'branch_id' => $patient->first_branch_id,
         'status' => Appointment::STATUS_COMPLETED,
-        'date' => now()->addHour(),
+        'date' => now()->subHour(),
     ]);
 
     $this->artisan('growth:run-reactivation-flow', [
@@ -189,6 +190,44 @@ it('creates reactivation tickets and awards bonus after successful reactivation'
         ->where('patient_id', $patient->id)
         ->where('event_type', PatientLoyaltyTransaction::EVENT_REACTIVATION_BONUS)
         ->count())->toBe(1);
+});
+
+it('does not create reactivation tickets when the patient already has a future booked appointment', function () {
+    ClinicSetting::setValue('loyalty.reactivation_inactive_days', 90, [
+        'group' => 'loyalty',
+        'value_type' => 'integer',
+    ]);
+
+    $customer = Customer::factory()->create();
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $customer->branch_id,
+    ]);
+
+    Appointment::factory()->create([
+        'patient_id' => $patient->id,
+        'customer_id' => $customer->id,
+        'branch_id' => $patient->first_branch_id,
+        'status' => Appointment::STATUS_COMPLETED,
+        'date' => now()->subDays(120),
+    ]);
+
+    Appointment::factory()->create([
+        'patient_id' => $patient->id,
+        'customer_id' => $customer->id,
+        'branch_id' => $patient->first_branch_id,
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addDays(3),
+    ]);
+
+    $this->artisan('growth:run-reactivation-flow', [
+        '--date' => now()->toDateString(),
+    ])->assertSuccessful();
+
+    expect(Note::query()
+        ->where('patient_id', $patient->id)
+        ->where('care_type', 'reactivation_follow_up')
+        ->exists())->toBeFalse();
 });
 
 it('scores patient risk and manages high risk intervention tickets', function () {

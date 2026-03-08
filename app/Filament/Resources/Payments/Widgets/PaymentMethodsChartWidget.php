@@ -2,24 +2,26 @@
 
 namespace App\Filament\Resources\Payments\Widgets;
 
-use App\Models\Payment;
+use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Widgets\ChartWidget;
 
 class PaymentMethodsChartWidget extends ChartWidget
 {
+    use InteractsWithFinancialBranchScope;
+
     protected ?string $heading = 'Phân tích phương thức thanh toán';
-    
+
     protected static ?int $sort = 4;
-    
+
     public ?string $filter = 'month';
-    
+
     protected ?string $maxHeight = '300px';
 
     protected function getData(): array
     {
         $data = $this->getMethodData();
-        
+
         return [
             'datasets' => [
                 [
@@ -38,7 +40,7 @@ class PaymentMethodsChartWidget extends ChartWidget
     {
         return 'doughnut';
     }
-    
+
     protected function getOptions(): array
     {
         return [
@@ -69,7 +71,7 @@ class PaymentMethodsChartWidget extends ChartWidget
             'maintainAspectRatio' => true,
         ];
     }
-    
+
     protected function getFilters(): ?array
     {
         return [
@@ -79,19 +81,19 @@ class PaymentMethodsChartWidget extends ChartWidget
             'year' => 'Năm nay',
         ];
     }
-    
+
     private function getMethodData(): array
     {
-        $query = Payment::query();
-        
-        match($this->filter) {
+        $query = $this->scopedPaymentQuery();
+
+        match ($this->filter) {
             'today' => $query->today(),
             'week' => $query->thisWeek(),
             'month' => $query->thisMonth(),
             'year' => $query->whereYear('paid_at', now()->year),
             default => $query->thisMonth(),
         };
-        
+
         $methods = ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true);
 
         $values = [];
@@ -116,7 +118,6 @@ class PaymentMethodsChartWidget extends ChartWidget
             }
         }
 
-        // If no data, show empty state
         if (empty($values)) {
             $values = [0];
             $labels = ['Chưa có dữ liệu'];

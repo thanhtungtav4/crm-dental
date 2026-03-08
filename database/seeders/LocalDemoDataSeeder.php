@@ -16,6 +16,7 @@ use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\PlanItem;
 use App\Models\PromotionGroup;
+use App\Models\ReceiptExpense;
 use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\TreatmentPlan;
@@ -28,12 +29,60 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema as DatabaseSchema;
+use Illuminate\Support\Str;
 
 class LocalDemoDataSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     public const DEFAULT_DEMO_PASSWORD = 'Demo@123456';
+
+    /**
+     * @var array<string, array<int, string>>
+     */
+    public const DEMO_MFA_RECOVERY_CODES = [
+        'admin@demo.nhakhoaanphuc.test' => [
+            'qa-admin-0001',
+            'qa-admin-0002',
+            'qa-admin-0003',
+            'qa-admin-0004',
+            'qa-admin-0005',
+            'qa-admin-0006',
+            'qa-admin-0007',
+            'qa-admin-0008',
+        ],
+        'manager.q1@demo.nhakhoaanphuc.test' => [
+            'qa-q1-mgr-0001',
+            'qa-q1-mgr-0002',
+            'qa-q1-mgr-0003',
+            'qa-q1-mgr-0004',
+            'qa-q1-mgr-0005',
+            'qa-q1-mgr-0006',
+            'qa-q1-mgr-0007',
+            'qa-q1-mgr-0008',
+        ],
+        'manager.cg@demo.nhakhoaanphuc.test' => [
+            'qa-cg-mgr-0001',
+            'qa-cg-mgr-0002',
+            'qa-cg-mgr-0003',
+            'qa-cg-mgr-0004',
+            'qa-cg-mgr-0005',
+            'qa-cg-mgr-0006',
+            'qa-cg-mgr-0007',
+            'qa-cg-mgr-0008',
+        ],
+        'manager.hc@demo.nhakhoaanphuc.test' => [
+            'qa-hc-mgr-0001',
+            'qa-hc-mgr-0002',
+            'qa-hc-mgr-0003',
+            'qa-hc-mgr-0004',
+            'qa-hc-mgr-0005',
+            'qa-hc-mgr-0006',
+            'qa-hc-mgr-0007',
+            'qa-hc-mgr-0008',
+        ],
+    ];
 
     public function run(): void
     {
@@ -60,6 +109,14 @@ class LocalDemoDataSeeder extends Seeder
             ->keyBy(fn (Patient $patient): string => (string) $patient->phone);
 
         $this->seedTreatmentJourney($branches, $usersByEmail, $patientsByPhone, $customersByPhone);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function demoMfaRecoveryCodesFor(string $email): array
+    {
+        return self::DEMO_MFA_RECOVERY_CODES[$email] ?? [];
     }
 
     protected function seedBranches(): Collection
@@ -175,7 +232,7 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'email' => 'cskh.q1@demo.nhakhoaanphuc.test',
-                'name' => 'CSKH Pham Thu Ha',
+                'name' => 'Tu van / Le tan Pham Thu Ha',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000031',
                 'role' => 'CSKH',
@@ -183,7 +240,7 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'email' => 'cskh.cg@demo.nhakhoaanphuc.test',
-                'name' => 'CSKH Vo Thao My',
+                'name' => 'Tu van / Le tan Vo Thao My',
                 'branch_id' => $branchIdsByCode['HN-CG'],
                 'phone' => '0909000032',
                 'role' => 'CSKH',
@@ -191,7 +248,7 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'email' => 'cskh.hc@demo.nhakhoaanphuc.test',
-                'name' => 'CSKH Nguyen Bao Tram',
+                'name' => 'Tu van / Le tan Nguyen Bao Tram',
                 'branch_id' => $branchIdsByCode['DN-HC'],
                 'phone' => '0909000033',
                 'role' => 'CSKH',
@@ -209,11 +266,14 @@ class LocalDemoDataSeeder extends Seeder
             $user = $this->upsertDemoUser($account);
 
             $user->syncRoles([$role]);
+            $this->syncDemoMfaState($user, $role);
 
             if ($role === 'Admin') {
                 $admin = $user;
             }
         }
+
+        $this->renderSensitiveAccountMfaHints();
 
         $admin ??= User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
 
@@ -241,6 +301,59 @@ class LocalDemoDataSeeder extends Seeder
         $user->save();
 
         return $user;
+    }
+
+    protected function syncDemoMfaState(User $user, string $role): void
+    {
+        $requiresMfa = in_array($role, ['Admin', 'Manager'], true);
+        $confirmedAt = $requiresMfa ? now()->subDay() : null;
+
+        $user->forceFill([
+            'two_factor_confirmed_at' => $confirmedAt,
+        ])->saveQuietly();
+
+        if (! $requiresMfa) {
+            $user->breezySessions()->delete();
+
+            return;
+        }
+
+        $user->breezySessions()->updateOrCreate(
+            [
+                'panel_id' => 'admin',
+            ],
+            [
+                'two_factor_secret' => Str::upper(Str::random(32)),
+                'two_factor_recovery_codes' => self::demoMfaRecoveryCodesFor($user->email) ?: $user->generateRecoveryCodes(),
+                'two_factor_confirmed_at' => $confirmedAt,
+            ],
+        );
+    }
+
+    protected function renderSensitiveAccountMfaHints(): void
+    {
+        if (app()->runningUnitTests() || $this->command === null) {
+            return;
+        }
+
+        $rows = collect(self::DEMO_MFA_RECOVERY_CODES)
+            ->map(fn (array $codes, string $email): array => [
+                'email' => $email,
+                'password' => self::DEFAULT_DEMO_PASSWORD,
+                'recovery_codes' => implode(', ', $codes),
+            ])
+            ->values()
+            ->all();
+
+        if ($rows === []) {
+            return;
+        }
+
+        $this->command->info('Demo MFA QA credentials');
+        $this->command->table(
+            ['Email', 'Password', 'Recovery codes'],
+            $rows,
+        );
     }
 
     protected function seedDoctorAssignments(Collection $branchIdsByCode, int $adminId): void
@@ -410,63 +523,58 @@ class LocalDemoDataSeeder extends Seeder
         Collection $patientsByPhone,
         Collection $customersByPhone,
     ): void {
-        if (TreatmentPlan::query()->exists()) {
-            return;
-        }
-
         $availableServices = Service::query()
             ->where('active', true)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'default_price']);
 
-        if ($availableServices->isEmpty()) {
-            return;
+        if (! TreatmentPlan::query()->exists() && $availableServices->isNotEmpty()) {
+            Patient::query()->orderBy('id')->take(4)->get()->each(function (Patient $patient, int $index) use ($branches, $availableServices): void {
+                $doctorId = $patient->primary_doctor_id ?? User::role('Doctor')->orderBy('id')->value('id');
+                $selectedServices = $availableServices->slice($index, 3)->values();
+
+                if ($selectedServices->isEmpty()) {
+                    $selectedServices = $availableServices->take(2)->values();
+                }
+
+                $plan = TreatmentPlan::factory()->create([
+                    'patient_id' => $patient->id,
+                    'doctor_id' => $doctorId,
+                    'branch_id' => $patient->first_branch_id ?? $branches->first()->id,
+                    'status' => 'draft',
+                    'total_estimated_cost' => 0,
+                ]);
+
+                $estimatedTotal = 0.0;
+
+                foreach ($selectedServices as $service) {
+                    $item = PlanItem::query()->create([
+                        'treatment_plan_id' => $plan->id,
+                        'name' => $service->name,
+                        'service_id' => $service->id,
+                        'quantity' => 1,
+                        'price' => $service->default_price,
+                        'estimated_supplies' => [],
+                    ]);
+
+                    $estimatedTotal += (float) $item->price;
+
+                    TreatmentSession::factory()->create([
+                        'treatment_plan_id' => $plan->id,
+                        'plan_item_id' => $item->id,
+                        'status' => 'scheduled',
+                    ]);
+                }
+
+                $plan->update(['total_estimated_cost' => $estimatedTotal]);
+            });
         }
-
-        Patient::query()->orderBy('id')->take(4)->get()->each(function (Patient $patient, int $index) use ($branches, $availableServices): void {
-            $doctorId = $patient->primary_doctor_id ?? User::role('Doctor')->orderBy('id')->value('id');
-            $selectedServices = $availableServices->slice($index, 3)->values();
-
-            if ($selectedServices->isEmpty()) {
-                $selectedServices = $availableServices->take(2)->values();
-            }
-
-            $plan = TreatmentPlan::factory()->create([
-                'patient_id' => $patient->id,
-                'doctor_id' => $doctorId,
-                'branch_id' => $patient->first_branch_id ?? $branches->first()->id,
-                'status' => 'draft',
-                'total_estimated_cost' => 0,
-            ]);
-
-            $estimatedTotal = 0.0;
-
-            foreach ($selectedServices as $service) {
-                $item = PlanItem::query()->create([
-                    'treatment_plan_id' => $plan->id,
-                    'name' => $service->name,
-                    'service_id' => $service->id,
-                    'quantity' => 1,
-                    'price' => $service->default_price,
-                    'estimated_supplies' => [],
-                ]);
-
-                $estimatedTotal += (float) $item->price;
-
-                TreatmentSession::factory()->create([
-                    'treatment_plan_id' => $plan->id,
-                    'plan_item_id' => $item->id,
-                    'status' => 'scheduled',
-                ]);
-            }
-
-            $plan->update(['total_estimated_cost' => $estimatedTotal]);
-        });
 
         $this->seedAppointments($usersByEmail, $patientsByPhone);
         $this->seedCareNotes($usersByEmail, $patientsByPhone, $customersByPhone);
         $this->seedBranchLogs($usersByEmail, $patientsByPhone, $branches);
         $this->seedInvoicesAndPayments($usersByEmail, $patientsByPhone);
+        $this->seedReceiptsExpense($usersByEmail, $patientsByPhone);
         $this->seedFactoryOrders($usersByEmail, $patientsByPhone);
         $this->seedZnsCampaigns($usersByEmail, $patientsByPhone, $customersByPhone);
     }
@@ -858,6 +966,100 @@ class LocalDemoDataSeeder extends Seeder
         }
     }
 
+    protected function seedReceiptsExpense(Collection $usersByEmail, Collection $patientsByPhone): void
+    {
+        if (! DatabaseSchema::hasTable('receipts_expense') || ReceiptExpense::query()->exists()) {
+            return;
+        }
+
+        $invoiceIdsByNo = Invoice::query()->pluck('id', 'invoice_no');
+        $invoiceBranchIdsByNo = Invoice::query()->pluck('branch_id', 'invoice_no');
+
+        $definitions = [
+            [
+                'voucher_code' => 'PT-DEMO-Q1-001',
+                'patient_phone' => '0909123001',
+                'invoice_no' => 'INV-DEMO-Q1-001',
+                'voucher_type' => 'receipt',
+                'voucher_date' => now()->subDay()->toDateString(),
+                'group_code' => 'thu-dieu-tri',
+                'category_code' => 'implant-deposit',
+                'amount' => 5000000,
+                'payment_method' => 'transfer',
+                'payer_or_receiver' => 'Nguyen Huu Phuc',
+                'content' => 'Thu dot coc implant dot 1 lien ket hoa don demo Quan 1.',
+                'status' => 'posted',
+                'posted_at' => now()->subDay(),
+                'posted_by_email' => 'manager.q1@demo.nhakhoaanphuc.test',
+            ],
+            [
+                'voucher_code' => 'PC-DEMO-CG-001',
+                'patient_phone' => null,
+                'invoice_no' => null,
+                'branch_code' => 'HN-CG',
+                'voucher_type' => 'expense',
+                'voucher_date' => now()->subDays(2)->toDateString(),
+                'group_code' => 'chi-van-hanh',
+                'category_code' => 'vat-tu-tieu-hao',
+                'amount' => 1250000,
+                'payment_method' => 'cash',
+                'payer_or_receiver' => 'Nha cung cap vat tu Cau Giay',
+                'content' => 'Chi mua vat tu tieu hao cho khu tri lieu Cau Giay.',
+                'status' => 'approved',
+                'posted_at' => null,
+                'posted_by_email' => null,
+            ],
+            [
+                'voucher_code' => 'PC-DEMO-HC-001',
+                'patient_phone' => '0935123008',
+                'invoice_no' => null,
+                'voucher_type' => 'expense',
+                'voucher_date' => now()->toDateString(),
+                'group_code' => 'chi-lab',
+                'category_code' => 'gia-cong-implant',
+                'amount' => 3200000,
+                'payment_method' => 'transfer',
+                'payer_or_receiver' => 'Lab implant Hai Chau',
+                'content' => 'Nháp chi phi lab implant cho ca phuc hinh Da Nang.',
+                'status' => 'draft',
+                'posted_at' => null,
+                'posted_by_email' => null,
+            ],
+        ];
+
+        foreach ($definitions as $definition) {
+            $patient = filled($definition['patient_phone']) ? $patientsByPhone->get($definition['patient_phone']) : null;
+            $invoiceId = $definition['invoice_no'] ? $invoiceIdsByNo->get($definition['invoice_no']) : null;
+            $clinicId = $patient?->first_branch_id
+                ?? (is_numeric($invoiceId) ? $invoiceBranchIdsByNo->get($definition['invoice_no']) : null)
+                ?? Branch::query()->where('code', $definition['branch_code'] ?? null)->value('id');
+
+            if (! is_numeric($clinicId)) {
+                continue;
+            }
+
+            ReceiptExpense::query()->create([
+                'clinic_id' => (int) $clinicId,
+                'patient_id' => $patient?->id,
+                'invoice_id' => is_numeric($invoiceId) ? (int) $invoiceId : null,
+                'voucher_code' => $definition['voucher_code'],
+                'voucher_type' => $definition['voucher_type'],
+                'voucher_date' => $definition['voucher_date'],
+                'group_code' => $definition['group_code'],
+                'category_code' => $definition['category_code'],
+                'amount' => $definition['amount'],
+                'payment_method' => $definition['payment_method'],
+                'payer_or_receiver' => $definition['payer_or_receiver'],
+                'content' => $definition['content'],
+                'status' => $definition['status'],
+                'posted_at' => $definition['posted_at'],
+                'posted_by' => $definition['posted_by_email']
+                    ? $usersByEmail->get($definition['posted_by_email'])
+                    : null,
+            ]);
+        }
+    }
+
     protected function seedFactoryOrders(Collection $usersByEmail, Collection $patientsByPhone): void
     {
         if (FactoryOrder::query()->exists()) {
@@ -1166,7 +1368,7 @@ class LocalDemoDataSeeder extends Seeder
                 'source_detail' => 'Chat Zalo hoi ve rang khon moc lech',
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-NEW',
-                'status' => 'lead',
+                'status' => 'contacted',
                 'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
                 'next_follow_up_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
                 'notes' => 'Can dat lich chup phim va nho rang khon.',

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ReceiptsExpense\Schemas;
 
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Support\BranchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -13,6 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReceiptsExpenseForm
 {
@@ -37,16 +39,24 @@ class ReceiptsExpenseForm
                     ->schema([
                         Select::make('clinic_id')
                             ->label('Chi nhánh')
-                            ->relationship('clinic', 'name')
+                            ->relationship(
+                                'clinic',
+                                'name',
+                                fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                            )
                             ->searchable()
                             ->preload()
-                            ->default(fn (): ?int => request()->integer('clinic_id') ?: null),
+                            ->default(fn (): ?int => self::requestedAccessibleClinicId()),
                         Select::make('patient_id')
                             ->label('Bệnh nhân')
-                            ->relationship('patient', 'full_name')
+                            ->relationship(
+                                'patient',
+                                'full_name',
+                                fn (Builder $query): Builder => BranchAccess::scopeQueryByAccessibleBranches($query, 'first_branch_id'),
+                            )
                             ->searchable()
                             ->preload()
-                            ->default(fn (): ?int => request()->integer('patient_id') ?: null)
+                            ->default(fn (): ?int => self::requestedAccessiblePatientId())
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set, Get $get): void {
                                 $patientId = self::normalizeId($state);
@@ -61,7 +71,7 @@ class ReceiptsExpenseForm
                                 }
 
                                 if (! is_numeric($get('clinic_id'))) {
-                                    $branchId = Patient::query()
+                                    $branchId = self::accessiblePatientQuery()
                                         ->whereKey($patientId)
                                         ->value('first_branch_id');
 
@@ -70,7 +80,7 @@ class ReceiptsExpenseForm
                                     }
                                 }
 
-                                $patientName = Patient::query()
+                                $patientName = self::accessiblePatientQuery()
                                     ->whereKey($patientId)
                                     ->value('full_name');
 
@@ -83,7 +93,7 @@ class ReceiptsExpenseForm
                             ->options(fn (Get $get): array => self::invoiceOptionsForPatient($get('patient_id')))
                             ->searchable()
                             ->preload()
-                            ->default(fn (): ?int => request()->integer('invoice_id') ?: null)
+                            ->default(fn (): ?int => self::requestedAccessibleInvoiceId())
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set): void {
                                 $invoiceId = self::normalizeId($state);
@@ -91,7 +101,7 @@ class ReceiptsExpenseForm
                                     return;
                                 }
 
-                                $invoice = Invoice::query()
+                                $invoice = self::accessibleInvoiceQuery()
                                     ->with('patient:id,full_name,first_branch_id')
                                     ->find($invoiceId);
 
@@ -201,7 +211,7 @@ class ReceiptsExpenseForm
      */
     protected static function invoiceOptionsForPatient(mixed $patientId): array
     {
-        $query = Invoice::query()
+        $query = self::accessibleInvoiceQuery()
             ->select(['id', 'invoice_no', 'patient_id', 'total_amount', 'status'])
             ->with('patient:id,full_name');
 
@@ -237,7 +247,7 @@ class ReceiptsExpenseForm
             return true;
         }
 
-        return Invoice::query()
+        return self::accessibleInvoiceQuery()
             ->whereKey($normalizedInvoiceId)
             ->where('patient_id', $patientId)
             ->exists();
@@ -271,5 +281,54 @@ class ReceiptsExpenseForm
         $amount = request()->query('amount');
 
         return is_numeric($amount) ? round(max(0, (float) $amount), 2) : null;
+    }
+
+    protected static function accessibleInvoiceQuery(): Builder
+    {
+        return BranchAccess::scopeQueryByAccessibleBranches(Invoice::query());
+    }
+
+    protected static function accessiblePatientQuery(): Builder
+    {
+        return BranchAccess::scopeQueryByAccessibleBranches(Patient::query(), 'first_branch_id');
+    }
+
+    protected static function requestedAccessibleClinicId(): ?int
+    {
+        $clinicId = request()->integer('clinic_id');
+
+        if (! $clinicId) {
+            return BranchAccess::defaultBranchIdForCurrentUser();
+        }
+
+        return in_array($clinicId, BranchAccess::accessibleBranchIds(), true)
+            ? $clinicId
+            : BranchAccess::defaultBranchIdForCurrentUser();
+    }
+
+    protected static function requestedAccessiblePatientId(): ?int
+    {
+        $patientId = request()->integer('patient_id');
+
+        if (! $patientId) {
+            return null;
+        }
+
+        return self::accessiblePatientQuery()
+            ->whereKey($patientId)
+            ->value('id');
+    }
+
+    protected static function requestedAccessibleInvoiceId(): ?int
+    {
+        $invoiceId = request()->integer('invoice_id');
+
+        if (! $invoiceId) {
+            return null;
+        }
+
+        return self::accessibleInvoiceQuery()
+            ->whereKey($invoiceId)
+            ->value('id');
     }
 }

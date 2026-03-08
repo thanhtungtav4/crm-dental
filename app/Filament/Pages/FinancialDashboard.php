@@ -8,34 +8,45 @@ use App\Filament\Widgets\OutstandingBalanceWidget;
 use App\Filament\Widgets\OverdueInvoicesWidget;
 use App\Filament\Widgets\QuickFinancialStatsWidget;
 use App\Filament\Widgets\RevenueOverviewWidget;
+use App\Support\FinancialAccess;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class FinancialDashboard extends BaseDashboard
 {
     protected static string $routePath = 'financial-dashboard';
-    
+
     protected static ?int $navigationSort = 0;
-    
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        return FinancialAccess::canViewDashboard();
+    }
+
     public static function getNavigationIcon(): ?string
     {
         return 'heroicon-o-chart-bar';
     }
-    
+
     public static function getNavigationLabel(): string
     {
         return 'Dashboard Tài chính';
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return 'Tài chính';
     }
-    
+
     public function getTitle(): string
     {
         return 'Dashboard Tài chính';
     }
-    
+
     public function getWidgets(): array
     {
         return [
@@ -47,8 +58,8 @@ class FinancialDashboard extends BaseDashboard
             QuickFinancialStatsWidget::class,
         ];
     }
-    
-    public function getColumns(): int | array
+
+    public function getColumns(): int|array
     {
         return 2;
     }

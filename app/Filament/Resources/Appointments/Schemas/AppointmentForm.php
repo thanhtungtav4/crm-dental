@@ -254,7 +254,7 @@ class AppointmentForm
                 Forms\Components\Select::make('status')
                     ->label('Trạng thái')
                     ->options(fn (?Model $record): array => $record
-                        ? Appointment::statusOptions()
+                        ? $record->statusOptionsForManualUpdate()
                         : [Appointment::STATUS_SCHEDULED => Appointment::statusLabel(Appointment::STATUS_SCHEDULED)])
                     ->default(Appointment::STATUS_SCHEDULED)
                     ->required()

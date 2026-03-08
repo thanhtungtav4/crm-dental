@@ -6,6 +6,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\ReceiptExpense;
+use App\Support\BranchAccess;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,7 +17,11 @@ class ReceiptsExpenseTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['patient:id,full_name,patient_code', 'invoice:id,invoice_no', 'clinic:id,name']))
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                $query->with(['patient:id,full_name,patient_code,first_branch_id', 'invoice:id,invoice_no,branch_id', 'clinic:id,name']);
+
+                return BranchAccess::scopeQueryByAccessibleBranches($query, 'clinic_id');
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('voucher_date')
                     ->label('Ngày lập')
@@ -26,7 +31,9 @@ class ReceiptsExpenseTable
                     ->label('Mã phiếu')
                     ->searchable()
                     ->weight('bold')
-                    ->url(fn (ReceiptExpense $record): string => ReceiptsExpenseResource::getUrl('edit', ['record' => $record])),
+                    ->url(fn (ReceiptExpense $record): ?string => auth()->user()?->can('update', $record)
+                        ? ReceiptsExpenseResource::getUrl('edit', ['record' => $record])
+                        : null),
                 Tables\Columns\TextColumn::make('clinic.name')
                     ->label('Chi nhánh')
                     ->toggleable(),
@@ -35,6 +42,7 @@ class ReceiptsExpenseTable
                     ->searchable()
                     ->description(fn (ReceiptExpense $record): string => $record->patient?->patient_code ? 'Mã BN: '.$record->patient->patient_code : 'Không gắn bệnh nhân')
                     ->url(fn (ReceiptExpense $record): ?string => $record->patient
+                        && (auth()->user()?->can('view', $record->patient) ?? false)
                         ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'payments'])
                         : null)
                     ->toggleable(),
@@ -43,6 +51,7 @@ class ReceiptsExpenseTable
                     ->searchable()
                     ->placeholder('Không gắn hóa đơn')
                     ->url(fn (ReceiptExpense $record): ?string => $record->invoice
+                        && (auth()->user()?->can('view', $record->invoice) ?? false)
                         ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
                         : null)
                     ->toggleable(),
@@ -110,15 +119,27 @@ class ReceiptsExpenseTable
                     ]),
                 Tables\Filters\SelectFilter::make('clinic_id')
                     ->label('Chi nhánh')
-                    ->relationship('clinic', 'name')
+                    ->relationship(
+                        'clinic',
+                        'name',
+                        fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                    )
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('patient_id')
                     ->label('Bệnh nhân')
-                    ->relationship('patient', 'full_name')
+                    ->relationship(
+                        'patient',
+                        'full_name',
+                        fn (Builder $query): Builder => BranchAccess::scopeQueryByAccessibleBranches($query, 'first_branch_id'),
+                    )
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('invoice_id')
                     ->label('Hóa đơn')
-                    ->relationship('invoice', 'invoice_no')
+                    ->relationship(
+                        'invoice',
+                        'invoice_no',
+                        fn (Builder $query): Builder => BranchAccess::scopeQueryByAccessibleBranches($query),
+                    )
                     ->searchable(),
             ])
             ->actions([
@@ -129,25 +150,31 @@ class ReceiptsExpenseTable
                     ->icon('heroicon-o-user')
                     ->color('primary')
                     ->url(fn (ReceiptExpense $record): ?string => $record->patient
+                        && (auth()->user()?->can('view', $record->patient) ?? false)
                         ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'payments'])
                         : null)
-                    ->visible(fn (ReceiptExpense $record): bool => $record->patient !== null)
+                    ->visible(fn (ReceiptExpense $record): bool => $record->patient !== null
+                        && (auth()->user()?->can('view', $record->patient) ?? false))
                     ->openUrlInNewTab(),
                 Action::make('openInvoice')
                     ->label('Mở hóa đơn')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
                     ->url(fn (ReceiptExpense $record): ?string => $record->invoice
+                        && (auth()->user()?->can('view', $record->invoice) ?? false)
                         ? InvoiceResource::getUrl('edit', ['record' => $record->invoice])
                         : null)
-                    ->visible(fn (ReceiptExpense $record): bool => $record->invoice !== null)
+                    ->visible(fn (ReceiptExpense $record): bool => $record->invoice !== null
+                        && (auth()->user()?->can('view', $record->invoice) ?? false))
                     ->openUrlInNewTab(),
                 Action::make('approve')
                     ->label('Duyệt')
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->successNotificationTitle('Đã duyệt phiếu thu/chi')
-                    ->visible(fn (ReceiptExpense $record): bool => $record->status === 'draft')
+                    ->visible(fn (ReceiptExpense $record): bool => $record->status === 'draft'
+                        && (auth()->user()?->can('update', $record) ?? false))
+                    ->authorize(fn (ReceiptExpense $record): bool => auth()->user()?->can('update', $record) ?? false)
                     ->action(function (ReceiptExpense $record): void {
                         $record->update(['status' => 'approved']);
                     }),
@@ -156,7 +183,9 @@ class ReceiptsExpenseTable
                     ->icon('heroicon-o-arrow-up-on-square')
                     ->color('info')
                     ->successNotificationTitle('Đã hạch toán phiếu thu/chi')
-                    ->visible(fn (ReceiptExpense $record): bool => in_array($record->status, ['draft', 'approved'], true))
+                    ->visible(fn (ReceiptExpense $record): bool => in_array($record->status, ['draft', 'approved'], true)
+                        && (auth()->user()?->can('update', $record) ?? false))
+                    ->authorize(fn (ReceiptExpense $record): bool => auth()->user()?->can('update', $record) ?? false)
                     ->requiresConfirmation()
                     ->action(function (ReceiptExpense $record): void {
                         $record->update([

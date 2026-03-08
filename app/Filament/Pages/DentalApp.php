@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
+
 class DentalApp extends PlaceholderPage
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
@@ -32,4 +34,18 @@ class DentalApp extends PlaceholderPage
         'Dentalflow - Hóa đơn điện tử',
         'Dentalflow - Bệnh án điện tử',
     ];
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasAnyAccessibleBranch()
+            && $authUser->can('View:DentalApp');
+    }
 }

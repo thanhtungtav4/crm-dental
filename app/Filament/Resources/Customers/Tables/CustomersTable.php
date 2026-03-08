@@ -6,6 +6,7 @@ use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\Patient;
 use App\Services\DoctorBranchAssignmentService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -20,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class CustomersTable
 {
@@ -32,15 +34,18 @@ class CustomersTable
                     ->searchable()
                     ->weight('bold')
                     ->color(fn ($record) => $record->patient ? 'primary' : null)
-                    ->url(fn ($record): string => $record->patient
+                    ->url(fn ($record): ?string => $record->patient && (auth()->user()?->can('view', $record->patient) ?? false)
                         ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'basic-info'])
-                        : CustomerResource::getUrl('edit', ['record' => $record])),
+                        : ((auth()->user()?->can('update', $record) ?? false)
+                            ? CustomerResource::getUrl('edit', ['record' => $record])
+                            : null)),
                 TextColumn::make('patient.patient_code')
                     ->label('Mã BN')
                     ->badge()
                     ->placeholder('Lead')
                     ->color(fn ($record): string => $record->patient ? 'success' : 'gray')
                     ->url(fn ($record): ?string => $record->patient
+                        && (auth()->user()?->can('view', $record->patient) ?? false)
                         ? PatientResource::getUrl('view', ['record' => $record->patient, 'tab' => 'basic-info'])
                         : null),
                 TextColumn::make('phone')
@@ -103,7 +108,7 @@ class CustomersTable
                     ->icon('heroicon-o-eye')
                     ->visible(function ($record) {
                         $patientId = optional($record->patient)->id;
-                        if (! $patientId) {
+                        if (! $patientId || ! (auth()->user()?->can('Update:Appointment') ?? false)) {
                             return false;
                         }
 
@@ -152,18 +157,21 @@ class CustomersTable
                     ->label('Xác nhận thành bệnh nhân')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => blank($record->patient))
+                    ->visible(fn ($record) => blank($record->patient)
+                        && (auth()->user()?->can('create', Patient::class) ?? false)
+                        && (auth()->user()?->can('update', $record) ?? false))
+                    ->authorize(fn (Customer $record): bool => (auth()->user()?->can('create', Patient::class) ?? false)
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->action(function ($record) {
+                        Gate::authorize('create', Patient::class);
+                        Gate::authorize('update', $record);
+
                         try {
                             /** @var \App\Services\PatientConversionService $service */
                             $service = app(\App\Services\PatientConversionService::class);
                             $patient = $service->convert($record);
 
                             $isCanonicalOwner = (int) ($patient?->customer_id ?? 0) === (int) $record->id;
-
-                            // Notification is handled inside Service, but we can add extra if needed
-                            // For table action, simple success is fine. Service sends to Database,
-                            // maybe we want a toast here.
 
                             $toast = Notification::make();
 
@@ -193,6 +201,12 @@ class CustomersTable
                     ->icon('heroicon-o-calendar')
                     ->successNotificationTitle('Đã tạo lịch hẹn')
                     ->modalHeading('Tạo lịch hẹn')
+                    ->visible(fn (Customer $record): bool => (auth()->user()?->can('create', Appointment::class) ?? false)
+                        && (auth()->user()?->can('create', Patient::class) ?? false)
+                        && (auth()->user()?->can('update', $record) ?? false))
+                    ->authorize(fn (Customer $record): bool => (auth()->user()?->can('create', Appointment::class) ?? false)
+                        && (auth()->user()?->can('create', Patient::class) ?? false)
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->form([
                         \Filament\Forms\Components\Select::make('doctor_id')
                             ->label('Bác sĩ')
@@ -289,6 +303,10 @@ class CustomersTable
                             ->rows(3),
                     ])
                     ->action(function (array $data, $record) {
+                        Gate::authorize('create', Appointment::class);
+                        Gate::authorize('create', Patient::class);
+                        Gate::authorize('update', $record);
+
                         $resolvedBranchId = is_numeric($data['branch_id'] ?? null)
                             ? (int) $data['branch_id']
                             : (is_numeric($record->branch_id) ? (int) $record->branch_id : null);

@@ -116,7 +116,7 @@ class AppointmentStatusActions
     {
         $appointment = self::resolveRecord($record, $recordResolver);
 
-        return Appointment::canTransition($appointment->status, $toStatus);
+        return $appointment->canTransitionToStatus($toStatus);
     }
 
     protected static function resolveRecord(?Appointment $record, ?Closure $recordResolver): Appointment

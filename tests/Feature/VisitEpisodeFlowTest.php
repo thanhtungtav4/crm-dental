@@ -67,6 +67,7 @@ it('captures waiting, chair and overrun durations when appointment is completed'
 
 it('keeps episode open metrics empty when appointment is marked no_show', function () {
     $appointment = makeAppointmentForVisitEpisode([
+        'date' => now()->subHour(),
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
