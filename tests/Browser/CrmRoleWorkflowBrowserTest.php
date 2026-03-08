@@ -18,6 +18,7 @@ it('keeps finance and firewall closed for cskh while allowing lead conversion', 
     assertForbiddenPath($page, '/admin/firewall-ips');
 
     $page->navigate('/admin/customers')
+        ->fill('.fi-ta-search-field input[type="search"]', 'Pham Minh Chau')
         ->assertSee('Pham Minh Chau')
         ->click('Xác nhận thành bệnh nhân')
         ->click('Xác nhận');
@@ -39,6 +40,7 @@ it('allows doctor into patient workflows while finance and firewall stay forbidd
         ->firstOrFail();
 
     $visiblePatient = Patient::query()
+        ->where('patient_code', \Database\Seeders\AppointmentScenarioSeeder::BASE_PATIENT_CODE)
         ->where('first_branch_id', $doctor->branch_id)
         ->orderBy('id')
         ->firstOrFail();
@@ -46,6 +48,7 @@ it('allows doctor into patient workflows while finance and firewall stay forbidd
     $page = loginToAdminPanel('doctor.q1@demo.nhakhoaanphuc.test');
 
     $page->navigate('/admin/patients')
+        ->fill('.fi-ta-search-field input[type="search"]', (string) $visiblePatient->full_name)
         ->assertSee('Bệnh nhân')
         ->assertSee($visiblePatient->full_name);
 

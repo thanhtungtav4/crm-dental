@@ -13,11 +13,15 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
+use Database\Seeders\AppointmentScenarioSeeder;
 use Database\Seeders\ClinicSettingsSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\FinanceScenarioSeeder;
 use Database\Seeders\InventorySeeder;
 use Database\Seeders\LocalDemoDataSeeder;
 use Database\Seeders\ProductionMasterDataSeeder;
+use Database\Seeders\SupplierScenarioSeeder;
+use Database\Seeders\ZnsAutomationScenarioSeeder;
 use Illuminate\Support\Facades\Hash;
 
 it('preserves existing clinic runtime settings while seeding defaults', function (): void {
@@ -128,19 +132,27 @@ it('seeds the local demo user pack with deterministic roles and cross-branch doc
 it('seeds deterministic crm demo scenarios across appointments finance care labo and zns', function (): void {
     $this->seed(DatabaseSeeder::class);
 
-    expect(Appointment::query()->count())->toBe(6)
+    expect(Appointment::query()->count())->toBeGreaterThanOrEqual(6)
         ->and(Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->exists())->toBeTrue()
         ->and(Appointment::query()->where('status', Appointment::STATUS_COMPLETED)->exists())->toBeTrue()
         ->and(Appointment::query()->where('status', Appointment::STATUS_NO_SHOW)->exists())->toBeTrue()
         ->and(Appointment::query()->where('status', Appointment::STATUS_RESCHEDULED)->exists())->toBeTrue()
         ->and(Appointment::query()->where('status', Appointment::STATUS_CANCELLED)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('note', AppointmentScenarioSeeder::BASE_APPOINTMENT_NOTE)->exists())->toBeTrue()
+        ->and(Appointment::query()->where('note', AppointmentScenarioSeeder::FUTURE_GUARD_APPOINTMENT_NOTE)->exists())->toBeTrue()
         ->and(Note::query()->where('care_type', 'no_show_recovery')->exists())->toBeTrue()
         ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-Q1-001')->where('status', Invoice::STATUS_PARTIAL)->exists())->toBeTrue()
         ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-Q1-002')->where('status', Invoice::STATUS_PAID)->exists())->toBeTrue()
         ->and(Invoice::query()->where('invoice_no', 'INV-DEMO-CG-001')->where('status', Invoice::STATUS_OVERDUE)->exists())->toBeTrue()
-        ->and(FactoryOrder::query()->count())->toBe(2)
+        ->and(Invoice::query()->where('invoice_no', FinanceScenarioSeeder::OVERDUE_INVOICE_NO)->exists())->toBeTrue()
+        ->and(Invoice::query()->where('invoice_no', FinanceScenarioSeeder::REVERSAL_INVOICE_NO)->exists())->toBeTrue()
+        ->and(Invoice::query()->where('invoice_no', FinanceScenarioSeeder::INSTALLMENT_INVOICE_NO)->exists())->toBeTrue()
+        ->and(FactoryOrder::query()->count())->toBeGreaterThanOrEqual(2)
+        ->and(FactoryOrder::query()->where('order_no', SupplierScenarioSeeder::FACTORY_ORDER_NO)->exists())->toBeTrue()
         ->and(ZnsCampaign::query()->where('code', 'ZNS-DEMO-Q1-RECALL')->where('status', ZnsCampaign::STATUS_COMPLETED)->exists())->toBeTrue()
-        ->and(ZnsCampaignDelivery::query()->where('idempotency_key', 'ZNS-DEMO-Q1-RECALL-01')->exists())->toBeTrue();
+        ->and(ZnsCampaign::query()->where('code', ZnsAutomationScenarioSeeder::FRESH_CAMPAIGN_CODE)->where('status', ZnsCampaign::STATUS_COMPLETED)->exists())->toBeTrue()
+        ->and(ZnsCampaignDelivery::query()->where('idempotency_key', 'ZNS-DEMO-Q1-RECALL-01')->exists())->toBeTrue()
+        ->and(ZnsCampaignDelivery::query()->where('idempotency_key', hash('sha256', ZnsAutomationScenarioSeeder::FRESH_SENT_DELIVERY_KEY))->exists())->toBeTrue();
 });
 
 it('keeps production master data seeding free from local demo records', function (): void {

@@ -109,6 +109,22 @@ class LocalDemoDataSeeder extends Seeder
             ->keyBy(fn (Patient $patient): string => (string) $patient->phone);
 
         $this->seedTreatmentJourney($branches, $usersByEmail, $patientsByPhone, $customersByPhone);
+
+        $this->call([
+            OpsScenarioSeeder::class,
+            IntegrationScenarioSeeder::class,
+            KpiScenarioSeeder::class,
+            ZnsAutomationScenarioSeeder::class,
+            PatientScenarioSeeder::class,
+            AppointmentScenarioSeeder::class,
+            CareScenarioSeeder::class,
+            FinanceScenarioSeeder::class,
+            InventoryScenarioSeeder::class,
+            SupplierScenarioSeeder::class,
+            TreatmentScenarioSeeder::class,
+            ClinicalScenarioSeeder::class,
+            GovernanceScenarioSeeder::class,
+        ]);
     }
 
     /**
