@@ -95,6 +95,39 @@ it('lets admin pass mfa and reach firewall management', function (): void {
         ->assertNoConsoleLogs();
 });
 
+it('shows branch-scoped frontdesk control center data for cskh', function (): void {
+    seed(LocalDemoDataSeeder::class);
+
+    $page = loginToAdminPanel('cskh.q1@demo.nhakhoaanphuc.test');
+
+    $page->navigate('/admin/frontdesk-control-center')
+        ->assertSee('Điều phối front-office')
+        ->assertSee('Lead pipeline')
+        ->assertSee('Pham Minh Chau')
+        ->assertSee('QA Appointment Base')
+        ->assertSee('Nguyen Thi Thu Trang')
+        ->assertDontSee('Le Van Nam')
+        ->assertNoJavascriptErrors()
+        ->assertNoConsoleLogs();
+});
+
+it('shows delivery ops center data for q1 doctor without leaking inventory or labo watchlists', function (): void {
+    seed(LocalDemoDataSeeder::class);
+
+    $page = loginToAdminPanel('doctor.q1@demo.nhakhoaanphuc.test');
+
+    $page->navigate('/admin/delivery-ops-center')
+        ->assertSee('Điều phối điều trị')
+        ->assertSee('Workflow điều trị')
+        ->assertSee('Hồ sơ lâm sàng')
+        ->assertSee('QA Treatment Workflow Plan')
+        ->assertSee('QA Clinical Consent')
+        ->assertDontSee('QA Inventory Low Stock Composite')
+        ->assertDontSee('FO-QA-SUP-001')
+        ->assertNoJavascriptErrors()
+        ->assertNoConsoleLogs();
+});
+
 it('renders high-risk admin create forms that depend on schema utility injection', function (): void {
     seed(LocalDemoDataSeeder::class);
 
@@ -117,6 +150,26 @@ it('renders high-risk admin create forms that depend on schema utility injection
     }
 
     $page->assertNoJavascriptErrors()
+        ->assertNoConsoleLogs();
+});
+
+it('shows finance and governance signals in the ops control center for admin', function (): void {
+    seed(LocalDemoDataSeeder::class);
+
+    $page = loginToAdminPanel(
+        'admin@demo.nhakhoaanphuc.test',
+        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('admin@demo.nhakhoaanphuc.test')[0] ?? null,
+    );
+
+    $page->navigate('/admin/ops-control-center')
+        ->assertSee('Trung tâm OPS')
+        ->assertSee('Finance & collections')
+        ->assertSee('INV-QA-FIN-001')
+        ->assertSee('QA-FIN-REV-RECEIPT')
+        ->assertSee('Governance & audit scope')
+        ->assertSee('qa.gov.assigned@demo.nhakhoaanphuc.test')
+        ->assertSee('qa.gov.hidden@demo.nhakhoaanphuc.test')
+        ->assertNoJavascriptErrors()
         ->assertNoConsoleLogs();
 });
 

@@ -278,6 +278,35 @@ class IntegrationSecretRotationService
     }
 
     /**
+     * @return \Illuminate\Support\Collection<int, array{
+     *     key: string,
+     *     display_name: string,
+     *     grace_expires_at: string,
+     *     expired_minutes: int
+     * }>
+     */
+    public function expiredGraceRotations(): Collection
+    {
+        return collect(array_keys(self::ROTATABLE_SECRETS))
+            ->map(function (string $settingKey): ?array {
+                $state = $this->expiredGraceState($settingKey);
+
+                if ($state === null) {
+                    return null;
+                }
+
+                return [
+                    'key' => $settingKey,
+                    'display_name' => (string) $state['display_name'],
+                    'grace_expires_at' => (string) $state['grace_expires_at'],
+                    'expired_minutes' => max(0, CarbonImmutable::parse((string) $state['grace_expires_at'])->diffInMinutes(now())),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
      * @return array{
      *     total_expired: int,
      *     revoked: int,

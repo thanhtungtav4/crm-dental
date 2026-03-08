@@ -85,4 +85,10 @@ it('creates readiness report scenarios that can be verified with seeded demo sig
     ])
         ->expectsOutputToContain('Schema report khong hop le')
         ->assertFailed();
+
+    expect(File::exists(OpsScenarioSeeder::passReadinessSignoffPath()))->toBeTrue()
+        ->and((string) data_get(json_decode((string) File::get(OpsScenarioSeeder::passReadinessSignoffPath()), true), 'qa_signoff.email'))
+        ->toBe('manager.q1@demo.nhakhoaanphuc.test')
+        ->and((string) data_get(json_decode((string) File::get(OpsScenarioSeeder::passReadinessSignoffPath()), true), 'pm_signoff.email'))
+        ->toBe('admin@demo.nhakhoaanphuc.test');
 });

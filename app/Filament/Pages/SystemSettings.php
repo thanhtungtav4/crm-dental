@@ -132,6 +132,12 @@ class SystemSettings extends Page
                         'url' => BranchResource::getUrl('index'),
                         'can' => static fn (): bool => BranchResource::canAccess(),
                     ],
+                    [
+                        'label' => 'Trung tâm OPS',
+                        'description' => 'Theo dõi backup, restore, readiness và observability từ một màn hình vận hành duy nhất.',
+                        'url' => OpsControlCenter::getUrl(),
+                        'can' => static fn (): bool => OpsControlCenter::canAccess(),
+                    ],
                 ],
             ],
         ];

@@ -70,6 +70,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $pages = [
             'SystemSettings',
             'IntegrationSettings',
+            'OpsControlCenter',
+            'FrontdeskControlCenter',
+            'DeliveryOpsCenter',
             'FinancialDashboard',
             'DentalChainReport',
             'DentalApp',
@@ -154,6 +157,7 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
         $doctorPerms = array_merge($doctorPerms, [
+            'View:DeliveryOpsCenter',
             ActionPermission::APPOINTMENT_OVERRIDE,
             ActionPermission::PLAN_APPROVAL,
             ActionPermission::EMR_CLINICAL_WRITE,
@@ -183,6 +187,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $cskhPerms[] = $prefix.':'.$res;
             }
         }
+        $cskhPerms[] = 'View:FrontdeskControlCenter';
         $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
         $cskhPerms[] = ActionPermission::PATIENT_BRANCH_TRANSFER;
         $cskh->syncPermissions($cskhPerms);

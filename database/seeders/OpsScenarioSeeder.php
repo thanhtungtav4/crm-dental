@@ -28,6 +28,10 @@ class OpsScenarioSeeder extends Seeder
 
     public const INVALID_SCHEMA_READINESS_REPORT = self::READINESS_DIRECTORY.'/production-readiness-invalid-schema.json';
 
+    public const SIGNOFF_DIRECTORY = self::ROOT_DIRECTORY.'/signoff';
+
+    public const PASS_READINESS_SIGNOFF = self::SIGNOFF_DIRECTORY.'/production-readiness-pass-signoff.json';
+
     public function run(): void
     {
         $this->configureAutomationActor();
@@ -63,6 +67,11 @@ class OpsScenarioSeeder extends Seeder
     public static function invalidSchemaReadinessReportPath(): string
     {
         return storage_path(self::INVALID_SCHEMA_READINESS_REPORT);
+    }
+
+    public static function passReadinessSignoffPath(): string
+    {
+        return storage_path(self::PASS_READINESS_SIGNOFF);
     }
 
     protected function configureAutomationActor(): void
@@ -125,6 +134,12 @@ class OpsScenarioSeeder extends Seeder
         File::put(
             self::invalidSchemaReadinessReportPath(),
             json_encode(['status' => 'pass'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        );
+
+        File::ensureDirectoryExists(dirname(self::passReadinessSignoffPath()));
+        File::put(
+            self::passReadinessSignoffPath(),
+            json_encode($this->passReadinessSignoff(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         );
     }
 
@@ -272,6 +287,52 @@ class OpsScenarioSeeder extends Seeder
                 ],
             ],
             'failures' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function passReadinessSignoff(): array
+    {
+        $qaSigner = User::query()
+            ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+            ->first();
+        $pmSigner = User::query()
+            ->where('email', 'admin@demo.nhakhoaanphuc.test')
+            ->first();
+        $reportPath = self::passReadinessReportPath();
+
+        return [
+            'verified_at' => '2026-03-02 08:12:00',
+            'verified_by_user_id' => $pmSigner?->id,
+            'strict_mode' => true,
+            'report_path' => $reportPath,
+            'report_sha256' => is_file($reportPath) ? hash_file('sha256', $reportPath) : null,
+            'report_status' => 'pass',
+            'qa_signoff' => [
+                'user_id' => $qaSigner?->id,
+                'name' => $qaSigner?->name ?? 'Manager Q1',
+                'email' => $qaSigner?->email ?? 'manager.q1@demo.nhakhoaanphuc.test',
+                'roles' => $qaSigner?->getRoleNames()->values()->all() ?? ['Manager'],
+                'signed_at' => '2026-03-02 08:11:00',
+            ],
+            'pm_signoff' => [
+                'user_id' => $pmSigner?->id,
+                'name' => $pmSigner?->name ?? 'Admin',
+                'email' => $pmSigner?->email ?? 'admin@demo.nhakhoaanphuc.test',
+                'roles' => $pmSigner?->getRoleNames()->values()->all() ?? ['Admin'],
+                'signed_at' => '2026-03-02 08:12:00',
+            ],
+            'release_ref' => 'REL-DEMO-OPS-001',
+            'summary' => [
+                'steps_plan_count' => 2,
+                'steps_run_count' => 2,
+                'duration_ms' => 600000,
+                'with_finance' => true,
+                'run_tests' => true,
+                'strict_full' => true,
+            ],
         ];
     }
 }
