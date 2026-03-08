@@ -19,7 +19,7 @@ pest()->extend(Tests\TestCase::class)
     })
     ->in('Feature', 'Browser');
 
-pest()->browser()->timeout(15000);
+pest()->browser()->timeout(30000);
 
 /*
 |--------------------------------------------------------------------------

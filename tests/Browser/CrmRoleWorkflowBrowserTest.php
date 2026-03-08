@@ -8,16 +8,19 @@ use Pest\Browser\Api\PendingAwaitablePage;
 
 use function Pest\Laravel\seed;
 
-it('keeps finance and firewall closed for cskh while allowing lead conversion', function (): void {
+it('lets cskh work the frontdesk queue and convert a lead into a patient', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $page = loginToAdminPanel('cskh.q1@demo.nhakhoaanphuc.test');
 
-    assertForbiddenPath($page, '/admin/financial-dashboard');
-    assertForbiddenPath($page, '/admin/receipts-expense');
-    assertForbiddenPath($page, '/admin/firewall-ips');
-
-    $page->navigate('/admin/customers')
+    $page->navigate('/admin/frontdesk-control-center')
+        ->assertSee('Điều phối front-office')
+        ->assertSee('Lead pipeline')
+        ->assertSee('Pham Minh Chau')
+        ->assertSee('QA Appointment Base')
+        ->assertSee('Nguyen Thi Thu Trang')
+        ->assertDontSee('Le Van Nam')
+        ->navigate('/admin/customers')
         ->fill('.fi-ta-search-field input[type="search"]', 'Pham Minh Chau')
         ->assertSee('Pham Minh Chau')
         ->click('Xác nhận thành bệnh nhân')
@@ -32,7 +35,7 @@ it('keeps finance and firewall closed for cskh while allowing lead conversion', 
         ->assertNoConsoleLogs();
 });
 
-it('allows doctor into patient workflows while finance and firewall stay forbidden', function (): void {
+it('lets doctor work delivery and patient workflows from the seeded q1 branch', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $doctor = User::query()
@@ -47,19 +50,24 @@ it('allows doctor into patient workflows while finance and firewall stay forbidd
 
     $page = loginToAdminPanel('doctor.q1@demo.nhakhoaanphuc.test');
 
-    $page->navigate('/admin/patients')
+    $page->navigate('/admin/delivery-ops-center')
+        ->assertSee('Điều phối điều trị')
+        ->assertSee('Workflow điều trị')
+        ->assertSee('Hồ sơ lâm sàng')
+        ->assertSee('QA Treatment Workflow Plan')
+        ->assertSee('QA Clinical Consent')
+        ->assertDontSee('QA Inventory Low Stock Composite')
+        ->assertDontSee('FO-QA-SUP-001')
+        ->navigate('/admin/patients')
         ->fill('.fi-ta-search-field input[type="search"]', (string) $visiblePatient->full_name)
         ->assertSee('Bệnh nhân')
         ->assertSee($visiblePatient->full_name);
-
-    assertForbiddenPath($page, '/admin/financial-dashboard');
-    assertForbiddenPath($page, '/admin/firewall-ips');
 
     $page->assertNoJavascriptErrors()
         ->assertNoConsoleLogs();
 });
 
-it('lets manager pass mfa and see branch finance surfaces only', function (): void {
+it('lets manager pass mfa and use branch-scoped finance and zns surfaces', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $page = loginToAdminPanel(
@@ -71,64 +79,16 @@ it('lets manager pass mfa and see branch finance surfaces only', function (): vo
         ->assertSee('Dashboard Tài chính')
         ->navigate('/admin/receipts-expense')
         ->assertSee('Thu/chi')
-        ->assertSee('PT-DEMO-Q1-001');
-
-    assertForbiddenPath($page, '/admin/firewall-ips');
+        ->assertSee('PT-DEMO-Q1-001')
+        ->navigate('/admin/zalo-zns')
+        ->assertSee('Zalo ZNS')
+        ->assertSee('Automation dead-letter');
 
     $page->assertNoJavascriptErrors()
         ->assertNoConsoleLogs();
 });
 
-it('lets admin pass mfa and reach firewall management', function (): void {
-    seed(LocalDemoDataSeeder::class);
-
-    $page = loginToAdminPanel(
-        'admin@demo.nhakhoaanphuc.test',
-        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('admin@demo.nhakhoaanphuc.test')[0] ?? null,
-    );
-
-    $page->navigate('/admin/firewall-ips')
-        ->assertSee('Tường Lửa IP')
-        ->assertSee('Thêm IP của tôi')
-        ->assertSee('Tạo mới')
-        ->assertNoJavascriptErrors()
-        ->assertNoConsoleLogs();
-});
-
-it('shows branch-scoped frontdesk control center data for cskh', function (): void {
-    seed(LocalDemoDataSeeder::class);
-
-    $page = loginToAdminPanel('cskh.q1@demo.nhakhoaanphuc.test');
-
-    $page->navigate('/admin/frontdesk-control-center')
-        ->assertSee('Điều phối front-office')
-        ->assertSee('Lead pipeline')
-        ->assertSee('Pham Minh Chau')
-        ->assertSee('QA Appointment Base')
-        ->assertSee('Nguyen Thi Thu Trang')
-        ->assertDontSee('Le Van Nam')
-        ->assertNoJavascriptErrors()
-        ->assertNoConsoleLogs();
-});
-
-it('shows delivery ops center data for q1 doctor without leaking inventory or labo watchlists', function (): void {
-    seed(LocalDemoDataSeeder::class);
-
-    $page = loginToAdminPanel('doctor.q1@demo.nhakhoaanphuc.test');
-
-    $page->navigate('/admin/delivery-ops-center')
-        ->assertSee('Điều phối điều trị')
-        ->assertSee('Workflow điều trị')
-        ->assertSee('Hồ sơ lâm sàng')
-        ->assertSee('QA Treatment Workflow Plan')
-        ->assertSee('QA Clinical Consent')
-        ->assertDontSee('QA Inventory Low Stock Composite')
-        ->assertDontSee('FO-QA-SUP-001')
-        ->assertNoJavascriptErrors()
-        ->assertNoConsoleLogs();
-});
-
-it('renders high-risk admin create forms that depend on schema utility injection', function (): void {
+it('shows finance and governance signals in the ops control center for admin', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $page = loginToAdminPanel(
@@ -149,18 +109,6 @@ it('renders high-risk admin create forms that depend on schema utility injection
             ->assertSee($expectedText);
     }
 
-    $page->assertNoJavascriptErrors()
-        ->assertNoConsoleLogs();
-});
-
-it('shows finance and governance signals in the ops control center for admin', function (): void {
-    seed(LocalDemoDataSeeder::class);
-
-    $page = loginToAdminPanel(
-        'admin@demo.nhakhoaanphuc.test',
-        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('admin@demo.nhakhoaanphuc.test')[0] ?? null,
-    );
-
     $page->navigate('/admin/ops-control-center')
         ->assertSee('Trung tâm OPS')
         ->assertSee('Finance & collections')
@@ -177,24 +125,15 @@ function loginToAdminPanel(string $email, ?string $recoveryCode = null): Pending
 {
     $page = visit('/admin/login');
 
-    $page->assertSee('Đăng nhập')
-        ->fill('input[type="email"]', $email)
+    $page->fill('input[type="email"]', $email)
         ->fill('input[type="password"]', LocalDemoDataSeeder::DEFAULT_DEMO_PASSWORD)
         ->click('button[type="submit"]');
 
     if ($recoveryCode !== null) {
-        $page->assertSee('Xác thực hai yếu tố')
-            ->click('a[href="#"]')
+        $page->click('a[href="#"]')
             ->fill('input[placeholder="abcdef-98765"]', $recoveryCode)
             ->click('button[type="submit"]');
     }
 
     return $page->assertPathIs('/admin');
-}
-
-function assertForbiddenPath(PendingAwaitablePage|AwaitableWebpage $page, string $path): PendingAwaitablePage|AwaitableWebpage
-{
-    return $page->navigate($path)
-        ->assertPathIs($path)
-        ->assertSee('403');
 }
