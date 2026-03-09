@@ -59,6 +59,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'DiseaseGroup',
             'Disease',
             'ToothCondition',
+            'WebLeadEmailDelivery',
             'Role',
         ];
 

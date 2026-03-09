@@ -4,6 +4,7 @@ use App\Models\ClinicSetting;
 use App\Models\EmrSyncEvent;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\User;
+use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use Database\Seeders\IntegrationScenarioSeeder;
@@ -23,6 +24,10 @@ it('creates integration prune scenarios that remove old operational records and 
 
     expect(WebLeadIngestion::query()->where('request_id', IntegrationScenarioSeeder::OLD_WEB_LEAD_REQUEST_ID)->exists())->toBeFalse()
         ->and(WebLeadIngestion::query()->where('request_id', IntegrationScenarioSeeder::FRESH_WEB_LEAD_REQUEST_ID)->exists())->toBeTrue()
+        ->and(WebLeadEmailDelivery::query()->where('dedupe_key', IntegrationScenarioSeeder::OLD_WEB_LEAD_EMAIL_DEDUPE_KEY)->exists())->toBeFalse()
+        ->and(WebLeadEmailDelivery::query()->where('dedupe_key', IntegrationScenarioSeeder::FRESH_WEB_LEAD_EMAIL_DEDUPE_KEY)->exists())->toBeTrue()
+        ->and(WebLeadEmailDelivery::query()->where('dedupe_key', IntegrationScenarioSeeder::RETRYABLE_WEB_LEAD_EMAIL_DEDUPE_KEY)->exists())->toBeTrue()
+        ->and(WebLeadEmailDelivery::query()->where('dedupe_key', IntegrationScenarioSeeder::DEAD_WEB_LEAD_EMAIL_DEDUPE_KEY)->exists())->toBeTrue()
         ->and(ZaloWebhookEvent::query()->where('event_fingerprint', IntegrationScenarioSeeder::OLD_WEBHOOK_FINGERPRINT)->exists())->toBeFalse()
         ->and(ZaloWebhookEvent::query()->where('event_fingerprint', IntegrationScenarioSeeder::FRESH_WEBHOOK_FINGERPRINT)->exists())->toBeTrue()
         ->and(EmrSyncEvent::query()->where('event_key', IntegrationScenarioSeeder::OLD_EMR_EVENT_KEY)->exists())->toBeFalse()

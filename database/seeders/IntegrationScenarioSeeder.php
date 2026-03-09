@@ -11,6 +11,7 @@ use App\Models\EmrSyncLog;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Models\Patient;
+use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use App\Services\IntegrationSecretRotationService;
@@ -22,6 +23,14 @@ class IntegrationScenarioSeeder extends Seeder
     public const OLD_WEB_LEAD_REQUEST_ID = 'demo-int-weblead-old-created';
 
     public const FRESH_WEB_LEAD_REQUEST_ID = 'demo-int-weblead-fresh-created';
+
+    public const OLD_WEB_LEAD_EMAIL_DEDUPE_KEY = 'demo-int-weblead-email-old-terminal';
+
+    public const FRESH_WEB_LEAD_EMAIL_DEDUPE_KEY = 'demo-int-weblead-email-fresh-terminal';
+
+    public const RETRYABLE_WEB_LEAD_EMAIL_DEDUPE_KEY = 'demo-int-weblead-email-retryable';
+
+    public const DEAD_WEB_LEAD_EMAIL_DEDUPE_KEY = 'demo-int-weblead-email-dead';
 
     public const OLD_WEBHOOK_FINGERPRINT = 'demo-int-webhook-old';
 
@@ -181,6 +190,159 @@ class IntegrationScenarioSeeder extends Seeder
             ],
         );
         $this->ageModel($freshRecord, 5);
+
+        $this->seedWebLeadEmailDeliveryScenarios($branch, $customer, $oldRecord, $freshRecord);
+    }
+
+    protected function seedWebLeadEmailDeliveryScenarios(
+        Branch $branch,
+        Customer $customer,
+        WebLeadIngestion $oldRecord,
+        WebLeadIngestion $freshRecord,
+    ): void {
+        $oldDelivery = WebLeadEmailDelivery::query()->updateOrCreate(
+            ['dedupe_key' => self::OLD_WEB_LEAD_EMAIL_DEDUPE_KEY],
+            [
+                'web_lead_ingestion_id' => $oldRecord->id,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'recipient_user_id' => null,
+                'recipient_type' => WebLeadEmailDelivery::RECIPIENT_TYPE_MAILBOX,
+                'recipient_email' => 'ops-old@example.test',
+                'recipient_name' => 'Ops Old',
+                'status' => WebLeadEmailDelivery::STATUS_SENT,
+                'attempt_count' => 1,
+                'manual_resend_count' => 0,
+                'last_attempt_at' => now()->subDays(45),
+                'next_retry_at' => null,
+                'sent_at' => now()->subDays(45),
+                'transport_message_id' => 'msg-old-001',
+                'payload' => [
+                    'subject' => '[CRM Lead] Old delivery',
+                    'customer_name' => $customer->full_name,
+                    'customer_phone' => $customer->phone,
+                    'branch_name' => $branch->name,
+                    'request_id' => $oldRecord->request_id,
+                ],
+                'mailer_snapshot' => [
+                    'host' => 'smtp.demo.test',
+                    'port' => 587,
+                    'scheme' => 'tls',
+                    'from_address' => 'lead-bot@demo.test',
+                    'from_name' => 'Lead Bot',
+                    'queue' => 'web-lead-mail',
+                ],
+            ],
+        );
+        $this->ageModel($oldDelivery, 45);
+
+        $freshDelivery = WebLeadEmailDelivery::query()->updateOrCreate(
+            ['dedupe_key' => self::FRESH_WEB_LEAD_EMAIL_DEDUPE_KEY],
+            [
+                'web_lead_ingestion_id' => $freshRecord->id,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'recipient_user_id' => null,
+                'recipient_type' => WebLeadEmailDelivery::RECIPIENT_TYPE_MAILBOX,
+                'recipient_email' => 'ops-fresh@example.test',
+                'recipient_name' => 'Ops Fresh',
+                'status' => WebLeadEmailDelivery::STATUS_SENT,
+                'attempt_count' => 1,
+                'manual_resend_count' => 0,
+                'last_attempt_at' => now()->subDays(5),
+                'next_retry_at' => null,
+                'sent_at' => now()->subDays(5),
+                'transport_message_id' => 'msg-fresh-001',
+                'payload' => [
+                    'subject' => '[CRM Lead] Fresh delivery',
+                    'customer_name' => $customer->full_name,
+                    'customer_phone' => $customer->phone,
+                    'branch_name' => $branch->name,
+                    'request_id' => $freshRecord->request_id,
+                ],
+                'mailer_snapshot' => [
+                    'host' => 'smtp.demo.test',
+                    'port' => 587,
+                    'scheme' => 'tls',
+                    'from_address' => 'lead-bot@demo.test',
+                    'from_name' => 'Lead Bot',
+                    'queue' => 'web-lead-mail',
+                ],
+            ],
+        );
+        $this->ageModel($freshDelivery, 5);
+
+        WebLeadEmailDelivery::query()->updateOrCreate(
+            ['dedupe_key' => self::RETRYABLE_WEB_LEAD_EMAIL_DEDUPE_KEY],
+            [
+                'web_lead_ingestion_id' => $freshRecord->id,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'recipient_user_id' => null,
+                'recipient_type' => WebLeadEmailDelivery::RECIPIENT_TYPE_MAILBOX,
+                'recipient_email' => 'ops-retry@example.test',
+                'recipient_name' => 'Ops Retry',
+                'status' => WebLeadEmailDelivery::STATUS_RETRYABLE,
+                'attempt_count' => 2,
+                'manual_resend_count' => 0,
+                'last_attempt_at' => now()->subMinutes(20),
+                'next_retry_at' => now()->subMinute(),
+                'sent_at' => null,
+                'transport_message_id' => null,
+                'last_error_message' => 'SMTP temporary outage',
+                'payload' => [
+                    'subject' => '[CRM Lead] Retry delivery',
+                    'customer_name' => $customer->full_name,
+                    'customer_phone' => $customer->phone,
+                    'branch_name' => $branch->name,
+                    'request_id' => $freshRecord->request_id,
+                ],
+                'mailer_snapshot' => [
+                    'host' => 'smtp.demo.test',
+                    'port' => 587,
+                    'scheme' => 'tls',
+                    'from_address' => 'lead-bot@demo.test',
+                    'from_name' => 'Lead Bot',
+                    'queue' => 'web-lead-mail',
+                ],
+            ],
+        );
+
+        WebLeadEmailDelivery::query()->updateOrCreate(
+            ['dedupe_key' => self::DEAD_WEB_LEAD_EMAIL_DEDUPE_KEY],
+            [
+                'web_lead_ingestion_id' => $freshRecord->id,
+                'customer_id' => $customer->id,
+                'branch_id' => $branch->id,
+                'recipient_user_id' => null,
+                'recipient_type' => WebLeadEmailDelivery::RECIPIENT_TYPE_MAILBOX,
+                'recipient_email' => 'ops-dead@example.test',
+                'recipient_name' => 'Ops Dead',
+                'status' => WebLeadEmailDelivery::STATUS_DEAD,
+                'attempt_count' => 5,
+                'manual_resend_count' => 0,
+                'last_attempt_at' => now()->subMinutes(5),
+                'next_retry_at' => null,
+                'sent_at' => null,
+                'transport_message_id' => null,
+                'last_error_message' => 'Missing SMTP host',
+                'payload' => [
+                    'subject' => '[CRM Lead] Dead delivery',
+                    'customer_name' => $customer->full_name,
+                    'customer_phone' => $customer->phone,
+                    'branch_name' => $branch->name,
+                    'request_id' => $freshRecord->request_id,
+                ],
+                'mailer_snapshot' => [
+                    'host' => '',
+                    'port' => 587,
+                    'scheme' => 'tls',
+                    'from_address' => '',
+                    'from_name' => 'Lead Bot',
+                    'queue' => 'web-lead-mail',
+                ],
+            ],
+        );
     }
 
     protected function seedWebhookScenarios(): void

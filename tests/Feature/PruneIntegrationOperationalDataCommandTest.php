@@ -10,6 +10,7 @@ use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Models\Patient;
 use App\Models\User;
+use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 
@@ -39,6 +40,32 @@ it('prunes expired integration operational data by retention settings', function
         'response' => ['status' => WebLeadIngestion::STATUS_CREATED],
         'processed_at' => now()->subDays(5),
     ]);
+
+    $oldWebLeadEmail = WebLeadEmailDelivery::factory()->create([
+        'web_lead_ingestion_id' => $oldWebLead->id,
+        'customer_id' => $oldWebLead->customer_id,
+        'branch_id' => $branch->id,
+        'status' => WebLeadEmailDelivery::STATUS_SENT,
+        'sent_at' => now()->subDays(45),
+    ]);
+    makeIntegrationRecordOld($oldWebLeadEmail, 45);
+
+    $freshWebLeadEmail = WebLeadEmailDelivery::factory()->create([
+        'web_lead_ingestion_id' => $freshWebLead->id,
+        'customer_id' => $freshWebLead->customer_id,
+        'branch_id' => $branch->id,
+        'status' => WebLeadEmailDelivery::STATUS_SENT,
+        'sent_at' => now()->subDays(5),
+    ]);
+
+    $retryableWebLeadEmail = WebLeadEmailDelivery::factory()->create([
+        'web_lead_ingestion_id' => $freshWebLead->id,
+        'customer_id' => $freshWebLead->customer_id,
+        'branch_id' => $branch->id,
+        'status' => WebLeadEmailDelivery::STATUS_RETRYABLE,
+        'next_retry_at' => now()->subMinute(),
+    ]);
+    makeIntegrationRecordOld($retryableWebLeadEmail, 45);
 
     $oldWebhook = ZaloWebhookEvent::query()->create([
         'event_fingerprint' => 'old-webhook-fingerprint',
@@ -147,6 +174,9 @@ it('prunes expired integration operational data by retention settings', function
 
     expect(WebLeadIngestion::query()->whereKey($oldWebLead->id)->exists())->toBeFalse()
         ->and(WebLeadIngestion::query()->whereKey($freshWebLead->id)->exists())->toBeTrue()
+        ->and(WebLeadEmailDelivery::query()->whereKey($oldWebLeadEmail->id)->exists())->toBeFalse()
+        ->and(WebLeadEmailDelivery::query()->whereKey($freshWebLeadEmail->id)->exists())->toBeTrue()
+        ->and(WebLeadEmailDelivery::query()->whereKey($retryableWebLeadEmail->id)->exists())->toBeTrue()
         ->and(ZaloWebhookEvent::query()->whereKey($oldWebhook->id)->exists())->toBeFalse()
         ->and(ZaloWebhookEvent::query()->whereKey($freshWebhook->id)->exists())->toBeTrue()
         ->and(EmrSyncEvent::query()->whereKey($oldEmrEvent->id)->exists())->toBeFalse()

@@ -191,6 +191,33 @@ class IntegrationSettings extends Page
                     ['state' => 'web_lead_rate_limit_per_minute', 'key' => 'web_lead.rate_limit_per_minute', 'label' => 'Giới hạn request/phút', 'type' => 'integer', 'default' => config('services.web_lead.rate_limit_per_minute', 60), 'sort_order' => 490],
                     ['state' => 'web_lead_realtime_notification_enabled', 'key' => 'web_lead.realtime_notification_enabled', 'label' => 'Bật thông báo realtime khi có web lead mới', 'type' => 'boolean', 'default' => false, 'sort_order' => 492],
                     ['state' => 'web_lead_realtime_notification_roles', 'key' => 'web_lead.realtime_notification_roles', 'label' => 'Nhóm quyền nhận thông báo realtime', 'type' => 'roles', 'default' => ['CSKH'], 'options' => $this->roleOptions(), 'sort_order' => 493],
+                    ['state' => 'web_lead_internal_email_enabled', 'key' => 'web_lead.internal_email_enabled', 'label' => 'Bật email nội bộ khi có web lead mới', 'type' => 'boolean', 'default' => false, 'sort_order' => 494],
+                    ['state' => 'web_lead_internal_email_recipient_roles', 'key' => 'web_lead.internal_email_recipient_roles', 'label' => 'Nhóm quyền nhận email nội bộ', 'type' => 'roles', 'default' => ['CSKH'], 'options' => $this->roleOptions(), 'sort_order' => 495],
+                    ['state' => 'web_lead_internal_email_recipient_emails', 'key' => 'web_lead.internal_email_recipient_emails', 'label' => 'Mailbox nhận nội bộ (mỗi dòng một email)', 'type' => 'textarea', 'default' => '', 'sort_order' => 496],
+                    ['state' => 'web_lead_internal_email_subject_prefix', 'key' => 'web_lead.internal_email_subject_prefix', 'label' => 'Prefix subject email nội bộ', 'type' => 'text', 'default' => '[CRM Lead]', 'sort_order' => 497],
+                    ['state' => 'web_lead_internal_email_queue', 'key' => 'web_lead.internal_email_queue', 'label' => 'Tên queue email nội bộ', 'type' => 'text', 'default' => 'web-lead-mail', 'sort_order' => 498],
+                    ['state' => 'web_lead_internal_email_max_attempts', 'key' => 'web_lead.internal_email_max_attempts', 'label' => 'Số lần retry tối đa', 'type' => 'integer', 'default' => 5, 'sort_order' => 499],
+                    ['state' => 'web_lead_internal_email_retry_delay_minutes', 'key' => 'web_lead.internal_email_retry_delay_minutes', 'label' => 'Khoảng cách retry (phút)', 'type' => 'integer', 'default' => 10, 'sort_order' => 500],
+                    ['state' => 'web_lead_internal_email_smtp_host', 'key' => 'web_lead.internal_email_smtp_host', 'label' => 'SMTP host', 'type' => 'text', 'default' => '', 'sort_order' => 501],
+                    ['state' => 'web_lead_internal_email_smtp_port', 'key' => 'web_lead.internal_email_smtp_port', 'label' => 'SMTP port', 'type' => 'integer', 'default' => 587, 'sort_order' => 502],
+                    ['state' => 'web_lead_internal_email_smtp_username', 'key' => 'web_lead.internal_email_smtp_username', 'label' => 'SMTP username', 'type' => 'text', 'default' => '', 'sort_order' => 503],
+                    ['state' => 'web_lead_internal_email_smtp_password', 'key' => 'web_lead.internal_email_smtp_password', 'label' => 'SMTP password', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 504],
+                    [
+                        'state' => 'web_lead_internal_email_smtp_scheme',
+                        'key' => 'web_lead.internal_email_smtp_scheme',
+                        'label' => 'SMTP scheme',
+                        'type' => 'select',
+                        'default' => 'tls',
+                        'options' => [
+                            'tls' => 'TLS',
+                            'ssl' => 'SSL',
+                            'none' => 'Không mã hóa',
+                        ],
+                        'sort_order' => 505,
+                    ],
+                    ['state' => 'web_lead_internal_email_smtp_timeout_seconds', 'key' => 'web_lead.internal_email_smtp_timeout_seconds', 'label' => 'SMTP timeout (giây)', 'type' => 'integer', 'default' => 10, 'sort_order' => 506],
+                    ['state' => 'web_lead_internal_email_from_address', 'key' => 'web_lead.internal_email_from_address', 'label' => 'From address', 'type' => 'email', 'default' => '', 'sort_order' => 507],
+                    ['state' => 'web_lead_internal_email_from_name', 'key' => 'web_lead.internal_email_from_name', 'label' => 'From name', 'type' => 'text', 'default' => config('app.name', 'Dental CRM'), 'sort_order' => 508],
                     ['state' => 'web_lead_retention_days', 'key' => 'web_lead.retention_days', 'label' => 'Giữ log web lead ingestion (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::webLeadOperationalRetentionDays(), 'sort_order' => 498],
                 ],
             ],
@@ -657,6 +684,57 @@ class IntegrationSettings extends Page
                     continue;
                 }
 
+                if (($field['key'] ?? null) === 'web_lead.internal_email_max_attempts') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:10'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.internal_email_retry_delay_minutes') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:240'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.internal_email_smtp_port') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:1', 'max:65535'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.internal_email_smtp_timeout_seconds') {
+                    $rules[$attribute] = ['nullable', 'integer', 'min:3', 'max:120'];
+
+                    continue;
+                }
+
+                if (($field['key'] ?? null) === 'web_lead.internal_email_recipient_emails') {
+                    $rules[$attribute] = [
+                        'nullable',
+                        'string',
+                        'max:4000',
+                        function (string $attribute, mixed $value, \Closure $fail): void {
+                            $emails = preg_split('/[\r\n,;]+/', (string) $value) ?: [];
+
+                            foreach ($emails as $email) {
+                                $trimmed = trim((string) $email);
+
+                                if ($trimmed === '') {
+                                    continue;
+                                }
+
+                                if (filter_var($trimmed, FILTER_VALIDATE_EMAIL) === false) {
+                                    $fail('Danh sách mailbox nội bộ chứa email không hợp lệ: '.$trimmed);
+
+                                    return;
+                                }
+                            }
+                        },
+                    ];
+
+                    continue;
+                }
+
                 if (($field['type'] ?? null) === 'roles') {
                     $rules[$attribute] = ['array'];
                     $rules["{$attribute}.*"] = ['string', Rule::exists('roles', 'name')];
@@ -672,6 +750,7 @@ class IntegrationSettings extends Page
                     'color' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
                     'json' => ['nullable', 'json'],
                     'select' => ['required', Rule::in(array_keys($field['options'] ?? []))],
+                    'textarea' => ['nullable', 'string', 'max:4000'],
                     default => ['nullable', 'string', 'max:3000'],
                 };
             }
@@ -1134,7 +1213,7 @@ class IntegrationSettings extends Page
     protected function valueTypeForField(array $field): string
     {
         return match ($field['type']) {
-            'url', 'email', 'select', 'color' => 'text',
+            'url', 'email', 'select', 'color', 'textarea' => 'text',
             'roles' => 'json',
             default => $field['type'],
         };

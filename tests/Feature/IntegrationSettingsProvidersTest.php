@@ -85,6 +85,34 @@ it('exposes web lead realtime notification toggle and role selector fields', fun
         ->toContain('Bật thông báo realtime khi có web lead mới');
 });
 
+it('exposes web lead internal email runtime fields in integration settings', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+    $webLeadProvider = $providers->firstWhere('group', 'web_lead');
+
+    expect($webLeadProvider)->not->toBeNull();
+
+    $webLeadFields = collect($webLeadProvider['fields'] ?? [])
+        ->keyBy('key');
+
+    expect($webLeadFields->get('web_lead.internal_email_enabled')['type'] ?? null)->toBe('boolean')
+        ->and($webLeadFields->get('web_lead.internal_email_recipient_roles')['type'] ?? null)->toBe('roles')
+        ->and($webLeadFields->get('web_lead.internal_email_recipient_emails')['type'] ?? null)->toBe('textarea')
+        ->and($webLeadFields->get('web_lead.internal_email_smtp_scheme')['type'] ?? null)->toBe('select')
+        ->and($webLeadFields->has('web_lead.internal_email_from_address'))->toBeTrue()
+        ->and($webLeadFields->has('web_lead.internal_email_from_name'))->toBeTrue();
+
+    $html = Livewire::test(IntegrationSettings::class)->html();
+
+    expect($html)
+        ->toContain('wire:model.live="settings.web_lead_internal_email_recipient_roles"')
+        ->toContain('wire:model.blur="settings.web_lead_internal_email_recipient_emails"')
+        ->toContain('Mailbox nhận nội bộ (mỗi dòng một email)')
+        ->toContain('SMTP host')
+        ->toContain('SMTP password')
+        ->toContain('From address');
+});
+
 it('exposes secret rotation grace window fields for inbound integrations', function (): void {
     $page = app(IntegrationSettings::class);
     $providers = collect($page->getProviders());

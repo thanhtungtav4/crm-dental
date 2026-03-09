@@ -14,6 +14,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Payments\PaymentResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Resources\WebLeadEmailDeliveries\WebLeadEmailDeliveryResource;
 use App\Filament\Resources\ZnsCampaigns\ZnsCampaignResource;
 use App\Models\AuditLog;
 use App\Models\EmrSyncEvent;
@@ -26,6 +27,7 @@ use App\Models\OperationalKpiAlert;
 use App\Models\Payment;
 use App\Models\ReportSnapshot;
 use App\Models\User;
+use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use App\Models\ZnsAutomationEvent;
@@ -483,6 +485,19 @@ class OpsControlCenterService
                 description: 'Lead ingestion log quá hạn retention.',
             ),
             $this->integrationRetentionCandidate(
+                label: 'Web lead internal email deliveries',
+                retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
+                total: WebLeadEmailDelivery::query()
+                    ->whereIn('status', [
+                        WebLeadEmailDelivery::STATUS_SENT,
+                        WebLeadEmailDelivery::STATUS_DEAD,
+                        WebLeadEmailDelivery::STATUS_SKIPPED,
+                    ])
+                    ->where('updated_at', '<', now()->subDays(ClinicRuntimeSettings::webLeadOperationalRetentionDays()))
+                    ->count(),
+                description: 'Delivery log email nội bộ đã terminal và quá hạn review window.',
+            ),
+            $this->integrationRetentionCandidate(
                 label: 'Zalo webhook',
                 retentionDays: ClinicRuntimeSettings::zaloWebhookRetentionDays(),
                 total: $this->zaloWebhookRetentionCandidates(),
@@ -528,6 +543,18 @@ class OpsControlCenterService
                     'label' => 'Prune backlog',
                     'value' => $retentionBacklog,
                 ],
+                [
+                    'label' => 'Lead mail retryable',
+                    'value' => WebLeadEmailDelivery::query()
+                        ->where('status', WebLeadEmailDelivery::STATUS_RETRYABLE)
+                        ->count(),
+                ],
+                [
+                    'label' => 'Lead mail dead',
+                    'value' => WebLeadEmailDelivery::query()
+                        ->where('status', WebLeadEmailDelivery::STATUS_DEAD)
+                        ->count(),
+                ],
             ],
             'active_grace_rotations' => $activeGraceRotations,
             'expired_grace_rotations' => $expiredGraceRotations,
@@ -537,6 +564,11 @@ class OpsControlCenterService
                     'label' => 'Cài đặt tích hợp',
                     'description' => 'Runtime settings, secret rotation và audit log integration.',
                     'url' => IntegrationSettings::getUrl(),
+                ],
+                [
+                    'label' => 'Delivery mail web lead',
+                    'description' => 'Triage backlog mail nội bộ, resend và theo dõi trạng thái gửi.',
+                    'url' => WebLeadEmailDeliveryResource::getUrl('index'),
                 ],
             ],
         ];

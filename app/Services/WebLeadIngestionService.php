@@ -18,6 +18,7 @@ class WebLeadIngestionService
 {
     public function __construct(
         protected WebLeadRealtimeNotificationService $webLeadRealtimeNotificationService,
+        protected WebLeadInternalEmailNotificationService $webLeadInternalEmailNotificationService,
         protected ZnsAutomationEventPublisher $znsAutomationEventPublisher,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
     ) {}
@@ -182,6 +183,11 @@ class WebLeadIngestionService
             );
 
             if ($created) {
+                $this->webLeadInternalEmailNotificationService->queueForNewLead(
+                    ingestion: $ingestion,
+                    customer: $customer,
+                );
+
                 $this->znsAutomationEventPublisher->publishLeadWelcomeForWebLead(
                     customer: $customer,
                     requestId: $requestId,

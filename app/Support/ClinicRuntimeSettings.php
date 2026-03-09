@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\ClinicSetting;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class ClinicRuntimeSettings
 {
@@ -299,6 +300,144 @@ class ClinicRuntimeSettings
             ->unique()
             ->values()
             ->all();
+    }
+
+    public static function webLeadInternalEmailEnabled(): bool
+    {
+        return static::boolean('web_lead.internal_email_enabled', false);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function webLeadInternalEmailRecipientRoles(): array
+    {
+        $value = ClinicSetting::getValue('web_lead.internal_email_recipient_roles', ['CSKH']);
+
+        return collect(is_array($value) ? $value : [])
+            ->filter(static fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+            ->map(static fn (string $item): string => trim($item))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function webLeadInternalEmailRecipientEmails(): array
+    {
+        $value = static::get('web_lead.internal_email_recipient_emails', '');
+
+        if (is_array($value)) {
+            $lines = $value;
+        } else {
+            $lines = preg_split('/[\r\n,;]+/', (string) $value) ?: [];
+        }
+
+        return collect($lines)
+            ->map(static fn (mixed $item): string => trim((string) $item))
+            ->filter(static fn (string $item): bool => $item !== '' && filter_var($item, FILTER_VALIDATE_EMAIL) !== false)
+            ->map(static fn (string $item): string => Str::lower($item))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function webLeadInternalEmailSubjectPrefix(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_subject_prefix', '[CRM Lead]'));
+    }
+
+    public static function webLeadInternalEmailQueue(): string
+    {
+        $queue = trim((string) static::get('web_lead.internal_email_queue', 'web-lead-mail'));
+
+        return $queue !== '' ? $queue : 'web-lead-mail';
+    }
+
+    public static function webLeadInternalEmailMaxAttempts(): int
+    {
+        return max(1, min(10, static::integer('web_lead.internal_email_max_attempts', 5)));
+    }
+
+    public static function webLeadInternalEmailRetryDelayMinutes(): int
+    {
+        return max(1, min(240, static::integer('web_lead.internal_email_retry_delay_minutes', 10)));
+    }
+
+    public static function webLeadInternalEmailSmtpHost(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_smtp_host', ''));
+    }
+
+    public static function webLeadInternalEmailSmtpPort(): int
+    {
+        return max(1, min(65535, static::integer('web_lead.internal_email_smtp_port', 587)));
+    }
+
+    public static function webLeadInternalEmailSmtpUsername(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_smtp_username', ''));
+    }
+
+    public static function webLeadInternalEmailSmtpPassword(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_smtp_password', ''));
+    }
+
+    public static function webLeadInternalEmailSmtpScheme(): ?string
+    {
+        $scheme = Str::lower(trim((string) static::get('web_lead.internal_email_smtp_scheme', 'tls')));
+
+        return match ($scheme) {
+            '', 'none', 'null' => null,
+            'ssl' => 'ssl',
+            default => 'tls',
+        };
+    }
+
+    public static function webLeadInternalEmailTimeoutSeconds(): int
+    {
+        return max(3, min(120, static::integer('web_lead.internal_email_smtp_timeout_seconds', 10)));
+    }
+
+    public static function webLeadInternalEmailFromAddress(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_from_address', ''));
+    }
+
+    public static function webLeadInternalEmailFromName(): string
+    {
+        return trim((string) static::get('web_lead.internal_email_from_name', config('app.name', 'Dental CRM')));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function webLeadInternalEmailMailerConfig(): array
+    {
+        $host = static::webLeadInternalEmailSmtpHost();
+        $fromAddress = static::webLeadInternalEmailFromAddress();
+
+        if ($host === '') {
+            throw new \RuntimeException('Missing web lead internal email SMTP host.');
+        }
+
+        if ($fromAddress === '' || filter_var($fromAddress, FILTER_VALIDATE_EMAIL) === false) {
+            throw new \RuntimeException('Web lead internal email from address chưa hợp lệ.');
+        }
+
+        return [
+            'transport' => 'smtp',
+            'scheme' => static::webLeadInternalEmailSmtpScheme(),
+            'host' => $host,
+            'port' => static::webLeadInternalEmailSmtpPort(),
+            'username' => static::webLeadInternalEmailSmtpUsername(),
+            'password' => static::webLeadInternalEmailSmtpPassword(),
+            'timeout' => static::webLeadInternalEmailTimeoutSeconds(),
+            'local_domain' => parse_url((string) config('app.url', 'https://crm.test'), PHP_URL_HOST) ?: 'crm.test',
+        ];
     }
 
     public static function webLeadOperationalRetentionDays(): int

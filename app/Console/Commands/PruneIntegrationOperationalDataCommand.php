@@ -7,6 +7,7 @@ use App\Models\EmrSyncEvent;
 use App\Models\EmrSyncLog;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
+use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use App\Support\ActionGate;
@@ -40,15 +41,17 @@ class PruneIntegrationOperationalDataCommand extends Command
                 'dry_run' => $dryRun,
                 'retention_days' => $retentionDays,
                 'web_lead' => $this->pruneWebLeadIngestions($retentionDays['web_lead'], $dryRun),
+                'web_lead_email' => $this->pruneWebLeadEmailDeliveries($retentionDays['web_lead'], $dryRun),
                 'zalo_webhook' => $this->pruneZaloWebhookEvents($retentionDays['zalo_webhook'], $dryRun),
                 'emr' => $this->pruneEmrSyncData($retentionDays['emr'], $dryRun),
                 'google_calendar' => $this->pruneGoogleCalendarSyncData($retentionDays['google_calendar'], $dryRun),
             ];
 
             $this->line(sprintf(
-                'dry_run=%s web_lead=%d zalo_webhook=%d emr_logs=%d emr_events=%d google_logs=%d google_events=%d',
+                'dry_run=%s web_lead=%d web_lead_email=%d zalo_webhook=%d emr_logs=%d emr_events=%d google_logs=%d google_events=%d',
                 $dryRun ? 'yes' : 'no',
                 (int) data_get($summary, 'web_lead.total', 0),
+                (int) data_get($summary, 'web_lead_email.total', 0),
                 (int) data_get($summary, 'zalo_webhook.total', 0),
                 (int) data_get($summary, 'emr.logs', 0),
                 (int) data_get($summary, 'emr.events', 0),
@@ -151,6 +154,33 @@ class PruneIntegrationOperationalDataCommand extends Command
             'retention_days' => $retentionDays,
             'cutoff' => $cutoff->toDateTimeString(),
             'total' => $total,
+        ];
+
+        if (! $dryRun) {
+            $summary['deleted'] = $query->delete();
+        }
+
+        return $summary;
+    }
+
+    /**
+     * @return array{retention_days:int,cutoff:string,total:int,deleted?:int}
+     */
+    protected function pruneWebLeadEmailDeliveries(int $retentionDays, bool $dryRun): array
+    {
+        $cutoff = now()->subDays($retentionDays);
+        $query = WebLeadEmailDelivery::query()
+            ->whereIn('status', [
+                WebLeadEmailDelivery::STATUS_SENT,
+                WebLeadEmailDelivery::STATUS_DEAD,
+                WebLeadEmailDelivery::STATUS_SKIPPED,
+            ])
+            ->where('updated_at', '<', $cutoff);
+
+        $summary = [
+            'retention_days' => $retentionDays,
+            'cutoff' => $cutoff->toDateTimeString(),
+            'total' => (clone $query)->count(),
         ];
 
         if (! $dryRun) {
