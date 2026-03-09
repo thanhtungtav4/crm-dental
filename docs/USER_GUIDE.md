@@ -8,6 +8,7 @@ Tài liệu này dành cho người dùng vận hành hằng ngày, không dành
 - Nếu bạn là lễ tân, tư vấn, CSKH: xem [Hướng dẫn Lễ tân / CSKH](USER_GUIDE_FRONTDESK_CSKH.md)
 - Nếu bạn là bác sĩ: xem [Hướng dẫn Bác sĩ](USER_GUIDE_DOCTOR.md)
 - Nếu bạn là quản lý chi nhánh hoặc admin: xem [Hướng dẫn Quản lý / Admin](USER_GUIDE_MANAGER_ADMIN.md)
+- Nếu bạn đang làm nghiệm thu nội bộ: xem [Checklist UAT theo vai trò](UAT_CHECKLIST_BY_ROLE.md)
 
 ## Hệ thống này dùng để làm gì
 
@@ -42,3 +43,4 @@ CRM này hỗ trợ phòng khám nha khoa quản lý toàn bộ luồng:
 - [Lễ tân / CSKH](USER_GUIDE_FRONTDESK_CSKH.md)
 - [Bác sĩ](USER_GUIDE_DOCTOR.md)
 - [Quản lý / Admin](USER_GUIDE_MANAGER_ADMIN.md)
+- [Checklist UAT theo vai trò](UAT_CHECKLIST_BY_ROLE.md)
