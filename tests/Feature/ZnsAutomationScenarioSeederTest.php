@@ -13,7 +13,7 @@ use function Pest\Laravel\seed;
 it('creates a reclaimable zns automation event that syncs successfully after stale lock recovery', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     Http::fake([
@@ -47,7 +47,7 @@ it('creates a reclaimable zns automation event that syncs successfully after sta
 it('creates zns prune scenarios that delete old events and deliveries while preserving fresh records', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     $deadEventId = ZnsAutomationEvent::query()

@@ -31,16 +31,16 @@ class PatientScenarioSeeder extends Seeder
             ->pluck('id', 'code');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'doctor.cg@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
-                'cskh.cg@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'doctor.cg@demo.ident.test',
+                'cskh.q1@demo.ident.test',
+                'cskh.cg@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
         $canonicalBranchId = $branchIdsByCode->get('HCM-Q1');
         $mergedBranchId = $branchIdsByCode->get('HN-CG');
-        $adminId = $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
+        $adminId = $userIdsByEmail->get('admin@demo.ident.test');
 
         if (! is_numeric($canonicalBranchId) || ! is_numeric($mergedBranchId) || ! is_numeric($adminId)) {
             return;
@@ -50,9 +50,9 @@ class PatientScenarioSeeder extends Seeder
             branchId: (int) $canonicalBranchId,
             fullName: 'QA MPI Canonical Patient',
             phone: self::DUPLICATE_PHONE,
-            email: 'qa.mpi.canonical@demo.nhakhoaanphuc.test',
-            assignedTo: is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+            email: 'qa.mpi.canonical@demo.ident.test',
+            assignedTo: is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
                 : null,
             sourceDetail: 'seed:patient-scenario:canonical',
             actorId: (int) $adminId,
@@ -62,9 +62,9 @@ class PatientScenarioSeeder extends Seeder
             branchId: (int) $mergedBranchId,
             fullName: 'QA MPI Merged Patient',
             phone: self::DUPLICATE_PHONE,
-            email: 'qa.mpi.merged@demo.nhakhoaanphuc.test',
-            assignedTo: is_numeric($userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test')
+            email: 'qa.mpi.merged@demo.ident.test',
+            assignedTo: is_numeric($userIdsByEmail->get('cskh.cg@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('cskh.cg@demo.ident.test')
                 : null,
             sourceDetail: 'seed:patient-scenario:merged',
             actorId: (int) $adminId,
@@ -76,12 +76,12 @@ class PatientScenarioSeeder extends Seeder
             branchId: (int) $canonicalBranchId,
             fullName: 'QA MPI Canonical Patient',
             phone: self::DUPLICATE_PHONE,
-            email: 'qa.mpi.canonical@demo.nhakhoaanphuc.test',
-            doctorId: is_numeric($userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test')
+            email: 'qa.mpi.canonical@demo.ident.test',
+            doctorId: is_numeric($userIdsByEmail->get('doctor.cg@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('doctor.cg@demo.ident.test')
                 : null,
-            ownerStaffId: is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+            ownerStaffId: is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
                 : null,
             actorId: (int) $adminId,
         );
@@ -92,12 +92,12 @@ class PatientScenarioSeeder extends Seeder
             branchId: (int) $mergedBranchId,
             fullName: 'QA MPI Merged Patient',
             phone: self::DUPLICATE_PHONE,
-            email: 'qa.mpi.merged@demo.nhakhoaanphuc.test',
-            doctorId: is_numeric($userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test')
+            email: 'qa.mpi.merged@demo.ident.test',
+            doctorId: is_numeric($userIdsByEmail->get('doctor.cg@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('doctor.cg@demo.ident.test')
                 : null,
-            ownerStaffId: is_numeric($userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test'))
-                ? (int) $userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test')
+            ownerStaffId: is_numeric($userIdsByEmail->get('cskh.cg@demo.ident.test'))
+                ? (int) $userIdsByEmail->get('cskh.cg@demo.ident.test')
                 : null,
             actorId: (int) $adminId,
         );
@@ -107,11 +107,11 @@ class PatientScenarioSeeder extends Seeder
             [
                 'customer_id' => $mergedPatient->customer_id,
                 'patient_id' => $mergedPatient->id,
-                'doctor_id' => is_numeric($userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test'))
-                    ? (int) $userIdsByEmail->get('doctor.cg@demo.nhakhoaanphuc.test')
+                'doctor_id' => is_numeric($userIdsByEmail->get('doctor.cg@demo.ident.test'))
+                    ? (int) $userIdsByEmail->get('doctor.cg@demo.ident.test')
                     : null,
-                'assigned_to' => is_numeric($userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test'))
-                    ? (int) $userIdsByEmail->get('cskh.cg@demo.nhakhoaanphuc.test')
+                'assigned_to' => is_numeric($userIdsByEmail->get('cskh.cg@demo.ident.test'))
+                    ? (int) $userIdsByEmail->get('cskh.cg@demo.ident.test')
                     : null,
                 'branch_id' => $mergedPatient->first_branch_id,
                 'date' => self::mergeScenarioAppointmentAt(),

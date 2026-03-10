@@ -9,9 +9,9 @@ use Illuminate\Database\Seeder;
 
 class GovernanceScenarioSeeder extends Seeder
 {
-    public const ASSIGNED_DOCTOR_EMAIL = 'qa.gov.assigned@demo.nhakhoaanphuc.test';
+    public const ASSIGNED_DOCTOR_EMAIL = 'qa.gov.assigned@demo.ident.test';
 
-    public const HIDDEN_USER_EMAIL = 'qa.gov.hidden@demo.nhakhoaanphuc.test';
+    public const HIDDEN_USER_EMAIL = 'qa.gov.hidden@demo.ident.test';
 
     public function run(): void
     {

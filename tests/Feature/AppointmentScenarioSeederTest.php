@@ -12,7 +12,7 @@ use function Pest\Laravel\seed;
 it('creates appointment scenarios for overbooking approval and future temporal guards', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $manager = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->firstOrFail();
+    $manager = User::query()->where('email', 'manager.q1@demo.ident.test')->firstOrFail();
     $this->actingAs($manager);
 
     $baseAppointment = Appointment::query()

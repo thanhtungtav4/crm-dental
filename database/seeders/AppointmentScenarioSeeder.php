@@ -26,29 +26,29 @@ class AppointmentScenarioSeeder extends Seeder
         $branchId = Branch::query()->where('code', 'HCM-Q1')->value('id');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'doctor.q1@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'doctor.q1@demo.ident.test',
+                'cskh.q1@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
-        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.nhakhoaanphuc.test'))) {
+        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.ident.test'))) {
             return;
         }
 
-        $adminId = (int) $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
-        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test')
+        $adminId = (int) $userIdsByEmail->get('admin@demo.ident.test');
+        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('doctor.q1@demo.ident.test')
             : null;
-        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
             : null;
 
         $baseCustomer = $this->upsertCustomer(
             branchId: (int) $branchId,
             fullName: 'QA Appointment Base',
             phone: '0909001091',
-            email: 'qa.appointment.base@demo.nhakhoaanphuc.test',
+            email: 'qa.appointment.base@demo.ident.test',
             sourceDetail: 'seed:appointment-scenario:base',
             assignedTo: $frontDeskId,
             actorId: $adminId,
@@ -57,7 +57,7 @@ class AppointmentScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Appointment Overbook',
             phone: '0909001092',
-            email: 'qa.appointment.overbook@demo.nhakhoaanphuc.test',
+            email: 'qa.appointment.overbook@demo.ident.test',
             sourceDetail: 'seed:appointment-scenario:overbook',
             assignedTo: $frontDeskId,
             actorId: $adminId,
@@ -69,7 +69,7 @@ class AppointmentScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Appointment Base',
             phone: '0909001091',
-            email: 'qa.appointment.base@demo.nhakhoaanphuc.test',
+            email: 'qa.appointment.base@demo.ident.test',
             doctorId: $doctorId,
             ownerStaffId: $frontDeskId,
             actorId: $adminId,
@@ -80,7 +80,7 @@ class AppointmentScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Appointment Overbook',
             phone: '0909001092',
-            email: 'qa.appointment.overbook@demo.nhakhoaanphuc.test',
+            email: 'qa.appointment.overbook@demo.ident.test',
             doctorId: $doctorId,
             ownerStaffId: $frontDeskId,
             actorId: $adminId,

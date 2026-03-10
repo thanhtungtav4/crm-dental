@@ -32,8 +32,8 @@ it('allows admin and manager personas to access the ops control center', functio
         ->assertSee('ZNS triage cockpit')
         ->assertSee('Readiness signoff fixture');
 })->with([
-    'admin' => 'admin@demo.nhakhoaanphuc.test',
-    'manager' => 'manager.q1@demo.nhakhoaanphuc.test',
+    'admin' => 'admin@demo.ident.test',
+    'manager' => 'manager.q1@demo.ident.test',
 ]);
 
 it('blocks doctor and cskh personas from accessing the ops control center', function (string $email): void {
@@ -47,24 +47,24 @@ it('blocks doctor and cskh personas from accessing the ops control center', func
         ->get(OpsControlCenter::getUrl())
         ->assertForbidden();
 })->with([
-    'doctor' => 'doctor.q1@demo.nhakhoaanphuc.test',
-    'cskh' => 'cskh.q1@demo.nhakhoaanphuc.test',
+    'doctor' => 'doctor.q1@demo.ident.test',
+    'cskh' => 'cskh.q1@demo.ident.test',
 ]);
 
 it('renders local ops fixtures, seeded signoff, and smoke commands', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
-        ->where('email', 'admin@demo.nhakhoaanphuc.test')
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($admin)
         ->get(OpsControlCenter::getUrl())
         ->assertOk()
-        ->assertSee('automation.bot@demo.nhakhoaanphuc.test')
+        ->assertSee('automation.bot@demo.ident.test')
         ->assertSee('Backup pass fixture')
         ->assertSee('Readiness pass fixture')
-        ->assertSee('manager.q1@demo.nhakhoaanphuc.test')
+        ->assertSee('manager.q1@demo.ident.test')
         ->assertSee('REL-DEMO-OPS-001')
         ->assertSee('ops:check-backup-health')
         ->assertSee('ops:verify-production-readiness-report')
@@ -77,7 +77,7 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
-        ->where('email', 'admin@demo.nhakhoaanphuc.test')
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($admin)
@@ -111,15 +111,15 @@ it('renders finance watchlists for admin and manager branch scope', function (st
         ->assertSee(FinanceScenarioSeeder::INSTALLMENT_PLAN_CODE)
         ->assertSee('QA Finance Installment');
 })->with([
-    'admin' => 'admin@demo.nhakhoaanphuc.test',
-    'manager' => 'manager.q1@demo.nhakhoaanphuc.test',
+    'admin' => 'admin@demo.ident.test',
+    'manager' => 'manager.q1@demo.ident.test',
 ]);
 
 it('shows governance details for admin', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
-        ->where('email', 'admin@demo.nhakhoaanphuc.test')
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($admin)
@@ -134,7 +134,7 @@ it('keeps manager on the role-limited governance overview', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $manager = User::query()
-        ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'manager.q1@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($manager)

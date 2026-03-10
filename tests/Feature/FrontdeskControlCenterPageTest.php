@@ -28,16 +28,16 @@ it('allows admin, manager, and cskh personas to access the frontdesk control cen
         ->assertSee('Khách hàng')
         ->assertSee('Queue ưu tiên');
 })->with([
-    'admin' => 'admin@demo.nhakhoaanphuc.test',
-    'manager' => 'manager.q1@demo.nhakhoaanphuc.test',
-    'cskh' => 'cskh.q1@demo.nhakhoaanphuc.test',
+    'admin' => 'admin@demo.ident.test',
+    'manager' => 'manager.q1@demo.ident.test',
+    'cskh' => 'cskh.q1@demo.ident.test',
 ]);
 
 it('blocks doctor persona from accessing the frontdesk control center', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $doctor = User::query()
-        ->where('email', 'doctor.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'doctor.q1@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($doctor)
@@ -49,7 +49,7 @@ it('renders seeded lead, appointment, and care rows for the q1 frontdesk persona
     seed(LocalDemoDataSeeder::class);
 
     $cskh = User::query()
-        ->where('email', 'cskh.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'cskh.q1@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($cskh)

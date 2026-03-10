@@ -14,17 +14,17 @@ it('pre-enrolls sensitive demo accounts for mfa and exposes cskh as front-office
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
-        ->where('email', 'admin@demo.nhakhoaanphuc.test')
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail()
         ->load('breezySession');
 
     $manager = User::query()
-        ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'manager.q1@demo.ident.test')
         ->firstOrFail()
         ->load('breezySession');
 
     $cskh = User::query()
-        ->where('email', 'cskh.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'cskh.q1@demo.ident.test')
         ->firstOrFail();
 
     expect($admin->two_factor_confirmed_at)->not->toBeNull()

@@ -14,7 +14,7 @@ use function Pest\Laravel\seed;
 it('creates supplier scenarios for workflow progression and inactive supplier rejection', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $manager = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->firstOrFail();
+    $manager = User::query()->where('email', 'manager.q1@demo.ident.test')->firstOrFail();
     $this->actingAs($manager);
 
     $order = FactoryOrder::query()->where('order_no', SupplierScenarioSeeder::FACTORY_ORDER_NO)->firstOrFail();

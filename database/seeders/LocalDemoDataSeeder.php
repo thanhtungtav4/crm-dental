@@ -42,7 +42,7 @@ class LocalDemoDataSeeder extends Seeder
      * @var array<string, array<int, string>>
      */
     public const DEMO_MFA_RECOVERY_CODES = [
-        'admin@demo.nhakhoaanphuc.test' => [
+        'admin@demo.ident.test' => [
             'qa-admin-0001',
             'qa-admin-0002',
             'qa-admin-0003',
@@ -52,7 +52,7 @@ class LocalDemoDataSeeder extends Seeder
             'qa-admin-0007',
             'qa-admin-0008',
         ],
-        'manager.q1@demo.nhakhoaanphuc.test' => [
+        'manager.q1@demo.ident.test' => [
             'qa-q1-mgr-0001',
             'qa-q1-mgr-0002',
             'qa-q1-mgr-0003',
@@ -62,7 +62,7 @@ class LocalDemoDataSeeder extends Seeder
             'qa-q1-mgr-0007',
             'qa-q1-mgr-0008',
         ],
-        'manager.cg@demo.nhakhoaanphuc.test' => [
+        'manager.cg@demo.ident.test' => [
             'qa-cg-mgr-0001',
             'qa-cg-mgr-0002',
             'qa-cg-mgr-0003',
@@ -72,7 +72,7 @@ class LocalDemoDataSeeder extends Seeder
             'qa-cg-mgr-0007',
             'qa-cg-mgr-0008',
         ],
-        'manager.hc@demo.nhakhoaanphuc.test' => [
+        'manager.hc@demo.ident.test' => [
             'qa-hc-mgr-0001',
             'qa-hc-mgr-0002',
             'qa-hc-mgr-0003',
@@ -140,21 +140,21 @@ class LocalDemoDataSeeder extends Seeder
         $definitions = [
             [
                 'code' => 'HCM-Q1',
-                'name' => 'Nha khoa An Phuc Quan 1',
+                'name' => 'Nha khoa Ident Quan 1',
                 'address' => '35 Nguyen Binh Khiem, Ben Nghe, Quan 1, TP.HCM',
                 'phone' => '02836225501',
                 'active' => true,
             ],
             [
                 'code' => 'HN-CG',
-                'name' => 'Nha khoa An Phuc Cau Giay',
+                'name' => 'Nha khoa Ident Cau Giay',
                 'address' => '88 Tran Thai Tong, Dich Vong Hau, Cau Giay, Ha Noi',
                 'phone' => '02437668801',
                 'active' => true,
             ],
             [
                 'code' => 'DN-HC',
-                'name' => 'Nha khoa An Phuc Hai Chau',
+                'name' => 'Nha khoa Ident Hai Chau',
                 'address' => '215 Nguyen Van Linh, Nam Duong, Hai Chau, Da Nang',
                 'phone' => '02363888801',
                 'active' => true,
@@ -175,7 +175,7 @@ class LocalDemoDataSeeder extends Seeder
 
         $accounts = [
             [
-                'email' => 'admin@demo.nhakhoaanphuc.test',
+                'email' => 'admin@demo.ident.test',
                 'name' => 'Quan tri he thong',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000001',
@@ -183,7 +183,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'automation.bot@demo.nhakhoaanphuc.test',
+                'email' => 'automation.bot@demo.ident.test',
                 'name' => 'Automation Service Bot',
                 'branch_id' => null,
                 'phone' => null,
@@ -191,7 +191,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'manager.q1@demo.nhakhoaanphuc.test',
+                'email' => 'manager.q1@demo.ident.test',
                 'name' => 'Quan ly Quan 1',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000011',
@@ -199,7 +199,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'manager.cg@demo.nhakhoaanphuc.test',
+                'email' => 'manager.cg@demo.ident.test',
                 'name' => 'Quan ly Cau Giay',
                 'branch_id' => $branchIdsByCode['HN-CG'],
                 'phone' => '0909000012',
@@ -207,7 +207,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'manager.hc@demo.nhakhoaanphuc.test',
+                'email' => 'manager.hc@demo.ident.test',
                 'name' => 'Quan ly Hai Chau',
                 'branch_id' => $branchIdsByCode['DN-HC'],
                 'phone' => '0909000013',
@@ -215,7 +215,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'doctor.q1@demo.nhakhoaanphuc.test',
+                'email' => 'doctor.q1@demo.ident.test',
                 'name' => 'Bac si Tran Minh Khoi',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000021',
@@ -223,7 +223,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => 'Implant',
             ],
             [
-                'email' => 'doctor.cg@demo.nhakhoaanphuc.test',
+                'email' => 'doctor.cg@demo.ident.test',
                 'name' => 'Bac si Nguyen Ngoc Lan',
                 'branch_id' => $branchIdsByCode['HN-CG'],
                 'phone' => '0909000022',
@@ -231,7 +231,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => 'Nieng rang',
             ],
             [
-                'email' => 'doctor.hc@demo.nhakhoaanphuc.test',
+                'email' => 'doctor.hc@demo.ident.test',
                 'name' => 'Bac si Le Quoc Bao',
                 'branch_id' => $branchIdsByCode['DN-HC'],
                 'phone' => '0909000023',
@@ -239,7 +239,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => 'Tong quat',
             ],
             [
-                'email' => 'doctor.float@demo.nhakhoaanphuc.test',
+                'email' => 'doctor.float@demo.ident.test',
                 'name' => 'Bac si Tran Phuong Linh',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000024',
@@ -247,7 +247,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => 'Phuc hinh',
             ],
             [
-                'email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'email' => 'cskh.q1@demo.ident.test',
                 'name' => 'Tu van / Le tan Pham Thu Ha',
                 'branch_id' => $branchIdsByCode['HCM-Q1'],
                 'phone' => '0909000031',
@@ -255,7 +255,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'email' => 'cskh.cg@demo.ident.test',
                 'name' => 'Tu van / Le tan Vo Thao My',
                 'branch_id' => $branchIdsByCode['HN-CG'],
                 'phone' => '0909000032',
@@ -263,7 +263,7 @@ class LocalDemoDataSeeder extends Seeder
                 'specialty' => null,
             ],
             [
-                'email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'email' => 'cskh.hc@demo.ident.test',
                 'name' => 'Tu van / Le tan Nguyen Bao Tram',
                 'branch_id' => $branchIdsByCode['DN-HC'],
                 'phone' => '0909000033',
@@ -291,7 +291,7 @@ class LocalDemoDataSeeder extends Seeder
 
         $this->renderSensitiveAccountMfaHints();
 
-        $admin ??= User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+        $admin ??= User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
 
         $this->seedDoctorAssignments($branchIdsByCode, $admin->id);
 
@@ -374,7 +374,7 @@ class LocalDemoDataSeeder extends Seeder
 
     protected function seedDoctorAssignments(Collection $branchIdsByCode, int $adminId): void
     {
-        $doctor = User::query()->where('email', 'doctor.float@demo.nhakhoaanphuc.test')->first();
+        $doctor = User::query()->where('email', 'doctor.float@demo.ident.test')->first();
 
         if (! $doctor instanceof User) {
             return;
@@ -459,8 +459,8 @@ class LocalDemoDataSeeder extends Seeder
                 'assigned_to' => is_numeric($assignedTo) ? (int) $assignedTo : null,
                 'next_follow_up_at' => $row['next_follow_up_at'],
                 'notes' => $row['notes'],
-                'created_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
-                'updated_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'created_by' => $usersByEmail->get('admin@demo.ident.test'),
+                'updated_by' => $usersByEmail->get('admin@demo.ident.test'),
             ]);
             $customer->save();
         }
@@ -518,8 +518,8 @@ class LocalDemoDataSeeder extends Seeder
                 'note' => $row['note'],
                 'status' => $row['status'],
                 'medical_history' => $row['medical_history'],
-                'created_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
-                'updated_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'created_by' => $usersByEmail->get('admin@demo.ident.test'),
+                'updated_by' => $usersByEmail->get('admin@demo.ident.test'),
             ]);
             $patient->save();
 
@@ -528,7 +528,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_id' => $customerGroupIds->get($row['customer_group_code']),
                 'promotion_group_id' => $promotionGroupIds->get($row['promotion_group_code']),
                 'assigned_to' => $usersByEmail->get($row['owner_staff_email']),
-                'updated_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'updated_by' => $usersByEmail->get('admin@demo.ident.test'),
             ]);
         }
     }
@@ -604,8 +604,8 @@ class LocalDemoDataSeeder extends Seeder
         $definitions = [
             [
                 'patient_phone' => '0909123001',
-                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.q1@demo.ident.test',
+                'assigned_to_email' => 'cskh.q1@demo.ident.test',
                 'date' => now()->addDay()->setTime(9, 0),
                 'status' => Appointment::STATUS_CONFIRMED,
                 'duration_minutes' => 60,
@@ -620,8 +620,8 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'patient_phone' => '0909123002',
-                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.q1@demo.ident.test',
+                'assigned_to_email' => 'cskh.q1@demo.ident.test',
                 'date' => now()->subDay()->setTime(18, 30),
                 'status' => Appointment::STATUS_COMPLETED,
                 'duration_minutes' => 90,
@@ -636,8 +636,8 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'patient_phone' => '0912123004',
-                'doctor_email' => 'doctor.float@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.float@demo.ident.test',
+                'assigned_to_email' => 'cskh.cg@demo.ident.test',
                 'date' => now()->addDays(2)->setTime(10, 0),
                 'status' => Appointment::STATUS_SCHEDULED,
                 'duration_minutes' => 45,
@@ -652,8 +652,8 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'patient_phone' => '0912123005',
-                'doctor_email' => 'doctor.cg@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.cg@demo.ident.test',
+                'assigned_to_email' => 'cskh.cg@demo.ident.test',
                 'date' => now()->addDays(5)->setTime(14, 30),
                 'status' => Appointment::STATUS_RESCHEDULED,
                 'duration_minutes' => 60,
@@ -668,8 +668,8 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'patient_phone' => '0935123007',
-                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.hc@demo.ident.test',
+                'assigned_to_email' => 'cskh.hc@demo.ident.test',
                 'date' => now()->subDays(2)->setTime(16, 0),
                 'status' => Appointment::STATUS_NO_SHOW,
                 'duration_minutes' => 45,
@@ -684,8 +684,8 @@ class LocalDemoDataSeeder extends Seeder
             ],
             [
                 'patient_phone' => '0935123008',
-                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
-                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.hc@demo.ident.test',
+                'assigned_to_email' => 'cskh.hc@demo.ident.test',
                 'date' => now()->addDays(3)->setTime(11, 15),
                 'status' => Appointment::STATUS_CANCELLED,
                 'duration_minutes' => 90,
@@ -724,7 +724,7 @@ class LocalDemoDataSeeder extends Seeder
                 'reschedule_reason' => $definition['reschedule_reason'],
                 'reminder_hours' => $definition['reminder_hours'],
                 'confirmed_at' => $definition['confirmed_at'],
-                'confirmed_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'confirmed_by' => $usersByEmail->get('admin@demo.ident.test'),
                 'is_walk_in' => false,
                 'is_emergency' => false,
                 'is_overbooked' => false,
@@ -750,7 +750,7 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'patient_phone' => '0909123001',
                 'customer_phone' => '0909123001',
-                'user_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'user_email' => 'cskh.q1@demo.ident.test',
                 'care_type' => 'implant_followup',
                 'care_channel' => 'zalo',
                 'care_status' => Note::CARE_STATUS_IN_PROGRESS,
@@ -762,7 +762,7 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'patient_phone' => '0912123005',
                 'customer_phone' => '0912123005',
-                'user_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'user_email' => 'cskh.cg@demo.ident.test',
                 'care_type' => 'orthodontic_followup',
                 'care_channel' => 'call',
                 'care_status' => Note::CARE_STATUS_NEED_FOLLOWUP,
@@ -774,7 +774,7 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'patient_phone' => '0935123007',
                 'customer_phone' => '0935123007',
-                'user_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'user_email' => 'cskh.hc@demo.ident.test',
                 'care_type' => 'no_show_recovery',
                 'care_channel' => 'phone',
                 'care_status' => Note::CARE_STATUS_NOT_STARTED,
@@ -786,7 +786,7 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'patient_phone' => null,
                 'customer_phone' => '0935123009',
-                'user_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'user_email' => 'cskh.hc@demo.ident.test',
                 'care_type' => 'web_lead_followup',
                 'care_channel' => 'zalo',
                 'care_status' => Note::CARE_STATUS_DONE,
@@ -856,7 +856,7 @@ class LocalDemoDataSeeder extends Seeder
             'patient_id' => $patient->id,
             'from_branch_id' => $patient->first_branch_id,
             'to_branch_id' => (int) $toBranchId,
-            'moved_by' => $usersByEmail->get('manager.cg@demo.nhakhoaanphuc.test'),
+            'moved_by' => $usersByEmail->get('manager.cg@demo.ident.test'),
             'note' => 'Ban giao benh nhan cho chi nhanh Da Nang de tiep tuc lich phuc hinh khi cong tac dai ngay.',
         ]);
     }
@@ -970,9 +970,9 @@ class LocalDemoDataSeeder extends Seeder
                     'transaction_ref' => sprintf('DEMO-%s-%s', $invoice->invoice_no, strtoupper($paymentDefinition['method'])),
                     'payment_source' => 'patient',
                     'paid_at' => $paymentDefinition['paid_at'],
-                    'received_by' => $usersByEmail->get('manager.q1@demo.nhakhoaanphuc.test')
-                        ?? $usersByEmail->get('manager.cg@demo.nhakhoaanphuc.test')
-                        ?? $usersByEmail->get('manager.hc@demo.nhakhoaanphuc.test'),
+                    'received_by' => $usersByEmail->get('manager.q1@demo.ident.test')
+                        ?? $usersByEmail->get('manager.cg@demo.ident.test')
+                        ?? $usersByEmail->get('manager.hc@demo.ident.test'),
                     'note' => $paymentDefinition['note'],
                 ]);
             }
@@ -1006,7 +1006,7 @@ class LocalDemoDataSeeder extends Seeder
                 'content' => 'Thu dot coc implant dot 1 lien ket hoa don demo Quan 1.',
                 'status' => 'posted',
                 'posted_at' => now()->subDay(),
-                'posted_by_email' => 'manager.q1@demo.nhakhoaanphuc.test',
+                'posted_by_email' => 'manager.q1@demo.ident.test',
             ],
             [
                 'voucher_code' => 'PC-DEMO-CG-001',
@@ -1089,8 +1089,8 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'order_no' => 'FO-DEMO-Q1-001',
                 'patient_phone' => '0909123002',
-                'doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
-                'requester_email' => 'manager.q1@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.q1@demo.ident.test',
+                'requester_email' => 'manager.q1@demo.ident.test',
                 'supplier_code' => 'SGDS',
                 'status' => FactoryOrder::STATUS_ORDERED,
                 'priority' => 'high',
@@ -1113,8 +1113,8 @@ class LocalDemoDataSeeder extends Seeder
             [
                 'order_no' => 'FO-DEMO-HC-001',
                 'patient_phone' => '0935123008',
-                'doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
-                'requester_email' => 'manager.hc@demo.nhakhoaanphuc.test',
+                'doctor_email' => 'doctor.hc@demo.ident.test',
+                'requester_email' => 'manager.hc@demo.ident.test',
                 'supplier_code' => 'MEDIDN',
                 'status' => FactoryOrder::STATUS_IN_PROGRESS,
                 'priority' => 'urgent',
@@ -1247,8 +1247,8 @@ class LocalDemoDataSeeder extends Seeder
                 'finished_at' => $campaignDefinition['finished_at'],
                 'sent_count' => $campaignDefinition['sent_count'],
                 'failed_count' => $campaignDefinition['failed_count'],
-                'created_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
-                'updated_by' => $usersByEmail->get('admin@demo.nhakhoaanphuc.test'),
+                'created_by' => $usersByEmail->get('admin@demo.ident.test'),
+                'updated_by' => $usersByEmail->get('admin@demo.ident.test'),
             ]);
 
             foreach ($campaignDefinition['deliveries'] as $index => $deliveryDefinition) {
@@ -1291,7 +1291,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HCM-Q1',
                 'full_name' => 'Nguyen Thi Thu Trang',
                 'phone' => '0909123001',
-                'email' => 'trang.nguyen01@demo.nhakhoaanphuc.test',
+                'email' => 'trang.nguyen01@demo.ident.test',
                 'birthday' => '1992-04-12',
                 'gender' => 'female',
                 'address' => '124 Nguyen Trai, Phuong Ben Thanh, Quan 1, TP.HCM',
@@ -1300,7 +1300,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-IMPL',
                 'status' => 'contacted',
-                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.q1@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
                 'notes' => 'Quan tam implant 1 rang ham duoi.',
             ],
@@ -1308,7 +1308,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HCM-Q1',
                 'full_name' => 'Tran Quoc Huy',
                 'phone' => '0909123002',
-                'email' => 'huy.tran02@demo.nhakhoaanphuc.test',
+                'email' => 'huy.tran02@demo.ident.test',
                 'birthday' => '1987-11-08',
                 'gender' => 'male',
                 'address' => '18 Ho Tung Mau, Phuong Ben Nghe, Quan 1, TP.HCM',
@@ -1317,7 +1317,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'RETURN',
                 'promotion_group_code' => 'PROMO-ESTH',
                 'status' => 'confirmed',
-                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.q1@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(4)->format('Y-m-d H:i:s'),
                 'notes' => 'Can tu van boc su zirconia 2 rang cua.',
             ],
@@ -1325,7 +1325,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HCM-Q1',
                 'full_name' => 'Pham Minh Chau',
                 'phone' => '0909123003',
-                'email' => 'chau.pham03@demo.nhakhoaanphuc.test',
+                'email' => 'chau.pham03@demo.ident.test',
                 'birthday' => '1998-09-21',
                 'gender' => 'female',
                 'address' => '55 Le Thanh Ton, Phuong Ben Nghe, Quan 1, TP.HCM',
@@ -1334,7 +1334,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-NEW',
                 'status' => 'lead',
-                'assigned_to_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.q1@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(1)->format('Y-m-d H:i:s'),
                 'notes' => 'Muon dat lich cao voi rang toi thu 7.',
             ],
@@ -1342,7 +1342,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HN-CG',
                 'full_name' => 'Le Van Nam',
                 'phone' => '0912123004',
-                'email' => 'nam.le04@demo.nhakhoaanphuc.test',
+                'email' => 'nam.le04@demo.ident.test',
                 'birthday' => '1984-02-17',
                 'gender' => 'male',
                 'address' => '16 Duy Tan, Dich Vong Hau, Cau Giay, Ha Noi',
@@ -1351,7 +1351,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'FAMILY',
                 'promotion_group_code' => 'PROMO-ORTHO',
                 'status' => 'contacted',
-                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.cg@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
                 'notes' => 'Gia dinh 2 con nho can kham tong quat.',
             ],
@@ -1359,7 +1359,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HN-CG',
                 'full_name' => 'Vu Thi Hong Nhung',
                 'phone' => '0912123005',
-                'email' => 'nhung.vu05@demo.nhakhoaanphuc.test',
+                'email' => 'nhung.vu05@demo.ident.test',
                 'birthday' => '1990-06-10',
                 'gender' => 'female',
                 'address' => '72 Xuan Thuy, Dich Vong Hau, Cau Giay, Ha Noi',
@@ -1368,7 +1368,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'VIP',
                 'promotion_group_code' => 'PROMO-ORTHO',
                 'status' => 'confirmed',
-                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.cg@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(5)->format('Y-m-d H:i:s'),
                 'notes' => 'Da gui bao gia nieng rang khay trong.',
             ],
@@ -1376,7 +1376,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'HN-CG',
                 'full_name' => 'Dang Gia Bao',
                 'phone' => '0912123006',
-                'email' => 'bao.dang06@demo.nhakhoaanphuc.test',
+                'email' => 'bao.dang06@demo.ident.test',
                 'birthday' => '2001-12-04',
                 'gender' => 'male',
                 'address' => '25 Nguyen Phong Sac, Dich Vong, Cau Giay, Ha Noi',
@@ -1385,7 +1385,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-NEW',
                 'status' => 'contacted',
-                'assigned_to_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.cg@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
                 'notes' => 'Can dat lich chup phim va nho rang khon.',
             ],
@@ -1393,7 +1393,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'DN-HC',
                 'full_name' => 'Hoang Thi Bich Van',
                 'phone' => '0935123007',
-                'email' => 'van.hoang07@demo.nhakhoaanphuc.test',
+                'email' => 'van.hoang07@demo.ident.test',
                 'birthday' => '1995-03-15',
                 'gender' => 'female',
                 'address' => '96 Le Duan, Thach Thang, Hai Chau, Da Nang',
@@ -1402,7 +1402,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-ESTH',
                 'status' => 'contacted',
-                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.hc@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
                 'notes' => 'Muon tay trang rang truoc dam cuoi.',
             ],
@@ -1410,7 +1410,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'DN-HC',
                 'full_name' => 'Phan Ngoc Anh',
                 'phone' => '0935123008',
-                'email' => 'anh.phan08@demo.nhakhoaanphuc.test',
+                'email' => 'anh.phan08@demo.ident.test',
                 'birthday' => '1989-08-19',
                 'gender' => 'female',
                 'address' => '14 Trung Nu Vuong, Binh Hien, Hai Chau, Da Nang',
@@ -1419,7 +1419,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'RETURN',
                 'promotion_group_code' => 'PROMO-FAMILY',
                 'status' => 'confirmed',
-                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.hc@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(6)->format('Y-m-d H:i:s'),
                 'notes' => 'Can lap phac do implant 2 rang ham.',
             ],
@@ -1427,7 +1427,7 @@ class LocalDemoDataSeeder extends Seeder
                 'branch_code' => 'DN-HC',
                 'full_name' => 'Nguyen Huu Phuc',
                 'phone' => '0935123009',
-                'email' => 'phuc.nguyen09@demo.nhakhoaanphuc.test',
+                'email' => 'phuc.nguyen09@demo.ident.test',
                 'birthday' => '1993-01-27',
                 'gender' => 'male',
                 'address' => '210 Ong Ich Khiem, Thanh Binh, Hai Chau, Da Nang',
@@ -1436,7 +1436,7 @@ class LocalDemoDataSeeder extends Seeder
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-NEW',
                 'status' => 'lead',
-                'assigned_to_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'assigned_to_email' => 'cskh.hc@demo.ident.test',
                 'next_follow_up_at' => now()->addDays(1)->format('Y-m-d H:i:s'),
                 'notes' => 'Uu tien lich sau 18h.',
             ],
@@ -1455,7 +1455,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Nguyen Thi Thu Trang',
                 'phone' => '0909123001',
                 'phone_secondary' => '0909123999',
-                'email' => 'trang.nguyen01@demo.nhakhoaanphuc.test',
+                'email' => 'trang.nguyen01@demo.ident.test',
                 'birthday' => '1992-04-12',
                 'cccd' => '079192004512',
                 'gender' => 'female',
@@ -1463,8 +1463,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '124 Nguyen Trai, Phuong Ben Thanh, Quan 1, TP.HCM',
                 'customer_group_code' => 'VIP',
                 'promotion_group_code' => 'PROMO-IMPL',
-                'primary_doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.q1@demo.ident.test',
+                'owner_staff_email' => 'cskh.q1@demo.ident.test',
                 'first_visit_reason' => 'Mat rang ham duoi, can tu van implant',
                 'note' => 'Da co phim CT cone beam tu noi khac.',
                 'status' => 'active',
@@ -1476,7 +1476,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Tran Quoc Huy',
                 'phone' => '0909123002',
                 'phone_secondary' => null,
-                'email' => 'huy.tran02@demo.nhakhoaanphuc.test',
+                'email' => 'huy.tran02@demo.ident.test',
                 'birthday' => '1987-11-08',
                 'cccd' => '079187118833',
                 'gender' => 'male',
@@ -1484,8 +1484,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '18 Ho Tung Mau, Phuong Ben Nghe, Quan 1, TP.HCM',
                 'customer_group_code' => 'RETURN',
                 'promotion_group_code' => 'PROMO-ESTH',
-                'primary_doctor_email' => 'doctor.q1@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.q1@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.q1@demo.ident.test',
+                'owner_staff_email' => 'cskh.q1@demo.ident.test',
                 'first_visit_reason' => 'Boc su rang cua bi mon men',
                 'note' => 'Can lich tai kham sau 19h.',
                 'status' => 'active',
@@ -1497,7 +1497,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Le Van Nam',
                 'phone' => '0912123004',
                 'phone_secondary' => '0912123666',
-                'email' => 'nam.le04@demo.nhakhoaanphuc.test',
+                'email' => 'nam.le04@demo.ident.test',
                 'birthday' => '1984-02-17',
                 'cccd' => '001184021778',
                 'gender' => 'male',
@@ -1505,8 +1505,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '16 Duy Tan, Dich Vong Hau, Cau Giay, Ha Noi',
                 'customer_group_code' => 'FAMILY',
                 'promotion_group_code' => 'PROMO-FAMILY',
-                'primary_doctor_email' => 'doctor.cg@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.cg@demo.ident.test',
+                'owner_staff_email' => 'cskh.cg@demo.ident.test',
                 'first_visit_reason' => 'Cao rang dinh ky va dieu tri vieam nha chu',
                 'note' => 'Vo va con cung co nhu cau kham tong quat.',
                 'status' => 'active',
@@ -1518,7 +1518,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Vu Thi Hong Nhung',
                 'phone' => '0912123005',
                 'phone_secondary' => null,
-                'email' => 'nhung.vu05@demo.nhakhoaanphuc.test',
+                'email' => 'nhung.vu05@demo.ident.test',
                 'birthday' => '1990-06-10',
                 'cccd' => '001190061045',
                 'gender' => 'female',
@@ -1526,8 +1526,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '72 Xuan Thuy, Dich Vong Hau, Cau Giay, Ha Noi',
                 'customer_group_code' => 'VIP',
                 'promotion_group_code' => 'PROMO-ORTHO',
-                'primary_doctor_email' => 'doctor.cg@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.cg@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.cg@demo.ident.test',
+                'owner_staff_email' => 'cskh.cg@demo.ident.test',
                 'first_visit_reason' => 'Nieng rang khay trong cho nguoi di lam',
                 'note' => 'Can gap doctor de chot phac do va lich thanh toan.',
                 'status' => 'active',
@@ -1539,7 +1539,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Hoang Thi Bich Van',
                 'phone' => '0935123007',
                 'phone_secondary' => null,
-                'email' => 'van.hoang07@demo.nhakhoaanphuc.test',
+                'email' => 'van.hoang07@demo.ident.test',
                 'birthday' => '1995-03-15',
                 'cccd' => '201195031501',
                 'gender' => 'female',
@@ -1547,8 +1547,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '96 Le Duan, Thach Thang, Hai Chau, Da Nang',
                 'customer_group_code' => 'NEW',
                 'promotion_group_code' => 'PROMO-ESTH',
-                'primary_doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.hc@demo.ident.test',
+                'owner_staff_email' => 'cskh.hc@demo.ident.test',
                 'first_visit_reason' => 'Tay trang rang va kiem tra men rang',
                 'note' => 'Muon chup anh truoc sau de so sanh.',
                 'status' => 'active',
@@ -1560,7 +1560,7 @@ class LocalDemoDataSeeder extends Seeder
                 'full_name' => 'Phan Ngoc Anh',
                 'phone' => '0935123008',
                 'phone_secondary' => '0935123888',
-                'email' => 'anh.phan08@demo.nhakhoaanphuc.test',
+                'email' => 'anh.phan08@demo.ident.test',
                 'birthday' => '1989-08-19',
                 'cccd' => '201189081945',
                 'gender' => 'female',
@@ -1568,8 +1568,8 @@ class LocalDemoDataSeeder extends Seeder
                 'address' => '14 Trung Nu Vuong, Binh Hien, Hai Chau, Da Nang',
                 'customer_group_code' => 'RETURN',
                 'promotion_group_code' => 'PROMO-IMPL',
-                'primary_doctor_email' => 'doctor.hc@demo.nhakhoaanphuc.test',
-                'owner_staff_email' => 'cskh.hc@demo.nhakhoaanphuc.test',
+                'primary_doctor_email' => 'doctor.hc@demo.ident.test',
+                'owner_staff_email' => 'cskh.hc@demo.ident.test',
                 'first_visit_reason' => 'Phuc hinh implant hai rang ham tren',
                 'note' => 'Can bao gia tach theo giai doan dieu tri.',
                 'status' => 'active',

@@ -26,7 +26,7 @@ it('renders admin hot paths with seeded governance and control-plane markers', f
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
-        ->where('email', 'admin@demo.nhakhoaanphuc.test')
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
     $assignedDoctor = User::query()
         ->where('email', GovernanceScenarioSeeder::ASSIGNED_DOCTOR_EMAIL)
@@ -78,7 +78,7 @@ it('renders doctor hot paths with seeded delivery, patient, appointment, and emr
     seed(LocalDemoDataSeeder::class);
 
     $doctor = User::query()
-        ->where('email', 'doctor.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'doctor.q1@demo.ident.test')
         ->firstOrFail();
 
     $clinicalPatient = Patient::query()

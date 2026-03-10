@@ -11,7 +11,7 @@ use function Pest\Laravel\seed;
 it('creates kpi snapshot scenarios with on-time, stale, and missing coverage for admin checks', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     $this->artisan('reports:check-snapshot-sla', [
@@ -39,7 +39,7 @@ it('creates kpi snapshot scenarios with on-time, stale, and missing coverage for
 it('scopes seeded kpi smoke scenarios to the manager branch and keeps hot aggregate dry-run usable', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $manager = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->firstOrFail();
+    $manager = User::query()->where('email', 'manager.q1@demo.ident.test')->firstOrFail();
     $this->actingAs($manager);
 
     $this->artisan('reports:check-snapshot-sla', [

@@ -31,29 +31,29 @@ class CareScenarioSeeder extends Seeder
         $branchId = Branch::query()->where('code', 'HCM-Q1')->value('id');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'doctor.q1@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'doctor.q1@demo.ident.test',
+                'cskh.q1@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
-        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.nhakhoaanphuc.test'))) {
+        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.ident.test'))) {
             return;
         }
 
-        $adminId = (int) $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
-        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test')
+        $adminId = (int) $userIdsByEmail->get('admin@demo.ident.test');
+        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('doctor.q1@demo.ident.test')
             : null;
-        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
             : null;
 
         $noShowPatient = $this->upsertScenarioPatient(
             branchId: (int) $branchId,
             fullName: 'QA Care No Show',
             phone: '0909002091',
-            email: 'qa.care.noshow@demo.nhakhoaanphuc.test',
+            email: 'qa.care.noshow@demo.ident.test',
             customerSourceDetail: 'seed:care-scenario:no-show',
             patientCode: self::NO_SHOW_PATIENT_CODE,
             ownerStaffId: $frontDeskId,
@@ -64,7 +64,7 @@ class CareScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Care Reactivation Eligible',
             phone: '0909002092',
-            email: 'qa.care.reactivation@demo.nhakhoaanphuc.test',
+            email: 'qa.care.reactivation@demo.ident.test',
             customerSourceDetail: 'seed:care-scenario:reactivation-eligible',
             patientCode: self::REACTIVATION_PATIENT_CODE,
             ownerStaffId: $frontDeskId,
@@ -75,7 +75,7 @@ class CareScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Care Reactivation Blocked',
             phone: '0909002093',
-            email: 'qa.care.blocked@demo.nhakhoaanphuc.test',
+            email: 'qa.care.blocked@demo.ident.test',
             customerSourceDetail: 'seed:care-scenario:reactivation-blocked',
             patientCode: self::BLOCKED_REACTIVATION_PATIENT_CODE,
             ownerStaffId: $frontDeskId,

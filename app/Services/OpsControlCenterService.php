@@ -1278,7 +1278,7 @@ class OpsControlCenterService
             'php artisan ops:check-backup-health --path="'.OpsScenarioSeeder::readyBackupPath().'" --strict',
             'php artisan ops:check-backup-health --path="'.OpsScenarioSeeder::failMissingManifestBackupPath().'" --strict',
             'php artisan ops:run-restore-drill --path="'.OpsScenarioSeeder::readyBackupPath().'" --strict',
-            'php artisan ops:verify-production-readiness-report "'.OpsScenarioSeeder::passReadinessReportPath().'" --qa=manager.q1@demo.nhakhoaanphuc.test --pm=admin@demo.nhakhoaanphuc.test --release-ref=REL-DEMO-OPS-001 --strict',
+            'php artisan ops:verify-production-readiness-report "'.OpsScenarioSeeder::passReadinessReportPath().'" --qa=manager.q1@demo.ident.test --pm=admin@demo.ident.test --release-ref=REL-DEMO-OPS-001 --strict',
             'php artisan ops:check-observability-health --strict',
             'php artisan integrations:revoke-rotated-secrets --dry-run --strict',
             'php artisan integrations:prune-operational-data --dry-run --strict',

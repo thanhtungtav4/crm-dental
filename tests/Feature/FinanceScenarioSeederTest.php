@@ -14,7 +14,7 @@ use function Pest\Laravel\seed;
 it('creates finance scenarios for overdue sync, reminders, dunning, and reversal smoke', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $manager = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->firstOrFail();
+    $manager = User::query()->where('email', 'manager.q1@demo.ident.test')->firstOrFail();
     $this->actingAs($manager);
 
     $overdueInvoice = Invoice::query()

@@ -12,7 +12,7 @@ use function Pest\Laravel\seed;
 it('creates care automation scenarios for no-show recovery and reactivation skips', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     $noShowAppointment = Appointment::query()

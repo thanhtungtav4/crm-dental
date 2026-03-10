@@ -27,22 +27,22 @@ class ClinicalScenarioSeeder extends Seeder
         $branchId = Branch::query()->where('code', 'HCM-Q1')->value('id');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'doctor.q1@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'doctor.q1@demo.ident.test',
+                'cskh.q1@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
-        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.nhakhoaanphuc.test'))) {
+        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.ident.test'))) {
             return;
         }
 
-        $adminId = (int) $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
-        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test')
+        $adminId = (int) $userIdsByEmail->get('admin@demo.ident.test');
+        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('doctor.q1@demo.ident.test')
             : null;
-        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
             : null;
 
         $customer = Customer::query()
@@ -55,8 +55,8 @@ class ClinicalScenarioSeeder extends Seeder
             'full_name' => 'QA Clinical Consent',
             'phone' => '0909006091',
             'phone_search_hash' => Customer::phoneSearchHash('0909006091'),
-            'email' => 'qa.clinical.consent@demo.nhakhoaanphuc.test',
-            'email_search_hash' => Customer::emailSearchHash('qa.clinical.consent@demo.nhakhoaanphuc.test'),
+            'email' => 'qa.clinical.consent@demo.ident.test',
+            'email_search_hash' => Customer::emailSearchHash('qa.clinical.consent@demo.ident.test'),
             'source' => 'qa_seed',
             'source_detail' => 'seed:clinical-scenario:consent',
             'status' => 'converted',
@@ -76,8 +76,8 @@ class ClinicalScenarioSeeder extends Seeder
             'full_name' => 'QA Clinical Consent',
             'phone' => '0909006091',
             'phone_search_hash' => Patient::phoneSearchHash('0909006091'),
-            'email' => 'qa.clinical.consent@demo.nhakhoaanphuc.test',
-            'email_search_hash' => Patient::emailSearchHash('qa.clinical.consent@demo.nhakhoaanphuc.test'),
+            'email' => 'qa.clinical.consent@demo.ident.test',
+            'email_search_hash' => Patient::emailSearchHash('qa.clinical.consent@demo.ident.test'),
             'gender' => 'female',
             'address' => 'Seed clinical scenario',
             'primary_doctor_id' => $doctorId,

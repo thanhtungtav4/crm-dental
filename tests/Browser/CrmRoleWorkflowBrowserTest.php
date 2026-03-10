@@ -11,7 +11,7 @@ use function Pest\Laravel\seed;
 it('lets cskh work the frontdesk queue and convert a lead into a patient', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $page = loginToAdminPanel('cskh.q1@demo.nhakhoaanphuc.test');
+    $page = loginToAdminPanel('cskh.q1@demo.ident.test');
 
     $page->navigate('/admin/frontdesk-control-center')
         ->assertSee('Điều phối front-office')
@@ -39,7 +39,7 @@ it('lets doctor work delivery and patient workflows from the seeded q1 branch', 
     seed(LocalDemoDataSeeder::class);
 
     $doctor = User::query()
-        ->where('email', 'doctor.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'doctor.q1@demo.ident.test')
         ->firstOrFail();
 
     $visiblePatient = Patient::query()
@@ -48,7 +48,7 @@ it('lets doctor work delivery and patient workflows from the seeded q1 branch', 
         ->orderBy('id')
         ->firstOrFail();
 
-    $page = loginToAdminPanel('doctor.q1@demo.nhakhoaanphuc.test');
+    $page = loginToAdminPanel('doctor.q1@demo.ident.test');
 
     $page->navigate('/admin/delivery-ops-center')
         ->assertSee('Điều phối điều trị')
@@ -71,8 +71,8 @@ it('lets manager pass mfa and use branch-scoped finance and zns surfaces', funct
     seed(LocalDemoDataSeeder::class);
 
     $page = loginToAdminPanel(
-        'manager.q1@demo.nhakhoaanphuc.test',
-        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('manager.q1@demo.nhakhoaanphuc.test')[0] ?? null,
+        'manager.q1@demo.ident.test',
+        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('manager.q1@demo.ident.test')[0] ?? null,
     );
 
     $page->navigate('/admin/financial-dashboard')
@@ -92,8 +92,8 @@ it('shows finance and governance signals in the ops control center for admin', f
     seed(LocalDemoDataSeeder::class);
 
     $page = loginToAdminPanel(
-        'admin@demo.nhakhoaanphuc.test',
-        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('admin@demo.nhakhoaanphuc.test')[0] ?? null,
+        'admin@demo.ident.test',
+        LocalDemoDataSeeder::demoMfaRecoveryCodesFor('admin@demo.ident.test')[0] ?? null,
     );
 
     $pages = [
@@ -115,8 +115,8 @@ it('shows finance and governance signals in the ops control center for admin', f
         ->assertSee('INV-QA-FIN-001')
         ->assertSee('QA-FIN-REV-RECEIPT')
         ->assertSee('Governance & audit scope')
-        ->assertSee('qa.gov.assigned@demo.nhakhoaanphuc.test')
-        ->assertSee('qa.gov.hidden@demo.nhakhoaanphuc.test')
+        ->assertSee('qa.gov.assigned@demo.ident.test')
+        ->assertSee('qa.gov.hidden@demo.ident.test')
         ->assertNoJavascriptErrors()
         ->assertNoConsoleLogs();
 });

@@ -46,7 +46,7 @@ php artisan migrate:fresh --seed
 ## 1) CSKH
 
 Tài khoản gợi ý:
-- `cskh.q1@demo.nhakhoaanphuc.test`
+- `cskh.q1@demo.ident.test`
 
 Màn hình chính cần dùng:
 - `Frontdesk Control Center`
@@ -84,7 +84,7 @@ Pass nếu:
 ## 2) Doctor
 
 Tài khoản gợi ý:
-- `doctor.q1@demo.nhakhoaanphuc.test`
+- `doctor.q1@demo.ident.test`
 
 Màn hình chính cần dùng:
 - `Delivery Ops Center`
@@ -126,7 +126,7 @@ Pass nếu:
 ## 3) Manager
 
 Tài khoản gợi ý:
-- `manager.q1@demo.nhakhoaanphuc.test`
+- `manager.q1@demo.ident.test`
 
 Màn hình chính cần dùng:
 - `Dashboard Tài chính`
@@ -170,7 +170,7 @@ Pass nếu:
 ## 4) Admin
 
 Tài khoản gợi ý:
-- `admin@demo.nhakhoaanphuc.test`
+- `admin@demo.ident.test`
 
 Màn hình chính cần dùng:
 - `Ops Control Center`

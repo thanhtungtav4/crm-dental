@@ -14,7 +14,7 @@ use function Pest\Laravel\seed;
 it('creates a merge-ready patient scenario that can be merged and rolled back', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     $canonicalPatient = Patient::query()

@@ -91,9 +91,9 @@ it('seeds a deterministic vietnam market baseline through database seeder', func
     ClinicSetting::flushRuntimeCache();
 
     expect(Branch::query()->whereIn('code', ['HCM-Q1', 'HN-CG', 'DN-HC'])->count())->toBe(3)
-        ->and(User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->exists())->toBeTrue()
-        ->and(User::query()->where('email', 'doctor.hc@demo.nhakhoaanphuc.test')->exists())->toBeTrue()
-        ->and(User::query()->where('email', 'automation.bot@demo.nhakhoaanphuc.test')->exists())->toBeTrue()
+        ->and(User::query()->where('email', 'admin@demo.ident.test')->exists())->toBeTrue()
+        ->and(User::query()->where('email', 'doctor.hc@demo.ident.test')->exists())->toBeTrue()
+        ->and(User::query()->where('email', 'automation.bot@demo.ident.test')->exists())->toBeTrue()
         ->and(ClinicSetting::getValue('web_lead.default_branch_code'))->toBe('HCM-Q1');
 });
 
@@ -101,32 +101,32 @@ it('seeds the local demo user pack with deterministic roles and cross-branch doc
     $this->seed(DatabaseSeeder::class);
 
     $emails = [
-        'admin@demo.nhakhoaanphuc.test',
-        'automation.bot@demo.nhakhoaanphuc.test',
-        'manager.q1@demo.nhakhoaanphuc.test',
-        'manager.cg@demo.nhakhoaanphuc.test',
-        'manager.hc@demo.nhakhoaanphuc.test',
-        'doctor.q1@demo.nhakhoaanphuc.test',
-        'doctor.cg@demo.nhakhoaanphuc.test',
-        'doctor.hc@demo.nhakhoaanphuc.test',
-        'doctor.float@demo.nhakhoaanphuc.test',
-        'cskh.q1@demo.nhakhoaanphuc.test',
-        'cskh.cg@demo.nhakhoaanphuc.test',
-        'cskh.hc@demo.nhakhoaanphuc.test',
+        'admin@demo.ident.test',
+        'automation.bot@demo.ident.test',
+        'manager.q1@demo.ident.test',
+        'manager.cg@demo.ident.test',
+        'manager.hc@demo.ident.test',
+        'doctor.q1@demo.ident.test',
+        'doctor.cg@demo.ident.test',
+        'doctor.hc@demo.ident.test',
+        'doctor.float@demo.ident.test',
+        'cskh.q1@demo.ident.test',
+        'cskh.cg@demo.ident.test',
+        'cskh.hc@demo.ident.test',
     ];
 
     expect(User::query()->whereIn('email', $emails)->count())->toBe(count($emails))
-        ->and(User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail()->hasRole('Admin'))->toBeTrue()
-        ->and(User::query()->where('email', 'automation.bot@demo.nhakhoaanphuc.test')->firstOrFail()->hasRole('AutomationService'))->toBeTrue()
-        ->and(User::query()->where('email', 'manager.cg@demo.nhakhoaanphuc.test')->firstOrFail()->hasRole('Manager'))->toBeTrue()
-        ->and(User::query()->where('email', 'doctor.float@demo.nhakhoaanphuc.test')->firstOrFail()->hasRole('Doctor'))->toBeTrue()
-        ->and(User::query()->where('email', 'doctor.float@demo.nhakhoaanphuc.test')->firstOrFail()->specialty)->toBe('Phuc hinh')
+        ->and(User::query()->where('email', 'admin@demo.ident.test')->firstOrFail()->hasRole('Admin'))->toBeTrue()
+        ->and(User::query()->where('email', 'automation.bot@demo.ident.test')->firstOrFail()->hasRole('AutomationService'))->toBeTrue()
+        ->and(User::query()->where('email', 'manager.cg@demo.ident.test')->firstOrFail()->hasRole('Manager'))->toBeTrue()
+        ->and(User::query()->where('email', 'doctor.float@demo.ident.test')->firstOrFail()->hasRole('Doctor'))->toBeTrue()
+        ->and(User::query()->where('email', 'doctor.float@demo.ident.test')->firstOrFail()->specialty)->toBe('Phuc hinh')
         ->and(DoctorBranchAssignment::query()
-            ->whereHas('user', fn ($query) => $query->where('email', 'doctor.float@demo.nhakhoaanphuc.test'))
+            ->whereHas('user', fn ($query) => $query->where('email', 'doctor.float@demo.ident.test'))
             ->whereHas('branch', fn ($query) => $query->where('code', 'HN-CG'))
             ->where('is_active', true)
             ->exists())->toBeTrue()
-        ->and(Hash::check(LocalDemoDataSeeder::DEFAULT_DEMO_PASSWORD, (string) User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->value('password')))->toBeTrue();
+        ->and(Hash::check(LocalDemoDataSeeder::DEFAULT_DEMO_PASSWORD, (string) User::query()->where('email', 'manager.q1@demo.ident.test')->value('password')))->toBeTrue();
 });
 
 it('seeds deterministic crm demo scenarios across appointments finance care labo and zns', function (): void {
@@ -158,7 +158,7 @@ it('seeds deterministic crm demo scenarios across appointments finance care labo
 it('keeps production master data seeding free from local demo records', function (): void {
     $this->seed(ProductionMasterDataSeeder::class);
 
-    expect(User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->exists())->toBeFalse()
+    expect(User::query()->where('email', 'admin@demo.ident.test')->exists())->toBeFalse()
         ->and(Branch::query()->where('code', 'HCM-Q1')->exists())->toBeFalse()
         ->and(Material::query()->count())->toBe(0)
         ->and(ClinicSetting::query()->where('key', 'zalo.enabled')->exists())->toBeTrue();

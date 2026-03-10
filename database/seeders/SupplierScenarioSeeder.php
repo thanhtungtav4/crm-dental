@@ -24,26 +24,26 @@ class SupplierScenarioSeeder extends Seeder
         $branchId = Branch::query()->where('code', 'HCM-Q1')->value('id');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'manager.q1@demo.nhakhoaanphuc.test',
-                'doctor.q1@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'manager.q1@demo.ident.test',
+                'doctor.q1@demo.ident.test',
+                'cskh.q1@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
-        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.nhakhoaanphuc.test'))) {
+        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.ident.test'))) {
             return;
         }
 
-        $adminId = (int) $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
-        $managerId = is_numeric($userIdsByEmail->get('manager.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('manager.q1@demo.nhakhoaanphuc.test')
+        $adminId = (int) $userIdsByEmail->get('admin@demo.ident.test');
+        $managerId = is_numeric($userIdsByEmail->get('manager.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('manager.q1@demo.ident.test')
             : null;
-        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test')
+        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('doctor.q1@demo.ident.test')
             : null;
-        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
             : null;
 
         $customer = Customer::query()
@@ -56,8 +56,8 @@ class SupplierScenarioSeeder extends Seeder
             'full_name' => 'QA Supplier Factory Order',
             'phone' => '0909004091',
             'phone_search_hash' => Customer::phoneSearchHash('0909004091'),
-            'email' => 'qa.supplier.factory@demo.nhakhoaanphuc.test',
-            'email_search_hash' => Customer::emailSearchHash('qa.supplier.factory@demo.nhakhoaanphuc.test'),
+            'email' => 'qa.supplier.factory@demo.ident.test',
+            'email_search_hash' => Customer::emailSearchHash('qa.supplier.factory@demo.ident.test'),
             'source' => 'qa_seed',
             'source_detail' => 'seed:supplier-scenario:factory-order',
             'status' => 'converted',
@@ -78,8 +78,8 @@ class SupplierScenarioSeeder extends Seeder
             'full_name' => 'QA Supplier Factory Order',
             'phone' => '0909004091',
             'phone_search_hash' => Patient::phoneSearchHash('0909004091'),
-            'email' => 'qa.supplier.factory@demo.nhakhoaanphuc.test',
-            'email_search_hash' => Patient::emailSearchHash('qa.supplier.factory@demo.nhakhoaanphuc.test'),
+            'email' => 'qa.supplier.factory@demo.ident.test',
+            'email_search_hash' => Patient::emailSearchHash('qa.supplier.factory@demo.ident.test'),
             'gender' => 'female',
             'address' => 'Seed supplier scenario',
             'primary_doctor_id' => $doctorId,

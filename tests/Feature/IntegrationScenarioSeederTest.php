@@ -15,7 +15,7 @@ use function Pest\Laravel\seed;
 it('creates integration prune scenarios that remove old operational records and keep fresh ones', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     $this->artisan('integrations:prune-operational-data')
@@ -39,7 +39,7 @@ it('creates integration prune scenarios that remove old operational records and 
 it('creates an expired integration secret rotation scenario that can be dry-run and revoked', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
     $this->actingAs($admin);
 
     expect(ClinicSetting::getValue('web_lead.api_token_previous_secret'))->toBe(

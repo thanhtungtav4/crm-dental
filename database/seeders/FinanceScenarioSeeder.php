@@ -29,33 +29,33 @@ class FinanceScenarioSeeder extends Seeder
         $branchId = Branch::query()->where('code', 'HCM-Q1')->value('id');
         $userIdsByEmail = User::query()
             ->whereIn('email', [
-                'admin@demo.nhakhoaanphuc.test',
-                'manager.q1@demo.nhakhoaanphuc.test',
-                'doctor.q1@demo.nhakhoaanphuc.test',
-                'cskh.q1@demo.nhakhoaanphuc.test',
+                'admin@demo.ident.test',
+                'manager.q1@demo.ident.test',
+                'doctor.q1@demo.ident.test',
+                'cskh.q1@demo.ident.test',
             ])
             ->pluck('id', 'email');
 
-        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.nhakhoaanphuc.test'))) {
+        if (! is_numeric($branchId) || ! is_numeric($userIdsByEmail->get('admin@demo.ident.test'))) {
             return;
         }
 
-        $adminId = (int) $userIdsByEmail->get('admin@demo.nhakhoaanphuc.test');
-        $managerId = is_numeric($userIdsByEmail->get('manager.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('manager.q1@demo.nhakhoaanphuc.test')
+        $adminId = (int) $userIdsByEmail->get('admin@demo.ident.test');
+        $managerId = is_numeric($userIdsByEmail->get('manager.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('manager.q1@demo.ident.test')
             : null;
-        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('doctor.q1@demo.nhakhoaanphuc.test')
+        $doctorId = is_numeric($userIdsByEmail->get('doctor.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('doctor.q1@demo.ident.test')
             : null;
-        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test'))
-            ? (int) $userIdsByEmail->get('cskh.q1@demo.nhakhoaanphuc.test')
+        $frontDeskId = is_numeric($userIdsByEmail->get('cskh.q1@demo.ident.test'))
+            ? (int) $userIdsByEmail->get('cskh.q1@demo.ident.test')
             : null;
 
         $overduePatient = $this->upsertScenarioPatient(
             branchId: (int) $branchId,
             fullName: 'QA Finance Overdue',
             phone: '0909003091',
-            email: 'qa.finance.overdue@demo.nhakhoaanphuc.test',
+            email: 'qa.finance.overdue@demo.ident.test',
             customerSourceDetail: 'seed:finance-scenario:overdue',
             patientCode: 'PAT-QA-FIN-001',
             ownerStaffId: $frontDeskId,
@@ -66,7 +66,7 @@ class FinanceScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Finance Reversal',
             phone: '0909003092',
-            email: 'qa.finance.reversal@demo.nhakhoaanphuc.test',
+            email: 'qa.finance.reversal@demo.ident.test',
             customerSourceDetail: 'seed:finance-scenario:reversal',
             patientCode: 'PAT-QA-FIN-002',
             ownerStaffId: $frontDeskId,
@@ -77,7 +77,7 @@ class FinanceScenarioSeeder extends Seeder
             branchId: (int) $branchId,
             fullName: 'QA Finance Installment',
             phone: '0909003093',
-            email: 'qa.finance.installment@demo.nhakhoaanphuc.test',
+            email: 'qa.finance.installment@demo.ident.test',
             customerSourceDetail: 'seed:finance-scenario:installment',
             patientCode: 'PAT-QA-FIN-003',
             ownerStaffId: $frontDeskId,

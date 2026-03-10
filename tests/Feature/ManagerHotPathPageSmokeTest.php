@@ -18,7 +18,7 @@ it('renders manager finance hot paths with seeded watchlist markers', function (
     seed(LocalDemoDataSeeder::class);
 
     $manager = User::query()
-        ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'manager.q1@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($manager)
@@ -40,7 +40,7 @@ it('renders manager report and zns hot paths with seeded operational markers', f
     seed(LocalDemoDataSeeder::class);
 
     $manager = User::query()
-        ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+        ->where('email', 'manager.q1@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($manager)

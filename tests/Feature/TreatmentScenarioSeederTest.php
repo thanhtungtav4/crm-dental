@@ -16,7 +16,7 @@ use function Pest\Laravel\seed;
 it('creates treatment scenarios for plan workflow and material usage smoke', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $manager = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->firstOrFail();
+    $manager = User::query()->where('email', 'manager.q1@demo.ident.test')->firstOrFail();
     $this->actingAs($manager);
 
     $plan = TreatmentPlan::query()->where('title', TreatmentScenarioSeeder::PLAN_TITLE)->firstOrFail();

@@ -16,7 +16,7 @@ it('configures the automation service account as the local scheduler actor', fun
     seed(LocalDemoDataSeeder::class);
 
     $automationActor = \App\Models\User::query()
-        ->where('email', 'automation.bot@demo.nhakhoaanphuc.test')
+        ->where('email', 'automation.bot@demo.ident.test')
         ->firstOrFail();
 
     expect(ClinicRuntimeSettings::schedulerAutomationActorUserId())->toBe($automationActor->id)
@@ -56,8 +56,8 @@ it('creates readiness report scenarios that can be verified with seeded demo sig
 
     $this->artisan('ops:verify-production-readiness-report', [
         'report' => OpsScenarioSeeder::passReadinessReportPath(),
-        '--qa' => 'manager.q1@demo.nhakhoaanphuc.test',
-        '--pm' => 'admin@demo.nhakhoaanphuc.test',
+        '--qa' => 'manager.q1@demo.ident.test',
+        '--pm' => 'admin@demo.ident.test',
         '--release-ref' => 'REL-DEMO-OPS-001',
         '--strict' => true,
         '--output' => $signoffPath,
@@ -70,8 +70,8 @@ it('creates readiness report scenarios that can be verified with seeded demo sig
 
     $this->artisan('ops:verify-production-readiness-report', [
         'report' => OpsScenarioSeeder::failStrictReadinessReportPath(),
-        '--qa' => 'manager.q1@demo.nhakhoaanphuc.test',
-        '--pm' => 'admin@demo.nhakhoaanphuc.test',
+        '--qa' => 'manager.q1@demo.ident.test',
+        '--pm' => 'admin@demo.ident.test',
         '--release-ref' => 'REL-DEMO-OPS-001',
         '--strict' => true,
     ])
@@ -80,15 +80,15 @@ it('creates readiness report scenarios that can be verified with seeded demo sig
 
     $this->artisan('ops:verify-production-readiness-report', [
         'report' => OpsScenarioSeeder::invalidSchemaReadinessReportPath(),
-        '--qa' => 'manager.q1@demo.nhakhoaanphuc.test',
-        '--pm' => 'admin@demo.nhakhoaanphuc.test',
+        '--qa' => 'manager.q1@demo.ident.test',
+        '--pm' => 'admin@demo.ident.test',
     ])
         ->expectsOutputToContain('Schema report khong hop le')
         ->assertFailed();
 
     expect(File::exists(OpsScenarioSeeder::passReadinessSignoffPath()))->toBeTrue()
         ->and((string) data_get(json_decode((string) File::get(OpsScenarioSeeder::passReadinessSignoffPath()), true), 'qa_signoff.email'))
-        ->toBe('manager.q1@demo.nhakhoaanphuc.test')
+        ->toBe('manager.q1@demo.ident.test')
         ->and((string) data_get(json_decode((string) File::get(OpsScenarioSeeder::passReadinessSignoffPath()), true), 'pm_signoff.email'))
-        ->toBe('admin@demo.nhakhoaanphuc.test');
+        ->toBe('admin@demo.ident.test');
 });

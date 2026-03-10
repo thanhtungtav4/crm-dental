@@ -24,9 +24,9 @@ class KpiScenarioSeeder extends Seeder
             ->get()
             ->keyBy('code');
 
-        $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->first();
-        $managerQ1 = User::query()->where('email', 'manager.q1@demo.nhakhoaanphuc.test')->first();
-        $managerCg = User::query()->where('email', 'manager.cg@demo.nhakhoaanphuc.test')->first();
+        $admin = User::query()->where('email', 'admin@demo.ident.test')->first();
+        $managerQ1 = User::query()->where('email', 'manager.q1@demo.ident.test')->first();
+        $managerCg = User::query()->where('email', 'manager.cg@demo.ident.test')->first();
 
         if (
             ! $admin instanceof User

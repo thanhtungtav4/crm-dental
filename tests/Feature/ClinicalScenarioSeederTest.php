@@ -13,8 +13,8 @@ use function Pest\Laravel\seed;
 it('creates clinical scenarios for consent gating and media reconcile smoke', function (): void {
     seed(LocalDemoDataSeeder::class);
 
-    $doctor = User::query()->where('email', 'doctor.q1@demo.nhakhoaanphuc.test')->firstOrFail();
-    $admin = User::query()->where('email', 'admin@demo.nhakhoaanphuc.test')->firstOrFail();
+    $doctor = User::query()->where('email', 'doctor.q1@demo.ident.test')->firstOrFail();
+    $admin = User::query()->where('email', 'admin@demo.ident.test')->firstOrFail();
 
     $planItem = PlanItem::query()->where('name', ClinicalScenarioSeeder::PLAN_ITEM_NAME)->firstOrFail();
     $consent = Consent::query()

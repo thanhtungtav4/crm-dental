@@ -77,7 +77,7 @@ class OpsScenarioSeeder extends Seeder
     protected function configureAutomationActor(): void
     {
         $actor = User::query()
-            ->where('email', 'automation.bot@demo.nhakhoaanphuc.test')
+            ->where('email', 'automation.bot@demo.ident.test')
             ->first();
 
         if (! $actor instanceof User) {
@@ -296,10 +296,10 @@ class OpsScenarioSeeder extends Seeder
     protected function passReadinessSignoff(): array
     {
         $qaSigner = User::query()
-            ->where('email', 'manager.q1@demo.nhakhoaanphuc.test')
+            ->where('email', 'manager.q1@demo.ident.test')
             ->first();
         $pmSigner = User::query()
-            ->where('email', 'admin@demo.nhakhoaanphuc.test')
+            ->where('email', 'admin@demo.ident.test')
             ->first();
         $reportPath = self::passReadinessReportPath();
 
@@ -313,14 +313,14 @@ class OpsScenarioSeeder extends Seeder
             'qa_signoff' => [
                 'user_id' => $qaSigner?->id,
                 'name' => $qaSigner?->name ?? 'Manager Q1',
-                'email' => $qaSigner?->email ?? 'manager.q1@demo.nhakhoaanphuc.test',
+                'email' => $qaSigner?->email ?? 'manager.q1@demo.ident.test',
                 'roles' => $qaSigner?->getRoleNames()->values()->all() ?? ['Manager'],
                 'signed_at' => '2026-03-02 08:11:00',
             ],
             'pm_signoff' => [
                 'user_id' => $pmSigner?->id,
                 'name' => $pmSigner?->name ?? 'Admin',
-                'email' => $pmSigner?->email ?? 'admin@demo.nhakhoaanphuc.test',
+                'email' => $pmSigner?->email ?? 'admin@demo.ident.test',
                 'roles' => $pmSigner?->getRoleNames()->values()->all() ?? ['Admin'],
                 'signed_at' => '2026-03-02 08:12:00',
             ],
