@@ -31,7 +31,8 @@ it('uses segmented dentition controls for adult and child modes', function (): v
     expect($blade)->toContain("dentitionMode === 'child' ? 'is-active' : ''");
     expect($blade)->toContain("dentitionMode === 'adult'");
     expect($blade)->toContain('min-width: 78px; height: 30px; padding: 0 10px;');
-    expect($blade)->toContain('background: var(--crm-primary, #7c6cf6); color: #fff;');
+    expect($blade)->toContain('background: var(--crm-primary, #2563eb); color: #fff;');
+    expect($blade)->toContain('color: var(--crm-text-body, #475569);');
     expect($blade)->toContain('Người lớn');
     expect($blade)->toContain('Trẻ em');
 });
@@ -65,8 +66,18 @@ it('escapes diagnosis condition codes safely in alpine expressions', function ()
     $bladePath = resource_path('views/livewire/patient-exam-form.blade.php');
     $blade = File::get($bladePath);
 
-    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50\' : \'\'"')
+    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50 dark:bg-primary-500/15\' : \'\'"')
         ->and($blade)->toContain('@click="toggleCondition(@js((string) $condition->code))"')
         ->and($blade)->toContain(':checked="hasCondition(@js((string) $condition->code))"')
         ->and($blade)->not->toContain("@click=\"toggleCondition('{{ \$condition->code }}')\"");
+});
+
+it('uses dark-mode friendly diagnosis tags and modal controls in patient exam form', function (): void {
+    $bladePath = resource_path('views/livewire/patient-exam-form.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain('dark:bg-primary-500/15 dark:text-primary-100')
+        ->and($blade)->toContain('class="crm-modal-close-btn"')
+        ->and($blade)->toContain('dark:border-gray-700 dark:bg-gray-900')
+        ->and($blade)->toContain('dark:hover:bg-gray-800');
 });

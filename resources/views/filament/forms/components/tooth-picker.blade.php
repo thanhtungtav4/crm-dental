@@ -117,21 +117,21 @@
         <!-- Trigger Button -->
         <div class="flex items-center gap-3">
             <button type="button" @click="openPicker()"
-                class="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium text-gray-700">
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800">
                 Chọn răng
             </button>
-            <span x-text="getLabel()" class="text-sm text-gray-500"></span>
+            <span x-text="getLabel()" class="text-sm text-gray-500 dark:text-gray-400"></span>
         </div>
 
         <!-- Modal -->
         <div x-show="modalOpen" x-cloak
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" x-transition @click.self="cancelPicker()">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl p-6 relative flex flex-col max-h-[90vh]">
+            <div class="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
 
                 <!-- Header -->
-                <div class="flex justify-between items-center mb-4 border-b pb-4">
-                    <h3 class="text-xl font-bold text-gray-800">CHỌN RĂNG</h3>
-                    <button type="button" @click="cancelPicker()" class="text-gray-400 hover:text-gray-600">
+                <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">CHỌN RĂNG</h3>
+                    <button type="button" @click="cancelPicker()" class="crm-modal-close-btn">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -143,12 +143,12 @@
                 <div class="flex gap-4 mb-4 border-b">
                     <button type="button" @click="tab = 'adult'"
                         class="px-4 py-2 font-medium text-sm transition-colors border-b-2"
-                        :class="tab === 'adult' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                        :class="tab === 'adult' ? 'border-primary-600 text-primary-600 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
                         Người lớn
                     </button>
                     <button type="button" @click="tab = 'child'"
                         class="px-4 py-2 font-medium text-sm transition-colors border-b-2"
-                        :class="tab === 'child' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                        :class="tab === 'child' ? 'border-primary-600 text-primary-600 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
                         Trẻ em
                     </button>
                 </div>
@@ -161,11 +161,11 @@
                         <!-- Upper -->
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold text-gray-700 uppercase">Hàm trên</span>
+                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Hàm trên</span>
                                 <div class="text-xs space-x-2">
                                     <button type="button" @click="selectAll(@js($adultTeeth['upper']))"
                                         class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300">|</span>
+                                    <span class="text-gray-300 dark:text-gray-600">|</span>
                                     <button type="button" @click="deselectAll(@js($adultTeeth['upper']))"
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
@@ -173,10 +173,10 @@
                             <div class="grid gap-2 crm-tooth-picker-grid-16" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
                                 @foreach($adultTeeth['upper'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="h-12 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1' : 'border-gray-200'">
+                                        class="flex h-12 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
+                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
                                         <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700' : 'text-gray-600'">{{ $t }}</span>
+                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -185,11 +185,11 @@
                         <!-- Lower -->
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold text-gray-700 uppercase">Hàm dưới</span>
+                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Hàm dưới</span>
                                 <div class="text-xs space-x-2">
                                     <button type="button" @click="selectAll(@js($adultTeeth['lower']))"
                                         class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300">|</span>
+                                    <span class="text-gray-300 dark:text-gray-600">|</span>
                                     <button type="button" @click="deselectAll(@js($adultTeeth['lower']))"
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
@@ -197,10 +197,10 @@
                             <div class="grid gap-2 crm-tooth-picker-grid-16" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
                                 @foreach($adultTeeth['lower'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="h-12 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1' : 'border-gray-200'">
+                                        class="flex h-12 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
+                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
                                         <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700' : 'text-gray-600'">{{ $t }}</span>
+                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -211,11 +211,11 @@
                     <div x-show="tab === 'child'" class="space-y-6">
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold text-gray-700 uppercase">Răng sữa hàm trên</span>
+                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Răng sữa hàm trên</span>
                                 <div class="text-xs space-x-2">
                                     <button type="button" @click="selectAll(@js($childTeeth['upper']))"
                                         class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300">|</span>
+                                    <span class="text-gray-300 dark:text-gray-600">|</span>
                                     <button type="button" @click="deselectAll(@js($childTeeth['upper']))"
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
@@ -223,10 +223,10 @@
                             <div class="grid gap-2 crm-tooth-picker-grid-10" style="grid-template-columns: repeat(10, minmax(0, 1fr));">
                                 @foreach($childTeeth['upper'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="h-11 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1' : 'border-gray-200'">
+                                        class="flex h-11 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
+                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
                                         <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700' : 'text-gray-600'">{{ $t }}</span>
+                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -234,11 +234,11 @@
 
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold text-gray-700 uppercase">Răng sữa hàm dưới</span>
+                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Răng sữa hàm dưới</span>
                                 <div class="text-xs space-x-2">
                                     <button type="button" @click="selectAll(@js($childTeeth['lower']))"
                                         class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300">|</span>
+                                    <span class="text-gray-300 dark:text-gray-600">|</span>
                                     <button type="button" @click="deselectAll(@js($childTeeth['lower']))"
                                         class="text-red-500 hover:underline">Bỏ chọn</button>
                                 </div>
@@ -246,10 +246,10 @@
                             <div class="grid gap-2 crm-tooth-picker-grid-10" style="grid-template-columns: repeat(10, minmax(0, 1fr));">
                                 @foreach($childTeeth['lower'] as $t)
                                     <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="h-11 border rounded flex items-center justify-center transition-all bg-white hover:shadow-md"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1' : 'border-gray-200'">
+                                        class="flex h-11 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
+                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
                                         <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700' : 'text-gray-600'">{{ $t }}</span>
+                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -259,9 +259,9 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-4">
+                <div class="mt-4 flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
                     <button type="button" @click="cancelPicker()"
-                        class="px-6 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
+                        class="rounded-lg border border-gray-300 bg-white px-6 py-2 font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800">
                         Hủy
                     </button>
                     <button type="button" @click="confirmPicker()"

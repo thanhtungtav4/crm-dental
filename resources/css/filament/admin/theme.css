@@ -10,13 +10,17 @@
   --crm-font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --crm-text: #1f2937;
   --crm-muted: #6b7280;
-  --crm-bg: #f3f4f6;
+  --crm-bg: #eef3f8;
   --crm-surface: #ffffff;
-  --crm-surface-muted: #f3f4f6;
+  --crm-surface-muted: #f6f8fb;
+  --crm-surface-elevated: #ffffff;
+  --crm-sidebar-bg: #f8fafc;
+  --crm-topbar-bg: rgba(255, 255, 255, 0.88);
   --crm-border: #d1d5db;
-  --crm-primary: #7c6cf6;
-  --crm-primary-600: #6d5df1;
-  --crm-primary-50: #f3f0ff;
+  --crm-primary: #2563eb;
+  --crm-primary-600: #1d4ed8;
+  --crm-primary-50: #eff6ff;
+  --crm-primary-shadow: rgba(37, 99, 235, 0.28);
   --crm-table-border-soft: #d9dce5;
   --crm-table-head-bg: #4a4a4d;
   --crm-table-head-border: #5b5c60;
@@ -128,6 +132,102 @@
   --crm-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
+.dark {
+  --crm-text: #e5eef9;
+  --crm-muted: #93a4bc;
+  --crm-bg: #07111f;
+  --crm-surface: #0f1b2d;
+  --crm-surface-muted: #12233a;
+  --crm-surface-elevated: #15263f;
+  --crm-sidebar-bg: #0b1627;
+  --crm-topbar-bg: rgba(11, 22, 39, 0.92);
+  --crm-border: #22314a;
+  --crm-primary: #60a5fa;
+  --crm-primary-600: #3b82f6;
+  --crm-primary-50: rgba(59, 130, 246, 0.16);
+  --crm-primary-shadow: rgba(96, 165, 250, 0.35);
+  --crm-table-border-soft: #24354f;
+  --crm-table-head-bg: #13253d;
+  --crm-table-head-border: #20314a;
+  --crm-table-divider: #24354f;
+  --crm-table-row-border: #1b2b43;
+  --crm-table-row-hover: #14243a;
+  --crm-scroll-track: #0f1b2d;
+  --crm-scroll-thumb: #314862;
+  --crm-input-border-soft: #314862;
+  --crm-input-border-muted: #3d5876;
+  --crm-btn-muted-text: #d6e4f5;
+  --crm-btn-muted-border-hover: #4a6685;
+  --crm-btn-muted-bg-hover: #162841;
+  --crm-pill-primary-bg: rgba(59, 130, 246, 0.16);
+  --crm-pill-primary-border: rgba(96, 165, 250, 0.3);
+  --crm-pill-primary-text: #bfdbfe;
+  --crm-pill-success-bg: rgba(34, 197, 94, 0.15);
+  --crm-pill-success-border: rgba(74, 222, 128, 0.28);
+  --crm-pill-success-text: #bbf7d0;
+  --crm-pill-warning-bg: rgba(245, 158, 11, 0.16);
+  --crm-pill-warning-border: rgba(251, 191, 36, 0.28);
+  --crm-pill-warning-text: #fde68a;
+  --crm-pill-info-bg: rgba(14, 165, 233, 0.16);
+  --crm-pill-info-border: rgba(56, 189, 248, 0.26);
+  --crm-pill-info-text: #bae6fd;
+  --crm-pill-danger-bg: rgba(239, 68, 68, 0.16);
+  --crm-pill-danger-border: rgba(248, 113, 113, 0.26);
+  --crm-pill-danger-text: #fecaca;
+  --crm-pill-neutral-bg: #16243a;
+  --crm-pill-neutral-border: #2a3c58;
+  --crm-pill-neutral-text: #c9d6e6;
+  --crm-action-neutral-border: #2a3c58;
+  --crm-action-neutral-text: #d6e4f5;
+  --crm-action-primary-bg: rgba(59, 130, 246, 0.16);
+  --crm-action-primary-border: rgba(96, 165, 250, 0.3);
+  --crm-action-primary-text: #bfdbfe;
+  --crm-action-danger-bg: rgba(239, 68, 68, 0.16);
+  --crm-action-danger-border: rgba(248, 113, 113, 0.26);
+  --crm-action-danger-text: #fecaca;
+  --crm-action-neutral-text-hover: #eff6ff;
+  --crm-action-primary-hover-bg: rgba(59, 130, 246, 0.22);
+  --crm-action-primary-hover-border: rgba(125, 211, 252, 0.34);
+  --crm-action-primary-hover-text: #dbeafe;
+  --crm-action-danger-hover-bg: rgba(239, 68, 68, 0.22);
+  --crm-action-danger-hover-border: rgba(248, 113, 113, 0.34);
+  --crm-action-danger-hover-text: #fee2e2;
+  --crm-tab-shell-border: #24354f;
+  --crm-tab-count-bg: rgba(59, 130, 246, 0.18);
+  --crm-tab-count-text: #bfdbfe;
+  --crm-history-border: #2a3c58;
+  --crm-text-strong: #f8fbff;
+  --crm-text-body: #d6e4f5;
+  --crm-text-subtle: #93a4bc;
+  --crm-control-warning-bg: rgba(59, 130, 246, 0.16);
+  --crm-control-warning-border: rgba(96, 165, 250, 0.3);
+  --crm-control-warning-text: #bfdbfe;
+  --crm-control-warning-hover-bg: rgba(59, 130, 246, 0.22);
+  --crm-control-warning-hover-text: #dbeafe;
+  --crm-treatment-default-bg: #16243a;
+  --crm-treatment-default-border: #2a3c58;
+  --crm-treatment-default-text: #d6e4f5;
+  --crm-table-icon-border-hover: #4a6685;
+  --crm-table-icon-bg-hover: #14243a;
+  --crm-surface-disabled: #12233a;
+  --crm-empty-icon-bg: #16243a;
+  --crm-empty-icon-text: #93a4bc;
+  --crm-feature-border: #24354f;
+  --crm-feature-head-bg: #13253d;
+  --crm-feature-head-border: #20314a;
+  --crm-link-border: #2a3c58;
+  --crm-link-action-text: #93c5fd;
+  --crm-payment-balance-text: #d6e4f5;
+  --crm-payment-balance-positive: #93c5fd;
+  --crm-payment-balance-negative: #fda4af;
+  --crm-payment-metric-label: #c9d6e6;
+  --crm-payment-block-title-text: #eff6ff;
+  --crm-brand-button-bg: #2563eb;
+  --crm-brand-button-bg-hover: #1d4ed8;
+  --crm-shadow: 0 18px 48px rgba(2, 6, 23, 0.48);
+  --crm-shadow-soft: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+
 .fi-body {
   font-family: var(--crm-font-sans);
   font-size: 14px;
@@ -147,12 +247,13 @@
 }
 
 .fi-topbar {
-  background: var(--crm-surface);
+  background: var(--crm-topbar-bg);
   border-bottom: 1px solid var(--crm-border);
+  backdrop-filter: blur(16px);
 }
 
 .fi-sidebar {
-  background: #f8fafc;
+  background: var(--crm-sidebar-bg);
   border-right: 1px solid var(--crm-border);
 }
 
@@ -178,8 +279,15 @@ h1,
 h2,
 h3,
 h4 {
-  color: #111827;
+  color: var(--crm-text-strong);
   letter-spacing: -0.01em;
+}
+
+.fi-section-description,
+.fi-page-subheading,
+.fi-ta-header-description,
+.fi-section-header-description {
+  color: var(--crm-muted);
 }
 
 .fi-btn {
@@ -297,14 +405,14 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 .crm-patient-overview-card {
   border-radius: 12px;
   border: 1px solid rgba(17, 24, 39, 0.06);
-  background: #fff;
+  background: var(--crm-surface-elevated);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
   overflow: hidden;
 }
 
 .crm-patient-overview-body {
   padding: 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  background: linear-gradient(180deg, var(--crm-surface-elevated) 0%, var(--crm-surface-muted) 100%);
 }
 
 .crm-top-tabs-nav {
@@ -419,21 +527,21 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-history-card-title {
   margin: 0;
-  color: #111827;
+  color: var(--crm-text-strong);
   font-size: 14px;
   font-weight: 600;
 }
 
 .crm-history-card-description {
   margin: 0;
-  color: #6b7280;
+  color: var(--crm-muted);
   font-size: 13px;
 }
 
 .crm-empty-inline {
   padding: 48px 0;
   text-align: center;
-  color: #6b7280;
+  color: var(--crm-muted);
   font-size: 14px;
 }
 
@@ -1745,7 +1853,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-tooth-chart {
   background: var(--crm-surface-muted);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--crm-border);
   border-radius: 8px;
   padding: 14px 16px;
 }
@@ -1765,7 +1873,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   padding: 4px;
   border: 1px solid var(--crm-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--crm-surface-elevated);
 }
 
 .crm-dentition-option {
@@ -1779,20 +1887,20 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--crm-text-body);
   line-height: 1;
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .crm-dentition-option:hover {
-  background: #f3f4f6;
+  background: var(--crm-surface-muted);
 }
 
 .crm-dentition-option.is-active {
   background: var(--crm-brand-button-bg);
   color: var(--crm-brand-button-text);
-  box-shadow: 0 1px 2px rgba(124, 108, 246, 0.3);
+  box-shadow: 0 1px 2px var(--crm-primary-shadow);
 }
 
 .crm-dentition-option.is-active:hover {
@@ -1813,10 +1921,10 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   padding: 0 10px;
   border: 1px solid var(--crm-border);
   border-radius: 7px;
-  background: #fff;
+  background: var(--crm-surface-elevated);
   font-size: 12px;
   font-weight: 700;
-  color: #4b5563;
+  color: var(--crm-text-body);
 }
 
 @media (max-width: 640px) {
@@ -1851,7 +1959,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-tooth-number {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--crm-muted);
   line-height: 1;
 }
 
@@ -1859,9 +1967,9 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   width: 40px;
   height: 32px;
   border-radius: 4px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #6b7280;
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface-elevated);
+  color: var(--crm-muted);
   font-size: 10px;
   font-weight: 600;
   display: flex;
@@ -1900,7 +2008,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 }
 
 .crm-tooth-box.is-selected {
-  box-shadow: 0 0 0 2px #7c6cf6;
+  box-shadow: 0 0 0 2px var(--crm-primary);
 }
 
 .tooth-item-cell {
@@ -1930,10 +2038,10 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--crm-surface-elevated);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--crm-shadow);
 }
 
 .crm-modal-header {
@@ -2160,6 +2268,43 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   color: #f3f4f6;
 }
 
+.dark .crm-tooth-number {
+  color: var(--crm-muted);
+}
+
+.dark .crm-tooth-box {
+  border-color: var(--crm-border);
+  background: var(--crm-surface-elevated);
+  color: var(--crm-muted);
+}
+
+.dark .crm-tooth-box.is-current {
+  background: #213248;
+  border-color: #465d7d;
+  color: #e5eef9;
+}
+
+.dark .crm-tooth-box.is-in-treatment {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+.dark .crm-tooth-box.is-completed {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: #bbf7d0;
+}
+
+.dark .crm-modal-card {
+  background: var(--crm-surface-elevated);
+}
+
+.dark .crm-modal-header,
+.dark .crm-modal-footer {
+  background: var(--crm-surface-muted);
+}
+
 .dark .crm-plan-editor-table-wrap,
 .dark .crm-procedure-services-wrap,
 .dark .crm-procedure-category-panel {
@@ -2207,7 +2352,8 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   border-radius: 8px;
   padding: 10px;
   font-size: 14px;
-  background: #fff;
+  background: var(--crm-surface);
+  color: var(--crm-text);
 }
 
 .crm-textarea-sm {
@@ -2237,6 +2383,11 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .dark .crm-other-diagnosis-tag-remove:hover {
   color: #f3f4f6;
+}
+
+.dark .crm-textarea {
+  background: var(--crm-surface-elevated);
+  color: var(--crm-text);
 }
 
 /* Care tab (patient profile) */

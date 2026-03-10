@@ -26,3 +26,13 @@ it('uses draft state and explicit cancel semantics in tooth picker modal', funct
     expect($blade)->toContain('@keydown.escape.window="if (modalOpen) { cancelPicker(); }"');
     expect($blade)->toContain('@click="confirmPicker()"');
 });
+
+it('uses dark-mode friendly trigger and selection states in tooth picker modal', function (): void {
+    $bladePath = resource_path('views/filament/forms/components/tooth-picker.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain('dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800')
+        ->and($blade)->toContain('class="crm-modal-close-btn"')
+        ->and($blade)->toContain('dark:bg-primary-500/15 dark:ring-offset-gray-900')
+        ->and($blade)->toContain('dark:border-gray-700');
+});

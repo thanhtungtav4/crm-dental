@@ -11,7 +11,8 @@ it('uses segmented dentition controls in tooth chart component', function (): vo
     expect($blade)->toContain("dentitionMode === 'adult' ? 'is-active' : ''");
     expect($blade)->toContain("dentitionMode === 'child' ? 'is-active' : ''");
     expect($blade)->toContain('min-width: 78px; height: 30px; padding: 0 10px;');
-    expect($blade)->toContain('background: var(--crm-primary, #7c6cf6); color: #fff;');
+    expect($blade)->toContain('background: var(--crm-primary, #2563eb); color: #fff;');
+    expect($blade)->toContain('color: var(--crm-text-body, #475569);');
     expect($blade)->toContain('Người lớn');
     expect($blade)->toContain('Trẻ em');
 });
@@ -31,8 +32,18 @@ it('escapes diagnosis condition codes safely in tooth chart alpine expressions',
     $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
     $blade = File::get($bladePath);
 
-    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50\' : \'\'"')
+    expect($blade)->toContain(':class="hasCondition(@js((string) $condition->code)) ? \'bg-primary-50 dark:bg-primary-500/15\' : \'\'"')
         ->and($blade)->toContain('@click="toggleCondition(@js((string) $condition->code))"')
         ->and($blade)->toContain(':checked="hasCondition(@js((string) $condition->code))"')
         ->and($blade)->not->toContain("@click=\"toggleCondition('{{ \$condition->code }}')\"");
+});
+
+it('uses dark-mode friendly modal and legend styling in tooth chart component', function (): void {
+    $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
+    $blade = File::get($bladePath);
+
+    expect($blade)->toContain('class="crm-modal-close-btn"')
+        ->and($blade)->toContain('dark:text-gray-100')
+        ->and($blade)->toContain('dark:text-gray-400')
+        ->and($blade)->toContain('dark:hover:bg-gray-800/70');
 });
