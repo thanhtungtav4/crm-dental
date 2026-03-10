@@ -25,6 +25,8 @@
 tests/Browser/Screenshots
 /.playwright-cli
 **/.playwright-cli/
+/.cursor
+/docs/output/
 /database/migrations_backup_*/
 Homestead.json
 Homestead.yaml
