@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema as DatabaseSchema;
 
 use function Pest\Laravel\seed;
 
-it('pre-enrolls sensitive demo accounts for mfa and exposes cskh as front-office persona', function (): void {
+it('seeds sensitive demo accounts without mfa by default and exposes cskh as front-office persona', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $admin = User::query()
@@ -27,14 +27,35 @@ it('pre-enrolls sensitive demo accounts for mfa and exposes cskh as front-office
         ->where('email', 'cskh.q1@demo.ident.test')
         ->firstOrFail();
 
+    expect($admin->two_factor_confirmed_at)->toBeNull()
+        ->and($manager->two_factor_confirmed_at)->toBeNull()
+        ->and($admin->breezySession)->toBeNull()
+        ->and($manager->breezySession)->toBeNull()
+        ->and($cskh->two_factor_confirmed_at)->toBeNull()
+        ->and($cskh->name)->toContain('Tu van / Le tan');
+});
+
+it('can still opt into deterministic demo mfa enrollment when explicitly enabled', function (): void {
+    config()->set('care.security_seed_demo_mfa', true);
+
+    seed(LocalDemoDataSeeder::class);
+
+    $admin = User::query()
+        ->where('email', 'admin@demo.ident.test')
+        ->firstOrFail()
+        ->load('breezySession');
+
+    $manager = User::query()
+        ->where('email', 'manager.q1@demo.ident.test')
+        ->firstOrFail()
+        ->load('breezySession');
+
     expect($admin->two_factor_confirmed_at)->not->toBeNull()
         ->and($manager->two_factor_confirmed_at)->not->toBeNull()
         ->and($admin->breezySession?->two_factor_confirmed_at)->not->toBeNull()
         ->and($manager->breezySession?->two_factor_confirmed_at)->not->toBeNull()
         ->and($admin->breezySession?->two_factor_recovery_codes)->toBe(LocalDemoDataSeeder::demoMfaRecoveryCodesFor($admin->email))
-        ->and($manager->breezySession?->two_factor_recovery_codes)->toBe(LocalDemoDataSeeder::demoMfaRecoveryCodesFor($manager->email))
-        ->and($cskh->two_factor_confirmed_at)->toBeNull()
-        ->and($cskh->name)->toContain('Tu van / Le tan');
+        ->and($manager->breezySession?->two_factor_recovery_codes)->toBe(LocalDemoDataSeeder::demoMfaRecoveryCodesFor($manager->email));
 });
 
 it('aligns the cskh role with front-office work while keeping finance and system pages closed', function (): void {

@@ -58,7 +58,7 @@ class SupplierScenarioSeeder extends Seeder
             'phone_search_hash' => Customer::phoneSearchHash('0909004091'),
             'email' => 'qa.supplier.factory@demo.ident.test',
             'email_search_hash' => Customer::emailSearchHash('qa.supplier.factory@demo.ident.test'),
-            'source' => 'qa_seed',
+            'source' => 'other',
             'source_detail' => 'seed:supplier-scenario:factory-order',
             'status' => 'converted',
             'assigned_to' => $frontDeskId,

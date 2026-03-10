@@ -19,11 +19,11 @@ class PaymentFactory extends Factory
         return [
             'invoice_id' => $invoice->id,
             'branch_id' => $invoice->branch_id,
-            'amount' => $this->faker->numberBetween(100_000, (int) $invoice->total_amount),
-            'method' => $this->faker->randomElement(['cash', 'card', 'transfer', 'vnpay', 'other']),
-            'paid_at' => $this->faker->dateTimeBetween('-3 days', 'now'),
+            'amount' => fake()->numberBetween(100_000, (int) $invoice->total_amount),
+            'method' => fake()->randomElement(['cash', 'card', 'transfer', 'vnpay', 'other']),
+            'paid_at' => fake()->dateTimeBetween('-3 days', 'now'),
             'received_by' => $receiver->id,
-            'note' => $this->faker->randomElement(['Thanh toán đợt 1', 'Thanh toán đủ', 'Thanh toán chuyển khoản', 'Giảm giá khuyến mãi']),
+            'note' => fake()->randomElement(['Thanh toán đợt 1', 'Thanh toán đủ', 'Thanh toán chuyển khoản', 'Giảm giá khuyến mãi']),
         ];
     }
 }

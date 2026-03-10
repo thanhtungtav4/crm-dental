@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\ClinicRuntimeSettings;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,6 +33,10 @@ class EnsureSensitiveRoleHasMfa
         }
 
         if ($this->hasAnyMfaMethod($user)) {
+            return $next($request);
+        }
+
+        if ($this->canBypassMfaForBootstrap($user)) {
             return $next($request);
         }
 
@@ -79,6 +84,29 @@ class EnsureSensitiveRoleHasMfa
         }
 
         return str_starts_with($routeName, 'filament.admin.auth.');
+    }
+
+    protected function canBypassMfaForBootstrap(User $user): bool
+    {
+        if (! (bool) config('care.security_allow_bootstrap_without_mfa', false)) {
+            return false;
+        }
+
+        $requiredRoles = ClinicRuntimeSettings::securityMfaRequiredRoles();
+
+        if ($requiredRoles === [] || ! $user->hasAnyRole($requiredRoles)) {
+            return false;
+        }
+
+        return ! User::query()
+            ->whereHas('roles', function (Builder $query) use ($requiredRoles): void {
+                $query->whereIn('name', $requiredRoles);
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNotNull('two_factor_confirmed_at')
+                    ->orWhereHas('passkeys');
+            })
+            ->exists();
     }
 
     protected function recordBlockAudit(User $user, Request $request): void

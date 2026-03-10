@@ -12,9 +12,9 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Chi nhánh ' . $this->faker->randomElement(['Hà Nội','TP. HCM','Đà Nẵng','Cần Thơ','Hải Phòng']),
-            'address' => $this->faker->streetAddress() . ', ' . $this->faker->randomElement(['Quận 1','Quận 3','Quận 7','Cầu Giấy','Thanh Xuân','Ngũ Hành Sơn']),
-            'phone' => $this->faker->numerify('09########'),
+            'name' => 'Chi nhánh '.fake()->randomElement(['Hà Nội', 'TP. HCM', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng']),
+            'address' => fake()->streetAddress().', '.fake()->randomElement(['Quận 1', 'Quận 3', 'Quận 7', 'Cầu Giấy', 'Thanh Xuân', 'Ngũ Hành Sơn']),
+            'phone' => fake()->numerify('09########'),
             'active' => true,
         ];
     }

@@ -20,8 +20,8 @@ class NoteFactory extends Factory
             'patient_id' => $patient->id,
             'branch_id' => $patient->first_branch_id,
             'user_id' => $user->id,
-            'type' => $this->faker->randomElement(['general', 'behavior', 'complaint', 'preference']),
-            'content' => $this->faker->randomElement([
+            'type' => fake()->randomElement(['general', 'behavior', 'complaint', 'preference']),
+            'content' => fake()->randomElement([
                 'Bệnh nhân sợ đau, cần gây tê đủ.',
                 'Ưu tiên lịch chiều thứ 7.',
                 'Đề nghị tư vấn thêm về implant.',

@@ -5,6 +5,7 @@ use App\Models\User;
 
 beforeEach(function (): void {
     config()->set('care.security_enforce_in_tests', true);
+    config()->set('care.security_allow_bootstrap_without_mfa', false);
 });
 
 it('redirects sensitive roles without mfa to profile setup and writes audit log', function (): void {
@@ -37,6 +38,34 @@ it('allows sensitive roles to access admin panel when mfa is configured', functi
     $this->actingAs($manager)
         ->get(route('filament.admin.pages.dashboard'))
         ->assertSuccessful();
+});
+
+it('allows a non-production bootstrap login before any sensitive account configures mfa', function (): void {
+    config()->set('care.security_allow_bootstrap_without_mfa', true);
+
+    $manager = User::factory()->create();
+    $manager->assignRole('Manager');
+
+    $this->actingAs($manager)
+        ->get(route('filament.admin.pages.dashboard'))
+        ->assertSuccessful();
+});
+
+it('disables bootstrap bypass once a sensitive account has configured mfa', function (): void {
+    config()->set('care.security_allow_bootstrap_without_mfa', true);
+
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+    $admin->forceFill([
+        'two_factor_confirmed_at' => now(),
+    ])->save();
+
+    $manager = User::factory()->create();
+    $manager->assignRole('Manager');
+
+    $this->actingAs($manager)
+        ->get(route('filament.admin.pages.dashboard'))
+        ->assertRedirect(route('filament.admin.pages.my-profile', ['mfa_required' => 1]));
 });
 
 it('expires idle admin session and records security audit', function (): void {

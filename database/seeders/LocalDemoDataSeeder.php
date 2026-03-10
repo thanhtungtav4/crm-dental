@@ -322,13 +322,14 @@ class LocalDemoDataSeeder extends Seeder
     protected function syncDemoMfaState(User $user, string $role): void
     {
         $requiresMfa = in_array($role, ['Admin', 'Manager'], true);
-        $confirmedAt = $requiresMfa ? now()->subDay() : null;
+        $shouldPreEnrollMfa = $requiresMfa && (bool) config('care.security_seed_demo_mfa', false);
+        $confirmedAt = $shouldPreEnrollMfa ? now()->subDay() : null;
 
         $user->forceFill([
             'two_factor_confirmed_at' => $confirmedAt,
         ])->saveQuietly();
 
-        if (! $requiresMfa) {
+        if (! $shouldPreEnrollMfa) {
             $user->breezySessions()->delete();
 
             return;
@@ -349,6 +350,12 @@ class LocalDemoDataSeeder extends Seeder
     protected function renderSensitiveAccountMfaHints(): void
     {
         if (app()->runningUnitTests() || $this->command === null) {
+            return;
+        }
+
+        if (! (bool) config('care.security_seed_demo_mfa', false)) {
+            $this->command->info('Sensitive demo accounts are seeded without MFA. Non-production bootstrap bypass stays open until the first Admin or Manager configures MFA.');
+
             return;
         }
 

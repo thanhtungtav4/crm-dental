@@ -39,13 +39,20 @@ class AppointmentFactory extends Factory
             ]
         );
 
+        $status = fake()->randomElement(Appointment::statusValues());
+        $date = in_array($status, [Appointment::STATUS_COMPLETED, Appointment::STATUS_NO_SHOW], true)
+            ? fake()->dateTimeBetween('-10 days', 'now')
+            : fake()->dateTimeBetween('-10 days', '+10 days');
+
         return [
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'branch_id' => $branch->id,
-            'date' => $this->faker->dateTimeBetween('-10 days', '+10 days'),
-            'status' => $this->faker->randomElement(Appointment::statusValues()),
-            'note' => $this->faker->sentence(),
+            'date' => $date,
+            'status' => $status,
+            'note' => fake()->sentence(),
+            'cancellation_reason' => $status === Appointment::STATUS_CANCELLED ? fake()->sentence() : null,
+            'reschedule_reason' => $status === Appointment::STATUS_RESCHEDULED ? fake()->sentence() : null,
         ];
     }
 }

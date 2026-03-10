@@ -57,7 +57,7 @@ class TreatmentScenarioSeeder extends Seeder
             'phone_search_hash' => Customer::phoneSearchHash('0909005091'),
             'email' => 'qa.treatment.workflow@demo.ident.test',
             'email_search_hash' => Customer::emailSearchHash('qa.treatment.workflow@demo.ident.test'),
-            'source' => 'qa_seed',
+            'source' => 'other',
             'source_detail' => 'seed:treatment-scenario:workflow',
             'status' => 'converted',
             'assigned_to' => $frontDeskId,

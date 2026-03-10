@@ -57,7 +57,7 @@ class ClinicalScenarioSeeder extends Seeder
             'phone_search_hash' => Customer::phoneSearchHash('0909006091'),
             'email' => 'qa.clinical.consent@demo.ident.test',
             'email_search_hash' => Customer::emailSearchHash('qa.clinical.consent@demo.ident.test'),
-            'source' => 'qa_seed',
+            'source' => 'other',
             'source_detail' => 'seed:clinical-scenario:consent',
             'status' => 'converted',
             'assigned_to' => $frontDeskId,

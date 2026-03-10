@@ -17,11 +17,12 @@ class TreatmentMaterialFactory extends Factory
         $session = TreatmentSession::inRandomOrder()->first() ?? TreatmentSession::factory()->create();
         $material = Material::inRandomOrder()->first() ?? Material::factory()->create();
         $user = User::inRandomOrder()->first() ?? User::factory()->create();
+
         return [
             'treatment_session_id' => $session->id,
             'material_id' => $material->id,
-            'quantity' => $this->faker->numberBetween(1, 5),
-            'cost' => $this->faker->numberBetween(10_000, 200_000),
+            'quantity' => fake()->numberBetween(1, 5),
+            'cost' => fake()->numberBetween(10_000, 200_000),
             'used_by' => $user->id,
         ];
     }

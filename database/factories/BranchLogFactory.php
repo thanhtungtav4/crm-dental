@@ -18,12 +18,13 @@ class BranchLogFactory extends Factory
         $from = Branch::inRandomOrder()->first() ?? Branch::factory()->create();
         $to = Branch::inRandomOrder()->first() ?? Branch::factory()->create();
         $user = User::inRandomOrder()->first() ?? User::factory()->create();
+
         return [
             'patient_id' => $patient->id,
             'from_branch_id' => $from->id,
             'to_branch_id' => $to->id,
             'moved_by' => $user->id,
-            'note' => $this->faker->sentence(),
+            'note' => fake()->sentence(),
         ];
     }
 }

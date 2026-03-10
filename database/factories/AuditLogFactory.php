@@ -21,12 +21,12 @@ class AuditLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'entity_type' => $this->faker->randomElement(['payment', 'invoice', 'appointment', 'care_ticket']),
-            'entity_id' => $this->faker->numberBetween(1, 5000),
-            'action' => $this->faker->randomElement(['create', 'update', 'refund', 'reversal', 'cancel']),
+            'entity_type' => fake()->randomElement(['payment', 'invoice', 'appointment', 'care_ticket']),
+            'entity_id' => fake()->numberBetween(1, 5000),
+            'action' => fake()->randomElement(['create', 'update', 'refund', 'reversal', 'cancel']),
             'actor_id' => User::factory(),
             'metadata' => [
-                'note' => $this->faker->sentence(),
+                'note' => fake()->sentence(),
             ],
             'occurred_at' => now(),
         ];

@@ -13,13 +13,14 @@ class PlanItemFactory extends Factory
     public function definition(): array
     {
         $plan = TreatmentPlan::inRandomOrder()->first() ?? TreatmentPlan::factory()->create();
+
         return [
             'treatment_plan_id' => $plan->id,
-            'name' => $this->faker->randomElement(['Trám răng','Nhổ răng khôn','Niềng răng','Cạo vôi răng','Cấy implant']),
-            'quantity' => $this->faker->numberBetween(1, 4),
-            'price' => $this->faker->numberBetween(200_000, 15_000_000),
+            'name' => fake()->randomElement(['Trám răng', 'Nhổ răng khôn', 'Niềng răng', 'Cạo vôi răng', 'Cấy implant']),
+            'quantity' => fake()->numberBetween(1, 4),
+            'price' => fake()->numberBetween(200_000, 15_000_000),
             'approval_status' => PlanItem::APPROVAL_PROPOSED,
-            'notes' => $this->faker->randomElement(['Ưu tiên bên trái','Hẹn tái khám sau 1 tuần','Gây tê Lidocain','Vệ sinh trước thủ thuật']),
+            'notes' => fake()->randomElement(['Ưu tiên bên trái', 'Hẹn tái khám sau 1 tuần', 'Gây tê Lidocain', 'Vệ sinh trước thủ thuật']),
         ];
     }
 }

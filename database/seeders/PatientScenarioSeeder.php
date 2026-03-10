@@ -202,7 +202,7 @@ class PatientScenarioSeeder extends Seeder
             'phone_search_hash' => Customer::phoneSearchHash($phone),
             'email' => $email,
             'email_search_hash' => Customer::emailSearchHash($email),
-            'source' => 'qa_seed',
+            'source' => 'other',
             'source_detail' => $sourceDetail,
             'status' => 'converted',
             'assigned_to' => $assignedTo,

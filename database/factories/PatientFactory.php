@@ -16,15 +16,16 @@ class PatientFactory extends Factory
     {
         $branch = Branch::inRandomOrder()->first() ?? Branch::factory()->create();
         $customer = Customer::factory()->create(['branch_id' => $branch->id]);
+
         return [
-            'patient_code' => 'PAT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6)),
+            'patient_code' => 'PAT-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
             'customer_id' => $customer->id,
             'first_branch_id' => $branch->id,
             'full_name' => $customer->full_name,
             'email' => $customer->email,
             'phone' => $customer->phone,
-            'gender' => $this->faker->randomElement(['male','female','other']),
-            'address' => $this->faker->streetAddress() . ', ' . $this->faker->randomElement(['Quận 1','Quận 3','Quận 7','Cầu Giấy','Thanh Xuân','Ngũ Hành Sơn']),
+            'gender' => fake()->randomElement(['male', 'female', 'other']),
+            'address' => fake()->streetAddress().', '.fake()->randomElement(['Quận 1', 'Quận 3', 'Quận 7', 'Cầu Giấy', 'Thanh Xuân', 'Ngũ Hành Sơn']),
         ];
     }
 }

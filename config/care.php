@@ -29,6 +29,11 @@ return [
     'observability_snapshot_sla_error_budget' => (int) env('CARE_OBSERVABILITY_SNAPSHOT_SLA_ERROR_BUDGET', 0),
     'observability_recent_automation_failure_error_budget' => (int) env('CARE_OBSERVABILITY_RECENT_AUTOMATION_FAILURE_ERROR_BUDGET', 20),
     'security_mfa_required_roles' => explode(',', (string) env('CARE_SECURITY_MFA_REQUIRED_ROLES', 'Admin,Manager')),
+    'security_allow_bootstrap_without_mfa' => (bool) env(
+        'CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA',
+        env('APP_ENV', 'production') !== 'production',
+    ),
+    'security_seed_demo_mfa' => (bool) env('CARE_SECURITY_SEED_DEMO_MFA', false),
     'security_session_idle_timeout_minutes' => (int) env('CARE_SECURITY_SESSION_IDLE_TIMEOUT_MINUTES', 30),
     'security_login_max_attempts' => (int) env('CARE_SECURITY_LOGIN_MAX_ATTEMPTS', 5),
     'security_login_lockout_minutes' => (int) env('CARE_SECURITY_LOGIN_LOCKOUT_MINUTES', 15),

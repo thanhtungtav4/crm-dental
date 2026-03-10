@@ -195,7 +195,7 @@ class CareScenarioSeeder extends Seeder
             'phone_search_hash' => Customer::phoneSearchHash($phone),
             'email' => $email,
             'email_search_hash' => Customer::emailSearchHash($email),
-            'source' => 'qa_seed',
+            'source' => 'other',
             'source_detail' => $customerSourceDetail,
             'status' => 'converted',
             'assigned_to' => $ownerStaffId,
