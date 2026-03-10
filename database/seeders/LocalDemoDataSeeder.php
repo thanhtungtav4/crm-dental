@@ -560,12 +560,15 @@ class LocalDemoDataSeeder extends Seeder
                     $selectedServices = $availableServices->take(2)->values();
                 }
 
-                $plan = TreatmentPlan::factory()->create([
+                $plan = TreatmentPlan::query()->create([
                     'patient_id' => $patient->id,
                     'doctor_id' => $doctorId,
                     'branch_id' => $patient->first_branch_id ?? $branches->first()->id,
-                    'status' => 'draft',
+                    'title' => sprintf('Demo treatment plan %d', $index + 1),
+                    'notes' => 'Seeded local demo treatment journey.',
+                    'total_cost' => 0,
                     'total_estimated_cost' => 0,
+                    'status' => TreatmentPlan::STATUS_DRAFT,
                 ]);
 
                 $estimatedTotal = 0.0;
@@ -582,9 +585,11 @@ class LocalDemoDataSeeder extends Seeder
 
                     $estimatedTotal += (float) $item->price;
 
-                    TreatmentSession::factory()->create([
+                    TreatmentSession::query()->create([
                         'treatment_plan_id' => $plan->id,
                         'plan_item_id' => $item->id,
+                        'doctor_id' => $doctorId,
+                        'notes' => 'Seeded local demo treatment session.',
                         'status' => 'scheduled',
                     ]);
                 }

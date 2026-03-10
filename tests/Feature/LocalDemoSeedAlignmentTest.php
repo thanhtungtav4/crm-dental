@@ -91,3 +91,8 @@ it('seeds qa scenarios for leads, appointments, invoices, and receipt expense st
         ->and(ReceiptExpense::query()->where('status', 'approved')->exists())->toBeTrue()
         ->and(ReceiptExpense::query()->where('status', 'posted')->exists())->toBeTrue();
 });
+
+it('does not rely on model factories in local demo seeding path', function (): void {
+    expect(file_get_contents(database_path('seeders/LocalDemoDataSeeder.php')))
+        ->not->toContain('::factory(');
+});
