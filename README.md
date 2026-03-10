@@ -379,9 +379,10 @@ stateDiagram-v2
 ### B. MFA cho role nhạy cảm
 
 - Mặc định `Admin` và `Manager` là 2 role bắt buộc MFA qua `config/care.php`.
-- Local demo vẫn giữ behavior production-faithful: sau khi login password, user phải qua step MFA.
-- `LocalDemoDataSeeder` seed deterministic recovery codes cho các account nhạy cảm và in ra console khi chạy seed local để QA có thể dùng ngay.
-- Browser tests và smoke tests role-based phải dùng đúng recovery code seed thay vì bypass middleware.
+- Local demo mặc định không pre-enroll MFA cho `Admin` và `Manager` nữa.
+- Non-production có bootstrap bypass cho `Admin` / `Manager` khi chưa có account nhạy cảm nào cấu hình MFA.
+- Bootstrap bypass tự động tắt ngay khi đã có bất kỳ `Admin` hoặc `Manager` nào có `two_factor_confirmed_at` hoặc `passkey`.
+- Nếu muốn quay lại chế độ demo MFA deterministic, bật `CARE_SECURITY_SEED_DEMO_MFA=true` trước khi reseed.
 
 ### C. Customer -> Patient conversion
 
@@ -524,10 +525,23 @@ Lệnh trên sẽ tạo đầy đủ local demo dataset, gồm:
 ### 9.1) Local demo MFA và QA login
 
 - Account demo và persona có trong `docs/LOCAL_DEMO_USERS.md`.
-- `Admin` và `Manager` vẫn phải qua MFA khi login local.
-- Mỗi lần chạy `php artisan migrate:fresh --seed` hoặc reseed `LocalDemoDataSeeder`, terminal sẽ in bảng `Demo MFA QA credentials`.
-- Dùng recovery code được in ra từ seed thay vì tắt middleware MFA.
-- Nếu QA cần replay browser tests bằng tay, ưu tiên seed lại để lấy đúng recovery codes deterministic mới nhất.
+- Mặc định local demo không yêu cầu `Admin` / `Manager` qua MFA ngay sau seed.
+- Nếu cần bootstrap account demo trên staging/demo environment, thêm vào `.env`:
+
+```env
+CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA=true
+CARE_SECURITY_SEED_DEMO_MFA=false
+```
+
+- Sau khi đổi `.env`, chạy:
+
+```bash
+php artisan optimize:clear
+php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
+```
+
+- Nếu muốn bật lại demo MFA deterministic cho QA, đặt `CARE_SECURITY_SEED_DEMO_MFA=true` rồi reseed `LocalDemoDataSeeder`.
+- Không bật `CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA=true` trên production thật.
 
 Nếu schema đã có sẵn và chỉ muốn nạp lại demo data local:
 

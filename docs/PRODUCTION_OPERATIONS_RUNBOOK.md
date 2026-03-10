@@ -220,6 +220,31 @@ php artisan migrate:fresh --seed
 
 Lenh tren se reset toan bo DB va chi duoc dung ngoai production.
 
+### 10.1 Demo / staging bootstrap login cho Admin va Manager
+
+Chi ap dung cho demo site hoac staging can login nhanh bang account seed. Khong ap dung cho production that.
+
+Them vao `.env`:
+
+```env
+CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA=true
+CARE_SECURITY_SEED_DEMO_MFA=false
+```
+
+Sau do chay:
+
+```bash
+php artisan optimize:clear
+php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
+```
+
+Luu y:
+
+- `DatabaseSeeder` khong tu dong goi `LocalDemoDataSeeder` tren environment production-like.
+- Bootstrap bypass chi mo khi chua co `Admin` hoac `Manager` nao da cau hinh MFA/passkey.
+- Neu can seed demo MFA deterministic de QA test flow 2FA, dat `CARE_SECURITY_SEED_DEMO_MFA=true` roi reseed lai `LocalDemoDataSeeder`.
+- Tuyet doi khong bat `CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA=true` tren production that.
+
 ## 11. Tieu chi pass / fail
 
 ### Pass

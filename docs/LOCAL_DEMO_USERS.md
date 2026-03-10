@@ -33,9 +33,23 @@ php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
 
 ## MFA local
 
-- `Admin` va tat ca account `Manager` duoc seed san MFA cho local demo.
-- Khi login cac account nay, man hinh se yeu cau ma recovery code.
-- Recovery code demo local duoc in ra console khi chay `php artisan migrate:fresh --seed`.
+- Mac dinh `Admin` va tat ca account `Manager` khong duoc pre-enroll MFA trong local demo.
+- Non-production bootstrap bypass se cho cac role nay login neu chua co account nhay cam nao khac da cau hinh MFA.
+- Neu can staging/demo login khong bi chan MFA, them vao `.env`:
+
+```env
+CARE_SECURITY_ALLOW_BOOTSTRAP_WITHOUT_MFA=true
+CARE_SECURITY_SEED_DEMO_MFA=false
+```
+
+- Sau do chay:
+
+```bash
+php artisan optimize:clear
+php artisan db:seed --class=Database\\Seeders\\LocalDemoDataSeeder --force
+```
+
+- Neu muon pre-enroll lai demo MFA deterministic, dat `CARE_SECURITY_SEED_DEMO_MFA=true` truoc khi seed.
 - `Doctor`, `CSKH`, va `AutomationService` khong bi yeu cau MFA trong seed demo.
 
 ## Danh sach account demo
