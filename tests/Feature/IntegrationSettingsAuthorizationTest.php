@@ -9,9 +9,12 @@ it('forbids manager from saving integration settings', function (): void {
     $manager = User::factory()->create();
     $manager->assignRole('Manager');
 
+    $this->actingAs($manager)
+        ->get(IntegrationSettings::getUrl())
+        ->assertForbidden();
+
     Livewire::actingAs($manager)
         ->test(IntegrationSettings::class)
-        ->call('save')
         ->assertForbidden();
 });
 
@@ -19,9 +22,12 @@ it('forbids manager from generating a new web lead token', function (): void {
     $manager = User::factory()->create();
     $manager->assignRole('Manager');
 
+    $this->actingAs($manager)
+        ->get(IntegrationSettings::getUrl())
+        ->assertForbidden();
+
     Livewire::actingAs($manager)
         ->test(IntegrationSettings::class)
-        ->call('generateWebLeadApiToken')
         ->assertForbidden();
 });
 

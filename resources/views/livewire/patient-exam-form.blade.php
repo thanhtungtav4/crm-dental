@@ -13,7 +13,7 @@
 
     @if($sessions->isEmpty())
         <div class="rounded-md border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-            Chưa có phiếu khám cho bệnh nhân này.
+            Chưa có phiếu khám cho bệnh nhân này. Kế hoạch điều trị, nếu có, sẽ hiển thị ở phần bên dưới.
         </div>
     @else
         <div class="crm-section-card">

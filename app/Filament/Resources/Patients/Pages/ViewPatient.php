@@ -2,11 +2,16 @@
 
 namespace App\Filament\Resources\Patients\Pages;
 
+use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
+use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
 use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
+use App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\PatientMedicalRecord;
+use App\Models\Payment;
+use App\Models\Prescription;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use App\Services\PhiAccessAuditService;
@@ -75,14 +80,14 @@ class ViewPatient extends ViewRecord
     {
         parent::mount($record);
 
-        $this->workspaceReturnUrl = request()->fullUrl();
-
         $requestedTab = (string) request()->query('tab', 'basic-info');
         $requestedTab = $this->legacyTabMap[$requestedTab] ?? $requestedTab;
 
-        $this->activeTab = in_array($requestedTab, $this->workspaceTabs, true)
+        $visibleTabs = $this->visibleWorkspaceTabIds();
+        $this->activeTab = in_array($requestedTab, $visibleTabs, true)
             ? $requestedTab
-            : 'basic-info';
+            : ($visibleTabs[0] ?? 'basic-info');
+        $this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($this->activeTab);
 
         if ($this->activeTab === 'exam-treatment') {
             app(PhiAccessAuditService::class)->recordPatientWorkspaceRead(
@@ -109,18 +114,45 @@ class ViewPatient extends ViewRecord
     {
         $counter = $this->tabCounters;
 
-        return [
+        $tabs = [
             ['id' => 'basic-info', 'label' => 'Thông tin cơ bản', 'count' => null],
             ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $counter['exam_sessions'] + $counter['treatment_plans']],
-            ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $counter['prescriptions']],
-            ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $counter['photos']],
-            ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $counter['materials']],
-            ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $counter['appointments']],
-            ['id' => 'payments', 'label' => 'Thanh toán', 'count' => $counter['invoices'] + $counter['payments']],
-            ['id' => 'forms', 'label' => 'Biểu mẫu', 'count' => $counter['prescriptions'] + $counter['invoices']],
-            ['id' => 'care', 'label' => 'Chăm sóc', 'count' => $counter['notes']],
-            ['id' => 'activity-log', 'label' => 'Lịch sử thao tác', 'count' => $counter['activity']],
         ];
+
+        if ($this->canViewPrescriptionsTab()) {
+            $tabs[] = ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $counter['prescriptions']];
+        }
+
+        $tabs[] = ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $counter['photos']];
+
+        if ($this->canViewLabMaterialsTab()) {
+            $tabs[] = ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $counter['materials']];
+        }
+
+        if ($this->canViewAppointmentsTab()) {
+            $tabs[] = ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $counter['appointments']];
+        }
+
+        if ($this->canViewPaymentsTab()) {
+            $tabs[] = ['id' => 'payments', 'label' => 'Thanh toán', 'count' => $counter['invoices'] + $counter['payments']];
+        }
+
+        if ($this->canViewFormsTab()) {
+            $tabs[] = [
+                'id' => 'forms',
+                'label' => 'Biểu mẫu',
+                'count' => ($this->canViewPrescriptionsTab() ? $counter['prescriptions'] : 0)
+                    + ($this->canViewInvoiceForms() ? $counter['invoices'] : 0),
+            ];
+        }
+
+        if ($this->canViewCareTab()) {
+            $tabs[] = ['id' => 'care', 'label' => 'Chăm sóc', 'count' => $counter['notes']];
+        }
+
+        $tabs[] = ['id' => 'activity-log', 'label' => 'Lịch sử thao tác', 'count' => $counter['activity']];
+
+        return $tabs;
     }
 
     public function getTabCountersProperty(): array
@@ -440,11 +472,72 @@ class ViewPatient extends ViewRecord
 
     public function setActiveTab(string $tab): void
     {
-        if (! in_array($tab, $this->workspaceTabs, true)) {
+        if (! in_array($tab, $this->visibleWorkspaceTabIds(), true)) {
             return;
         }
 
         $this->activeTab = $tab;
+        $this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($tab);
+    }
+
+    protected function visibleWorkspaceTabIds(): array
+    {
+        return collect($this->getTabsProperty())
+            ->pluck('id')
+            ->filter(fn (mixed $id): bool => is_string($id) && in_array($id, $this->workspaceTabs, true))
+            ->values()
+            ->all();
+    }
+
+    protected function buildWorkspaceReturnUrl(string $tab): string
+    {
+        return PatientResource::getUrl('view', [
+            'record' => $this->record,
+            'tab' => $tab,
+        ]);
+    }
+
+    protected function canViewPrescriptionsTab(): bool
+    {
+        return auth()->user()?->can('viewAny', Prescription::class) ?? false;
+    }
+
+    protected function canViewAppointmentsTab(): bool
+    {
+        return auth()->user()?->can('viewAny', Appointment::class) ?? false;
+    }
+
+    protected function canViewPaymentsTab(): bool
+    {
+        return (auth()->user()?->can('viewAny', Invoice::class) ?? false)
+            || (auth()->user()?->can('viewAny', Payment::class) ?? false);
+    }
+
+    protected function canCreatePayments(): bool
+    {
+        return auth()->user()?->can('create', Payment::class) ?? false;
+    }
+
+    protected function canViewInvoiceForms(): bool
+    {
+        return auth()->user()?->can('viewAny', Invoice::class) ?? false;
+    }
+
+    protected function canViewFormsTab(): bool
+    {
+        return $this->canViewPrescriptionsTab() || $this->canViewInvoiceForms();
+    }
+
+    protected function canViewCareTab(): bool
+    {
+        return auth()->user()?->can('viewAny', \App\Models\Note::class) ?? false;
+    }
+
+    protected function canViewLabMaterialsTab(): bool
+    {
+        return FactoryOrderResource::canAccess()
+            || MaterialIssueNoteResource::canAccess()
+            || TreatmentMaterialResource::canAccess();
     }
 
     protected function getHeaderActions(): array

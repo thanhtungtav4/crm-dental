@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use App\Services\OpsControlCenterService;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
@@ -25,6 +26,15 @@ class OpsControlCenter extends Page
     protected string $view = 'filament.pages.ops-control-center';
 
     public array $state = [];
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasRole('Admin')
+            && $authUser->can('View:OpsControlCenter');
+    }
 
     public function mount(OpsControlCenterService $service): void
     {

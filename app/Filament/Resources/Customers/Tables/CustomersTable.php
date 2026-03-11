@@ -101,6 +101,7 @@ class CustomersTable
                 TrashedFilter::make(),
             ])
             ->defaultSort('created_at', direction: 'desc')
+            ->splitSearchTerms(false)
             ->recordActions([
                 EditAction::make(),
                 Action::make('viewAppointments')

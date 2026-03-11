@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
+use App\Models\User;
 use App\Services\EmrIntegrationService;
 use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationSecretRotationService;
@@ -59,6 +60,15 @@ class IntegrationSettings extends Page
      * @var array<string, array<int, array{key: string, label: string, enabled: bool}>>
      */
     public array $catalogEditors = [];
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasRole('Admin')
+            && $authUser->can('View:IntegrationSettings');
+    }
 
     public function mount(): void
     {
@@ -549,6 +559,8 @@ class IntegrationSettings extends Page
 
         $catalogPayloads = $this->validateAndNormalizeCatalogEditors();
         $rotationNotifications = [];
+        $changedFieldLabels = [];
+        $sensitiveFieldLabels = [];
 
         foreach ($catalogPayloads as $state => $catalog) {
             $this->settings[$state] = json_encode($catalog, JSON_UNESCAPED_UNICODE) ?: '{}';
@@ -760,8 +772,8 @@ class IntegrationSettings extends Page
         $this->validateZaloAndZnsDependencies($validated);
 
         try {
-            Cache::lock('integration-settings:save', 15)->block(5, function () use ($validated, &$rotationNotifications): void {
-                DB::transaction(function () use ($validated, &$rotationNotifications): void {
+            Cache::lock('integration-settings:save', 15)->block(5, function () use ($validated, &$rotationNotifications, &$changedFieldLabels, &$sensitiveFieldLabels): void {
+                DB::transaction(function () use ($validated, &$rotationNotifications, &$changedFieldLabels, &$sensitiveFieldLabels): void {
                     $fieldDefinitions = $this->settingFieldDefinitions();
                     $currentRevision = $this->currentSettingsRevision();
                     $rotationService = app(IntegrationSecretRotationService::class);
@@ -838,6 +850,12 @@ class IntegrationSettings extends Page
                             continue;
                         }
 
+                        $changedFieldLabels[] = (string) ($field['label'] ?? $field['key']);
+
+                        if (($field['is_secret'] ?? false) || $this->isOperationallySensitiveField((string) ($field['key'] ?? ''))) {
+                            $sensitiveFieldLabels[] = (string) ($field['label'] ?? $field['key']);
+                        }
+
                         $this->logSettingChange(
                             setting: $record,
                             oldValue: $normalizedOldValue,
@@ -856,7 +874,9 @@ class IntegrationSettings extends Page
         $this->loadSettingsState();
 
         $notification = Notification::make()
-            ->title('Đã lưu cài đặt tích hợp');
+            ->title($changedFieldLabels === []
+                ? 'Không có thay đổi để lưu'
+                : 'Đã lưu cài đặt tích hợp');
 
         $rotationLines = collect($rotationNotifications)
             ->filter(static fn (array $summary): bool => (bool) ($summary['rotated'] ?? false))
@@ -868,14 +888,28 @@ class IntegrationSettings extends Page
         if ($rotationLines !== []) {
             $notification
                 ->warning()
-                ->body(implode("\n", $rotationLines))
+                ->body(implode("\n", array_merge(
+                    $rotationLines,
+                    $changedFieldLabels === [] ? [] : ['Đã cập nhật: '.implode(', ', array_slice(array_values(array_unique($changedFieldLabels)), 0, 6))],
+                )))
                 ->send();
 
             return;
         }
 
-        $notification
-            ->success()
+        if ($changedFieldLabels !== []) {
+            $bodyLines = [
+                'Đã cập nhật: '.implode(', ', array_slice(array_values(array_unique($changedFieldLabels)), 0, 6)),
+            ];
+
+            if ($sensitiveFieldLabels !== []) {
+                $bodyLines[] = 'Cấu hình nhạy cảm vừa đổi: '.implode(', ', array_slice(array_values(array_unique($sensitiveFieldLabels)), 0, 4)).'.';
+            }
+
+            $notification->body(implode("\n", $bodyLines));
+        }
+
+        ($changedFieldLabels === [] ? $notification->warning() : $notification->success())
             ->send();
     }
 
@@ -1291,6 +1325,17 @@ class IntegrationSettings extends Page
         }
 
         throw new AuthorizationException('Bạn không có quyền cập nhật integration secrets.');
+    }
+
+    protected function isOperationallySensitiveField(string $key): bool
+    {
+        return in_array($key, [
+            'web_lead.enabled',
+            'zalo.enabled',
+            'zns.enabled',
+            'google_calendar.enabled',
+            'emr.enabled',
+        ], true);
     }
 
     protected function valueForAuditLog(mixed $value, bool $isSecret): ?string

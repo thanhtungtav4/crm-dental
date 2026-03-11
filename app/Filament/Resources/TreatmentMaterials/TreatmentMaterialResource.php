@@ -17,6 +17,15 @@ class TreatmentMaterialResource extends Resource
 {
     protected static ?string $model = TreatmentMaterial::class;
 
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasAnyRole(['Admin', 'Manager', 'Doctor'])
+            && $authUser->hasAnyAccessibleBranch();
+    }
+
     public static function getNavigationLabel(): string
     {
         return 'Vật tư sử dụng';

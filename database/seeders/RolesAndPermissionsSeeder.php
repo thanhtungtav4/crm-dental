@@ -116,10 +116,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 $managerPerms[] = $prefix.':'.$res; // e.g. ViewAny:Customer
             }
         }
-        foreach ($pages as $page) {
+        foreach (['FrontdeskControlCenter', 'DeliveryOpsCenter', 'FinancialDashboard', 'DentalChainReport', 'DentalApp'] as $page) {
             $managerPerms[] = 'View:'.$page;
         }
-        $managerPerms[] = 'View:IntegrationSettingsAuditLog';
         $managerPerms = array_merge($managerPerms, [
             ActionPermission::PAYMENT_REVERSAL,
             ActionPermission::WALLET_ADJUST,

@@ -13,11 +13,11 @@ beforeEach(function (): void {
     $this->withoutMiddleware(MustTwoFactor::class);
 });
 
-it('allows admin and manager personas to access the ops control center', function (string $email): void {
+it('allows only admin personas to access the ops control center', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $user = User::query()
-        ->where('email', $email)
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($user)
@@ -31,12 +31,9 @@ it('allows admin and manager personas to access the ops control center', functio
         ->assertSee('Governance & audit scope')
         ->assertSee('ZNS triage cockpit')
         ->assertSee('Readiness signoff fixture');
-})->with([
-    'admin' => 'admin@demo.ident.test',
-    'manager' => 'manager.q1@demo.ident.test',
-]);
+});
 
-it('blocks doctor and cskh personas from accessing the ops control center', function (string $email): void {
+it('blocks manager, doctor, and cskh personas from accessing the ops control center', function (string $email): void {
     seed(LocalDemoDataSeeder::class);
 
     $user = User::query()
@@ -47,6 +44,7 @@ it('blocks doctor and cskh personas from accessing the ops control center', func
         ->get(OpsControlCenter::getUrl())
         ->assertForbidden();
 })->with([
+    'manager' => 'manager.q1@demo.ident.test',
     'doctor' => 'doctor.q1@demo.ident.test',
     'cskh' => 'cskh.q1@demo.ident.test',
 ]);
@@ -95,11 +93,11 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
         ->assertSee('Danh sách campaign');
 });
 
-it('renders finance watchlists for admin and manager branch scope', function (string $email): void {
+it('renders finance watchlists for admin in the ops control center', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $user = User::query()
-        ->where('email', $email)
+        ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
     $this->actingAs($user)
@@ -110,10 +108,7 @@ it('renders finance watchlists for admin and manager branch scope', function (st
         ->assertSee(FinanceScenarioSeeder::REVERSAL_RECEIPT_TRANSACTION_REF)
         ->assertSee(FinanceScenarioSeeder::INSTALLMENT_PLAN_CODE)
         ->assertSee('QA Finance Installment');
-})->with([
-    'admin' => 'admin@demo.ident.test',
-    'manager' => 'manager.q1@demo.ident.test',
-]);
+});
 
 it('shows governance details for admin', function (): void {
     seed(LocalDemoDataSeeder::class);
@@ -130,7 +125,7 @@ it('shows governance details for admin', function (): void {
         ->assertSee('Admin scope available');
 });
 
-it('keeps manager on the role-limited governance overview', function (): void {
+it('forbids manager from the ops control center governance overview', function (): void {
     seed(LocalDemoDataSeeder::class);
 
     $manager = User::query()
@@ -139,9 +134,5 @@ it('keeps manager on the role-limited governance overview', function (): void {
 
     $this->actingAs($manager)
         ->get(OpsControlCenter::getUrl())
-        ->assertOk()
-        ->assertSee('Role-limited overview')
-        ->assertSee('Governance resource giữ admin-only theo baseline role matrix hiện tại.')
-        ->assertDontSee(GovernanceScenarioSeeder::ASSIGNED_DOCTOR_EMAIL)
-        ->assertDontSee(GovernanceScenarioSeeder::HIDDEN_USER_EMAIL);
+        ->assertForbidden();
 });

@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'accepted' => ':attribute phải được chấp nhận.',
+    'array' => ':attribute phải là một danh sách hợp lệ.',
+    'boolean' => ':attribute chỉ được chọn đúng hoặc sai.',
+    'date' => ':attribute không phải là ngày hợp lệ.',
+    'email' => ':attribute phải là địa chỉ email hợp lệ.',
+    'exists' => ':attribute đã chọn không hợp lệ.',
+    'in' => ':attribute đã chọn không hợp lệ.',
+    'integer' => ':attribute phải là số nguyên.',
+    'max' => [
+        'numeric' => ':attribute không được lớn hơn :max.',
+        'string' => ':attribute không được vượt quá :max ký tự.',
+        'array' => ':attribute không được có quá :max mục.',
+    ],
+    'min' => [
+        'numeric' => ':attribute phải lớn hơn hoặc bằng :min.',
+        'string' => ':attribute phải có ít nhất :min ký tự.',
+        'array' => ':attribute phải có ít nhất :min mục.',
+    ],
+    'nullable' => ':attribute có thể để trống.',
+    'regex' => ':attribute không đúng định dạng yêu cầu.',
+    'required' => ':attribute là bắt buộc.',
+    'string' => ':attribute phải là chuỗi ký tự.',
+    'url' => ':attribute phải là đường dẫn hợp lệ.',
+
+    'attributes' => [
+        'appointment_kind' => 'loại lịch hẹn',
+        'assistant_id' => 'trợ thủ',
+        'branch_id' => 'chi nhánh',
+        'date' => 'ngày',
+        'doctor_id' => 'bác sĩ',
+        'editingSessionDate' => 'ngày khám',
+        'email' => 'email',
+        'general_exam_notes' => 'ghi chú khám',
+        'invoice_id' => 'hóa đơn',
+        'notes' => 'ghi chú',
+        'patient_id' => 'bệnh nhân',
+        'performed_at' => 'thời gian thực hiện',
+        'phone' => 'số điện thoại',
+        'plan_item_id' => 'hạng mục kế hoạch',
+        'procedure' => 'quy trình',
+        'settingsRevision' => 'phiên cài đặt',
+        'status' => 'trạng thái',
+        'treatment_plan_id' => 'kế hoạch điều trị',
+    ],
+];

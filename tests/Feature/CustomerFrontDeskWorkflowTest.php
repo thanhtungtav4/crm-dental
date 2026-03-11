@@ -106,3 +106,24 @@ it('allows cskh to schedule appointments from the customer table and manage the 
         ->get(AppointmentResource::getUrl('edit', ['record' => $appointment]))
         ->assertOk();
 });
+
+it('supports frontdesk phone search even when the query contains spaces', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'full_name' => 'Duplicate QA Lead',
+        'phone' => '0909001092',
+    ]);
+
+    $this->actingAs($cskh);
+
+    Livewire::test(ListCustomers::class)
+        ->searchTable('0909 001 092')
+        ->assertCanSeeTableRecords([$customer]);
+});

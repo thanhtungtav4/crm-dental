@@ -30,6 +30,15 @@ class MaterialIssueNoteResource extends Resource
 
     protected static ?int $navigationSort = 7;
 
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasAnyRole(['Admin', 'Manager'])
+            && $authUser->hasAnyAccessibleBranch();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return MaterialIssueNoteForm::configure($schema)->columns(2);

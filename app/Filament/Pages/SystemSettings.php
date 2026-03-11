@@ -10,6 +10,7 @@ use App\Filament\Resources\PromotionGroups\PromotionGroupResource;
 use App\Filament\Resources\ServiceCategories\ServiceCategoryResource;
 use App\Filament\Resources\ToothConditions\ToothConditionResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Models\User;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 
@@ -28,6 +29,15 @@ class SystemSettings extends Page
     protected static ?string $slug = 'system-settings';
 
     protected string $view = 'filament.pages.system-settings';
+
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasRole('Admin')
+            && $authUser->can('View:SystemSettings');
+    }
 
     public function getHeading(): string
     {

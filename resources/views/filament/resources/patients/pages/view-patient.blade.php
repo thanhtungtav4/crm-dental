@@ -476,19 +476,19 @@
                 @elseif($activeTab === 'lab-materials')
                     <div class="crm-pane-stack" wire:key="patient-{{ $this->record->id }}-lab-materials">
                         <div class="crm-feature-card">
-                            <div class="crm-feature-card-head">
-                                <div>
-                                    <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
-                                    <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
-                                </div>
-                                @can('create', \App\Models\FactoryOrder::class)
+                                <div class="crm-feature-card-head">
+                                    <div>
+                                        <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
+                                        <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
+                                    </div>
+                                @if(\App\Filament\Resources\FactoryOrders\FactoryOrderResource::canAccess())
                                     <a
                                         href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
                                         class="crm-btn crm-btn-primary crm-btn-md"
                                         style="color: #ffffff;">
                                         Tạo lệnh labo
                                     </a>
-                                @endcan
+                                @endif
                             </div>
                         </div>
 
@@ -532,7 +532,7 @@
                                                 </td>
                                                 <td>{{ number_format((int) ($order->items_count ?? 0), 0, ',', '.') }}</td>
                                                 <td>
-                                                    @can('update', $order)
+                                                    @if(\App\Filament\Resources\FactoryOrders\FactoryOrderResource::canAccess())
                                                         <a
                                                             href="{{ route('filament.admin.resources.factory-orders.edit', ['record' => $order->id]) }}"
                                                             class="text-sm font-medium text-primary-600 hover:underline"
@@ -541,7 +541,7 @@
                                                         </a>
                                                     @else
                                                         <span class="text-sm text-gray-500">Khong co quyen</span>
-                                                    @endcan
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @empty
@@ -557,18 +557,20 @@
                         </div>
 
                         <div class="crm-feature-card">
-                            <div class="crm-feature-card-head">
-                                <div>
-                                    <h3 class="crm-feature-card-title">Phiếu xuất vật tư</h3>
-                                    <p class="crm-feature-card-description">Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.</p>
-                                </div>
-                                <a
-                                    href="{{ route('filament.admin.resources.material-issue-notes.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
-                                    class="crm-btn crm-btn-primary crm-btn-md"
-                                    style="color: #ffffff;"
-                                >
-                                    Tạo phiếu xuất
-                                </a>
+                                <div class="crm-feature-card-head">
+                                    <div>
+                                        <h3 class="crm-feature-card-title">Phiếu xuất vật tư</h3>
+                                        <p class="crm-feature-card-description">Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.</p>
+                                    </div>
+                                @if(\App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource::canAccess())
+                                    <a
+                                        href="{{ route('filament.admin.resources.material-issue-notes.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                        class="crm-btn crm-btn-primary crm-btn-md"
+                                        style="color: #ffffff;"
+                                    >
+                                        Tạo phiếu xuất
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -609,12 +611,16 @@
                                                 <td class="is-emphasis">{{ number_format((float) ($note->total_cost ?? 0), 0, ',', '.') }}đ</td>
                                                 <td>{{ $note->reason ?: '-' }}</td>
                                                 <td>
-                                                    <a
-                                                        href="{{ route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id]) }}"
-                                                        class="text-sm font-medium text-primary-600 hover:underline"
-                                                    >
-                                                        Chi tiết
-                                                    </a>
+                                                    @if(\App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource::canAccess())
+                                                        <a
+                                                            href="{{ route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id]) }}"
+                                                            class="text-sm font-medium text-primary-600 hover:underline"
+                                                        >
+                                                            Chi tiết
+                                                        </a>
+                                                    @else
+                                                        <span class="text-sm text-gray-500">Khong co quyen</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @empty
@@ -630,15 +636,17 @@
                         </div>
 
                         <div class="crm-feature-card">
-                            <div class="crm-feature-card-head">
-                                <div>
-                                    <h3 class="crm-feature-card-title">Vật tư đã dùng trong phiên điều trị</h3>
-                                    <p class="crm-feature-card-description">Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.</p>
-                                </div>
-                                <a href="{{ route('filament.admin.resources.treatment-materials.create') }}"
-                                    class="crm-btn crm-btn-outline crm-btn-md">
-                                    Thêm vật tư phiên
-                                </a>
+                                <div class="crm-feature-card-head">
+                                    <div>
+                                        <h3 class="crm-feature-card-title">Vật tư đã dùng trong phiên điều trị</h3>
+                                        <p class="crm-feature-card-description">Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.</p>
+                                    </div>
+                                @if(\App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource::canAccess())
+                                    <a href="{{ route('filament.admin.resources.treatment-materials.create') }}"
+                                        class="crm-btn crm-btn-outline crm-btn-md">
+                                        Thêm vật tư phiên
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -698,12 +706,14 @@
                                             {{ $this->paymentSummary['balance_amount_formatted'] }}đ
                                         </strong>
                                     </div>
-                                    <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-primary crm-btn-md">
-                                        Phiếu thu
-                                    </a>
-                                    <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-outline crm-btn-md">
-                                        Thanh toán
-                                    </a>
+                                    @if((auth()->user()?->can('create', \App\Models\Payment::class) ?? false) && filled($this->paymentSummary['create_payment_url']))
+                                        <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-primary crm-btn-md">
+                                            Phiếu thu
+                                        </a>
+                                        <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-outline crm-btn-md">
+                                            Thanh toán
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
 
@@ -731,21 +741,25 @@
                             </div>
                         </div>
 
-                        <div class="crm-payment-block">
-                            <div class="crm-payment-block-title">HÓA ĐƠN ĐIỀU TRỊ</div>
-                            @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
-                                'ownerRecord' => $this->record,
-                                'pageClass' => static::class,
-                            ])
-                        </div>
+                        @if(auth()->user()?->can('viewAny', \App\Models\Invoice::class) ?? false)
+                            <div class="crm-payment-block">
+                                <div class="crm-payment-block-title">HÓA ĐƠN ĐIỀU TRỊ</div>
+                                @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
+                                    'ownerRecord' => $this->record,
+                                    'pageClass' => static::class,
+                                ])
+                            </div>
+                        @endif
 
-                        <div class="crm-payment-block">
-                            <div class="crm-payment-block-title">DANH SÁCH PHIẾU THU - HOÀN ỨNG</div>
-                            @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class, [
-                                'ownerRecord' => $this->record,
-                                'pageClass' => static::class,
-                            ])
-                        </div>
+                        @if(auth()->user()?->can('viewAny', \App\Models\Payment::class) ?? false)
+                            <div class="crm-payment-block">
+                                <div class="crm-payment-block-title">DANH SÁCH PHIẾU THU - HOÀN ỨNG</div>
+                                @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class, [
+                                    'ownerRecord' => $this->record,
+                                    'pageClass' => static::class,
+                                ])
+                            </div>
+                        @endif
                     </div>
                 @elseif($activeTab === 'forms')
                     <div class="crm-pane-stack" wire:key="patient-{{ $this->record->id }}-forms">
@@ -757,40 +771,44 @@
                         </div>
 
                         <div class="crm-forms-grid">
-                            <div class="crm-feature-card">
-                                <h4 class="crm-feature-subtitle">Đơn thuốc gần nhất</h4>
-                                <div class="crm-link-list">
-                                    @forelse($this->latestPrescriptions as $prescription)
-                                        <a href="{{ route('prescriptions.print', $prescription) }}"
-                                            target="_blank"
-                                            class="crm-link-list-item">
-                                            <span class="crm-link-list-item-text">
-                                                {{ $prescription->prescription_code }} - {{ $prescription->treatment_date?->format('d/m/Y') ?? '-' }}
-                                            </span>
-                                            <span class="crm-link-list-item-action">In</span>
-                                        </a>
-                                    @empty
-                                        <p class="crm-link-list-empty">Chưa có đơn thuốc để in.</p>
-                                    @endforelse
+                            @if(auth()->user()?->can('viewAny', \App\Models\Prescription::class) ?? false)
+                                <div class="crm-feature-card">
+                                    <h4 class="crm-feature-subtitle">Đơn thuốc gần nhất</h4>
+                                    <div class="crm-link-list">
+                                        @forelse($this->latestPrescriptions as $prescription)
+                                            <a href="{{ route('prescriptions.print', $prescription) }}"
+                                                target="_blank"
+                                                class="crm-link-list-item">
+                                                <span class="crm-link-list-item-text">
+                                                    {{ $prescription->prescription_code }} - {{ $prescription->treatment_date?->format('d/m/Y') ?? '-' }}
+                                                </span>
+                                                <span class="crm-link-list-item-action">In</span>
+                                            </a>
+                                        @empty
+                                            <p class="crm-link-list-empty">Chưa có đơn thuốc để in.</p>
+                                        @endforelse
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="crm-feature-card">
-                                <h4 class="crm-feature-subtitle">Hóa đơn gần nhất</h4>
-                                <div class="crm-link-list">
-                                    @forelse($this->latestInvoices as $invoice)
-                                        <a href="{{ route('invoices.print', $invoice) }}"
-                                            target="_blank"
-                                            class="crm-link-list-item">
-                                            <span class="crm-link-list-item-text">
-                                                #{{ $invoice->invoice_no }} - {{ $invoice->issued_at?->format('d/m/Y') ?? $invoice->created_at?->format('d/m/Y') }}
-                                            </span>
-                                            <span class="crm-link-list-item-action">In</span>
-                                        </a>
-                                    @empty
-                                        <p class="crm-link-list-empty">Chưa có hóa đơn để in.</p>
-                                    @endforelse
+                            @endif
+                            @if(auth()->user()?->can('viewAny', \App\Models\Invoice::class) ?? false)
+                                <div class="crm-feature-card">
+                                    <h4 class="crm-feature-subtitle">Hóa đơn gần nhất</h4>
+                                    <div class="crm-link-list">
+                                        @forelse($this->latestInvoices as $invoice)
+                                            <a href="{{ route('invoices.print', $invoice) }}"
+                                                target="_blank"
+                                                class="crm-link-list-item">
+                                                <span class="crm-link-list-item-text">
+                                                    #{{ $invoice->invoice_no }} - {{ $invoice->issued_at?->format('d/m/Y') ?? $invoice->created_at?->format('d/m/Y') }}
+                                                </span>
+                                                <span class="crm-link-list-item-action">In</span>
+                                            </a>
+                                        @empty
+                                            <p class="crm-link-list-empty">Chưa có hóa đơn để in.</p>
+                                        @endforelse
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 @elseif($activeTab === 'care')

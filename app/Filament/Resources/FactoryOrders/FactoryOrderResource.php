@@ -30,6 +30,15 @@ class FactoryOrderResource extends Resource
 
     protected static ?int $navigationSort = 36;
 
+    public static function canAccess(): bool
+    {
+        $authUser = auth()->user();
+
+        return $authUser instanceof User
+            && $authUser->hasAnyRole(['Admin', 'Manager', 'Doctor'])
+            && $authUser->hasAnyAccessibleBranch();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return FactoryOrderForm::configure($schema)->columns(2);

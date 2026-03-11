@@ -142,24 +142,11 @@ class PatientExamForm extends Component
             return;
         }
 
-        $this->patient->clinicalNotes()->create([
-            'exam_session_id' => $session->id,
-            'patient_id' => $this->patient->id,
-            'visit_episode_id' => $visitEpisodeId,
-            'doctor_id' => Auth::id(),
-            'branch_id' => $this->patient->first_branch_id,
-            'date' => $sessionDate,
-            'indications' => [],
-            'indication_images' => [],
-            'tooth_diagnosis_data' => [],
-            'created_by' => Auth::id(),
-            'updated_by' => Auth::id(),
-        ]);
-
         $this->setActiveSession($session->id);
 
         Notification::make()
-            ->title('Đã tạo phiếu khám mới')
+            ->title('Đã mở phiếu khám mới')
+            ->body('Phiếu khám chỉ được lưu khi bạn bắt đầu nhập dữ liệu lâm sàng.')
             ->success()
             ->send();
     }
@@ -177,20 +164,7 @@ class PatientExamForm extends Component
         $note = $session->clinicalNote;
 
         if (! $note) {
-            $note = $this->patient->clinicalNotes()->create([
-                'exam_session_id' => $session->id,
-                'patient_id' => $this->patient->id,
-                'visit_episode_id' => $session->visit_episode_id,
-                'doctor_id' => $session->doctor_id,
-                'branch_id' => $session->branch_id,
-                'date' => $session->session_date?->toDateString() ?? now()->toDateString(),
-                'indications' => [],
-                'indication_images' => [],
-                'tooth_diagnosis_data' => [],
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id(),
-            ]);
-            $session->refresh();
+            $note = $this->makeDraftClinicalNoteForSession($session);
         }
 
         $this->examSession = $session;
@@ -516,31 +490,26 @@ class PatientExamForm extends Component
 
     public function saveData(): void
     {
-        if (! $this->clinicalNote) {
+        if (! $this->examSession) {
             return;
         }
 
         $this->authorizeClinicalWrite();
 
-        $normalizedIndications = $this->normalizeIndications($this->indications);
+        if (! $this->clinicalNote || ! $this->clinicalNote->exists) {
+            $this->clinicalNote = $this->ensurePersistedClinicalNote();
 
-        $data = [
-            'examining_doctor_id' => $this->examining_doctor_id,
-            'treating_doctor_id' => $this->treating_doctor_id,
-            'general_exam_notes' => $this->general_exam_notes,
-            'treatment_plan_note' => $this->treatment_plan_note,
-            'indications' => $normalizedIndications,
-            'indication_images' => $this->normalizeIndicationImages($this->indicationImages, $normalizedIndications),
-            'tooth_diagnosis_data' => $this->tooth_diagnosis_data,
-            'other_diagnosis' => $this->other_diagnosis,
-            'updated_by' => Auth::id(),
-        ];
+            if (! $this->clinicalNote) {
+                return;
+            }
 
-        if (! $this->clinicalNote->visit_episode_id) {
-            $data['visit_episode_id'] = $this->resolveEncounterIdForDate(
-                $this->clinicalNote->date?->toDateString() ?? now()->toDateString(),
-            );
+            $this->clinicalNoteVersion = (int) ($this->clinicalNote->lock_version ?: 1);
+            $this->dispatch('saved');
+
+            return;
         }
+
+        $data = $this->buildClinicalNotePayload();
 
         try {
             $this->clinicalNote = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
@@ -772,6 +741,7 @@ class PatientExamForm extends Component
 
     protected function resetExamForm(): void
     {
+        $this->clinicalNote = null;
         $this->examSession = null;
         $this->examining_doctor_id = null;
         $this->treating_doctor_id = null;
@@ -933,7 +903,9 @@ class PatientExamForm extends Component
 
     protected function persistClinicalMediaAsset(string $indicationType, string $storagePath): void
     {
-        if (! $this->clinicalNote) {
+        $clinicalNote = $this->ensurePersistedClinicalNote();
+
+        if (! $clinicalNote) {
             return;
         }
 
@@ -960,10 +932,10 @@ class PatientExamForm extends Component
 
         $asset = ClinicalMediaAsset::query()->create([
             'patient_id' => (int) $this->patient->id,
-            'visit_episode_id' => $this->clinicalNote->visit_episode_id ? (int) $this->clinicalNote->visit_episode_id : null,
+            'visit_episode_id' => $clinicalNote->visit_episode_id ? (int) $clinicalNote->visit_episode_id : null,
             'exam_session_id' => $this->examSession?->id ? (int) $this->examSession->id : null,
-            'branch_id' => $this->clinicalNote->branch_id
-                ? (int) $this->clinicalNote->branch_id
+            'branch_id' => $clinicalNote->branch_id
+                ? (int) $clinicalNote->branch_id
                 : ($this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null),
             'captured_by' => Auth::id() ?: null,
             'captured_at' => now(),
@@ -980,7 +952,7 @@ class PatientExamForm extends Component
             'legal_hold' => false,
             'meta' => [
                 'source_table' => 'clinical_notes.indication_images',
-                'source_id' => (int) $this->clinicalNote->id,
+                'source_id' => (int) $clinicalNote->id,
                 'indication_type' => $normalizedType,
             ],
         ]);
@@ -1081,6 +1053,106 @@ class PatientExamForm extends Component
     protected function normalizeIndicationKey(string $key): string
     {
         return ClinicRuntimeSettings::normalizeExamIndicationKey($key);
+    }
+
+    protected function makeDraftClinicalNoteForSession(ExamSession $session): ClinicalNote
+    {
+        $defaultDoctorId = $this->resolveDefaultDoctorIdForSession($session);
+
+        return new ClinicalNote([
+            'exam_session_id' => $session->id,
+            'patient_id' => $this->patient->id,
+            'visit_episode_id' => $session->visit_episode_id,
+            'doctor_id' => $session->doctor_id ?: $defaultDoctorId,
+            'branch_id' => $session->branch_id ?: $this->patient->first_branch_id,
+            'date' => $session->session_date?->toDateString() ?? now()->toDateString(),
+            'examining_doctor_id' => $defaultDoctorId,
+            'treating_doctor_id' => $defaultDoctorId,
+            'indications' => [],
+            'indication_images' => [],
+            'tooth_diagnosis_data' => [],
+            'other_diagnosis' => '',
+        ]);
+    }
+
+    protected function resolveDefaultDoctorIdForSession(ExamSession $session): ?int
+    {
+        if (is_numeric($session->doctor_id)) {
+            return (int) $session->doctor_id;
+        }
+
+        $authUser = Auth::user();
+
+        if ($authUser instanceof User && $authUser->hasRole('Doctor')) {
+            return $authUser->getKey();
+        }
+
+        return null;
+    }
+
+    protected function ensurePersistedClinicalNote(): ?ClinicalNote
+    {
+        if (! $this->examSession) {
+            return null;
+        }
+
+        if ($this->clinicalNote?->exists) {
+            return $this->clinicalNote;
+        }
+
+        $existingNote = $this->patient->clinicalNotes()
+            ->where('exam_session_id', $this->examSession->id)
+            ->first();
+
+        if ($existingNote) {
+            $this->clinicalNote = $existingNote;
+
+            return $this->clinicalNote;
+        }
+
+        $this->clinicalNote = $this->patient->clinicalNotes()->create(array_merge(
+            [
+                'exam_session_id' => $this->examSession->id,
+                'patient_id' => $this->patient->id,
+                'doctor_id' => $this->examSession->doctor_id ?: $this->resolveDefaultDoctorIdForSession($this->examSession),
+                'branch_id' => $this->examSession->branch_id ?: $this->patient->first_branch_id,
+                'date' => $this->examSession->session_date?->toDateString() ?? now()->toDateString(),
+                'created_by' => Auth::id(),
+            ],
+            $this->buildClinicalNotePayload(),
+        ));
+
+        $this->examSession = $this->examSession->fresh(['clinicalNote']);
+
+        return $this->clinicalNote;
+    }
+
+    protected function buildClinicalNotePayload(): array
+    {
+        $normalizedIndications = $this->normalizeIndications($this->indications);
+        $noteDate = $this->clinicalNote?->date?->toDateString()
+            ?? $this->examSession?->session_date?->toDateString()
+            ?? now()->toDateString();
+
+        $visitEpisodeId = $this->clinicalNote?->visit_episode_id
+            ?: $this->examSession?->visit_episode_id;
+
+        if (! $visitEpisodeId) {
+            $visitEpisodeId = $this->resolveEncounterIdForDate($noteDate);
+        }
+
+        return [
+            'visit_episode_id' => $visitEpisodeId,
+            'examining_doctor_id' => $this->examining_doctor_id,
+            'treating_doctor_id' => $this->treating_doctor_id,
+            'general_exam_notes' => $this->general_exam_notes,
+            'treatment_plan_note' => $this->treatment_plan_note,
+            'indications' => $normalizedIndications,
+            'indication_images' => $this->normalizeIndicationImages($this->indicationImages, $normalizedIndications),
+            'tooth_diagnosis_data' => $this->tooth_diagnosis_data,
+            'other_diagnosis' => $this->other_diagnosis,
+            'updated_by' => Auth::id(),
+        ];
     }
 
     protected function resolveEncounterIdForDate(string $date): ?int

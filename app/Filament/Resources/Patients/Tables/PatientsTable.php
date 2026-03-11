@@ -106,6 +106,7 @@ class PatientsTable
             ])
             ->filters([])
             ->defaultSort('created_at', direction: 'desc')
+            ->splitSearchTerms(false)
             ->recordActions([
                 \Filament\Actions\ViewAction::make(),
                 EditAction::make(),
