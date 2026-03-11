@@ -127,12 +127,14 @@ function loginToAdminPanel(string $email, ?string $recoveryCode = null): Pending
 
     $page->fill('input[type="email"]', $email)
         ->fill('input[type="password"]', LocalDemoDataSeeder::DEFAULT_DEMO_PASSWORD)
-        ->click('button[type="submit"]');
+        ->click('button[type="submit"]')
+        ->wait(0.5);
 
-    if ($recoveryCode !== null) {
-        $page->click('a[href="#"]')
+    if ($recoveryCode !== null && str_contains($page->url(), '/two-factor-authentication')) {
+        $page->click('Sử dụng mã khôi phục')
             ->fill('input[placeholder="abcdef-98765"]', $recoveryCode)
-            ->click('button[type="submit"]');
+            ->click('button[type="submit"]')
+            ->wait(0.5);
     }
 
     return $page->assertPathIs('/admin');
