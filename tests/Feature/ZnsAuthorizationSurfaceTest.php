@@ -25,6 +25,27 @@ it('blocks doctors from accessing zns resource and page surfaces', function (): 
         ->assertForbidden();
 });
 
+it('blocks cskh from accessing zns campaign surfaces', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $this->actingAs($cskh)
+        ->get(ZnsCampaignResource::getUrl('index'))
+        ->assertForbidden();
+
+    $this->actingAs($cskh)
+        ->get(ZnsCampaignResource::getUrl('create'))
+        ->assertForbidden();
+
+    $this->actingAs($cskh)
+        ->get(ZaloZns::getUrl())
+        ->assertForbidden();
+});
+
 it('allows managers to access zns resource and page surfaces', function (): void {
     $branch = Branch::factory()->create();
 

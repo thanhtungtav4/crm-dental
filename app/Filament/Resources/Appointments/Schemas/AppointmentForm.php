@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\Appointments\Schemas;
 
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Models\Patient;
+use App\Models\User;
 use App\Services\AppointmentSearchService;
 use App\Services\DoctorBranchAssignmentService;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Forms;
@@ -87,26 +90,36 @@ class AppointmentForm
                             ->schema(\App\Filament\Schemas\SharedSchemas::customerProfileFields())
                             ->columns(2),
                     ])
-                    ->createOptionUsing(function (array $data): int {
-                        $branchId = BranchAccess::defaultBranchIdForCurrentUser();
+                    ->createOptionUsing(function (Forms\Components\Select $component, array $data): int {
+                        $authorizer = app(PatientAssignmentAuthorizer::class);
+                        $branchId = filled(data_get($component->getLivewire(), 'data.branch_id'))
+                            ? (int) data_get($component->getLivewire(), 'data.branch_id')
+                            : BranchAccess::defaultBranchIdForCurrentUser();
+                        $assignedTo = $authorizer
+                            ->scopeAssignableStaff(User::query()->whereKey(auth()->id()), auth()->user(), $branchId)
+                            ->value('id');
 
-                        // Chỉ tạo Customer (Lead)
-                        $customer = \App\Models\Customer::create([
-                            'branch_id' => $branchId,
-                            'full_name' => $data['full_name'],
-                            'phone' => $data['phone'],
-                            'email' => $data['email'] ?? null,
-                            'address' => $data['address'] ?? null,
-                            'gender' => $data['gender'] ?? array_key_first(ClinicRuntimeSettings::genderOptions()) ?? 'male',
-                            'birthday' => $data['birthday'] ?? null,
-                            'source' => array_key_exists('appointment', ClinicRuntimeSettings::customerSourceOptions())
-                                ? 'appointment'
-                                : ClinicRuntimeSettings::defaultCustomerSource(),
-                            'status' => ClinicRuntimeSettings::defaultCustomerStatus(),
-                            'assigned_to' => auth()->id(),
-                            'created_by' => auth()->id(),
-                            'updated_by' => auth()->id(),
-                        ]);
+                        $customer = Customer::create(
+                            $authorizer->sanitizeCustomerFormData(
+                                auth()->user(),
+                                [
+                                    'branch_id' => $branchId,
+                                    'full_name' => $data['full_name'],
+                                    'phone' => $data['phone'],
+                                    'email' => $data['email'] ?? null,
+                                    'address' => $data['address'] ?? null,
+                                    'gender' => $data['gender'] ?? array_key_first(ClinicRuntimeSettings::genderOptions()) ?? 'male',
+                                    'birthday' => $data['birthday'] ?? null,
+                                    'source' => array_key_exists('appointment', ClinicRuntimeSettings::customerSourceOptions())
+                                        ? 'appointment'
+                                        : ClinicRuntimeSettings::defaultCustomerSource(),
+                                    'status' => ClinicRuntimeSettings::defaultCustomerStatus(),
+                                    'assigned_to' => $assignedTo,
+                                    'created_by' => auth()->id(),
+                                    'updated_by' => auth()->id(),
+                                ],
+                            ),
+                        );
 
                         \Filament\Notifications\Notification::make()
                             ->title('Đã tạo nguồn lead mới thành công!')

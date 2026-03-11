@@ -32,9 +32,9 @@ class CustomsCareStatistical extends BaseReportPage
     {
         $authUser = auth()->user();
 
-        return $authUser instanceof User
-            && $authUser->can('ViewAny:Note')
-            && $authUser->hasAnyAccessibleBranch();
+        return parent::canAccess()
+            && $authUser instanceof User
+            && $authUser->can('ViewAny:Note');
     }
 
     protected function getDateColumn(): ?string

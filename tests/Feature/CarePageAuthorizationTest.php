@@ -46,6 +46,19 @@ it('blocks doctors from accessing the care statistical report', function (): voi
         ->assertForbidden();
 });
 
+it('blocks cskh from accessing the care statistical report', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $this->actingAs($cskh)
+        ->get(CustomsCareStatistical::getUrl())
+        ->assertForbidden();
+});
+
 it('scopes care statistical aggregates to accessible branches when no branch filter is selected', function (): void {
     $branchA = Branch::factory()->create();
     $branchB = Branch::factory()->create();

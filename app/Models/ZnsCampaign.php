@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -252,11 +251,15 @@ class ZnsCampaign extends Model
 
     public static function canAccessModule(?User $authUser): bool
     {
-        return $authUser instanceof User
-            && (
-                $authUser->hasRole('Admin')
-                || ($authUser->can(ActionPermission::AUTOMATION_RUN) && $authUser->hasAnyAccessibleBranch())
-            );
+        if (! $authUser instanceof User) {
+            return false;
+        }
+
+        if ($authUser->hasRole('Admin')) {
+            return true;
+        }
+
+        return $authUser->hasRole('Manager') && $authUser->hasAnyAccessibleBranch();
     }
 
     public function isVisibleTo(User $authUser): bool
