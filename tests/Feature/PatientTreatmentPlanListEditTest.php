@@ -155,7 +155,7 @@ it('captures exam-treatment workspace url once and reuses it for create and edit
 
     expect($pageClass)
         ->toContain("public string \$workspaceReturnUrl = '';")
-        ->toContain('$this->workspaceReturnUrl = request()->fullUrl();')
+        ->toContain('$this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($this->activeTab);')
         ->toContain("'return_url' => \$this->workspaceReturnUrl");
 
     expect($blade)

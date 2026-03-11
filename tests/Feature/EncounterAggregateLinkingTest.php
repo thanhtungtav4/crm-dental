@@ -41,13 +41,14 @@ it('links new clinical note session to existing appointment encounter by date', 
         ->set('newSessionDate', $appointmentDate->toDateString())
         ->call('createSession');
 
-    $clinicalNote = $patient->clinicalNotes()
-        ->whereDate('date', $appointmentDate->toDateString())
+    $examSession = $patient->examSessions()
+        ->whereDate('session_date', $appointmentDate->toDateString())
         ->latest('id')
         ->first();
 
-    expect($clinicalNote)->not->toBeNull()
-        ->and((int) $clinicalNote?->visit_episode_id)->toBe((int) $encounter?->id);
+    expect($examSession)->not->toBeNull()
+        ->and((int) $examSession?->visit_episode_id)->toBe((int) $encounter?->id)
+        ->and($examSession?->clinicalNote)->toBeNull();
 });
 
 it('creates standalone encounter when clinical note has no matching appointment', function () {
@@ -62,14 +63,15 @@ it('creates standalone encounter when clinical note has no matching appointment'
         ->set('newSessionDate', $sessionDate)
         ->call('createSession');
 
-    $clinicalNote = $patient->clinicalNotes()
-        ->whereDate('date', $sessionDate)
+    $examSession = $patient->examSessions()
+        ->whereDate('session_date', $sessionDate)
         ->latest('id')
         ->first();
 
-    $encounter = VisitEpisode::query()->find($clinicalNote?->visit_episode_id);
+    $encounter = VisitEpisode::query()->find($examSession?->visit_episode_id);
 
-    expect($clinicalNote)->not->toBeNull()
+    expect($examSession)->not->toBeNull()
+        ->and($examSession?->clinicalNote)->toBeNull()
         ->and($encounter)->not->toBeNull()
         ->and($encounter?->appointment_id)->toBeNull()
         ->and((int) $encounter?->patient_id)->toBe((int) $patient->id)

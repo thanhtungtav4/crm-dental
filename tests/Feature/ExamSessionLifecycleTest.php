@@ -85,7 +85,20 @@ it('blocks deleting an exam session when clinical order exists', function (): vo
         ->call('createSession');
 
     $session = ExamSession::query()->where('patient_id', $patient->id)->firstOrFail();
-    $note = ClinicalNote::query()->where('exam_session_id', $session->id)->firstOrFail();
+    $note = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $patient->first_branch_id,
+        'exam_session_id' => $session->id,
+        'visit_episode_id' => $session->visit_episode_id,
+        'date' => '2026-03-02',
+        'general_exam_notes' => 'Đã bắt đầu khám, không được xóa phiên khi có chỉ định.',
+        'indications' => [],
+        'indication_images' => [],
+        'tooth_diagnosis_data' => [],
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
 
     ClinicalOrder::query()->create([
         'clinical_note_id' => $note->id,

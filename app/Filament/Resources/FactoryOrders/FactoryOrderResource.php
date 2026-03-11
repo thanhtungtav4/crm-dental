@@ -35,7 +35,7 @@ class FactoryOrderResource extends Resource
         $authUser = auth()->user();
 
         return $authUser instanceof User
-            && $authUser->hasAnyRole(['Admin', 'Manager', 'Doctor'])
+            && $authUser->hasAnyRole(['Admin', 'Manager'])
             && $authUser->hasAnyAccessibleBranch();
     }
 

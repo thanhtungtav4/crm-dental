@@ -52,6 +52,8 @@ it('shows web lead api integration guide in settings page', function () {
 });
 
 it('renders concrete input html for integration text fields', function () {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $html = Livewire::test(IntegrationSettings::class)->html();
 
     expect($html)
@@ -77,6 +79,8 @@ it('exposes web lead realtime notification toggle and role selector fields', fun
         ->and($webLeadFields->has('web_lead.realtime_notification_roles'))->toBeTrue()
         ->and($webLeadFields->get('web_lead.realtime_notification_roles')['type'] ?? null)->toBe('roles');
 
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $html = Livewire::test(IntegrationSettings::class)->html();
 
     expect($html)
@@ -101,6 +105,8 @@ it('exposes web lead internal email runtime fields in integration settings', fun
         ->and($webLeadFields->get('web_lead.internal_email_smtp_scheme')['type'] ?? null)->toBe('select')
         ->and($webLeadFields->has('web_lead.internal_email_from_address'))->toBeTrue()
         ->and($webLeadFields->has('web_lead.internal_email_from_name'))->toBeTrue();
+
+    actingAsIntegrationSettingsProvidersAdmin();
 
     $html = Livewire::test(IntegrationSettings::class)->html();
 
@@ -151,6 +157,8 @@ it('can autogenerate web lead api token in form state', function () {
 });
 
 it('normalizes exam indication image alias keys to canonical keys in catalog editor', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $component = Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_exam_indications_json', [
             ['key' => 'image_ext', 'label' => 'Ảnh ngoài'],
@@ -164,6 +172,8 @@ it('normalizes exam indication image alias keys to canonical keys in catalog edi
 });
 
 it('auto generates catalog key from label for new row', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $component = Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_customer_sources_json', [
             ['key' => '', 'label' => 'Tư vấn trực tiếp', 'enabled' => true],
@@ -191,6 +201,8 @@ it('auto generates and persists key on save when key is empty', function (): voi
 });
 
 it('allows deleting exam indication rows including ext and int', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
     $component = Livewire::test(IntegrationSettings::class)
         ->set('catalogEditors.catalog_exam_indications_json', [
             ['key' => 'ext', 'label' => 'Ảnh (ext)'],
