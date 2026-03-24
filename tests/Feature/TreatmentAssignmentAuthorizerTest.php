@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\DoctorBranchAssignment;
+use App\Models\Patient;
+use App\Models\TreatmentPlan;
 use App\Models\User;
 use App\Services\TreatmentAssignmentAuthorizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -85,6 +88,15 @@ it('rejects cross branch doctor payloads for treatment plans', function (): void
     $branchA = Branch::factory()->create();
     $branchB = Branch::factory()->create();
 
+    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+    $patientA = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+        'full_name' => $customerA->full_name,
+        'phone' => $customerA->phone,
+        'email' => $customerA->email,
+    ]);
+
     $manager = User::factory()->create([
         'branch_id' => $branchA->id,
     ]);
@@ -97,9 +109,61 @@ it('rejects cross branch doctor payloads for treatment plans', function (): void
     $doctor->assignRole('Doctor');
 
     expect(fn () => app(TreatmentAssignmentAuthorizer::class)->sanitizeTreatmentPlanFormData($manager, [
+        'patient_id' => $patientA->id,
         'branch_id' => $branchA->id,
         'doctor_id' => $doctor->id,
     ]))->toThrow(ValidationException::class, 'Bác sĩ được chọn không thuộc phạm vi chi nhánh');
+});
+
+it('rejects out of scope patient payloads and scopes treatment plans by accessible branches', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+    $patientA = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+        'full_name' => $customerA->full_name,
+        'phone' => $customerA->phone,
+        'email' => $customerA->email,
+    ]);
+
+    $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
+    $patientB = Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+        'full_name' => $customerB->full_name,
+        'phone' => $customerB->phone,
+        'email' => $customerB->email,
+    ]);
+
+    $planA = TreatmentPlan::factory()->create([
+        'patient_id' => $patientA->id,
+        'branch_id' => $branchA->id,
+    ]);
+    $planB = TreatmentPlan::factory()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+    ]);
+
+    $this->actingAs($manager);
+
+    $authorizer = app(TreatmentAssignmentAuthorizer::class);
+
+    expect(fn () => $authorizer->sanitizeTreatmentPlanFormData($manager, [
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchA->id,
+        'doctor_id' => null,
+    ]))->toThrow(ValidationException::class, 'Bệnh nhân được chọn không thuộc phạm vi chi nhánh')
+        ->and($authorizer->findAccessiblePatient($manager, $patientA->id)?->id)->toBe($patientA->id)
+        ->and($authorizer->findAccessiblePatient($manager, $patientB->id))->toBeNull()
+        ->and($authorizer->scopeAccessibleTreatmentPlans(TreatmentPlan::query(), $manager)->pluck('id')->all())->toContain($planA->id)
+        ->and($authorizer->scopeAccessibleTreatmentPlans(TreatmentPlan::query(), $manager)->pluck('id')->all())->not->toContain($planB->id);
 });
 
 it('rejects cross branch staff payloads for treatment sessions', function (): void {

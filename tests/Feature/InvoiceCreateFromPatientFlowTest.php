@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\Invoices\Pages\CreateInvoice;
+use App\Models\Branch;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\PlanItem;
@@ -94,4 +95,36 @@ it('hydrates patient and subtotal from selected treatment plan when creating inv
         ->and($invoice->treatment_plan_id)->toBe($plan->id)
         ->and((float) $invoice->subtotal)->toEqualWithDelta(1000000.0, 0.01)
         ->and((float) $invoice->total_amount)->toEqualWithDelta(1000000.0, 0.01);
+});
+
+it('ignores hidden patient and treatment plan query params outside the accessible branch scope', function () {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $hiddenPatient = Patient::factory()->create([
+        'first_branch_id' => $branchB->id,
+    ]);
+
+    $hiddenPlan = TreatmentPlan::factory()->create([
+        'patient_id' => $hiddenPatient->id,
+        'branch_id' => $branchB->id,
+        'status' => TreatmentPlan::STATUS_APPROVED,
+    ]);
+
+    $component = Livewire::actingAs($manager)
+        ->withQueryParams([
+            'patient_id' => $hiddenPatient->id,
+            'treatment_plan_id' => $hiddenPlan->id,
+        ])
+        ->test(CreateInvoice::class);
+
+    expect($component->get('data.patient_id'))->toBeNull()
+        ->and($component->get('data.treatment_plan_id'))->toBeNull()
+        ->and((float) $component->get('data.subtotal'))->toEqualWithDelta(0.0, 0.01)
+        ->and((float) $component->get('data.total_amount'))->toEqualWithDelta(0.0, 0.01);
 });

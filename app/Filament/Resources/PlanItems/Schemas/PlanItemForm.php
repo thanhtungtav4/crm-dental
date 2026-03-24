@@ -6,6 +6,7 @@ use App\Models\PatientToothCondition;
 use App\Models\PlanItem;
 use App\Models\Service;
 use App\Models\TreatmentPlan;
+use App\Services\TreatmentAssignmentAuthorizer;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -45,7 +46,7 @@ class PlanItemForm
                                     return '-';
                                 }
 
-                                $plan = TreatmentPlan::query()
+                                $plan = self::scopeAccessibleTreatmentPlanQuery(TreatmentPlan::query())
                                     ->with('patient:id,full_name,phone')
                                     ->find((int) $planId);
 
@@ -267,7 +268,7 @@ class PlanItemForm
             return [];
         }
 
-        $plan = TreatmentPlan::query()
+        $plan = self::scopeAccessibleTreatmentPlanQuery(TreatmentPlan::query())
             ->select(['id', 'patient_id'])
             ->find((int) $treatmentPlanId);
 
@@ -302,6 +303,8 @@ class PlanItemForm
 
     private static function scopeTreatmentPlanQueryByContext(Builder $query): Builder
     {
+        $query = self::scopeAccessibleTreatmentPlanQuery($query);
+
         $patientIdFromRequest = request()->integer('patient_id');
 
         if ($patientIdFromRequest > 0) {
@@ -309,5 +312,16 @@ class PlanItemForm
         }
 
         return $query;
+    }
+
+    private static function scopeAccessibleTreatmentPlanQuery(Builder $query): Builder
+    {
+        $actor = auth()->user();
+
+        if ($actor instanceof \App\Models\User) {
+            return app(TreatmentAssignmentAuthorizer::class)->scopeAccessibleTreatmentPlans($query, $actor);
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 }

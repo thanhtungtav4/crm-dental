@@ -3,9 +3,8 @@
 namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Filament\Resources\Invoices\Schemas\InvoiceForm;
 use App\Models\Invoice;
-use App\Models\TreatmentPlan;
-use App\Models\TreatmentSession;
 use App\Services\InvoiceWorkflowService;
 use App\Support\BranchAccess;
 use Filament\Resources\Pages\CreateRecord;
@@ -16,9 +15,9 @@ class CreateInvoice extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $patientIdFromRequest = request()->integer('patient_id') ?: null;
-        $planIdFromRequest = request()->integer('treatment_plan_id') ?: null;
-        $sessionIdFromRequest = request()->integer('treatment_session_id') ?: null;
+        $patientIdFromRequest = InvoiceForm::requestedAccessiblePatientId();
+        $planIdFromRequest = InvoiceForm::requestedAccessibleTreatmentPlanId();
+        $sessionIdFromRequest = InvoiceForm::requestedAccessibleTreatmentSessionId();
 
         if (empty($data['treatment_session_id']) && $sessionIdFromRequest) {
             $data['treatment_session_id'] = $sessionIdFromRequest;
@@ -33,7 +32,7 @@ class CreateInvoice extends CreateRecord
         }
 
         if (! empty($data['treatment_session_id'])) {
-            $session = TreatmentSession::query()
+            $session = InvoiceForm::accessibleTreatmentSessionQuery()
                 ->select(['id', 'treatment_plan_id'])
                 ->find((int) $data['treatment_session_id']);
 
@@ -43,7 +42,7 @@ class CreateInvoice extends CreateRecord
         }
 
         if (! empty($data['treatment_plan_id'])) {
-            $plan = TreatmentPlan::query()
+            $plan = InvoiceForm::accessibleTreatmentPlanQuery()
                 ->select(['id', 'patient_id', 'branch_id'])
                 ->find((int) $data['treatment_plan_id']);
 
@@ -54,7 +53,7 @@ class CreateInvoice extends CreateRecord
         }
 
         if (empty($data['branch_id']) && ! empty($data['patient_id'])) {
-            $data['branch_id'] = \App\Models\Patient::query()
+            $data['branch_id'] = InvoiceForm::accessiblePatientQuery()
                 ->whereKey((int) $data['patient_id'])
                 ->value('first_branch_id');
         }

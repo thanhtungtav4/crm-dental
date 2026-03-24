@@ -2,7 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Patient;
+use App\Models\TreatmentPlan;
 use App\Models\User;
+use App\Support\BranchAccess;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 class TreatmentAssignmentAuthorizer
@@ -31,6 +35,12 @@ class TreatmentAssignmentAuthorizer
      */
     public function sanitizeTreatmentPlanFormData(?User $actor, array $data): array
     {
+        $data['patient_id'] = $this->assertAccessiblePatientId(
+            actor: $actor,
+            patientId: $this->normalizeNullableInt($data['patient_id'] ?? null),
+            field: 'patient_id',
+        );
+
         $data['doctor_id'] = $this->sanitizeAssignableDoctorId(
             actor: $actor,
             doctorId: $this->normalizeNullableInt($data['doctor_id'] ?? null),
@@ -39,6 +49,53 @@ class TreatmentAssignmentAuthorizer
         );
 
         return $data;
+    }
+
+    public function scopeAccessiblePatients(Builder $query, ?User $actor): Builder
+    {
+        return $this->scopeQueryByActorBranches($query, $actor, 'first_branch_id');
+    }
+
+    public function findAccessiblePatient(?User $actor, ?int $patientId): ?Patient
+    {
+        if ($patientId === null) {
+            return null;
+        }
+
+        return $this->scopeAccessiblePatients(Patient::query(), $actor)->find($patientId);
+    }
+
+    public function assertAccessiblePatientId(?User $actor, ?int $patientId, string $field): int
+    {
+        if ($patientId === null) {
+            throw ValidationException::withMessages([
+                $field => 'Vui lòng chọn bệnh nhân cho kế hoạch điều trị.',
+            ]);
+        }
+
+        $patient = $this->findAccessiblePatient($actor, $patientId);
+
+        if (! $patient instanceof Patient) {
+            throw ValidationException::withMessages([
+                $field => 'Bệnh nhân được chọn không thuộc phạm vi chi nhánh được phép thao tác.',
+            ]);
+        }
+
+        return (int) $patient->getKey();
+    }
+
+    public function scopeAccessibleTreatmentPlans(Builder $query, ?User $actor): Builder
+    {
+        return $this->scopeQueryByActorBranches($query, $actor, 'branch_id');
+    }
+
+    public function findAccessibleTreatmentPlan(?User $actor, ?int $treatmentPlanId): ?TreatmentPlan
+    {
+        if ($treatmentPlanId === null) {
+            return null;
+        }
+
+        return $this->scopeAccessibleTreatmentPlans(TreatmentPlan::query(), $actor)->find($treatmentPlanId);
     }
 
     /**
@@ -125,6 +182,25 @@ class TreatmentAssignmentAuthorizer
         throw ValidationException::withMessages([
             $field => 'Nhân sự được chọn không thuộc phạm vi chi nhánh được phép gán.',
         ]);
+    }
+
+    protected function scopeQueryByActorBranches(Builder $query, ?User $actor, string $column): Builder
+    {
+        if (! $actor instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($actor->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($actor, true);
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn($column, $branchIds);
     }
 
     protected function normalizeNullableInt(mixed $value): ?int

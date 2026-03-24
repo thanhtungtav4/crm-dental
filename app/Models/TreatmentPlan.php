@@ -118,6 +118,26 @@ class TreatmentPlan extends Model
     protected static function booted(): void
     {
         static::saving(function (self $plan): void {
+            $patient = is_numeric($plan->patient_id)
+                ? Patient::query()
+                    ->select(['id', 'first_branch_id'])
+                    ->find((int) $plan->patient_id)
+                : null;
+
+            if (! $patient instanceof Patient) {
+                throw ValidationException::withMessages([
+                    'patient_id' => 'Vui lòng chọn bệnh nhân hợp lệ cho kế hoạch điều trị.',
+                ]);
+            }
+
+            if (is_numeric($patient->first_branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $patient->first_branch_id,
+                    field: 'patient_id',
+                    message: 'Bạn không thể tạo hoặc cập nhật kế hoạch điều trị cho bệnh nhân ngoài phạm vi được phân quyền.',
+                );
+            }
+
             if (is_numeric($plan->branch_id)) {
                 BranchAccess::assertCanAccessBranch(
                     branchId: (int) $plan->branch_id,

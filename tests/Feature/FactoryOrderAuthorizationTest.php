@@ -50,6 +50,8 @@ it('locks factory order resource access to admin and manager with branch scoped 
         ->and(FactoryOrderResource::canCreate())->toBeTrue()
         ->and($manager->can('view', $visibleOrder))->toBeTrue()
         ->and($manager->can('view', $hiddenOrder))->toBeFalse()
+        ->and($manager->can('transitionStatus', $visibleOrder))->toBeTrue()
+        ->and($manager->can('transitionStatus', $hiddenOrder))->toBeFalse()
         ->and($manager->can('delete', $visibleOrder))->toBeTrue()
         ->and($manager->can('deleteAny', FactoryOrder::class))->toBeFalse()
         ->and(FactoryOrderResource::getEloquentQuery()->pluck('factory_orders.id')->all())->toContain($visibleOrder->id)
@@ -60,13 +62,15 @@ it('locks factory order resource access to admin and manager with branch scoped 
     app(FactoryOrderWorkflowService::class)->markOrdered($visibleOrder);
     $visibleOrder->refresh();
 
-    expect($manager->can('delete', $visibleOrder))->toBeFalse();
+    expect($manager->can('delete', $visibleOrder))->toBeFalse()
+        ->and($manager->can('transitionStatus', $visibleOrder))->toBeTrue();
 
     $this->actingAs($doctor);
 
     expect(FactoryOrderResource::canViewAny())->toBeFalse()
         ->and(FactoryOrderResource::canCreate())->toBeFalse()
         ->and($doctor->can('view', $visibleOrder))->toBeFalse()
+        ->and($doctor->can('transitionStatus', $visibleOrder))->toBeFalse()
         ->and($doctor->can('create', FactoryOrder::class))->toBeFalse();
 
     $this->actingAs($admin);

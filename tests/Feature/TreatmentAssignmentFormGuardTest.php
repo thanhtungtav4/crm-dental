@@ -10,6 +10,8 @@ it('wires treatment plan form and pages through treatment assignment authorizer'
     expect($form)
         ->toContain('TreatmentAssignmentAuthorizer')
         ->toContain('assignableDoctorOptions')
+        ->toContain('resolveDefaultPatientId')
+        ->toContain('scopeAccessiblePatients')
         ->toContain('isAssignableDoctorId')
         ->toContain("Select::make('doctor_id')");
 

@@ -18,6 +18,7 @@ it('forces create payload back to draft before persisting a treatment plan', fun
     $manager = User::factory()->create(['branch_id' => $branch->id]);
     $manager->assignRole('Manager');
     $this->actingAs($manager);
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
 
     $page = app(CreateTreatmentPlan::class);
     $mutator = function (array $data): array {
@@ -26,6 +27,7 @@ it('forces create payload back to draft before persisting a treatment plan', fun
     $mutator = $mutator->bindTo($page, CreateTreatmentPlan::class);
 
     $data = $mutator([
+        'patient_id' => $patient->id,
         'branch_id' => $branch->id,
         'status' => TreatmentPlan::STATUS_APPROVED,
         'approved_by' => 999,
@@ -80,6 +82,7 @@ it('blocks forged edit payload from changing workflow-controlled fields directly
     $mutator = $mutator->bindTo($page, EditTreatmentPlan::class);
 
     expect(fn () => $mutator([
+        'patient_id' => $patient->id,
         'status' => TreatmentPlan::STATUS_IN_PROGRESS,
         'approved_by' => $manager->id,
     ]))->toThrow(ValidationException::class, 'TreatmentPlanWorkflowService');

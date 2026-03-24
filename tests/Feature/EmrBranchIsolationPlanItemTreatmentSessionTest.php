@@ -11,6 +11,7 @@ use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Policies\PlanItemPolicy;
 use App\Policies\TreatmentSessionPolicy;
+use Illuminate\Validation\ValidationException;
 
 it('enforces branch isolation for plan item and treatment session policies', function () {
     $branchA = Branch::factory()->create();
@@ -120,6 +121,32 @@ it('filters plan item and treatment session resources by accessible branches', f
         ->and($planItemIds)->not->toContain($itemB->id)
         ->and($sessionIds)->toContain($sessionA->id)
         ->and($sessionIds)->not->toContain($sessionB->id);
+});
+
+it('blocks creating a plan item for a treatment plan outside the actor branch scope', function () {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $managerA = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $managerA->assignRole('Manager');
+
+    $planB = TreatmentPlan::factory()->create([
+        'patient_id' => createPatientForBranch($branchB)->id,
+        'branch_id' => $branchB->id,
+    ]);
+
+    $this->actingAs($managerA);
+
+    expect(fn () => PlanItem::query()->create([
+        'treatment_plan_id' => $planB->id,
+        'name' => 'Blocked plan item',
+        'quantity' => 1,
+        'price' => 300000,
+        'status' => PlanItem::STATUS_PENDING,
+        'approval_status' => PlanItem::APPROVAL_PROPOSED,
+    ]))->toThrow(ValidationException::class, 'kế hoạch ngoài phạm vi');
 });
 
 function createPatientForBranch(Branch $branch): Patient

@@ -9,6 +9,7 @@ use App\Services\FinanceActorAuthorizer;
 use App\Services\PaymentRecordingService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 it('only exposes receivable actors within the accessible branch scope', function (): void {
     $branchA = Branch::factory()->create();
@@ -96,4 +97,28 @@ it('routes payment receiver selection through FinanceActorAuthorizer surfaces', 
         ->and($paymentsTable)->toContain('FinanceActorAuthorizer::class')
         ->and($recordingService)->toContain('FinanceActorAuthorizer::class')
         ->and($createPaymentPage)->toContain(PaymentRecordingService::class);
+});
+
+it('ignores hidden invoice query params on the create payment page', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create(['branch_id' => $branchA->id]);
+    $manager->assignRole('Manager');
+
+    $hiddenPatient = Patient::factory()->create(['first_branch_id' => $branchB->id]);
+    $hiddenInvoice = Invoice::factory()->create([
+        'patient_id' => $hiddenPatient->id,
+        'branch_id' => $branchB->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 400_000,
+    ]);
+
+    $component = Livewire::actingAs($manager)
+        ->withQueryParams([
+            'invoice_id' => $hiddenInvoice->id,
+        ])
+        ->test(CreatePayment::class);
+
+    expect($component->get('data.invoice_id'))->toBeNull();
 });

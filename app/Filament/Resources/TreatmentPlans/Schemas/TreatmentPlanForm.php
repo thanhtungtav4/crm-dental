@@ -41,7 +41,7 @@ class TreatmentPlanForm
                                         ->preload()
                                         ->live()
                                         ->createOptionForm(\App\Filament\Resources\Patients\Schemas\PatientForm::getFormSchema())
-                                        ->default(request()->query('patient_id'))
+                                        ->default(fn (): ?int => self::resolveDefaultPatientId())
                                         ->afterStateHydrated(function ($state, Set $set, Get $get): void {
                                             $hasExistingDiagnosis = is_array($get('tooth_diagnosis_data'))
                                                 && ! empty($get('tooth_diagnosis_data'));
@@ -311,7 +311,8 @@ class TreatmentPlanForm
             return;
         }
 
-        $patient = Patient::query()
+        $patient = app(TreatmentAssignmentAuthorizer::class)
+            ->scopeAccessiblePatients(Patient::query(), auth()->user())
             ->find($patientId, ['id', 'birthday']);
 
         if (! $patient) {
@@ -338,5 +339,21 @@ class TreatmentPlanForm
 
         $set('tooth_chart_default_dentition_mode', DentitionModeResolver::resolveFromBirthday($patient->birthday));
         $set('tooth_chart_dentition_mode', DentitionModeResolver::MODE_AUTO);
+    }
+
+    protected static function resolveDefaultPatientId(): ?int
+    {
+        $patientId = request()->integer('patient_id');
+
+        if ($patientId <= 0) {
+            return null;
+        }
+
+        $patient = app(TreatmentAssignmentAuthorizer::class)->findAccessiblePatient(
+            actor: auth()->user(),
+            patientId: $patientId,
+        );
+
+        return $patient?->getKey();
     }
 }

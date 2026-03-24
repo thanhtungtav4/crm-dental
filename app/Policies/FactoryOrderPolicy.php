@@ -32,6 +32,15 @@ class FactoryOrderPolicy
         return $this->update($user, $factoryOrder);
     }
 
+    public function transitionStatus(User $user, FactoryOrder $factoryOrder): bool
+    {
+        return $this->view($user, $factoryOrder)
+            && ! in_array($factoryOrder->status, [
+                FactoryOrder::STATUS_DELIVERED,
+                FactoryOrder::STATUS_CANCELLED,
+            ], true);
+    }
+
     public function restore(User $user, FactoryOrder $factoryOrder): bool
     {
         return false;

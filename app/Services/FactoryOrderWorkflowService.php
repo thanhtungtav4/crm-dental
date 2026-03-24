@@ -45,7 +45,7 @@ class FactoryOrderWorkflowService
 
     public function markOrdered(FactoryOrder $order): FactoryOrder
     {
-        Gate::authorize('view', $order);
+        Gate::authorize('transitionStatus', $order);
 
         return $this->transition(
             order: $order,
@@ -58,7 +58,7 @@ class FactoryOrderWorkflowService
 
     public function markInProgress(FactoryOrder $order): FactoryOrder
     {
-        Gate::authorize('view', $order);
+        Gate::authorize('transitionStatus', $order);
 
         return $this->transition(
             order: $order,
@@ -68,7 +68,7 @@ class FactoryOrderWorkflowService
 
     public function markDelivered(FactoryOrder $order): FactoryOrder
     {
-        Gate::authorize('view', $order);
+        Gate::authorize('transitionStatus', $order);
 
         return $this->transition(
             order: $order,
@@ -81,7 +81,7 @@ class FactoryOrderWorkflowService
 
     public function cancel(FactoryOrder $order, ?string $reason = null): FactoryOrder
     {
-        Gate::authorize('view', $order);
+        Gate::authorize('transitionStatus', $order);
 
         $resolvedReason = filled($reason) ? trim((string) $reason) : null;
 

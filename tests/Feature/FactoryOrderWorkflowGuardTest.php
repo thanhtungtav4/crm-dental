@@ -163,5 +163,6 @@ it('wires factory order pages and relation manager through the workflow boundary
 
     expect($service)
         ->toContain('lockForUpdate()')
-        ->toContain('syncItemStatuses');
+        ->toContain('syncItemStatuses')
+        ->toContain("Gate::authorize('transitionStatus', \$order);");
 });

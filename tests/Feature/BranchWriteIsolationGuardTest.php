@@ -47,12 +47,34 @@ it('blocks non admin writes to unauthorized branch across customer patient plan 
         'email' => $customer->email,
     ]);
 
+    auth()->logout();
+
+    $hiddenCustomer = Customer::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $hiddenPatient = Patient::factory()->create([
+        'customer_id' => $hiddenCustomer->id,
+        'first_branch_id' => $branchB->id,
+        'full_name' => $hiddenCustomer->full_name,
+        'phone' => $hiddenCustomer->phone,
+        'email' => $hiddenCustomer->email,
+    ]);
+
+    $this->actingAs($actor);
+
     expect(fn () => TreatmentPlan::query()->create([
         'patient_id' => $patient->id,
         'branch_id' => $branchB->id,
         'status' => TreatmentPlan::STATUS_DRAFT,
         'title' => 'Blocked plan',
     ]))->toThrow(ValidationException::class, 'kế hoạch điều trị');
+
+    expect(fn () => TreatmentPlan::query()->create([
+        'patient_id' => $hiddenPatient->id,
+        'branch_id' => $branchA->id,
+        'status' => TreatmentPlan::STATUS_DRAFT,
+        'title' => 'Blocked hidden patient plan',
+    ]))->toThrow(ValidationException::class, 'bệnh nhân ngoài phạm vi');
 
     $doctor = User::factory()->create([
         'branch_id' => $branchA->id,
@@ -75,6 +97,15 @@ it('blocks non admin writes to unauthorized branch across customer patient plan 
         'discount_amount' => 0,
         'tax_amount' => 0,
     ]))->toThrow(ValidationException::class, 'hóa đơn');
+
+    expect(fn () => Invoice::query()->create([
+        'patient_id' => $hiddenPatient->id,
+        'branch_id' => $branchA->id,
+        'status' => Invoice::STATUS_DRAFT,
+        'subtotal' => 500_000,
+        'discount_amount' => 0,
+        'tax_amount' => 0,
+    ]))->toThrow(ValidationException::class);
 });
 
 it('blocks non admin payment write when invoice belongs to unauthorized branch', function () {

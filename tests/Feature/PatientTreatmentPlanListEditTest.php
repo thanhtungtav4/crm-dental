@@ -33,6 +33,8 @@ it('exposes detailed fields in plan item edit form for treatment workflow', func
         ->and($form)->toContain("TextInput::make('vat_amount')")
         ->and($form)->toContain("TextInput::make('final_amount')")
         ->and($form)->toContain("Select::make('status')")
+        ->and($form)->toContain('scopeAccessibleTreatmentPlanQuery')
+        ->and($form)->toContain('scopeAccessibleTreatmentPlans')
         ->and($form)->toContain('scopeTreatmentPlanQueryByContext')
         ->and($form)->toContain("request()->integer('patient_id')");
 });

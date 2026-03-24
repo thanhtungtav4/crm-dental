@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Invoices\Schemas;
 
 use App\Models\Invoice;
+use App\Models\Patient;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Support\BranchAccess;
@@ -37,14 +38,14 @@ class InvoiceForm
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->default(fn (): ?int => request()->integer('patient_id') ?: null)
+                            ->default(fn (): ?int => self::requestedAccessiblePatientId())
                             ->live()
                             ->afterStateHydrated(function ($state, Set $set): void {
                                 if (is_numeric($state)) {
                                     return;
                                 }
 
-                                $patientId = request()->integer('patient_id');
+                                $patientId = self::requestedAccessiblePatientId();
                                 if ($patientId) {
                                     $set('patient_id', $patientId);
                                 }
@@ -63,7 +64,7 @@ class InvoiceForm
                                     return;
                                 }
 
-                                $belongsToPatient = TreatmentPlan::query()
+                                $belongsToPatient = self::accessibleTreatmentPlanQuery()
                                     ->whereKey((int) $planId)
                                     ->where('patient_id', $patientId)
                                     ->exists();
@@ -81,13 +82,13 @@ class InvoiceForm
                             ->searchable()
                             ->preload()
                             ->live()
-                            ->default(fn (): ?int => request()->integer('treatment_plan_id') ?: null)
+                            ->default(fn (): ?int => self::requestedAccessibleTreatmentPlanId())
                             ->afterStateHydrated(function ($state, Set $set, Get $get): void {
                                 if (! is_numeric($state)) {
                                     return;
                                 }
 
-                                $plan = TreatmentPlan::query()
+                                $plan = self::accessibleTreatmentPlanQuery()
                                     ->with('planItems:id,treatment_plan_id,quantity,price,final_amount')
                                     ->find((int) $state);
 
@@ -116,7 +117,7 @@ class InvoiceForm
                                     return;
                                 }
 
-                                $plan = TreatmentPlan::query()
+                                $plan = self::accessibleTreatmentPlanQuery()
                                     ->with('planItems:id,treatment_plan_id,quantity,price,final_amount')
                                     ->find((int) $state);
 
@@ -258,11 +259,9 @@ class InvoiceForm
 
     private static function planOptionsForPatient(mixed $patientId): array
     {
-        $query = TreatmentPlan::query()
+        $query = self::accessibleTreatmentPlanQuery()
             ->select(['id', 'title', 'status', 'created_at', 'patient_id'])
             ->orderByDesc('created_at');
-
-        BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
 
         if (is_numeric($patientId)) {
             $query->where('patient_id', (int) $patientId);
@@ -285,22 +284,11 @@ class InvoiceForm
             return [];
         }
 
-        $query = TreatmentSession::query()
+        $query = self::accessibleTreatmentSessionQuery()
             ->select(['id', 'performed_at', 'status', 'procedure'])
             ->where('treatment_plan_id', (int) $treatmentPlanId)
             ->orderByDesc('performed_at')
             ->orderByDesc('id');
-
-        $authUser = BranchAccess::currentUser();
-
-        if ($authUser instanceof \App\Models\User && ! $authUser->hasRole('Admin')) {
-            $branchIds = BranchAccess::accessibleBranchIds($authUser);
-            if ($branchIds === []) {
-                return [];
-            }
-
-            $query->whereHas('treatmentPlan', fn (Builder $planQuery) => $planQuery->whereIn('branch_id', $branchIds));
-        }
 
         return $query
             ->limit(100)
@@ -359,5 +347,76 @@ class InvoiceForm
     private static function normalizeAmount(mixed $value): float
     {
         return max(0, round((float) $value, 2));
+    }
+
+    public static function accessiblePatientQuery(): Builder
+    {
+        return BranchAccess::scopeQueryByAccessibleBranches(Patient::query(), 'first_branch_id');
+    }
+
+    public static function accessibleTreatmentPlanQuery(): Builder
+    {
+        return self::scopeAccessibleTreatmentPlanQuery(TreatmentPlan::query());
+    }
+
+    public static function accessibleTreatmentSessionQuery(): Builder
+    {
+        $query = TreatmentSession::query();
+        $authUser = BranchAccess::currentUser();
+
+        if (! $authUser instanceof \App\Models\User || $authUser->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = BranchAccess::accessibleBranchIds($authUser);
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('treatmentPlan', fn (Builder $planQuery): Builder => $planQuery->whereIn('branch_id', $branchIds));
+    }
+
+    public static function requestedAccessiblePatientId(): ?int
+    {
+        $patientId = request()->integer('patient_id');
+
+        if (! $patientId) {
+            return null;
+        }
+
+        return self::accessiblePatientQuery()
+            ->whereKey($patientId)
+            ->value('id');
+    }
+
+    public static function requestedAccessibleTreatmentPlanId(): ?int
+    {
+        $treatmentPlanId = request()->integer('treatment_plan_id');
+
+        if (! $treatmentPlanId) {
+            return null;
+        }
+
+        return self::accessibleTreatmentPlanQuery()
+            ->whereKey($treatmentPlanId)
+            ->value('id');
+    }
+
+    public static function requestedAccessibleTreatmentSessionId(): ?int
+    {
+        $treatmentSessionId = request()->integer('treatment_session_id');
+
+        if (! $treatmentSessionId) {
+            return null;
+        }
+
+        return self::accessibleTreatmentSessionQuery()
+            ->whereKey($treatmentSessionId)
+            ->value('id');
+    }
+
+    private static function scopeAccessibleTreatmentPlanQuery(Builder $query): Builder
+    {
+        return BranchAccess::scopeQueryByAccessibleBranches($query, 'branch_id');
     }
 }

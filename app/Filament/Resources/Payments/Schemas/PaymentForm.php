@@ -38,7 +38,7 @@ class PaymentForm
                             )
                             ->searchable()
                             ->preload()
-                            ->default(fn () => request()->integer('invoice_id') ?: null)
+                            ->default(fn (): ?int => self::requestedAccessibleInvoiceId())
                             ->required()
                             ->reactive()
                             ->getOptionLabelFromRecordUsing(function ($record) {
@@ -172,7 +172,7 @@ class PaymentForm
                                     return 'Chọn hóa đơn để xem thông tin';
                                 }
 
-                                $invoice = \App\Models\Invoice::find($invoiceId);
+                                $invoice = self::accessibleInvoiceQuery()->find((int) $invoiceId);
                                 if (! $invoice) {
                                     return 'Không tìm thấy hóa đơn';
                                 }
@@ -242,9 +242,27 @@ class PaymentForm
             return null;
         }
 
-        return Invoice::query()
+        return self::accessibleInvoiceQuery()
             ->with('patient:id,first_branch_id')
             ->find((int) $invoiceId)
             ?->resolveBranchId();
+    }
+
+    protected static function accessibleInvoiceQuery(): Builder
+    {
+        return self::scopeInvoiceQueryForCurrentUser(Invoice::query());
+    }
+
+    protected static function requestedAccessibleInvoiceId(): ?int
+    {
+        $invoiceId = request()->integer('invoice_id');
+
+        if (! $invoiceId) {
+            return null;
+        }
+
+        return self::accessibleInvoiceQuery()
+            ->whereKey($invoiceId)
+            ->value('id');
     }
 }

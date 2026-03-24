@@ -289,28 +289,87 @@ class Invoice extends Model
 
     private static function syncRelationalContext(self $invoice): void
     {
-        if ($invoice->treatment_session_id && blank($invoice->treatment_plan_id)) {
-            $invoice->treatment_plan_id = TreatmentSession::query()
+        $resolvedPlanBranchId = null;
+
+        if ($invoice->treatment_session_id) {
+            $resolvedSessionPlanId = TreatmentSession::query()
                 ->whereKey((int) $invoice->treatment_session_id)
                 ->value('treatment_plan_id');
+
+            if (is_numeric($resolvedSessionPlanId) && blank($invoice->treatment_plan_id)) {
+                $invoice->treatment_plan_id = (int) $resolvedSessionPlanId;
+            }
+
+            if (
+                is_numeric($resolvedSessionPlanId)
+                && is_numeric($invoice->treatment_plan_id)
+                && (int) $invoice->treatment_plan_id !== (int) $resolvedSessionPlanId
+            ) {
+                throw ValidationException::withMessages([
+                    'treatment_session_id' => 'Phiên điều trị được chọn không khớp với kế hoạch điều trị của hóa đơn.',
+                ]);
+            }
         }
 
-        if ($invoice->treatment_plan_id && blank($invoice->patient_id)) {
-            $invoice->patient_id = TreatmentPlan::query()
-                ->whereKey((int) $invoice->treatment_plan_id)
-                ->value('patient_id');
+        if ($invoice->treatment_plan_id) {
+            $plan = TreatmentPlan::query()
+                ->select(['id', 'patient_id', 'branch_id'])
+                ->find((int) $invoice->treatment_plan_id);
+
+            if ($plan instanceof TreatmentPlan) {
+                if (is_numeric($plan->patient_id) && blank($invoice->patient_id)) {
+                    $invoice->patient_id = (int) $plan->patient_id;
+                }
+
+                if (
+                    is_numeric($plan->patient_id)
+                    && is_numeric($invoice->patient_id)
+                    && (int) $invoice->patient_id !== (int) $plan->patient_id
+                ) {
+                    throw ValidationException::withMessages([
+                        'patient_id' => 'Bệnh nhân được chọn không khớp với kế hoạch điều trị của hóa đơn.',
+                    ]);
+                }
+
+                if (is_numeric($plan->branch_id)) {
+                    $resolvedPlanBranchId = (int) $plan->branch_id;
+                }
+            }
         }
 
-        if ($invoice->treatment_plan_id && blank($invoice->branch_id)) {
-            $invoice->branch_id = TreatmentPlan::query()
-                ->whereKey((int) $invoice->treatment_plan_id)
-                ->value('branch_id');
+        if ($resolvedPlanBranchId !== null && blank($invoice->branch_id)) {
+            $invoice->branch_id = $resolvedPlanBranchId;
         }
 
-        if ($invoice->patient_id && blank($invoice->branch_id)) {
-            $invoice->branch_id = Patient::query()
+        if (
+            $resolvedPlanBranchId !== null
+            && is_numeric($invoice->branch_id)
+            && (int) $invoice->branch_id !== $resolvedPlanBranchId
+        ) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Chi nhánh hóa đơn phải khớp với chi nhánh của kế hoạch điều trị được chọn.',
+            ]);
+        }
+
+        if ($invoice->patient_id) {
+            $patientBranchId = Patient::query()
                 ->whereKey((int) $invoice->patient_id)
                 ->value('first_branch_id');
+
+            if ($resolvedPlanBranchId === null && is_numeric($patientBranchId) && blank($invoice->branch_id)) {
+                $invoice->branch_id = (int) $patientBranchId;
+            }
+
+            if (
+                $resolvedPlanBranchId === null
+                && is_numeric($patientBranchId)
+                && is_numeric($invoice->branch_id)
+                && (int) $invoice->branch_id !== (int) $patientBranchId
+            ) {
+                throw ValidationException::withMessages([
+                    'patient_id' => 'Bệnh nhân được chọn không khớp với chi nhánh hóa đơn.',
+                ]);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -156,6 +157,26 @@ class PlanItem extends Model
     protected static function booted(): void
     {
         static::saving(function (self $item): void {
+            $treatmentPlan = is_numeric($item->treatment_plan_id)
+                ? TreatmentPlan::query()
+                    ->select(['id', 'branch_id'])
+                    ->find((int) $item->treatment_plan_id)
+                : null;
+
+            if (! $treatmentPlan instanceof TreatmentPlan) {
+                throw ValidationException::withMessages([
+                    'treatment_plan_id' => 'Vui lòng chọn kế hoạch điều trị hợp lệ cho hạng mục điều trị.',
+                ]);
+            }
+
+            if (is_numeric($treatmentPlan->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $treatmentPlan->branch_id,
+                    field: 'treatment_plan_id',
+                    message: 'Bạn không thể tạo hoặc cập nhật hạng mục điều trị cho kế hoạch ngoài phạm vi được phân quyền.',
+                );
+            }
+
             $item->status = static::normalizeStatus($item->status) ?? static::DEFAULT_STATUS;
 
             $normalizedApproval = static::normalizeApprovalStatus($item->approval_status);
