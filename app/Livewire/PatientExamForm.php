@@ -15,11 +15,13 @@ use App\Services\ClinicalMediaAccessService;
 use App\Services\ClinicalNoteVersioningService;
 use App\Services\EncounterService;
 use App\Services\ExamSessionProvisioningService;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -379,12 +381,12 @@ class PatientExamForm extends Component
         $this->saveData();
     }
 
-    public function getDoctors(string $search = '')
+    /**
+     * @return Collection<int, User>
+     */
+    public function getDoctors(string $search = ''): Collection
     {
-        return User::query()
-            ->when($search, function ($query, $searchValue) {
-                $query->where('name', 'like', "%{$searchValue}%");
-            })
+        return $this->assignableDoctorQuery($search)
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name']);
@@ -392,10 +394,16 @@ class PatientExamForm extends Component
 
     public function selectExaminingDoctor(int $id): void
     {
-        $this->examining_doctor_id = $id;
-        $this->showExaminingDoctorDropdown = false;
+        $doctor = $this->findAssignableDoctor($id);
 
-        $doctor = User::find($id);
+        if (! $doctor) {
+            $this->notifyDoctorSelectionOutOfScope();
+
+            return;
+        }
+
+        $this->examining_doctor_id = $doctor->id;
+        $this->showExaminingDoctorDropdown = false;
         $this->examiningDoctorSearch = $doctor?->name ?? '';
 
         $this->saveData();
@@ -403,10 +411,16 @@ class PatientExamForm extends Component
 
     public function selectTreatingDoctor(int $id): void
     {
-        $this->treating_doctor_id = $id;
-        $this->showTreatingDoctorDropdown = false;
+        $doctor = $this->findAssignableDoctor($id);
 
-        $doctor = User::find($id);
+        if (! $doctor) {
+            $this->notifyDoctorSelectionOutOfScope();
+
+            return;
+        }
+
+        $this->treating_doctor_id = $doctor->id;
+        $this->showTreatingDoctorDropdown = false;
         $this->treatingDoctorSearch = $doctor?->name ?? '';
 
         $this->saveData();
@@ -1155,6 +1169,53 @@ class PatientExamForm extends Component
         ];
     }
 
+    protected function assignableDoctorQuery(string $search = ''): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = $this->patientAssignmentAuthorizer()->scopeAssignableDoctors(
+            query: User::query(),
+            actor: Auth::user(),
+            branchId: $this->resolveDoctorAssignmentBranchId(),
+        );
+
+        if ($search !== '') {
+            $query->where('name', 'like', '%'.$search.'%');
+        }
+
+        return $query;
+    }
+
+    protected function findAssignableDoctor(int $doctorId): ?User
+    {
+        return $this->assignableDoctorQuery()
+            ->whereKey($doctorId)
+            ->first(['id', 'name']);
+    }
+
+    protected function resolveDoctorAssignmentBranchId(): ?int
+    {
+        if (is_numeric($this->clinicalNote?->branch_id)) {
+            return (int) $this->clinicalNote->branch_id;
+        }
+
+        if (is_numeric($this->examSession?->branch_id)) {
+            return (int) $this->examSession->branch_id;
+        }
+
+        if (is_numeric($this->patient->first_branch_id)) {
+            return (int) $this->patient->first_branch_id;
+        }
+
+        return null;
+    }
+
+    protected function notifyDoctorSelectionOutOfScope(): void
+    {
+        Notification::make()
+            ->title('Bác sĩ được chọn không thuộc phạm vi chi nhánh được phép gán.')
+            ->danger()
+            ->send();
+    }
+
     protected function resolveEncounterIdForDate(string $date): ?int
     {
         $encounter = $this->encounterService()->resolveForPatientOnDate(
@@ -1171,6 +1232,11 @@ class PatientExamForm extends Component
     protected function encounterService(): EncounterService
     {
         return app(EncounterService::class);
+    }
+
+    protected function patientAssignmentAuthorizer(): PatientAssignmentAuthorizer
+    {
+        return app(PatientAssignmentAuthorizer::class);
     }
 
     protected function clinicalMediaAccessService(): ClinicalMediaAccessService

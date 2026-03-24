@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "skills": {
+    "accessibility": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "computedHash": "a16b37abf64fe636f19f43b22aa1a09a4d5271e2d2972dfb9333f7bc7fa0355d"
+    },
+    "code-refactoring": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "18da189464fd9a53133a1372599369ac4b7f3a9da653a907762e20e89cdb2102"
+    },
+    "core-web-vitals": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "computedHash": "fa437acc2249cea2cb28f190ba7faf8fdfac829d1c1aafa9ce938c6dd9338721"
+    },
+    "deploy-to-vercel": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d2b5bcc7c09fdb649129ffc7dd7b647ec1b155736974b974292675afd588cb39"
+    },
+    "devops-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "41795f38a0cc207a5336a60313b84df732b5be2ed9215b3a0f8202f9e0e932fe"
+    },
+    "eloquent-best-practices": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "370e1502efc9d179f5df7470a45a10302de81de9cf378641403e4ade9eb7d67f"
+    },
+    "laravel-caching-strategies": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "7b5d23808f7355be3de5328f8c0f5ca80ab194b252aeed697c3ee505fc90b270"
+    },
+    "laravel-systematic-debugging": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "82db3f7d4e3cfc3b3d1605a96c06612f93121dd3c879208d9dba23f30495518d"
+    },
+    "laravel-tdd": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "f895a09949a45fb610d8f033c168fc7ed70ef33323c38ef176add410ddd58e8e"
+    },
+    "laravel-validation-patterns": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "66fb92309a38bba54c8730a0efccc0f3092cf7dbfb71b294ff33c1becae91285"
+    },
+    "performance": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "computedHash": "acbafe2fcbfc3a1a67db47c2f6299d5c0e16f543c4e683e38e74a8ccb54888fb"
+    },
+    "php-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "455d56996d27abb1031058e8822ccef172d4c3195bbc555f13883b208a9c7e3f"
+    },
+    "sql-optimization-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "53d0e34ed28c0cb9d9829d37e9fc9dd49bbfbbfce6f7c68f88a45c2cb34b9f60"
+    },
+    "sre-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "88ee9a1685f0416eefd64ba82736e69a56ec14890ffda6dc1f878b99e451da11"
+    },
+    "terraform-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "a67f54023997c0ffed2aebec6b15cc14fa69a20b51ea13b92b658719a2e95c0a"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "3462ec83f862abb2d532953df33a4dbf87f4616849da5d4b5cc7c13601aaf997"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "2e9088a7333666d8c2833b8ff58bd51b955501c42b4c7244f72b4cbf22dafcc4"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "web-quality-audit": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "computedHash": "1168be21aa9fe7bdc6e6e053ca05b6ca5a45675a527c103cdf77bc56ce8159af"
+    },
+    "wordpress-router": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "7e1ab6a500f78ecbadde3b9f8277370f7f5d8bc01c014c7bb94f6d5948f2d109"
+    },
+    "wp-performance": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "580d879ffecd41835e297cbf222443bff6bebf7aaa0efb46852d743249330f9b"
+    },
+    "wp-plugin-development": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "3c13a9d2e6e346c9f933918fdf4d191cdba9f2cfe24f87cbcd763d090bbd8014"
+    },
+    "wp-project-triage": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "8df079d09f518217580c8eae57d6edf1827b6a8aabe7d6ec5858ca07cdd81e4d"
+    },
+    "wp-rest-api": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "07d98b54fb41b6dccb0bae9f1a5b0d786776e9438ff5eba17d9dec7db89e5104"
+    },
+    "wp-wpcli-and-ops": {
+      "source": "wordpress/agent-skills",
+      "sourceType": "github",
+      "computedHash": "b04471067f1577112c37870ee564cd06f0787487dc764edf4229f73e3b5981ca"
+    }
+  }
+}
