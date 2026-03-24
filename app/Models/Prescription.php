@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Casts\NullableEncrypted;
+use App\Services\PatientAssignmentAuthorizer;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -107,29 +109,25 @@ class Prescription extends Model
         return $prefix.$date.$newNumber;
     }
 
-    // Boot method to auto-generate code
     protected static function booted(): void
     {
-        static::creating(function (Prescription $prescription) {
-            if (blank($prescription->exam_session_id)) {
-                $prescription->exam_session_id = static::inferExamSessionId($prescription);
+        static::saving(function (Prescription $prescription): void {
+            static::hydrateDerivedAttributes($prescription);
+
+            if (is_numeric($prescription->branch_id)) {
+                BranchAccess::assertCanAccessBranch(
+                    branchId: (int) $prescription->branch_id,
+                    field: 'branch_id',
+                    message: 'Bạn không có quyền thao tác đơn thuốc ở chi nhánh này.',
+                );
             }
 
-            if (blank($prescription->branch_id)) {
-                $prescription->branch_id = static::inferBranchId($prescription);
-            }
-
-            if (blank($prescription->visit_episode_id)) {
-                $prescription->visit_episode_id = static::inferVisitEpisodeId($prescription);
-            }
-
-            if (empty($prescription->prescription_code)) {
-                $prescription->prescription_code = static::generatePrescriptionCode();
-            }
-
-            if (empty($prescription->created_by) && auth()->check()) {
-                $prescription->created_by = auth()->id();
-            }
+            $prescription->doctor_id = app(PatientAssignmentAuthorizer::class)->assertAssignableDoctorId(
+                actor: BranchAccess::currentUser(),
+                doctorId: is_numeric($prescription->doctor_id) ? (int) $prescription->doctor_id : null,
+                branchId: $prescription->resolveBranchId(),
+                field: 'doctor_id',
+            );
         });
     }
 
@@ -144,13 +142,11 @@ class Prescription extends Model
         return $branchId !== null ? (int) $branchId : null;
     }
 
-    // Get total medications count
     public function getTotalMedicationsAttribute(): int
     {
         return $this->items()->count();
     }
 
-    // Scopes
     public function scopeForPatient($query, int $patientId)
     {
         return $query->where('patient_id', $patientId);
@@ -164,6 +160,29 @@ class Prescription extends Model
     public function scopeOnDate($query, $date)
     {
         return $query->whereDate('treatment_date', $date);
+    }
+
+    protected static function hydrateDerivedAttributes(self $prescription): void
+    {
+        if (blank($prescription->exam_session_id)) {
+            $prescription->exam_session_id = static::inferExamSessionId($prescription);
+        }
+
+        if (blank($prescription->branch_id)) {
+            $prescription->branch_id = static::inferBranchId($prescription);
+        }
+
+        if (blank($prescription->visit_episode_id)) {
+            $prescription->visit_episode_id = static::inferVisitEpisodeId($prescription);
+        }
+
+        if (empty($prescription->prescription_code)) {
+            $prescription->prescription_code = static::generatePrescriptionCode();
+        }
+
+        if (empty($prescription->created_by) && auth()->check()) {
+            $prescription->created_by = auth()->id();
+        }
     }
 
     protected static function inferBranchId(self $prescription): ?int

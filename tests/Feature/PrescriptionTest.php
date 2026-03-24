@@ -6,8 +6,11 @@ use App\Models\PrescriptionItem;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
     $this->patient = Patient::factory()->create();
+    $this->user = User::factory()->create([
+        'branch_id' => $this->patient->first_branch_id,
+    ]);
+    $this->user->assignRole('Doctor');
 });
 
 describe('Prescription Model', function () {

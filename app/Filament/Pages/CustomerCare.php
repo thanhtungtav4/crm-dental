@@ -793,7 +793,7 @@ class CustomerCare extends Page implements HasTable
                 }),
             SelectFilter::make('doctor_id')
                 ->label('Bác sĩ')
-                ->relationship('doctor', 'name'),
+                ->relationship('doctor', 'name', fn (Builder $query): Builder => $this->scopeDoctorFilterOptions($query)),
             SelectFilter::make('assigned_to')
                 ->label('Nhân viên chăm sóc')
                 ->relationship('assignedTo', 'name', fn (Builder $query): Builder => $this->scopeCareStaffFilterOptions($query)),
@@ -811,7 +811,7 @@ class CustomerCare extends Page implements HasTable
                 ->query(fn (Builder $query, array $data) => $this->applyDateRangeFilter($query, $data, 'treatment_date')),
             SelectFilter::make('doctor_id')
                 ->label('Bác sĩ')
-                ->relationship('doctor', 'name'),
+                ->relationship('doctor', 'name', fn (Builder $query): Builder => $this->scopeDoctorFilterOptions($query)),
         ];
     }
 
@@ -826,7 +826,7 @@ class CustomerCare extends Page implements HasTable
                 ->query(fn (Builder $query, array $data) => $this->applyDateRangeFilter($query, $data, 'performed_at')),
             SelectFilter::make('doctor_id')
                 ->label('Bác sĩ')
-                ->relationship('doctor', 'name'),
+                ->relationship('doctor', 'name', fn (Builder $query): Builder => $this->scopeDoctorFilterOptions($query)),
         ];
     }
 
@@ -1049,6 +1049,17 @@ class CustomerCare extends Page implements HasTable
         $authUser = auth()->user();
 
         return app(PatientAssignmentAuthorizer::class)->scopeAssignableStaff(
+            query: $query,
+            actor: $authUser instanceof User ? $authUser : null,
+            branchId: null,
+        );
+    }
+
+    protected function scopeDoctorFilterOptions(Builder $query): Builder
+    {
+        $authUser = auth()->user();
+
+        return app(PatientAssignmentAuthorizer::class)->scopeAssignableDoctors(
             query: $query,
             actor: $authUser instanceof User ? $authUser : null,
             branchId: null,

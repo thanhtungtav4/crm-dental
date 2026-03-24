@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
+use App\Services\PatientAssignmentAuthorizer;
+use App\Support\BranchAccess;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -61,7 +63,7 @@ class PrescriptionsRelationManager extends RelationManager
 
                         Select::make('doctor_id')
                             ->label('Bác sĩ kê đơn')
-                            ->relationship('doctor', 'name')
+                            ->options(fn (): array => $this->doctorOptions())
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -178,6 +180,7 @@ class PrescriptionsRelationManager extends RelationManager
                     ->icon('heroicon-o-plus')
                     ->modalHeading('Tạo đơn thuốc')
                     ->modalWidth('7xl')
+                    ->mutateFormDataUsing(fn (array $data): array => $this->sanitizePrescriptionData($data))
                     ->modalSubmitActionLabel('Lưu đơn thuốc'),
             ])
             ->actions([
@@ -187,6 +190,7 @@ class PrescriptionsRelationManager extends RelationManager
                     ->tooltip('Xem chi tiết'),
                 EditAction::make()
                     ->label('')
+                    ->mutateFormDataUsing(fn (array $data): array => $this->sanitizePrescriptionData($data))
                     ->modalWidth('7xl')
                     ->tooltip('Sửa'),
                 DeleteAction::make()
@@ -203,5 +207,57 @@ class PrescriptionsRelationManager extends RelationManager
             ->emptyStateHeading('Chưa có đơn thuốc')
             ->emptyStateDescription('Tạo đơn thuốc mới bằng nút bên trên.')
             ->emptyStateIcon('heroicon-o-document-text');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function doctorOptions(): array
+    {
+        return app(PatientAssignmentAuthorizer::class)->assignableDoctorOptions(
+            actor: BranchAccess::currentUser(),
+            branchId: $this->resolvePrescriptionBranchId(),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function sanitizePrescriptionData(array $data): array
+    {
+        $branchId = $this->resolvePrescriptionBranchId($data);
+
+        if ($branchId !== null) {
+            BranchAccess::assertCanAccessBranch(
+                branchId: $branchId,
+                field: 'doctor_id',
+                message: 'Bạn không có quyền thao tác đơn thuốc ở chi nhánh này.',
+            );
+        }
+
+        $data['branch_id'] = $branchId;
+        $data['doctor_id'] = app(PatientAssignmentAuthorizer::class)->assertAssignableDoctorId(
+            actor: BranchAccess::currentUser(),
+            doctorId: isset($data['doctor_id']) && filled($data['doctor_id']) ? (int) $data['doctor_id'] : null,
+            branchId: $branchId,
+            field: 'doctor_id',
+        );
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function resolvePrescriptionBranchId(array $data = []): ?int
+    {
+        if (isset($data['branch_id']) && filled($data['branch_id'])) {
+            return (int) $data['branch_id'];
+        }
+
+        $patientBranchId = $this->getOwnerRecord()->first_branch_id;
+
+        return $patientBranchId !== null ? (int) $patientBranchId : null;
     }
 }

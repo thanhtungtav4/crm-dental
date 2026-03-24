@@ -5,7 +5,9 @@ namespace App\Filament\Resources\TreatmentPlans\Tables;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
 use App\Models\TreatmentPlan;
+use App\Services\PatientAssignmentAuthorizer;
 use App\Services\TreatmentPlanWorkflowService;
+use App\Support\BranchAccess;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -148,7 +150,11 @@ class TreatmentPlansTable
                     ]),
                 SelectFilter::make('doctor_id')
                     ->label('Bác sĩ')
-                    ->relationship('doctor', 'name')
+                    ->relationship('doctor', 'name', fn (Builder $query): Builder => app(PatientAssignmentAuthorizer::class)->scopeAssignableDoctors(
+                        query: $query,
+                        actor: BranchAccess::currentUser(),
+                        branchId: null,
+                    ))
                     ->searchable()
                     ->preload(),
                 TrashedFilter::make(),
