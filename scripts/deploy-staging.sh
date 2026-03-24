@@ -49,6 +49,8 @@ mkdir -p bootstrap/cache \
 chgrp -R www-data bootstrap/cache storage || true
 chmod -R ug+rwX bootstrap/cache storage || true
 
+export HOME="${HOME:-/root}"
+export COMPOSER_HOME="${COMPOSER_HOME:-${HOME}/.composer}"
 export COMPOSER_ALLOW_SUPERUSER=1
 
 composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
