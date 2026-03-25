@@ -11,6 +11,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 
 class TreatmentSessionForm
 {
@@ -124,8 +125,22 @@ class TreatmentSessionForm
                     ->rows(3)
                     ->nullable()
                     ->columnSpanFull(),
-                Forms\Components\KeyValue::make('images')
-                    ->label('Hình ảnh (key:url)')
+                Forms\Components\FileUpload::make('images')
+                    ->label('Hình ảnh')
+                    ->multiple()
+                    ->image()
+                    ->imageEditor()
+                    ->directory('treatment-sessions/images')
+                    ->acceptedFileTypes(['image/*'])
+                    ->maxSize(10240)
+                    ->panelLayout('grid')
+                    ->reorderable()
+                    ->appendFiles()
+                    ->helperText('Tải ảnh trực tiếp từ máy. Dữ liệu ảnh cũ dạng key:url sẽ tự được chuyển sang danh sách file.')
+                    ->afterStateHydrated(function ($state, Set $set): void {
+                        $set('images', self::normalizeUploadedImagesState($state));
+                    })
+                    ->dehydrateStateUsing(fn ($state): array => self::normalizeUploadedImagesState($state))
                     ->columnSpanFull()
                     ->nullable(),
                 Forms\Components\Textarea::make('notes')
@@ -231,5 +246,21 @@ class TreatmentSessionForm
         $branchName = $plan->branch?->name ?? 'Chưa gán chi nhánh';
 
         return "{$plan->title} · {$patientName}{$patientCode} · {$branchName}";
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function normalizeUploadedImagesState(mixed $state): array
+    {
+        if (! is_array($state)) {
+            return [];
+        }
+
+        return collect(Arr::flatten($state))
+            ->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(fn (string $value): string => trim($value))
+            ->values()
+            ->all();
     }
 }
