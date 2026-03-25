@@ -1,6 +1,6 @@
 <script>
     async function authenticateWithPasskey(remember = false) {
-        const response = await fetch('{{ route('passkeys.authentication_options') }}')
+        const response = await fetch(@js(route('passkeys.authentication_options', [], false)))
 
         const options = await response.json();
 
