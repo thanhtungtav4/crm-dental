@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api;
 
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -65,6 +67,17 @@ class StoreWebLeadRequest extends FormRequest
                 $validator->errors()->add('phone', 'Số điện thoại phải là số di động Việt Nam hợp lệ.');
             }
         });
+    }
+
+    protected function failedValidation(ValidatorContract $validator): void
+    {
+        $errors = $validator->errors()->messages();
+        $message = collect($errors)->flatten()->first() ?? 'The given data was invalid.';
+
+        throw new HttpResponseException(response()->json([
+            'message' => $message,
+            'errors' => $errors,
+        ], 422));
     }
 
     protected function normalizeVietnamPhone(string $phone): string

@@ -39,6 +39,25 @@ it('rejects web lead ingestion when phone is not valid vietnam mobile format', f
         ->assertJsonPath('errors.phone.0', 'Số điện thoại phải là số di động Việt Nam hợp lệ.');
 });
 
+it('returns json validation errors even when the client does not send an accept json header', function (): void {
+    configureWebLeadApi(enabled: true, token: 'web-token');
+
+    $response = $this->post('/api/v1/web-leads', [
+        'full_name' => 'Branch Error Lead',
+        'phone' => '0901234567',
+        'branch_code' => 'BR-NOT-FOUND',
+    ], [
+        'Authorization' => 'Bearer web-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonPath('message', 'Chi nhánh không hợp lệ hoặc không hoạt động.')
+        ->assertJsonPath('errors.branch_code.0', 'Chi nhánh không hợp lệ hoặc không hoạt động.');
+
+    expect((string) $response->headers->get('content-type'))->toContain('application/json');
+});
+
 it('creates a new lead from web payload and stores ingestion log', function (): void {
     $branch = Branch::factory()->create([
         'code' => 'BR-WEB-HCM',
