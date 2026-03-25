@@ -9,12 +9,73 @@
 @endphp
 
 <x-filament-panels::page>
-    <div class="space-y-6">
-        <p class="text-sm text-gray-600 dark:text-gray-300">
-            {{ $this->getSubheading() }}
-        </p>
+    <style>
+        .ops-page-shell {
+            container-type: inline-size;
+        }
 
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        .ops-overview-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @container (min-width: 48rem) {
+            .ops-overview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @container (min-width: 96rem) {
+            .ops-overview-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        .ops-detail-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @media (min-width: 96rem) {
+            .ops-detail-grid {
+                grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+            }
+        }
+
+        .ops-column {
+            container-type: inline-size;
+            min-width: 0;
+        }
+
+        .ops-grid-2,
+        .ops-grid-3 {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @container (min-width: 42rem) {
+            .ops-grid-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @container (min-width: 56rem) {
+            .ops-grid-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .ops-break-words {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+    </style>
+
+    <div class="ops-page-shell space-y-6">
+        <div class="ops-overview-grid">
             @foreach($this->getOverviewCards() as $card)
                 <x-filament::section>
                     <div class="space-y-3">
@@ -49,8 +110,8 @@
             @endforeach
         </div>
 
-        <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <div class="space-y-6">
+        <div class="ops-detail-grid">
+            <div class="ops-column space-y-6">
                 <x-filament::section heading="Automation actor" description="Kiểm tra service account dùng cho scheduler và command automation.">
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-center gap-3">
@@ -62,11 +123,11 @@
                             </span>
                         </div>
 
-                        <dl class="grid gap-3 md:grid-cols-3">
+                        <dl class="ops-grid-3">
                             @foreach(($this->getAutomationActor()['meta'] ?? []) as $meta)
                                 <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/60">
                                     <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</dt>
-                                    <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</dd>
+                                    <dd class="ops-break-words mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</dd>
                                 </div>
                             @endforeach
                         </dl>
@@ -98,16 +159,16 @@
                                 </span>
                             </div>
 
-                            <div class="mt-3 grid gap-3 md:grid-cols-3">
+                            <div class="ops-grid-3 mt-3">
                                 @foreach(($runtimeBackup['meta'] ?? []) as $meta)
                                     <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                         <div class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</div>
-                                        <div class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</div>
+                                        <div class="ops-break-words mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</div>
                                     </div>
                                 @endforeach
                             </div>
 
-                            <div class="mt-3 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                            <div class="ops-break-words mt-3 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                 {{ $runtimeBackup['path'] ?? '-' }}
                                 @if(filled($runtimeBackup['error'] ?? null))
                                     <div class="mt-1 font-medium text-danger-700 dark:text-danger-300">{{ $runtimeBackup['error'] }}</div>
@@ -115,7 +176,7 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-4 md:grid-cols-3">
+                        <div class="ops-grid-3">
                             @foreach($this->getBackupFixtures() as $fixture)
                                 <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-start justify-between gap-3">
@@ -132,12 +193,12 @@
                                         @foreach(($fixture['meta'] ?? []) as $meta)
                                             <div class="flex items-center justify-between gap-3">
                                                 <span>{{ $meta['label'] }}</span>
-                                                <span class="font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
+                                                <span class="ops-break-words font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
                                             </div>
                                         @endforeach
                                     </div>
 
-                                    <div class="mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                    <div class="ops-break-words mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                         {{ $fixture['path'] }}
                                         @if(filled($fixture['error'] ?? null))
                                             <div class="mt-1 font-medium text-danger-700 dark:text-danger-300">{{ $fixture['error'] }}</div>
@@ -150,7 +211,7 @@
                 </x-filament::section>
 
                 <x-filament::section heading="Readiness artifacts" description="Theo dõi artifact report/signoff local và runtime để release gate không còn nằm trong CLI.">
-                    <div class="grid gap-4 lg:grid-cols-2">
+                    <div class="ops-grid-2">
                         @foreach(array_filter([$this->getLatestRuntimeReport(), $this->getLatestRuntimeSignoff()]) as $artifact)
                             <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/60">
                                 <div class="flex items-start justify-between gap-3">
@@ -167,19 +228,19 @@
                                     @foreach(($artifact['meta'] ?? []) as $meta)
                                         <div class="flex items-center justify-between gap-3">
                                             <span>{{ $meta['label'] }}</span>
-                                            <span class="font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
+                                            <span class="ops-break-words font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
                                         </div>
                                     @endforeach
                                 </div>
 
-                                <div class="mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                <div class="ops-break-words mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                     {{ $artifact['path'] }}
                                 </div>
                             </div>
                         @endforeach
                     </div>
 
-                    <div class="mt-4 grid gap-4 xl:grid-cols-2">
+                    <div class="ops-grid-2 mt-4">
                         <div class="space-y-4">
                             @foreach($this->getReadinessFixtures() as $fixture)
                                 <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950/60">
@@ -197,12 +258,12 @@
                                         @foreach(($fixture['meta'] ?? []) as $meta)
                                             <div class="flex items-center justify-between gap-3">
                                                 <span>{{ $meta['label'] }}</span>
-                                                <span class="font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
+                                                <span class="ops-break-words font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
                                             </div>
                                         @endforeach
                                     </div>
 
-                                    <div class="mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                    <div class="ops-break-words mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                         {{ $fixture['path'] }}
                                         @if(filled($fixture['error'] ?? null))
                                             <div class="mt-1 font-medium text-danger-700 dark:text-danger-300">{{ $fixture['error'] }}</div>
@@ -229,12 +290,12 @@
                                         @foreach(($fixture['meta'] ?? []) as $meta)
                                             <div class="flex items-center justify-between gap-3">
                                                 <span>{{ $meta['label'] }}</span>
-                                                <span class="font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
+                                                <span class="ops-break-words font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
                                             </div>
                                         @endforeach
                                     </div>
 
-                                    <div class="mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                    <div class="ops-break-words mt-3 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                         {{ $fixture['path'] }}
                                         @if(filled($fixture['error'] ?? null))
                                             <div class="mt-1 font-medium text-warning-700 dark:text-warning-300">{{ $fixture['error'] }}</div>
@@ -247,7 +308,7 @@
                 </x-filament::section>
             </div>
 
-            <div class="space-y-6">
+            <div class="ops-column space-y-6">
                 <x-filament::section heading="Integrations & secret rotation" description="Nhìn nhanh grace token, retention backlog và chuyển tiếp sang trang integration settings.">
                     @php($integrations = $this->getIntegrations())
 
@@ -262,16 +323,16 @@
                             </span>
                         </div>
 
-                        <dl class="grid gap-3 md:grid-cols-3">
+                        <dl class="ops-grid-3">
                             @foreach(($integrations['meta'] ?? []) as $meta)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</dt>
-                                    <dd class="mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</dd>
+                                    <dd class="ops-break-words mt-1 text-sm font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</dd>
                                 </div>
                             @endforeach
                         </dl>
 
-                        <div class="grid gap-4 xl:grid-cols-2">
+                        <div class="ops-grid-2">
                             <div class="rounded-2xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950/60">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-sm font-semibold text-gray-950 dark:text-white">Active grace tokens</p>
@@ -358,7 +419,7 @@
                             </span>
                         </div>
 
-                        <dl class="grid gap-3 md:grid-cols-3">
+                        <dl class="ops-grid-3">
                             @foreach(($kpi['meta'] ?? []) as $meta)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</dt>
@@ -367,7 +428,7 @@
                             @endforeach
                         </dl>
 
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="ops-grid-2">
                             @foreach(($kpi['snapshot_counts'] ?? []) as $key => $count)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-center justify-between gap-3">
@@ -382,7 +443,7 @@
                             @endforeach
                         </div>
 
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="ops-grid-2">
                             @foreach(($kpi['aggregate_readiness'] ?? []) as $aggregate)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-center justify-between gap-3">
@@ -441,7 +502,7 @@
                             </span>
                         </div>
 
-                        <dl class="grid gap-3 md:grid-cols-2">
+                        <dl class="ops-grid-2">
                             @foreach(($finance['meta'] ?? []) as $meta)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</dt>
@@ -450,7 +511,7 @@
                             @endforeach
                         </dl>
 
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="ops-grid-2">
                             @foreach(($finance['signals'] ?? []) as $signal)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-center justify-between gap-3">
@@ -512,7 +573,7 @@
                             </span>
                         </div>
 
-                        <div class="grid gap-3 md:grid-cols-2">
+                        <div class="ops-grid-2">
                             @foreach(($zns['summary_cards'] ?? []) as $card)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-center justify-between gap-3">
@@ -614,7 +675,7 @@
                             </span>
                         </div>
 
-                        <dl class="grid gap-3 md:grid-cols-2">
+                        <dl class="ops-grid-2">
                             @foreach(($governance['meta'] ?? []) as $meta)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">{{ $meta['label'] }}</dt>
@@ -623,7 +684,7 @@
                             @endforeach
                         </dl>
 
-                        <div class="grid gap-3 md:grid-cols-3">
+                        <div class="ops-grid-3">
                             @foreach(($governance['signals'] ?? []) as $signal)
                                 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60">
                                     <div class="flex items-center justify-between gap-3">

@@ -20,8 +20,10 @@ it('allows only admin personas to access the ops control center', function (): v
         ->where('email', 'admin@demo.ident.test')
         ->firstOrFail();
 
-    $this->actingAs($user)
-        ->get(OpsControlCenter::getUrl())
+    $response = $this->actingAs($user)
+        ->get(OpsControlCenter::getUrl());
+
+    $response
         ->assertOk()
         ->assertSee('Trung tâm OPS')
         ->assertSee('Scheduler automation actor')
@@ -31,6 +33,13 @@ it('allows only admin personas to access the ops control center', function (): v
         ->assertSee('Governance & audit scope')
         ->assertSee('ZNS triage cockpit')
         ->assertSee('Readiness signoff fixture');
+
+    expect(substr_count($response->getContent(), 'Theo dõi control-plane local/test cho backup, restore, readiness và observability sau mỗi lần reset seed.'))->toBe(1)
+        ->and($response->getContent())->toContain('ops-page-shell')
+        ->and($response->getContent())->toContain('ops-overview-grid')
+        ->and($response->getContent())->toContain('ops-detail-grid')
+        ->and($response->getContent())->not->toContain('grid gap-4 md:grid-cols-2 xl:grid-cols-4')
+        ->and($response->getContent())->not->toContain('grid gap-6 xl:grid-cols-[1.15fr_0.85fr]');
 });
 
 it('blocks manager, doctor, and cskh personas from accessing the ops control center', function (string $email): void {
