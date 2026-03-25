@@ -172,6 +172,97 @@ php artisan route:cache
 php artisan view:cache
 ```
 
+### 8.1 Web lead mail playbook
+
+#### Restart queue sau khi doi runtime mailer / queue
+
+Moi thay doi o `Integration Settings -> Web lead internal email` can restart worker de process moi nap lai runtime config:
+
+```bash
+php artisan queue:restart
+```
+
+Dau hieu worker chua nap config moi:
+
+- delivery dung o `queued`
+- `attempt_count = 0`
+- khong co `last_attempt_at` moi
+- worker dang nghe queue cu trong khi runtime queue hien tai mac dinh la `web-lead-mail`
+
+#### Xem mail nao dang bi ket
+
+Vao Filament `Web lead email deliveries` va loc theo trang thai:
+
+- `queued`: chua co worker nhat job hoac worker khong nghe dung queue
+- `processing`: worker da claim, neu nam qua lau thi can restart queue va kiem tra worker process
+- `retryable`: loi tam thoi, he thong se retry theo `next_retry_at`
+- `dead`: da het so lan thu hoac gap loi terminal
+
+Cot can xem:
+
+- `attempt_count`
+- `next_retry_at`
+- `sent_at`
+- `last_error_message`
+
+Neu can check queue fail level cua Laravel:
+
+```bash
+php artisan queue:failed
+```
+
+#### Resend delivery retryable / dead
+
+Tu Filament `Web lead email deliveries`:
+
+- loc `retryable` hoac `dead`
+- mo record can xu ly
+- bam `Gui lai`
+
+Action nay se:
+
+- reset delivery ve `queued`
+- clear `processing_started_at`, `next_retry_at`, `last_error_message`
+- chup lai `mailer_snapshot` theo SMTP runtime hien tai
+- day lai job vao queue runtime hien tai
+
+Sau khi resend, worker se gui lai theo SMTP config moi nhat.
+
+#### Xu ly khi SMTP doi mat khau
+
+1. Vao `Integration Settings -> Web lead internal email`.
+2. Cap nhat `SMTP host`, `port`, `username`, `password`, `scheme`, `from address` neu can.
+3. Luu settings.
+4. Chay:
+
+```bash
+php artisan queue:restart
+```
+
+5. Vao `Web lead email deliveries`.
+6. Loc `retryable` va `dead`.
+7. Dung action `Gui lai` cho cac delivery can gui lai.
+8. Xac nhan co delivery moi chuyen sang `sent`.
+
+Neu van loi, doc `last_error_message` de xac dinh:
+
+- sai password / auth fail
+- sai `scheme` (`tls`, `ssl`, hoac de trong / `none`)
+- sai host / port
+- provider timeout
+
+#### Khi nao nen tach worker rieng
+
+Hien tai dung chung worker la on neu backlog `default` nho va mail web lead khong can uu tien rieng.
+
+Nen tach worker rieng khi:
+
+- `default` co nhieu job nang, delay mail web lead
+- mail web lead can SLA cao hon cac job khac
+- can log, alert, scale, hoac restart tach biet cho queue mail
+
+Neu tach rieng, worker phai nghe dung queue runtime `web_lead.internal_email_queue`.
+
 ## 9. Smoke test theo module
 
 ### 9.1 GOV
