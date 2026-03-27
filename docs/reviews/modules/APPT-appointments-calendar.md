@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/APPT-appointments-calendar.md`
-- Issue file: `docs/issues/APPT-issues.md`
-- Plan file: `docs/planning/APPT-plan.md`
+- Issue file: `docs/reviews/issues/APPT-issues.md`
+- Plan file: `docs/reviews/plans/APPT-plan.md`
 - Issue ID prefix: `APPT-`
 - Task ID prefix: `TASK-APPT-`
 - Dependencies: `GOV, PAT, CLIN, TRT, CARE, ZNS, INT`

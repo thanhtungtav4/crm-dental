@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/TRT-treatment.md`
-- Issue file: `docs/issues/TRT-issues.md`
-- Plan file: `docs/planning/TRT-plan.md`
+- Issue file: `docs/reviews/issues/TRT-issues.md`
+- Plan file: `docs/reviews/plans/TRT-plan.md`
 - Issue ID prefix: `TRT-`
 - Task ID prefix: `TASK-TRT-`
 - Dependencies: `PAT, APPT, CLIN, INV, FIN`

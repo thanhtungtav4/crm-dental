@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/OPS-production-readiness.md`
-- Issue file: `docs/issues/OPS-issues.md`
-- Plan file: `docs/planning/OPS-plan.md`
+- Issue file: `docs/reviews/issues/OPS-issues.md`
+- Plan file: `docs/reviews/plans/OPS-plan.md`
 - Issue ID prefix: `OPS-`
 - Task ID prefix: `TASK-OPS-`
 - Dependencies: `GOV, INT, KPI, ZNS, FIN, INV`
@@ -258,7 +258,7 @@
 
 # Recommended Next Steps
 
-1. Dung runbook `docs/PRODUCTION_OPERATIONS_RUNBOOK.md` de chay migrate, production seed, backup/restore, release gates va QA/PM signoff tren ha tang that.
+1. Dung runbook `docs/operations/production-operations-runbook.md` de chay migrate, production seed, backup/restore, release gates va QA/PM signoff tren ha tang that.
 2. Theo doi khung gio backup/restore va error budget observability sau deploy dau tien.
 3. Neu ha tang thay doi KMS/DB client, cap nhat SOP van hanh truoc khi chay release gate tiep theo.
 

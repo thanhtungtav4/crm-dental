@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "18da189464fd9a53133a1372599369ac4b7f3a9da653a907762e20e89cdb2102"
     },
+    "code-review": {
+      "source": "cin12211/orca-q",
+      "sourceType": "github",
+      "computedHash": "6962fcb1806c637670929e8f96ce21e98a16a040889b1630e4df59c1464857b8"
+    },
     "core-web-vitals": {
       "source": "addyosmani/web-quality-skills",
       "sourceType": "github",
@@ -25,6 +30,11 @@
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "41795f38a0cc207a5336a60313b84df732b5be2ed9215b3a0f8202f9e0e932fe"
+    },
+    "documentation-expert": {
+      "source": "cin12211/orca-q",
+      "sourceType": "github",
+      "computedHash": "e3305bc7ef8f7764ff065cf38365002bfb9482566e10aedf9112f5dd28f5a035"
     },
     "eloquent-best-practices": {
       "source": "iserter/laravel-claude-agents",
@@ -61,6 +71,11 @@
       "sourceType": "github",
       "computedHash": "455d56996d27abb1031058e8822ccef172d4c3195bbc555f13883b208a9c7e3f"
     },
+    "refactor": {
+      "source": "cin12211/orca-q",
+      "sourceType": "github",
+      "computedHash": "b6ce1632a57f5e6df439255f812a3848a6ccad37dc41f0444eda369a42fe85fd"
+    },
     "sql-optimization-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -75,6 +90,11 @@
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "a67f54023997c0ffed2aebec6b15cc14fa69a20b51ea13b92b658719a2e95c0a"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

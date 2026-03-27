@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/CLIN-clinical-records.md`
-- Issue file: `docs/issues/CLIN-issues.md`
-- Plan file: `docs/planning/CLIN-plan.md`
+- Issue file: `docs/reviews/issues/CLIN-issues.md`
+- Plan file: `docs/reviews/plans/CLIN-plan.md`
 - Issue ID prefix: `CLIN-`
 - Task ID prefix: `TASK-CLIN-`
 - Dependencies: `GOV, PAT, APPT, TRT, FIN, INT`

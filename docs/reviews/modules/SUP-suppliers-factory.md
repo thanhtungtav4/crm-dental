@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/SUP-suppliers-factory.md`
-- Issue file: `docs/issues/SUP-issues.md`
-- Plan file: `docs/planning/SUP-plan.md`
+- Issue file: `docs/reviews/issues/SUP-issues.md`
+- Plan file: `docs/reviews/plans/SUP-plan.md`
 - Issue ID prefix: `SUP-`
 - Task ID prefix: `TASK-SUP-`
 - Dependencies: `INV, FIN, GOV`

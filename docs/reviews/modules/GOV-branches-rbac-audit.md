@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/GOV-branches-rbac-audit.md`
-- Issue file: `docs/issues/GOV-issues.md`
-- Plan file: `docs/planning/GOV-plan.md`
+- Issue file: `docs/reviews/issues/GOV-issues.md`
+- Plan file: `docs/reviews/plans/GOV-plan.md`
 - Issue ID prefix: `GOV-`
 - Task ID prefix: `TASK-GOV-`
 - Dependencies: `PAT, APPT, CLIN, TRT, FIN, INV, CARE, ZNS, OPS`

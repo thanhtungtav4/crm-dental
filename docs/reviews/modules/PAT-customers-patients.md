@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/PAT-customers-patients.md`
-- Issue file: `docs/issues/PAT-issues.md`
-- Plan file: `docs/planning/PAT-plan.md`
+- Issue file: `docs/reviews/issues/PAT-issues.md`
+- Plan file: `docs/reviews/plans/PAT-plan.md`
 - Issue ID prefix: `PAT-`
 - Task ID prefix: `TASK-PAT-`
 - Dependencies: `GOV, APPT, CLIN, FIN, CARE, ZNS`

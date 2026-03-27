@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/INV-inventory.md`
-- Issue file: `docs/issues/INV-issues.md`
-- Plan file: `docs/planning/INV-plan.md`
+- Issue file: `docs/reviews/issues/INV-issues.md`
+- Plan file: `docs/reviews/plans/INV-plan.md`
 - Issue ID prefix: `INV-`
 - Task ID prefix: `TASK-INV-`
 - Dependencies: `GOV, TRT, FIN, SUP, KPI`

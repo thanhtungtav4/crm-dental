@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/INT-integrations.md`
-- Issue file: `docs/issues/INT-issues.md`
-- Plan file: `docs/planning/INT-plan.md`
+- Issue file: `docs/reviews/issues/INT-issues.md`
+- Plan file: `docs/reviews/plans/INT-plan.md`
 - Issue ID prefix: `INT-`
 - Task ID prefix: `TASK-INT-`
 - Dependencies: `GOV, APPT, CLIN, ZNS, OPS`

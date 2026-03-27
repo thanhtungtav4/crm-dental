@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/ZNS-zalo-zns.md`
-- Issue file: `docs/issues/ZNS-issues.md`
-- Plan file: `docs/planning/ZNS-plan.md`
+- Issue file: `docs/reviews/issues/ZNS-issues.md`
+- Plan file: `docs/reviews/plans/ZNS-plan.md`
 - Issue ID prefix: `ZNS-`
 - Task ID prefix: `TASK-ZNS-`
 - Dependencies: `PAT, APPT, CARE, INT, OPS`

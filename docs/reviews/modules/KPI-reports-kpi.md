@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/KPI-reports-kpi.md`
-- Issue file: `docs/issues/KPI-issues.md`
-- Plan file: `docs/planning/KPI-plan.md`
+- Issue file: `docs/reviews/issues/KPI-issues.md`
+- Plan file: `docs/reviews/plans/KPI-plan.md`
 - Issue ID prefix: `KPI-`
 - Task ID prefix: `TASK-KPI-`
 - Dependencies: `FIN, INV, CARE, OPS`

@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/FIN-finance.md`
-- Issue file: `docs/issues/FIN-issues.md`
-- Plan file: `docs/planning/FIN-plan.md`
+- Issue file: `docs/reviews/issues/FIN-issues.md`
+- Plan file: `docs/reviews/plans/FIN-plan.md`
 - Issue ID prefix: `FIN-`
 - Task ID prefix: `TASK-FIN-`
 - Dependencies: `GOV, PAT, APPT, TRT, INV, KPI`

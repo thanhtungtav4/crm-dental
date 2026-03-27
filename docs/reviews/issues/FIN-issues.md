@@ -1,0 +1,252 @@
+# Metadata
+
+- Module code: `FIN`
+- Module name: `Finance / Payments / Wallet / Installments`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
+- Issue ID prefix: `FIN-`
+- Task ID prefix: `TASK-FIN-`
+- Review file: `docs/reviews/modules/FIN-finance.md`
+- Plan file: `docs/reviews/plans/FIN-plan.md`
+- Dependencies: `GOV, PAT, APPT, TRT, INV, KPI`
+- Last updated: `2026-03-06`
+
+# Issue Backlog
+
+## [FIN-001] Wallet resource khong co policy va mo duong dieu chinh so du qua rong
+- Severity: Critical
+- Category: Security
+- Module: FIN
+- Description:
+  - `PatientWalletResource` không có policy riêng.
+  - Runtime check cho thấy `Doctor` vẫn `canViewAny()` và `canEdit()` trên resource ví.
+  - Table còn mở `adjust` action gọi thẳng `PatientWalletService::adjustBalance()`.
+- Why it matters:
+  - Ví bệnh nhân là tiền thật. Nếu quyền đọc/chỉnh số dư bị mở rộng cho role ngoài finance thì rủi ro gian lận và sai lệch kế toán là rất lớn.
+- Evidence:
+  - `app/Filament/Resources/PatientWallets/PatientWalletResource.php`
+  - `app/Filament/Resources/PatientWallets/Tables/PatientWalletsTable.php`
+  - `app/Services/PatientWalletService.php`
+  - runtime check: `PatientWalletResource::canViewAny() === true`, `PatientWalletResource::canEdit(new PatientWallet()) === true` cho `Doctor`
+- Suggested fix:
+  - thêm `PatientWalletPolicy`
+  - tách `ActionPermission::WALLET_ADJUST`
+  - chỉ cho finance/admin xem và điều chỉnh ví
+  - ghi audit log structured cho mọi adjustment
+- Affected areas:
+  - patient wallet resource
+  - wallet service
+  - RBAC / audit log
+- Tests needed:
+  - feature test doctor/manager khong duoc xem sua wallet
+  - feature test chi role duoc cap phep moi adjust duoc
+  - feature test adjustment tao audit log
+- Dependencies:
+  - GOV
+- Suggested order: 1
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-001`
+
+## [FIN-002] Invoice lifecycle cho phep cancel truc tiep va bypass workflow tai chinh
+- Severity: Critical
+- Category: Domain Logic
+- Module: FIN
+- Description:
+  - `InvoiceForm` cho phép set `status = cancelled`.
+  - `Invoice::EDITABLE_STATUSES` vẫn mở `cancelled`.
+  - `updatePaymentStatus()` return sớm nếu invoice đã `cancelled`, nên có thể che giấu trạng thái payment thực tế.
+- Why it matters:
+  - Có thể hủy hóa đơn đã có thu/hoàn mà không qua workflow kiểm soát.
+  - Dữ liệu công nợ, aging và đối soát dễ sai lệch.
+- Evidence:
+  - `app/Models/Invoice.php`
+  - `app/Filament/Resources/Invoices/Schemas/InvoiceForm.php`
+  - `app/Filament/Resources/Invoices/Pages/EditInvoice.php`
+- Suggested fix:
+  - tạo `InvoiceWorkflowService`
+  - create/edit không cho set thẳng `cancelled`
+  - cancel/void chỉ đi qua action service có guard nghiệp vụ, audit và downstream checks
+- Affected areas:
+  - invoice model
+  - invoice form/page/table
+  - audit / reporting / aging flow
+- Tests needed:
+  - feature test khong cancel truc tiep qua form
+  - feature test invoice co payment khong duoc cancel neu chua qua workflow hop le
+  - feature test workflow luu metadata day du
+- Dependencies:
+  - GOV, KPI
+- Suggested order: 2
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-002`
+
+## [FIN-003] Refund/reversal khong idempotent va co race-condition tren payment goc
+- Severity: Critical
+- Category: Concurrency
+- Module: FIN
+- Description:
+  - Refund action ở nhiều UI surface đang dùng pattern `markReversed()` rồi `recordPayment()`.
+  - `Payment::markReversed()` không khóa row và không có unique invariant ngăn nhiều reversal cùng một payment gốc.
+- Why it matters:
+  - Hai thao tác hoàn tiền đồng thời có thể sinh nhiều phiếu đảo cho cùng một khoản thu.
+  - Hậu quả là sai số dư ví, sai doanh thu và audit trail không còn đáng tin.
+- Evidence:
+  - `app/Models/Payment.php`
+  - `app/Filament/Resources/Payments/Tables/PaymentsTable.php`
+  - `app/Filament/Resources/Invoices/RelationManagers/PaymentsRelationManager.php`
+- Suggested fix:
+  - tạo `PaymentReversalService` transaction-safe
+  - `lockForUpdate()` original payment + invoice
+  - unique guard trên reversal canonical path
+  - return existing reversal nếu retry
+- Affected areas:
+  - payment model
+  - refund actions
+  - wallet posting / invoice balance / audit log
+- Tests needed:
+  - concurrency test chi tao 1 reversal cho 1 payment goc
+  - feature test retry refund tra ve reversal hien co
+  - regression test wallet ledger/invoice paid amount khong bi nhan doi
+- Dependencies:
+  - FIN-001
+- Suggested order: 3
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-003`
+
+## [FIN-004] Delete surface cua invoice va finance core van de drift du lieu xuong dong
+- Severity: High
+- Category: Data Integrity
+- Module: FIN
+- Description:
+  - Invoice vẫn có `DeleteAction` và `DeleteBulkAction`.
+  - Policy còn mở `delete/restore/forceDelete`.
+  - FK strategy hiện tại cho phép mất hoặc tách rời payment/ledger linkage khi destructive flow xảy ra.
+- Why it matters:
+  - Finance history phải có tính bất biến cao. Delete sai ở đây sẽ phá đối soát, aging, audit và liên kết với wallet/KPI.
+- Evidence:
+  - `app/Filament/Resources/Invoices/Pages/EditInvoice.php`
+  - `app/Filament/Resources/Invoices/Tables/InvoicesTable.php`
+  - `app/Policies/InvoicePolicy.php`
+  - schema `payments.invoice_id`, `wallet_ledger_entries.payment_id`
+- Suggested fix:
+  - bỏ delete/force delete/bulk delete trên finance core
+  - thay bằng cancel/void workflow
+  - siết policy và xem lại FK strategy cho immutable history
+- Affected areas:
+  - invoice resource/policy
+  - database constraints
+  - payment/wallet/reporting linkage
+- Tests needed:
+  - feature test khong con delete surfaces sai nghiep vu
+  - feature test invoice co downstream records khong delete duoc
+- Dependencies:
+  - FIN-002
+- Suggested order: 4
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-004`
+
+## [FIN-005] `received_by` chua branch-scoped va chua sanitize server-side
+- Severity: High
+- Category: Security
+- Module: FIN
+- Description:
+  - `received_by` trong create payment/payment relation manager đang load quan hệ user chung, không scope theo branch.
+  - Page handlers không sanitize lại actor được chọn.
+- Why it matters:
+  - Có thể hạch toán sai người thu/hoàn tiền giữa các chi nhánh.
+  - Sai attribution làm hỏng audit, cashier accountability và reconciliation.
+- Evidence:
+  - `app/Filament/Resources/Payments/Schemas/PaymentForm.php`
+  - `app/Filament/Resources/Invoices/RelationManagers/PaymentsRelationManager.php`
+  - `app/Filament/Resources/Payments/Pages/CreatePayment.php`
+- Suggested fix:
+  - thêm `FinanceActorAuthorizer`
+  - scope `received_by` theo branch accessible
+  - sanitize server-side ở mọi create/refund flow
+- Affected areas:
+  - payment form/page/relation manager
+  - branch-aware user selection
+- Tests needed:
+  - feature test received_by chi hien user trong branch scope
+  - feature test forged payload bi reject
+- Dependencies:
+  - GOV
+- Suggested order: 5
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-005`
+
+## [FIN-006] Finance write logic bi nhan ban qua nhieu surface UI
+- Severity: Medium
+- Category: Maintainability
+- Module: FIN
+- Description:
+  - `record payment` và `refund` logic đang bị lặp ở page, invoice table, payments table và relation manager.
+  - Notification và duplicate handling cũng lặp theo từng nơi.
+- Why it matters:
+  - Dễ phát sinh drift giữa các entry point, đặc biệt sau khi harden reversal/workflow.
+- Evidence:
+  - `app/Filament/Resources/Payments/Pages/CreatePayment.php`
+  - `app/Filament/Resources/Invoices/Tables/InvoicesTable.php`
+  - `app/Filament/Resources/Payments/Tables/PaymentsTable.php`
+  - `app/Filament/Resources/Invoices/RelationManagers/PaymentsRelationManager.php`
+- Suggested fix:
+  - gom vào `PaymentRecordingService` và `PaymentReversalService`
+  - các UI surface chỉ gọi service canonical
+- Affected areas:
+  - payment/invoice UI layers
+  - notification path
+  - domain service layer
+- Tests needed:
+  - regression test moi surface deu dung cung service boundary
+- Dependencies:
+  - FIN-002, FIN-003, FIN-005
+- Suggested order: 6
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-006`
+
+## [FIN-007] Regression suite chua khoa wallet auth, invoice cancel hole va concurrent reversal
+- Severity: Medium
+- Category: Maintainability
+- Module: FIN
+- Description:
+  - Đã có test tốt cho payment idempotency theo `transaction_ref`, wallet ledger retry và branch attribution.
+  - Chưa thấy coverage chặn 3 lỗ hổng lớn nhất hiện tại của FIN.
+- Why it matters:
+  - Đây là module tiền. Regression nhỏ cũng có thể biến thành chênh lệch doanh thu và khiếu nại vận hành.
+- Evidence:
+  - `tests/Feature/InvoicePaymentTest.php`
+  - `tests/Feature/PaymentLedgerImmutabilityTest.php`
+  - `tests/Feature/CriticalHardeningRegressionTest.php`
+  - không thấy test cho wallet resource auth, cancel invoice với payment, concurrent refund
+- Suggested fix:
+  - thêm feature/concurrency tests cho wallet auth, invoice workflow và reversal idempotency
+- Affected areas:
+  - `tests/Feature`
+- Tests needed:
+  - chinh issue nay la backlog regression
+- Dependencies:
+  - FIN-001, FIN-002, FIN-003, FIN-005
+- Suggested order: 7
+- Current status: Resolved
+- Linked task IDs: `TASK-FIN-007`
+
+# Re-audit Update
+
+- FIN da hoan thanh full lifecycle `review -> issues -> plan -> fix -> regression -> re-audit`.
+- Tat ca issue `FIN-001` den `FIN-007` da duoc giai quyet trong baseline hien tai.
+- Regression suite da bao phu:
+  - wallet auth va wallet adjustment audit
+  - invoice workflow + cancel guard + destructive surface guard
+  - refund/reversal idempotency
+  - receiver branch scoping
+  - canonical payment recording boundary
+- Full suite sau FIN hardening dat `629 passed / 3373 assertions`.
+- Module dat `Clean Baseline Reached`, verdict `B`.
+
+# Summary
+
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 0
+- Open low count: 0
+- Next recommended action: chuyen sang review `INV` va giu FIN regression suite trong moi lan full-suite run.

@@ -5,8 +5,8 @@
 - Current status: `Clean Baseline Reached`
 - Current verdict: `B`
 - Review file: `docs/reviews/modules/CARE-customer-care-automation.md`
-- Issue file: `docs/issues/CARE-issues.md`
-- Plan file: `docs/planning/CARE-plan.md`
+- Issue file: `docs/reviews/issues/CARE-issues.md`
+- Plan file: `docs/reviews/plans/CARE-plan.md`
 - Issue ID prefix: `CARE-`
 - Task ID prefix: `TASK-CARE-`
 - Dependencies: `PAT, APPT, FIN, ZNS, KPI`

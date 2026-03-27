@@ -1,0 +1,191 @@
+# Metadata
+
+- Module code: `INT`
+- Module name: `Integrations`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
+- Issue ID prefix: `INT-`
+- Task ID prefix: `TASK-INT-`
+- Review file: `docs/reviews/modules/INT-integrations.md`
+- Plan file: `docs/reviews/plans/INT-plan.md`
+- Dependencies: `GOV, APPT, CLIN, ZNS, OPS`
+- Last updated: `2026-03-07`
+
+# Issue Backlog
+
+## [INT-001] IntegrationSettings cho phep Manager sua secret va runtime endpoint
+- Severity: Critical
+- Category: Security
+- Module: INT
+- Description:
+  - `IntegrationSettings` tung khong tach quyen `view`/`save`, de `Manager` co the sua secret va runtime endpoint nhay cam.
+- Why it matters:
+  - Day la surface co blast radius cao cho outbound target, inbound token va provider secrets.
+- Evidence:
+  - `database/seeders/RolesAndPermissionsSeeder.php`
+  - `app/Filament/Pages/IntegrationSettings.php`
+- Suggested fix:
+  - Tach `View:IntegrationSettings`, `Manage:IntegrationRuntimeSettings`, `Manage:IntegrationSecrets`.
+- Affected areas:
+  - permission matrix
+  - Filament page `IntegrationSettings`
+- Tests needed:
+  - auth matrix cho admin/manager
+- Dependencies:
+  - GOV
+- Suggested order: 1
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-001`
+- Resolution note:
+  - Manager chi con read-only; save/generate secret bi chan bang test regression.
+
+## [INT-002] Internal EMR mutation chua branch-scope theo clinical note
+- Severity: Critical
+- Category: Security
+- Module: INT
+- Description:
+  - Internal EMR mutation tung co shared token nhung khong khoa record/branch scope cua `ClinicalNote`.
+- Why it matters:
+  - Co the sua du lieu lam sang ngoai scope neu biet token va note ID.
+- Evidence:
+  - `app/Http/Middleware/ValidateInternalEmrToken.php`
+  - `app/Http/Requests/Api/AmendClinicalNoteRequest.php`
+- Suggested fix:
+  - Them record-scope guard truoc khi amend.
+- Affected areas:
+  - internal EMR API
+  - clinical note versioning flow
+- Tests needed:
+  - feature test out-of-scope forbidden
+- Dependencies:
+  - GOV, CLIN
+- Suggested order: 2
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-002`
+- Resolution note:
+  - Request auth da khoa actor privileged va reject note ngoai branch scope.
+
+## [INT-003] Luu IntegrationSettings khong transactional va khong co optimistic lock
+- Severity: High
+- Category: Concurrency
+- Module: INT
+- Description:
+  - Bulk save tung de partial write va lost update.
+- Why it matters:
+  - Runtime co the roi vao mixed state khi 2 admin sua cung luc hoac save fail giua vong lap.
+- Evidence:
+  - `app/Filament/Pages/IntegrationSettings.php`
+  - `app/Models/ClinicSetting.php`
+- Suggested fix:
+  - Cache lock + transaction + revision guard.
+- Affected areas:
+  - settings page
+  - clinic settings store
+- Tests needed:
+  - stale revision regression
+- Dependencies:
+  - INT-001
+- Suggested order: 3
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-003`
+- Resolution note:
+  - Save da duoc transactionalize va stale form bi chan bang test.
+
+## [INT-004] Bang van hanh integration giu raw payload PII/PHI va chua co retention
+- Severity: High
+- Category: Security
+- Module: INT
+- Description:
+  - Operational tables tung giu raw payload/log nhay cam o dang plaintext hoac cast thuong.
+- Why it matters:
+  - Tang blast radius, storage footprint va backup risk.
+- Evidence:
+  - `app/Models/WebLeadIngestion.php`
+  - `app/Models/ZaloWebhookEvent.php`
+  - `app/Models/EmrSyncEvent.php`
+  - `app/Models/GoogleCalendarSyncEvent.php`
+- Suggested fix:
+  - Sanitize + encrypt + prune theo retention.
+- Affected areas:
+  - models
+  - sync commands/services
+  - ops retention tooling
+- Tests needed:
+  - payload governance tests
+  - prune command tests
+- Dependencies:
+  - CLIN, ZNS, OPS
+- Suggested order: 4
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-004`
+- Resolution note:
+  - Payload da duoc sanitize/encrypt va co command `integrations:prune-operational-data`.
+
+## [INT-005] Secret rotation la one-shot, khong co grace window hay rollback metadata
+- Severity: Medium
+- Category: Maintainability
+- Module: INT
+- Description:
+  - Shared token rotation tung overwrite ngay lap tuc, khong co grace window va audit metadata ro rang.
+- Why it matters:
+  - De gay outage cho client ngoai va kho rollback/forensics.
+- Evidence:
+  - `app/Filament/Pages/IntegrationSettings.php`
+  - `app/Http/Middleware/ValidateWebLeadToken.php`
+  - `app/Http/Middleware/ValidateInternalEmrToken.php`
+  - `app/Http/Controllers/Api/ZaloWebhookController.php`
+- Suggested fix:
+  - Tao workflow grace window + revoke command + metadata audit.
+- Affected areas:
+  - integration settings UX
+  - inbound token validation
+  - setting audit trail
+- Tests needed:
+  - grace token flow
+  - revoke command flow
+- Dependencies:
+  - INT-001, OPS
+- Suggested order: 5
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-005`
+- Resolution note:
+  - Da them `IntegrationSecretRotationService`, metadata log, grace banner va command `integrations:revoke-rotated-secrets`.
+
+## [INT-006] Coverage chua khoa auth matrix, settings concurrency va payload governance
+- Severity: Medium
+- Category: Maintainability
+- Module: INT
+- Description:
+  - Regression suite tung thieu auth/settings concurrency/payload governance/rotation coverage.
+- Why it matters:
+  - `INT` la module blast radius cao; regression nho co the anh huong ca he thong.
+- Evidence:
+  - `tests/Feature/IntegrationSettingsAuthorizationTest.php`
+  - `tests/Feature/IntegrationSettingsConcurrencyTest.php`
+  - `tests/Feature/IntegrationOperationalPayloadGovernanceTest.php`
+  - `tests/Feature/IntegrationSecretRotationWorkflowTest.php`
+  - `tests/Feature/RevokeRotatedIntegrationSecretsCommandTest.php`
+- Suggested fix:
+  - Mo rong regression suite cho auth, concurrency, payload governance, rotation va scheduler wiring.
+- Affected areas:
+  - `tests/Feature/*Integration*`
+  - `tests/Feature/*Emr*`
+  - `tests/Feature/*WebLead*`
+  - `tests/Feature/*Zalo*`
+- Tests needed:
+  - chinh issue nay la regression backlog
+- Dependencies:
+  - INT-001 -> INT-005
+- Suggested order: 6
+- Current status: Resolved
+- Linked task IDs: `TASK-INT-006`
+- Resolution note:
+  - Regression suite INT da cover auth, stale revision, payload governance, grace token va revoke command.
+
+# Summary
+
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 0
+- Open low count: 0
+- Next recommended action: Chuyen module `INT` sang `Clean Baseline Reached`, rollout migrate tren moi truong that va review `KPI` tiep theo.

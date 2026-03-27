@@ -1,0 +1,204 @@
+# Metadata
+
+- Module code: `INV`
+- Module name: `Inventory / Batches / Stock`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
+- Issue ID prefix: `INV-`
+- Task ID prefix: `TASK-INV-`
+- Review file: `docs/reviews/modules/INV-inventory.md`
+- Plan file: `docs/reviews/plans/INV-plan.md`
+- Dependencies: `GOV, TRT, FIN, SUP, KPI`
+- Last updated: `2026-03-06`
+
+# Issue Backlog
+
+## [INV-001] Posted issue note khong tru ton theo lo va khong truy vet duoc batch
+- Severity: Critical
+- Category: Data Integrity
+- Module: INV
+- Description:
+  - `MaterialIssueNote::post()` tru ton tong tren `materials.stock_qty` nhung khong tru `material_batches.quantity`.
+  - `material_issue_items` khong luu `material_batch_id`, nen phieu xuat thu cong khong truy vet duoc lo vat tu da su dung.
+  - `InventoryTransaction` duoc tao tu issue note khong gan `material_batch_id`.
+- Why it matters:
+  - Ton tong va ton theo lo co the drift ngay trong flow xuat vat tu chuan.
+  - Khong the truy vet lo da xuat khi can thu hoi vat tu, kiem tra het han hoac doi chieu gia von.
+- Evidence:
+  - `app/Models/MaterialIssueNote.php`
+  - `app/Models/MaterialIssueItem.php`
+  - schema `material_issue_items`, `inventory_transactions`
+  - doi chieu voi `app/Services/TreatmentMaterialUsageService.php`
+- Suggested fix:
+  - them `material_batch_id` vao `material_issue_items`
+  - yeu cau chon batch tren issue item form
+  - post issue note phai `lockForUpdate()` batch, tru ton batch va ghi `InventoryTransaction.material_batch_id`
+- Affected areas:
+  - material issue note model/resource/relation manager
+  - material issue items schema/model
+  - inventory transaction creation path
+- Tests needed:
+  - feature test post issue note tru ton tong va ton lo dong bo
+  - feature test khong cho chon batch sai branch/het han/khong du ton
+  - regression test retry post chi tao 1 inventory transaction per item
+- Dependencies:
+  - `TRT`
+- Suggested order: 1
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-001`, `TASK-INV-005`
+
+## [INV-002] SKU uniqueness va aggregate stock invariant con yeu
+- Severity: High
+- Category: Data Integrity
+- Module: INV
+- Description:
+  - `materials.sku` chi co index thuong, khong co unique/composite unique o DB.
+  - `MaterialForm` van cho sua tay `stock_qty`, trong khi day la gia tri tong hop de drift voi batch/ledger.
+- Why it matters:
+  - SKU trung lap lam vo identity cua master data vat tu.
+  - Sua tay ton tong lam sai reorder, KPI kho va doi chieu gia von.
+- Evidence:
+  - schema `materials`
+  - `app/Models/Material.php`
+  - `app/Filament/Resources/Materials/Schemas/MaterialForm.php`
+- Suggested fix:
+  - chot invariant SKU (`global` hoac `(branch_id, sku)`) va them unique index o DB
+  - khoa edit truc tiep `stock_qty` tren CRUD thong thuong, chi cap nhat qua service/action co ly do
+- Affected areas:
+  - materials migration/model/form/table
+  - reporting/reconciliation
+- Tests needed:
+  - feature test duplicate SKU bi chan o DB va UI
+  - feature test `stock_qty` khong con editable truc tiep tren flow thong thuong
+- Dependencies:
+  - `KPI`
+- Suggested order: 2
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-002`
+
+## [INV-003] Destructive va manual mutation surfaces cua material/batch van mo sau khi co history
+- Severity: High
+- Category: UX
+- Module: INV
+- Description:
+  - `MaterialsTable` va `MaterialBatchesTable` van mo `DeleteBulkAction`, `ForceDeleteBulkAction`, `RestoreBulkAction`, va edit page thong thuong.
+  - `MaterialBatchForm` cho sua tay `quantity` va `status` nhu mot CRUD form thong thuong.
+- Why it matters:
+  - Vat tu va lo vat tu la du lieu kho nhay cam; edit/delete tuy tien se lam drift ledger va mat traceability.
+  - UX hien tai khuyen khich nguoi dung sua tay thay vi di qua action nghiep vu co audit.
+- Evidence:
+  - `app/Filament/Resources/Materials/Tables/MaterialsTable.php`
+  - `app/Filament/Resources/MaterialBatches/Tables/MaterialBatchesTable.php`
+  - `app/Filament/Resources/MaterialBatches/Schemas/MaterialBatchForm.php`
+- Suggested fix:
+  - go destructive surfaces khong can thiet
+  - chuyen quantity/status ve action `nhap kho`, `dieu chinh`, `thu hoi`, `het han` co ly do va audit
+  - bo archive/read-only neu co downstream history
+- Affected areas:
+  - material/material batch resources
+  - policies
+  - inventory mutation UX
+- Tests needed:
+  - feature test destructive surfaces bi go bo
+  - feature test batch co downstream history khong sua/xoa tuy tien duoc
+- Dependencies:
+  - `INV-001`, `INV-002`
+- Suggested order: 3
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-003`
+
+## [INV-004] Forms va relation managers chua branch-scoped va stock-aware day du
+- Severity: High
+- Category: Security
+- Module: INV
+- Description:
+  - `MaterialForm::branch_id`, `supplier_id` va `MaterialBatchForm::material_id` khong scope chat theo branch accessible.
+  - `ItemsRelationManager` cua issue note khong loc material theo branch cua phieu, khong loc theo stock/batch availability, va khong bat buoc chon batch.
+- Why it matters:
+  - Multi-branch inventory co the bi mis-post giua chi nhanh.
+  - Non-technical users de chon nham vat tu/lo khong hop le neu dropdown khong scope chat.
+- Evidence:
+  - `app/Filament/Resources/Materials/Schemas/MaterialForm.php`
+  - `app/Filament/Resources/MaterialBatches/Schemas/MaterialBatchForm.php`
+  - `app/Filament/Resources/MaterialIssueNotes/RelationManagers/ItemsRelationManager.php`
+- Suggested fix:
+  - dua inventory selectors ve branch-aware authorizer/query helpers
+  - issue note item chi hien material/batch trong branch cua phieu va con ton hop le
+- Affected areas:
+  - material form
+  - material batch form
+  - issue note relation manager
+- Tests needed:
+  - feature test branch isolation cho selector options
+  - forged payload rejection tests
+- Dependencies:
+  - `GOV`, `INV-001`
+- Suggested order: 4
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-004`
+
+## [INV-005] Batch mutation logic chua duoc centralize thanh transaction-safe boundary
+- Severity: Medium
+- Category: Concurrency
+- Module: INV
+- Description:
+  - `MaterialBatch::decreaseQuantity()` va `increaseQuantity()` chi mutate roi `save()`, khong `lockForUpdate()` va khong enforce branch/status/expiry invariants.
+  - Inventory module chua co canonical service chung cho receive/issue/adjust/reverse nhu treatment usage dang co.
+- Why it matters:
+  - De xuat code moi de lap lai loi drift neu tiep tuc mutate ton kho o nhieu noi khac nhau.
+  - Khong co boundary chung thi rat kho audit va rat de race-condition khi mo rong inventory flows.
+- Evidence:
+  - `app/Models/MaterialBatch.php`
+  - `app/Models/MaterialIssueNote.php`
+  - `app/Services/TreatmentMaterialUsageService.php`
+- Suggested fix:
+  - tao transaction-safe inventory mutation boundary cho consume/restore/adjust
+  - issue note, treatment usage va future receive flows dung cung 1 invariant set
+- Affected areas:
+  - inventory service/model layer
+  - treatment/inventory integration
+- Tests needed:
+  - regression tests cho consume/restore boundaries
+  - concurrency tests neu co multi-path mutation
+- Dependencies:
+  - `INV-001`
+  - `TRT`
+- Suggested order: 5
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-005`
+
+## [INV-006] Regression coverage va rollout verification chua khoa inventory drift
+- Severity: Medium
+- Category: Maintainability
+- Module: INV
+- Description:
+  - Da co test cho treatment usage batch-safe va issue-note posting idempotency aggregate-only.
+  - Chua co regression test cho batch-safe issue note, duplicate SKU invariant, destructive surface guard, hay rollout alignment cua `inventory_transactions.material_batch_id`.
+- Why it matters:
+  - Inventory drift de tai xuat hien khi refactor nếu khong co regression suite.
+  - Migration/schema drift giua repo va app DB se lam sai ket qua review va fix neu khong co verification.
+- Evidence:
+  - `tests/Feature/TreatmentMaterialUsageServiceTest.php`
+  - `tests/Feature/CriticalHardeningRegressionTest.php`
+  - DB app hien tai khong co cot `inventory_transactions.material_batch_id` du migration da ton tai trong repo
+- Suggested fix:
+  - bo sung regression tests cho inventory batch-safe issue posting, SKU uniqueness, destructive surface guard
+  - them rollout checklist/command verification cho schema alignment neu can
+- Affected areas:
+  - tests/Feature
+  - rollout / migration verification
+- Tests needed:
+  - chinh issue nay la backlog test
+- Dependencies:
+  - `INV-001`, `INV-002`, `INV-003`, `INV-004`
+- Suggested order: 6
+- Current status: Resolved
+- Linked task IDs: `TASK-INV-006`
+
+# Summary
+
+- Open critical count: 0
+- Open high count: 0
+- Open medium count: 0
+- Open low count: 0
+- Next recommended action: chay `php artisan migrate` + `php artisan schema:assert-critical-inventory-columns` tren DB thuc te, sau do chuyen sang review `SUP`.
