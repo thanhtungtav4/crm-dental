@@ -26,7 +26,7 @@ it('allows cskh to convert a lead into a patient and open the patient workspace'
 
     $this->actingAs($cskh);
 
-    Livewire::test(ListCustomers::class)
+    $component = Livewire::test(ListCustomers::class)
         ->assertTableActionVisible('convertToPatient', $customer)
         ->callTableAction('convertToPatient', $customer)
         ->assertHasNoActionErrors();
@@ -35,11 +35,54 @@ it('allows cskh to convert a lead into a patient and open the patient workspace'
         ->where('customer_id', $customer->id)
         ->firstOrFail();
 
+    $component->assertRedirect(PatientResource::getUrl('view', ['record' => $patient, 'tab' => 'basic-info']));
+
+    Livewire::test(ListCustomers::class)
+        ->assertTableActionHidden('convertToPatient', $customer->fresh());
+
     expect($customer->fresh()->status)->toBe('converted');
 
     $this->actingAs($cskh)
         ->get(PatientResource::getUrl('view', ['record' => $patient, 'tab' => 'basic-info']))
         ->assertOk();
+});
+
+it('redirects cskh to the existing patient workspace when conversion reuses a deduped profile', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $existingCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '0900111222',
+        'status' => 'converted',
+    ]);
+
+    $existingPatient = Patient::factory()->create([
+        'customer_id' => $existingCustomer->id,
+        'first_branch_id' => $branch->id,
+        'phone' => '0900111222',
+    ]);
+
+    $incomingCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '0900111222',
+        'status' => 'lead',
+    ]);
+
+    $this->actingAs($cskh);
+
+    Livewire::test(ListCustomers::class)
+        ->assertTableActionVisible('convertToPatient', $incomingCustomer)
+        ->callTableAction('convertToPatient', $incomingCustomer)
+        ->assertRedirect(PatientResource::getUrl('view', ['record' => $existingPatient, 'tab' => 'basic-info']))
+        ->assertHasNoActionErrors();
+
+    expect($incomingCustomer->fresh()->status)->toBe('lead')
+        ->and($existingPatient->fresh()->customer_id)->toBe($existingCustomer->id);
 });
 
 it('allows cskh to schedule appointments from the customer table and manage the created record', function (): void {

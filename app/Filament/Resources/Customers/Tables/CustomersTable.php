@@ -184,10 +184,15 @@ class CustomersTable
                             } else {
                                 $toast
                                     ->title('Đã liên kết hồ sơ bệnh nhân hiện có')
-                                    ->body("Khách hàng trùng dữ liệu với hồ sơ {$patient?->patient_code}.")
+                                    ->body("Khách hàng trùng dữ liệu voi ho so {$patient?->patient_code}. He thong se mo ngay ho so hien co.")
                                     ->warning()
                                     ->send();
                             }
+
+                            return redirect(PatientResource::getUrl('view', [
+                                'record' => $patient,
+                                'tab' => 'basic-info',
+                            ]));
 
                         } catch (\Exception $e) {
                             Notification::make()
