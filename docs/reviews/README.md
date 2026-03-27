@@ -18,6 +18,9 @@ Pipeline nay duoc thiet ke de:
 - `docs/reviews/issues/*.md`: canonical issue register cua module
 - `docs/reviews/plans/*.md`: canonical implementation plan va task register cua module
 - `docs/reviews/00-master-index.md`: canonical phase, verdict, top risk, va bieu do tong quan
+- `docs/reviews/program-audit-summary.md`: tong hop cap chuong trinh sau khi da co du review/issue/plan theo module
+- `docs/roadmap/refactor-review-master-backlog.md`: backlog canonical cho phase sau baseline
+- `docs/roadmap/refactor-review-execution-plan.md`: phan ky rollout/refactor cap chuong trinh
 
 ## Status Enum
 

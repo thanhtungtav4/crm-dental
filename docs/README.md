@@ -21,6 +21,7 @@ Day la muc luc chinh cho toan bo tai lieu cua CRM.
 ## 4. Review va ke hoach
 
 - [Review Master Index](reviews/00-master-index.md)
+- [Program Audit Summary](reviews/program-audit-summary.md)
 - [Review Pipeline](reviews/README.md)
 - [Roadmap and Backlogs](roadmap/README.md)
 

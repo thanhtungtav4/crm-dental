@@ -2,8 +2,8 @@
 
 - Module code: `GOV`
 - Module name: `Governance / Branches / RBAC / Audit`
-- Current status: `In Fix`
-- Current verdict: `D`
+- Current status: `Clean Baseline Reached`
+- Current verdict: `B`
 - Task ID prefix: `TASK-GOV-`
 - Source review: `docs/reviews/modules/GOV-branches-rbac-audit.md`
 - Source issues: `docs/reviews/issues/GOV-issues.md`
@@ -14,6 +14,7 @@
 
 - Dua module GOV tu `D` len it nhat `B` baseline bang cach dong 4 khe hong nen: RBAC escalation, user provisioning scope, audit log visibility/integrity, va branch transfer concurrency.
 - Tao governance baseline de cac module `PAT`, `APPT`, `CLIN`, `FIN`, `INV` co the fix sau ma khong bi troi branch scope va authorization.
+- Trang thai hien tai: toan bo task GOV baseline da duoc implement, test, va re-audit.
 
 # Foundation fixes
 

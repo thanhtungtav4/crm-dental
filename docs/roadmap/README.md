@@ -4,6 +4,8 @@ Day la nhom tai lieu backlog va roadmap cap chuong trinh.
 
 ## Tai lieu chinh
 
+- [Refactor/Review Master Backlog](refactor-review-master-backlog.md)
+- [Refactor/Review Execution Plan](refactor-review-execution-plan.md)
 - [Implementation Sprint Backlog](implementation-sprint-backlog.md)
 - [PM Dental Flow Backlog](pm-dental-flow-backlog.md)
 - [EMR Domain Split Backlog](emr-domain-split-backlog.md)

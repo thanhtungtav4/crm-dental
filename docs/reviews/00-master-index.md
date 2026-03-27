@@ -10,6 +10,12 @@ He thong duoc review theo chien luoc `module nao sach module do`.
 - Huong dan AI sau doc lai nhanh va biet module nao review tiep, module nao fix tiep
 - Huong dan doi van hanh chay rollout theo runbook: `docs/operations/production-operations-runbook.md`
 
+## Program artifacts
+
+- [Program Audit Summary](program-audit-summary.md)
+- [Refactor/Review Master Backlog](../roadmap/refactor-review-master-backlog.md)
+- [Refactor/Review Execution Plan](../roadmap/refactor-review-execution-plan.md)
+
 ## Phase enum
 
 | Status | Nghia |
