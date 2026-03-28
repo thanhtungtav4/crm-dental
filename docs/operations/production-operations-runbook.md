@@ -19,6 +19,7 @@ Cap nhat: 2026-03-07
 - OPS issues: `docs/reviews/issues/OPS-issues.md`
 - OPS plan: `docs/reviews/plans/OPS-plan.md`
 - Local demo accounts: `docs/getting-started/local-demo-users.md`
+- Governance matrix: `docs/operations/governance-delegation-matrix.md`
 
 ## 3. Quick deploy checklist
 
@@ -112,6 +113,15 @@ php artisan ops:check-backup-health --strict --no-interaction
 ```bash
 php artisan ops:run-restore-drill --strict --no-interaction
 ```
+
+Neu production dung MySQL/PostgreSQL sandbox restore, DB user can co quyen tao/drop sandbox database cho prefix restore drill. Voi MySQL hien tai:
+
+```sql
+GRANT ALL PRIVILEGES ON `restore\_drill\_%`.* TO 'crm_dental'@'127.0.0.1';
+FLUSH PRIVILEGES;
+```
+
+Khong duoc grant rong hon muc can thiet cho restore sandbox.
 
 ### 7.3 Release gates
 

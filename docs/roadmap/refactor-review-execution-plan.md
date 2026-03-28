@@ -6,14 +6,15 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 - Backlog source: `docs/roadmap/refactor-review-master-backlog.md`
 - Audit source: `docs/reviews/program-audit-summary.md`
-- Last updated: `2026-03-27`
+- Last updated: `2026-03-28`
 
 ## Current State
 
 - `13/13` module da dat `Clean Baseline Reached`.
 - `100/100` issue baseline da `Resolved`.
 - Docs hub, module inventory, review pipeline, issue register, va module plans da co.
-- Priority hien tai khong phai la deep-fix khan cap, ma la rollout safety va structural convergence.
+- Production release gates va production readiness pack da pass tren environment that ngay `2026-03-28`.
+- Priority hien tai la shared contracts va structural convergence.
 
 ## Phase 0 - Docs Cleanup and Audit Packaging
 
@@ -38,6 +39,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 1 - Rollout and Smoke-Test Gate
 
+- Status: `Completed`
 - Goal:
   - Dong khoang cach giua code baseline va moi truong that truoc khi lam refactor sau hon.
 - Scope:
@@ -58,6 +60,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 2 - Low-Risk Fixes and Operator UX
 
+- Status: `Completed`
 - Goal:
   - Giam thao tac sai cua operator ma khong thay doi domain boundary lon.
 - Scope:
@@ -76,6 +79,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 3 - Authorization and Scope Hardening Convergence
 
+- Status: `In progress`
 - Goal:
   - Rut gon cac pattern auth/branch scope thanh contract on dinh toan he thong.
 - Scope:

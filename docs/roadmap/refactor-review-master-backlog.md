@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-03-27`
+- Last updated: `2026-03-28`
 
 ## Working Rules
 
@@ -24,6 +24,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-001] Production migration and backfill rollout wave
 
+- Status: `Completed`
 - Module: `GOV`, `CARE`, `INV`, `SUP`, `INT`, `ZNS`
 - Description:
   - Chay toan bo migration/backfill/schema gate con lai tren moi truong that va xac nhan du lieu sau rollout khong drift.
@@ -46,6 +47,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-002] Real-infrastructure smoke-test wave for control-plane and async systems
 
+- Status: `Completed`
 - Module: `APPT`, `INT`, `ZNS`, `KPI`, `OPS`, `CARE`
 - Description:
   - Chay smoke test tren he thong that cho queue workers, control-plane commands, backup/restore, readiness gates, provider rotations, campaign run/prune, va snapshot/export.
@@ -72,6 +74,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-003] Governance delegation matrix and baseline permission review
 
+- Status: `Completed`
 - Module: `GOV`
 - Description:
   - Formalize ma tran role/page/action sau baseline de tranh drift permission khi mo rong he thong.
@@ -93,6 +96,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-004] Consent and imaging operator UX polish
 
+- Status: `Completed`
 - Module: `CLIN`, `TRT`, `INT`
 - Description:
   - Nang cap UX ky consent, imaging upload, helper text, retry guidance, va read-preserving clinical surfaces.
@@ -115,6 +119,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-005] MPI, lead conversion, and care queue operator clarity
 
+- Status: `Completed`
 - Module: `PAT`, `CARE`, `APPT`
 - Description:
   - Lam ro messaging cho convert/dedupe flow, MPI queue, va care queue states de operator khong thao tac sai doi tuong.
@@ -137,6 +142,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-006] Queue observability and triage runbook pack
 
+- Status: `Completed`
 - Module: `APPT`, `CARE`, `ZNS`, `INT`, `OPS`
 - Description:
   - Dong goi log, metric, queue state, retry/dead-letter, va runbook triage thanh mot operational pack de de theo doi sau deploy.

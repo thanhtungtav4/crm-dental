@@ -5,6 +5,7 @@ Tai lieu cho deploy, runtime operations, readiness, va artifact kiem thu.
 ## Tai lieu chinh
 
 - [Production Operations Runbook](production-operations-runbook.md)
+- [Governance Delegation Matrix](governance-delegation-matrix.md)
 - [Playwright Artifact Retention](playwright-artifact-retention.md)
 
 ## Khi can doc muc nay

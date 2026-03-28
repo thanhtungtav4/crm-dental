@@ -10,14 +10,16 @@
   - `docs/reviews/plans/*.md`
 - Canonical state rule:
   - Khi module review co ca phan review lich su va phan `Re-audit Summary`, `Re-audit Update`, hoac `Re-audit Outcome`, trang thai moi nhat va `00-master-index.md` la source of truth.
-- Last updated: `2026-03-27`
+- Last updated: `2026-03-28`
 
 ## Executive Summary
 
 - `13/13` module da dat `Clean Baseline Reached`.
 - `100/100` issue baseline trong issue register da duoc danh dau `Resolved`.
 - Khong con open code blocker co do tin cay cao trong baseline hien tai.
-- Trung tam rui ro da chuyen tu `code correctness` sang `rollout safety`, `production smoke test`, `operator UX polish`, va `structural convergence`.
+- Production rollout va real-infrastructure smoke-test pack da pass tren environment that ngay `2026-03-28`.
+- Governance delegation matrix da duoc formalize thanh tai lieu van hanh.
+- Trung tam rui ro da chuyen tu `rollout safety` sang `shared contracts`, `workflow convergence`, va `structural convergence`.
 - Chuong trinh hien tai nen di tiep theo batch nho, uu tien rollout/smoke test truoc, refactor sau.
 
 ## Program Verdict
@@ -25,9 +27,9 @@
 - Overall verdict: `B`
 - Production readiness:
   - Code baseline: `Dat`
-  - Migration/backfill rollout: `Can tiep tuc`
-  - Real-infrastructure smoke test: `Can tiep tuc`
-  - Structural simplification: `Chua bat dau`
+  - Migration/backfill rollout: `Dat`
+  - Real-infrastructure smoke test: `Dat`
+  - Structural simplification: `Dang trien khai`
 
 ## Module Conclusions
 
@@ -35,13 +37,13 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline GOV.
 - Residual risks:
-  - permission baseline drift tren DB da seed truoc day
-  - governance delegation matrix van con dang o dang convention, chua formalize thanh tai lieu van hanh
+  - Assistant va Finance chua duoc tach thanh seeded role rieng
+  - permission drift van phai tiep tuc duoc chan bang assert/sync trong moi deploy
 - Testing gaps:
   - khong con regression gap o code baseline
   - con thieu smoke test seed/sync governance tren moi truong that
 - Follow-up opportunities:
-  - formalize governance delegation matrix
+  - tieu chuan hoa quy trinh tach role `Assistant` / `Finance` neu nghiep vu can
   - xac dinh retention va review cadence cho audit artifacts
 
 ### PAT - Customers / Patients / MPI
@@ -74,27 +76,25 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline CARE.
 - Residual risks:
-  - migration/backfill `notes.ticket_key` con la rollout item
   - outbound side-effects va provider semantics can duoc theo doi tiep qua `ZNS` va `KPI`
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu migration rollout + automation smoke test tren moi truong that
+  - con thieu volume smoke test dai hon cho outbound/provider lane
 - Follow-up opportunities:
-  - hoan thien operational messaging cho care queue
+  - tiep tuc don gian hoa operational messaging cho care queue o nhung lane con lai
   - tiep tuc giam coupling outbound side-effects voi `ZNS`/`KPI`
 
 ### CLIN - Clinical Records / Consent
 
 - Conclusion: Khong con high-confidence finding mo trong baseline CLIN.
 - Residual risks:
-  - UX ky consent production-grade chua phai muc hoan thien cuoi
-  - huong dan upload imaging/X-ray lon van con la doi tuong can polish
+  - consent/imaging UX da duoc polish baseline, nhung van con du dia tiep tuc productize o browser flow sau nay
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu production-like smoke test cho media/upload va consent operator flow
+  - con thieu browser-level smoke test production-like cho media/upload va consent operator flow
 - Follow-up opportunities:
-  - consent UX polish
-  - upload guidance, retry guidance, va read-preserving EMR UX
+  - browser flow cho consent ky/tu choi
+  - tiep tuc polish read-preserving EMR UX
 
 ### TRT - Treatment Plans / Sessions / Materials Usage
 
@@ -124,10 +124,10 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline INV.
 - Residual risks:
-  - rollout migration/schema gate inventory tren DB dang drift van la phan viec con lai
+  - inventory/reporting convergence voi FIN/TRT van la bai toan he thong
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu rollout verification tren stock data that va schema drift gate theo moi truong
+  - con thieu reconciliation cadence dai han tren stock data that
 - Follow-up opportunities:
   - inventory reconciliation cadence
   - tiep tuc don gian hoa mutation/read-model cho kho
@@ -136,10 +136,10 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline SUP.
 - Residual risks:
-  - rollout `supplier_id` backfill, `factory_order_sequences`, va smoke test report labo tren du lieu that
+  - workflow va reporting supplier/labo van con la lane structural convergence
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu migration/backfill/report validation tren moi truong production-like
+  - con thieu validation dai han cho supplier reporting tren du lieu production-like
 - Follow-up opportunities:
   - formalize supplier ownership model
   - refine procurement/workflow states neu muon tach `received/verified`
@@ -148,11 +148,10 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline INT.
 - Residual risks:
-  - rollout migration INT moi
-  - grace token rotation/revoke can duoc smoke test voi he thong ngoai thuc te
+  - grace token rotation/revoke can tiep tuc duoc theo doi theo cadence van hanh
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu production integration contract smoke tests va rollback drills
+  - con thieu periodic provider contract smoke tests va rollback drills
 - Follow-up opportunities:
   - tach ro control-plane health, runtime settings, va secret rotation operations
   - dashboard hoa provider/runtime health
@@ -161,11 +160,10 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline ZNS.
 - Residual risks:
-  - rollout 2 migration ZNS moi
-  - smoke test campaign run/prune/retry/dead-letter tren du lieu that va provider that
+  - observability threshold tuning cho campaign/retry lane van con the tinh chinh them
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu live-provider smoke test va observability threshold tuning
+  - con thieu live-provider cadence va observability threshold tuning
 - Follow-up opportunities:
   - tiep tuc polish dashboard triage dead-letter/retry
   - tiep tuc toi uu retained payload policy va runbook van hanh
@@ -174,10 +172,10 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline KPI.
 - Residual risks:
-  - report/export tren production dataset va runtime snapshot commands can duoc theo doi sau deploy
+  - report/export tren dataset lon van can tiep tuc do do va toi uu
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu performance/export verification tren du lieu that
+  - con thieu performance/export verification cadenced tren du lieu that
 - Follow-up opportunities:
   - tiep tuc chuan hoa reporting platform chung
   - tiep tuc toi uu snapshot/read-model tren dataset lon
@@ -186,28 +184,28 @@
 
 - Conclusion: Khong con high-confidence finding mo trong baseline OPS.
 - Residual risks:
-  - backup/restore/release readiness smoke tests tren ha tang that chua phai la cong viec hoan tat
+  - can duy tri cadence readiness/signoff dinh ky de tranh drift van hanh
 - Testing gaps:
   - khong con regression gap o code baseline
-  - con thieu real-infrastructure restore drill, signoff cadence, va observability threshold tuning
+  - con thieu signoff cadence va observability threshold tuning dinh ky
 - Follow-up opportunities:
   - dashboard hoa control-plane operations
   - chot RPO/RTO va release signoff cadence thanh SOP on dinh
 
 ## Top Risks Remaining
 
-1. Rollout drift giua code baseline va du lieu DB/infra that
-   - Nhieu module da khoa bug trong code, nhung van can migration/backfill/schema gate tren moi truong that.
-2. Async/control-plane behavior tren he thong that
-   - APPT, CARE, ZNS, INT, KPI, OPS deu co phan viec smoke test cho worker, command, provider, hoac readiness lane.
-3. Cross-module convergence chua duoc productize thanh contract chung
-   - He thong da co nhieu pattern tot moi, nhung chua duoc rut gon thanh shared contract cho workflow, actor scope, audit timeline, va reporting.
+1. Shared contracts chua duoc rut gon thanh primitive on dinh toan he thong
+   - scope, search/hash, workflow, va audit timeline van phan tan o nhieu lane.
+2. Structural convergence giua TRT/INV/FIN/SUP van con mo
+   - immutable adjustment/void/reversal strategy van la bai toan lon nhat con lai.
+3. Reporting va integration control-plane van co du dia tiep tuc don gian hoa
+   - KPI/report snapshot va integration runtime health da on dinh hon, nhung chua dat muc contract chung.
 
 ## Quick Wins
 
-1. Chay wave migration/backfill + smoke test cho CARE, SUP, INT, ZNS, INV, GOV.
-2. Chay control-plane smoke test cho backup/restore/readiness, provider rotation, campaign run/prune, snapshot/export.
-3. Polish operator UX cho consent/imaging, MPI/care queue, va async queue triage.
+1. RRB-007: shared hashed identity/search contract.
+2. RRB-008: shared actor/branch scope contract.
+3. RRB-009 va RRB-010: workflow + audit convergence.
 
 ## Structural Risks
 
@@ -217,10 +215,9 @@
 
 ## Suggested Implementation Order
 
-1. Hoan tat rollout migration/backfill + smoke test tren moi truong that.
-2. Xu ly nhung batch UX/ops nho, rui ro thap cho operator-facing flows.
-3. Rut gon thanh shared contract cho scope, workflow, audit, va search.
-4. Moi bat dau structural refactor o ledger/reporting/control-plane.
+1. Hoan tat Phase 3 voi `RRB-007` va `RRB-008`.
+2. Chot `RRB-009` va `RRB-010` cho workflow/audit lanes uu tien.
+3. Sau do moi vao `RRB-011`, `RRB-012`, `RRB-013`.
 
 ## Canonical Next Documents
 
