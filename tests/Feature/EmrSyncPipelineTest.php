@@ -49,6 +49,29 @@ it('syncs emr outbox event successfully and persists patient map', function () {
         ->and($log?->status)->toBe(EmrSyncEvent::STATUS_SYNCED);
 });
 
+it('fails fast when emr sync runtime is enabled but not fully configured', function (): void {
+    ClinicSetting::setValue('emr.enabled', true, [
+        'group' => 'emr',
+        'value_type' => 'boolean',
+        'is_active' => true,
+    ]);
+    ClinicSetting::setValue('emr.base_url', '', [
+        'group' => 'emr',
+        'value_type' => 'text',
+        'is_active' => true,
+    ]);
+    ClinicSetting::setValue('emr.api_key', '', [
+        'group' => 'emr',
+        'value_type' => 'text',
+        'is_secret' => true,
+        'is_active' => true,
+    ]);
+
+    $this->artisan('emr:sync-events')
+        ->expectsOutputToContain('EMR chưa cấu hình đầy đủ (base_url/api_key).')
+        ->assertFailed();
+});
+
 it('moves emr outbox event to dead letter after max attempts', function () {
     [$patient] = seedEmrPatientAggregate();
 

@@ -46,14 +46,8 @@ class SyncZnsAutomationEvents extends Command
             return self::SUCCESS;
         }
 
-        if (trim((string) ClinicRuntimeSettings::get('zns.access_token', '')) === '') {
-            $this->error('Thiếu ZNS access token. Không thể xử lý event automation.');
-
-            return self::FAILURE;
-        }
-
-        if (ClinicRuntimeSettings::znsSendEndpoint() === '') {
-            $this->error('Thiếu ZNS send endpoint. Không thể xử lý event automation.');
+        if (($configurationError = $this->znsProviderClient->configurationErrorMessage()) !== null) {
+            $this->error($configurationError.' Không thể xử lý event automation.');
 
             return self::FAILURE;
         }

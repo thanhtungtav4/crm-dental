@@ -53,6 +53,12 @@ class SyncEmrEvents extends Command
             return self::SUCCESS;
         }
 
+        if (! $this->emrIntegrationService->isConfigured()) {
+            $this->error('EMR chưa cấu hình đầy đủ (base_url/api_key).');
+
+            return self::FAILURE;
+        }
+
         $limit = max(1, (int) $this->option('limit'));
         $patientId = $this->option('patient_id') ? (int) $this->option('patient_id') : null;
         $dryRun = (bool) $this->option('dry-run');

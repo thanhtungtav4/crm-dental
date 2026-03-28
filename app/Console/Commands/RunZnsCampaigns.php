@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
+use App\Services\ZnsProviderClient;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -30,7 +31,7 @@ class RunZnsCampaigns extends Command
     /**
      * Execute the console command.
      */
-    public function handle(ZnsCampaignRunnerService $runner): int
+    public function handle(ZnsCampaignRunnerService $runner, ZnsProviderClient $znsProviderClient): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -41,6 +42,12 @@ class RunZnsCampaigns extends Command
             $this->info('ZNS đang tắt, bỏ qua chạy campaign.');
 
             return self::SUCCESS;
+        }
+
+        if (($configurationError = $znsProviderClient->configurationErrorMessage()) !== null) {
+            $this->error($configurationError.' Không thể chạy campaign ZNS.');
+
+            return self::FAILURE;
         }
 
         $campaignId = $this->option('campaign_id');

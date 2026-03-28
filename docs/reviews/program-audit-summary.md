@@ -215,7 +215,7 @@
 
 1. Treatment, inventory, finance, supplier van can mot chien luoc immutable ledger/adjustment thong nhat hon.
 2. Reporting va snapshot platform can tiep tuc tach read-model khoi page logic khi dataset tang.
-3. Integration control-plane can tiep tuc duoc tach ro health/runtime/secret lanes de giam drift van hanh.
+3. Integration control-plane can tiep tuc duoc tach ro health/runtime/secret lanes de giam drift van hanh; lane dau tien da bat dau bang fail-fast runtime readiness cho `emr:sync-events`, va da tiep tuc sang `zns:run-campaigns` voi readiness check dung chung tu `ZnsProviderClient`.
 
 ## Suggested Implementation Order
 

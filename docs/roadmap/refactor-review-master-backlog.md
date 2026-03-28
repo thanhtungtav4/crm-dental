@@ -355,6 +355,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-013] Integration control-plane platform convergence
 
+- Status: `In progress`
 - Module: `INT`, `ZNS`, `OPS`
 - Description:
   - Tiep tuc tach ro control-plane health, runtime settings, secret rotation, payload governance, retry/dead-letter, va provider-specific runbooks thanh mot platform nhat quan.
@@ -373,6 +374,9 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - secret rotation/grace windows
     - payload retention/pruning
     - provider run/retry/revoke
+  - Tien do hien tai:
+    - da bat dau lane `config/runtime settings` bang fail-fast runtime readiness cho `emr:sync-events`, de command khong chay vao processing loop khi `emr.enabled=true` nhung `base_url/api_key` chua day du
+    - da tiep tuc cung lane nay cho `zns:run-campaigns`, va da gom `ZnsProviderClient` thanh diem check chung cho provider credentials (`access_token`, `send_endpoint`) de `run-campaigns` va `sync-automation-events` khong dien giai runtime drift theo hai cach khac nhau
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

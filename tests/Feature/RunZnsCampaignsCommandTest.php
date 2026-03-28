@@ -187,6 +187,43 @@ it('treats disabled zns runtime as a no-op instead of a failed automation run', 
         ->and(ZnsCampaignDelivery::query()->count())->toBe(0);
 });
 
+it('fails fast when zns runtime is enabled but provider credentials are incomplete', function (): void {
+    ClinicSetting::setValue('zns.enabled', true, [
+        'group' => 'zns',
+        'value_type' => 'boolean',
+    ]);
+    ClinicSetting::setValue('zns.access_token', '', [
+        'group' => 'zns',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+    ClinicSetting::setValue('zns.send_endpoint', 'https://business.openapi.zalo.me/message/template', [
+        'group' => 'zns',
+        'value_type' => 'text',
+    ]);
+
+    $branch = Branch::factory()->create();
+
+    ZnsCampaign::query()->create([
+        'name' => 'Misconfigured ZNS campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_id' => 'tpl_zns_misconfigured_001',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake();
+
+    $this->artisan('zns:run-campaigns')
+        ->expectsOutputToContain('Thiếu ZNS access token. Không thể chạy campaign ZNS.')
+        ->assertFailed();
+
+    Http::assertNothingSent();
+
+    expect(ZnsCampaign::query()->value('status'))->toBe(ZnsCampaign::STATUS_SCHEDULED)
+        ->and(ZnsCampaignDelivery::query()->count())->toBe(0);
+});
+
 function configureZnsCommandRuntime(): void
 {
     ClinicSetting::setValue('zns.enabled', true, [

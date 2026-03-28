@@ -9,6 +9,24 @@ use Throwable;
 
 class ZnsProviderClient
 {
+    public function isConfigured(): bool
+    {
+        return $this->configurationErrorMessage() === null;
+    }
+
+    public function configurationErrorMessage(): ?string
+    {
+        if (ClinicRuntimeSettings::znsSendEndpoint() === '') {
+            return 'Thiếu ZNS send endpoint.';
+        }
+
+        if (trim((string) ClinicRuntimeSettings::get('zns.access_token', '')) === '') {
+            return 'Thiếu ZNS access token.';
+        }
+
+        return null;
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      * @return array{
@@ -22,16 +40,14 @@ class ZnsProviderClient
      */
     public function sendTemplate(array $payload): array
     {
+        $configurationError = $this->configurationErrorMessage();
+
+        if ($configurationError !== null) {
+            return $this->failure($configurationError);
+        }
+
         $endpoint = ClinicRuntimeSettings::znsSendEndpoint();
         $accessToken = trim((string) ClinicRuntimeSettings::get('zns.access_token', ''));
-
-        if ($endpoint === '') {
-            return $this->failure('Thiếu ZNS send endpoint.');
-        }
-
-        if ($accessToken === '') {
-            return $this->failure('Thiếu ZNS access token.');
-        }
 
         try {
             $response = $this->httpClient($accessToken)
