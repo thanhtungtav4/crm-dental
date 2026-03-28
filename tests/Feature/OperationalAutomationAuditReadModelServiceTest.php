@@ -114,7 +114,12 @@ it('tracks popup and photo automation commands in the shared automation reader',
     $commands = app(OperationalAutomationAuditReadModelService::class)->trackedCommands();
 
     expect($commands)
+        ->toContain('emr:sync-events')
+        ->toContain('emr:reconcile-integrity')
+        ->toContain('emr:reconcile-clinical-media')
         ->toContain('emr:check-dicom-readiness')
+        ->toContain('emr:prune-clinical-media')
+        ->toContain('google-calendar:sync-events')
         ->toContain('popups:dispatch-due')
         ->toContain('popups:prune')
         ->toContain('photos:prune');
