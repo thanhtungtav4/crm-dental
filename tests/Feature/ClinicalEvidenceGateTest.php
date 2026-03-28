@@ -203,7 +203,12 @@ it('requires evidence for protocol treatment session completion and supports aut
         ->first();
 
     expect($audit)->not->toBeNull()
-        ->and((string) data_get($audit?->metadata, 'evidence_override_reason'))->toContain('xử trí gấp');
+        ->and((string) data_get($audit?->metadata, 'evidence_override_reason'))->toContain('xử trí gấp')
+        ->and((string) data_get($audit?->metadata, 'reason'))->toContain('xử trí gấp')
+        ->and(data_get($audit?->metadata, 'patient_id'))->toBe($patient->id)
+        ->and(data_get($audit?->metadata, 'branch_id'))->toBe($branch->id)
+        ->and(data_get($audit?->metadata, 'status_from'))->toBe('scheduled')
+        ->and(data_get($audit?->metadata, 'status_to'))->toBe('done');
 });
 
 it('allows protocol treatment session completion without override when inline evidence exists', function (): void {
@@ -264,6 +269,20 @@ it('allows protocol treatment session completion without override when inline ev
         ->and($session->evidence_override_reason)->toBeNull()
         ->and($session->evidence_override_by)->toBeNull()
         ->and($session->evidence_override_at)->toBeNull();
+
+    $audit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_TREATMENT_SESSION)
+        ->where('entity_id', $session->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->latest('id')
+        ->first();
+
+    expect($audit)->not->toBeNull()
+        ->and(data_get($audit?->metadata, 'patient_id'))->toBe($patient->id)
+        ->and(data_get($audit?->metadata, 'branch_id'))->toBe($branch->id)
+        ->and(data_get($audit?->metadata, 'status_from'))->toBe('scheduled')
+        ->and(data_get($audit?->metadata, 'status_to'))->toBe('done')
+        ->and(data_get($audit?->metadata, 'reason'))->toBeNull();
 });
 
 function makeClinicalEvidenceDoctor(Branch $branch): User
