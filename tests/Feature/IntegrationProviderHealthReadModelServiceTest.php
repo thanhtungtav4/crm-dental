@@ -25,6 +25,26 @@ it('builds shared provider health cards and counts from runtime settings', funct
     configureIntegrationProviderHealth('emr.dicom.base_url', 'https://dicom.example.test', 'text', 'emr');
     configureIntegrationProviderHealth('emr.dicom.facility_code', 'HCM-01', 'text', 'emr');
     configureIntegrationProviderHealth('emr.dicom.auth_token', 'dicom-provider-health-token', 'text', 'emr', isSecret: true);
+    configureIntegrationProviderHealth('web_lead.enabled', true, 'boolean', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.api_token', 'wla_provider_health_token', 'text', 'web_lead', isSecret: true);
+    configureIntegrationProviderHealth('web_lead.default_branch_code', 'BR-WEB-01', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.realtime_notification_enabled', true, 'boolean', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.realtime_notification_roles', ['CSKH'], 'json', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_enabled', true, 'boolean', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_recipient_roles', ['CSKH'], 'json', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_recipient_emails', 'lead-box@example.test', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_host', 'smtp.example.test', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_port', 587, 'integer', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_username', 'lead-bot@example.test', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_password', 'secret-provider-health', 'text', 'web_lead', isSecret: true);
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_scheme', 'tls', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_from_address', 'lead-bot@example.test', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_from_name', 'CRM Lead Bot', 'text', 'web_lead');
+
+    \App\Models\Branch::factory()->create([
+        'code' => 'BR-WEB-01',
+        'active' => true,
+    ]);
 
     $service = app(IntegrationProviderHealthReadModelService::class);
     $cards = collect($service->cards())->keyBy('key');
@@ -36,6 +56,7 @@ it('builds shared provider health cards and counts from runtime settings', funct
         'google_calendar',
         'emr',
         'dicom',
+        'web_lead',
     ])
         ->and($cards->get('zalo_oa')['status'])->toBe('Healthy')
         ->and($cards->get('zalo_oa')['webhook_url'])->toContain('/api/v1/integrations/zalo/webhook')
@@ -43,16 +64,38 @@ it('builds shared provider health cards and counts from runtime settings', funct
         ->and($cards->get('google_calendar')['runtime_error_message'])->toBe('Google Calendar chưa cấu hình đầy đủ (client_id/client_secret/refresh_token/calendar_id).')
         ->and($cards->get('emr')['status'])->toBe('Disabled')
         ->and($cards->get('dicom')['status'])->toBe('Healthy')
+        ->and($cards->get('web_lead')['status'])->toBe('Healthy')
+        ->and($cards->get('web_lead')['meta'][0]['value'])->toContain('/api/v1/web-leads')
         ->and($counts)->toBe([
-            'healthy' => 2,
+            'healthy' => 3,
             'degraded' => 2,
             'disabled' => 1,
         ]);
 });
 
+it('marks web lead provider as degraded when inbound token or internal mail runtime drifts', function (): void {
+    configureIntegrationProviderHealth('web_lead.enabled', true, 'boolean', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.api_token', '', 'text', 'web_lead', isSecret: true);
+    configureIntegrationProviderHealth('web_lead.default_branch_code', 'MISSING-BRANCH', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_enabled', true, 'boolean', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_recipient_roles', [], 'json', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_recipient_emails', '', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_smtp_host', '', 'text', 'web_lead');
+    configureIntegrationProviderHealth('web_lead.internal_email_from_address', '', 'text', 'web_lead');
+
+    $card = app(IntegrationProviderHealthReadModelService::class)->provider('web_lead');
+
+    expect($card['status'])->toBe('Needs configuration')
+        ->and($card['runtime_error_message'])->toBe('Web Lead API chưa cấu hình API token.')
+        ->and($card['issues'])->toContain('Thiếu Web Lead API token.')
+        ->and($card['issues'])->toContain('Chi nhánh mặc định của Web Lead không hợp lệ hoặc không còn hoạt động.')
+        ->and($card['issues'])->toContain('Bật email nội bộ nhưng chưa cấu hình người nhận.')
+        ->and(collect($card['issues'])->contains(fn (string $message): bool => str_contains($message, 'SMTP host')))->toBeTrue();
+});
+
 function configureIntegrationProviderHealth(
     string $key,
-    bool|int|string $value,
+    array|bool|int|string $value,
     string $valueType,
     string $group,
     bool $isSecret = false,

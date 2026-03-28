@@ -3,9 +3,8 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\Note;
-use App\Models\ReportCareQueueDailyAggregate;
 use App\Models\User;
-use App\Services\HotReportAggregateReadinessService;
+use App\Services\HotReportAggregateReadModelService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -58,25 +57,7 @@ class CustomsCareStatistical extends BaseReportPage
         if ($this->usesCareAggregate()) {
             $scopeIds = $this->selectedBranchScopeIds();
 
-            if ($scopeIds === []) {
-                return ReportCareQueueDailyAggregate::query()
-                    ->from('report_care_queue_daily_aggregates as care_daily')
-                    ->whereRaw('1 = 0');
-            }
-
-            return ReportCareQueueDailyAggregate::query()
-                ->from('report_care_queue_daily_aggregates as care_daily')
-                ->selectRaw('
-                    care_daily.care_type as care_type,
-                    MAX(care_daily.care_type_label) as care_type_label,
-                    care_daily.care_status as care_status,
-                    MAX(care_daily.care_status_label) as care_status_label,
-                    SUM(care_daily.total_count) as total_count,
-                    MAX(care_daily.latest_care_at) as care_at,
-                    MAX(care_daily.snapshot_date) as snapshot_date
-                ')
-                ->whereIn('care_daily.branch_scope_id', $scopeIds)
-                ->groupBy('care_daily.care_type', 'care_daily.care_status');
+            return $this->hotReportAggregates()->careBreakdownQuery($scopeIds);
         }
 
         return $this->applyNoteBranchScope(
@@ -148,32 +129,14 @@ class CustomsCareStatistical extends BaseReportPage
 
     public function getStats(): array
     {
+        [$from, $until] = $this->getDateRangeFromFilters();
+
         if ($this->usesCareAggregate()) {
-            $baseQuery = ReportCareQueueDailyAggregate::query();
-            $this->applyDateRange($baseQuery, 'snapshot_date');
             $scopeIds = $this->selectedBranchScopeIds();
-
-            if ($scopeIds === []) {
-                $total = 0;
-                $completed = 0;
-                $planned = 0;
-
-                return [
-                    ['label' => 'Tổng chăm sóc', 'value' => number_format($total)],
-                    ['label' => 'Hoàn thành', 'value' => number_format($completed)],
-                    ['label' => 'Đã đặt lịch', 'value' => number_format($planned)],
-                ];
-            }
-
-            $baseQuery->whereIn('branch_scope_id', $scopeIds);
-
-            $total = (int) (clone $baseQuery)->sum('total_count');
-            $completed = (int) (clone $baseQuery)
-                ->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_DONE]))
-                ->sum('total_count');
-            $planned = (int) (clone $baseQuery)
-                ->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_NOT_STARTED]))
-                ->sum('total_count');
+            $summary = $this->hotReportAggregates()->careSummary($scopeIds, $from, $until);
+            $total = $summary['total'];
+            $completed = $summary['completed'];
+            $planned = $summary['planned'];
         } else {
             $baseQuery = $this->applyNoteBranchScope(
                 Note::query()
@@ -218,7 +181,7 @@ class CustomsCareStatistical extends BaseReportPage
             return (bool) $this->usesCareAggregateDecision['value'];
         }
 
-        $usesAggregate = app(HotReportAggregateReadinessService::class)
+        $usesAggregate = $this->hotReportAggregates()
             ->shouldUseCareAggregate($scopeIds, $from, $until);
 
         $this->usesCareAggregateDecision = [
@@ -227,6 +190,11 @@ class CustomsCareStatistical extends BaseReportPage
         ];
 
         return $usesAggregate;
+    }
+
+    protected function hotReportAggregates(): HotReportAggregateReadModelService
+    {
+        return app(HotReportAggregateReadModelService::class);
     }
 
     protected function selectedBranchScopeIds(): array

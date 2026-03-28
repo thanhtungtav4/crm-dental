@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Branch;
 use App\Support\ClinicRuntimeSettings;
 use InvalidArgumentException;
+use RuntimeException;
 
 class IntegrationProviderHealthReadModelService
 {
@@ -41,6 +43,7 @@ class IntegrationProviderHealthReadModelService
             $this->provider('google_calendar'),
             $this->provider('emr'),
             $this->provider('dicom'),
+            $this->provider('web_lead'),
         ];
     }
 
@@ -84,6 +87,7 @@ class IntegrationProviderHealthReadModelService
             'google_calendar' => $this->googleCalendarCard(),
             'emr' => $this->emrCard(),
             'dicom' => $this->dicomCard(),
+            'web_lead' => $this->webLeadCard(),
             default => throw new InvalidArgumentException("Unsupported integration provider [{$key}]."),
         };
     }
@@ -477,6 +481,120 @@ class IntegrationProviderHealthReadModelService
             runtimeErrorMessage: $enabled && $issues !== []
                 ? (string) ($issues[0] ?? 'DICOM/PACS chưa cấu hình đầy đủ.')
                 : null,
+        );
+    }
+
+    /**
+     * @return array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     enabled:bool,
+     *     tone:string,
+     *     status:string,
+     *     score:int,
+     *     issues:array<int, string>,
+     *     recommendations:array<int, string>,
+     *     meta:array<int, array{label:string, value:int|string}>,
+     *     issue_count:int,
+     *     recommendation_count:int,
+     *     runtime_error_message:?string,
+     *     webhook_url:?string
+     * }
+     */
+    protected function webLeadCard(): array
+    {
+        $enabled = ClinicRuntimeSettings::boolean('web_lead.enabled', false);
+        $issues = [];
+        $recommendations = [];
+        $runtimeErrorMessage = null;
+
+        $apiToken = trim((string) ClinicRuntimeSettings::get('web_lead.api_token', ''));
+        $defaultBranchCode = trim((string) ClinicRuntimeSettings::get('web_lead.default_branch_code', ''));
+        $defaultBranchExists = $defaultBranchCode === ''
+            || Branch::query()
+                ->where('code', $defaultBranchCode)
+                ->where('active', true)
+                ->exists();
+        $realtimeEnabled = ClinicRuntimeSettings::webLeadRealtimeNotificationEnabled();
+        $realtimeRoles = ClinicRuntimeSettings::webLeadRealtimeNotificationRoles();
+        $internalEmailEnabled = ClinicRuntimeSettings::webLeadInternalEmailEnabled();
+        $internalEmailRoles = ClinicRuntimeSettings::webLeadInternalEmailRecipientRoles();
+        $internalEmailMailboxes = ClinicRuntimeSettings::webLeadInternalEmailRecipientEmails();
+
+        if (! $enabled) {
+            $recommendations[] = 'Bật Web Lead API khi cần ingest lead từ landing page hoặc form bên ngoài vào CRM.';
+        }
+
+        if ($apiToken === '') {
+            $issues[] = 'Thiếu Web Lead API token.';
+            $runtimeErrorMessage ??= 'Web Lead API chưa cấu hình API token.';
+        }
+
+        if (! $defaultBranchExists) {
+            $issues[] = 'Chi nhánh mặc định của Web Lead không hợp lệ hoặc không còn hoạt động.';
+            $runtimeErrorMessage ??= 'Web Lead default branch code không hợp lệ hoặc đã ngưng hoạt động.';
+        }
+
+        if ($realtimeEnabled && $realtimeRoles === []) {
+            $issues[] = 'Bật realtime notification nhưng chưa cấu hình role nhận thông báo.';
+        }
+
+        if ($internalEmailEnabled) {
+            if ($internalEmailRoles === [] && $internalEmailMailboxes === []) {
+                $issues[] = 'Bật email nội bộ nhưng chưa cấu hình người nhận.';
+            }
+
+            try {
+                ClinicRuntimeSettings::webLeadInternalEmailMailerConfig();
+            } catch (RuntimeException $exception) {
+                $issues[] = $exception->getMessage();
+                $runtimeErrorMessage ??= $exception->getMessage();
+            }
+        }
+
+        if ($enabled && $apiToken !== '' && $defaultBranchExists) {
+            $recommendations[] = 'Xoay Web Lead API token qua grace window sau mỗi lần đổi phía landing page hoặc webhook client.';
+        }
+
+        if ($realtimeEnabled && $realtimeRoles !== []) {
+            $recommendations[] = 'Kiểm tra role CSKH nhận realtime notification sau mỗi lần thay đổi queue/operator ownership.';
+        }
+
+        if ($internalEmailEnabled && ($internalEmailRoles !== [] || $internalEmailMailboxes !== [])) {
+            $recommendations[] = 'Restart worker queue web-lead-mail sau khi đổi SMTP hoặc mailbox nhận lead nội bộ.';
+        }
+
+        return $this->buildCard(
+            key: 'web_lead',
+            label: 'Web Lead API',
+            description: 'Inbound token, chi nhánh mặc định, realtime notify và email nội bộ cho lead từ website.',
+            enabled: $enabled,
+            issues: $issues,
+            recommendations: $recommendations,
+            meta: [
+                [
+                    'label' => 'Endpoint',
+                    'value' => route('api.v1.web-leads.store'),
+                ],
+                [
+                    'label' => 'Default branch',
+                    'value' => $defaultBranchCode !== '' ? $defaultBranchCode : '-',
+                ],
+                [
+                    'label' => 'Realtime',
+                    'value' => $realtimeEnabled ? 'On' : 'Off',
+                ],
+                [
+                    'label' => 'Internal email',
+                    'value' => $internalEmailEnabled ? 'On' : 'Off',
+                ],
+                [
+                    'label' => 'Retention days',
+                    'value' => ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
+                ],
+            ],
+            runtimeErrorMessage: $runtimeErrorMessage,
         );
     }
 }

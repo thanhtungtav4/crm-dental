@@ -101,6 +101,7 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
         ->assertSee('Google Calendar')
         ->assertSee('EMR')
         ->assertSee('DICOM / PACS')
+        ->assertSee('Web Lead API')
         ->assertSee('Web Lead API Token')
         ->assertSee('Lead mail retryable')
         ->assertSee('Lead mail dead')

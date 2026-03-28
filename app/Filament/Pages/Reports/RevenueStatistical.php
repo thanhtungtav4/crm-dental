@@ -3,8 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\PlanItem;
-use App\Models\ReportRevenueDailyAggregate;
-use App\Services\HotReportAggregateReadinessService;
+use App\Services\HotReportAggregateReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,26 +46,7 @@ class RevenueStatistical extends BaseReportPage
         if ($this->usesRevenueAggregate()) {
             $scopeIds = $this->resolvedRevenueScopeIds();
 
-            if ($scopeIds === []) {
-                return ReportRevenueDailyAggregate::query()
-                    ->from('report_revenue_daily_aggregates as revenue_daily')
-                    ->whereRaw('1 = 0');
-            }
-
-            $query = ReportRevenueDailyAggregate::query()
-                ->from('report_revenue_daily_aggregates as revenue_daily')
-                ->selectRaw('
-                    revenue_daily.service_id as service_id,
-                    MAX(revenue_daily.service_name) as service_name,
-                    MAX(revenue_daily.category_name) as category_name,
-                    SUM(revenue_daily.total_count) as total_count,
-                    SUM(revenue_daily.total_revenue) as total_revenue,
-                    MAX(revenue_daily.snapshot_date) as snapshot_date
-                ')
-                ->whereIn('revenue_daily.branch_scope_id', $scopeIds)
-                ->groupBy('revenue_daily.service_id');
-
-            return $query;
+            return $this->hotReportAggregates()->revenueBreakdownQuery($scopeIds);
         }
 
         $query = PlanItem::query()
@@ -127,22 +107,13 @@ class RevenueStatistical extends BaseReportPage
 
     public function getStats(): array
     {
+        [$from, $until] = $this->getDateRangeFromFilters();
+
         if ($this->usesRevenueAggregate()) {
-            $baseQuery = ReportRevenueDailyAggregate::query();
-            $this->applyDateRange($baseQuery, 'snapshot_date');
             $scopeIds = $this->resolvedRevenueScopeIds();
-
-            if ($scopeIds === []) {
-                return [
-                    ['label' => 'Tổng số lượng thủ thuật', 'value' => number_format(0)],
-                    ['label' => 'Tổng thực thu', 'value' => number_format(0).' đ'],
-                ];
-            }
-
-            $baseQuery->whereIn('branch_scope_id', $scopeIds);
-
-            $totalProcedures = (int) (clone $baseQuery)->sum('total_count');
-            $totalRevenue = (float) (clone $baseQuery)->sum('total_revenue');
+            $summary = $this->hotReportAggregates()->revenueSummary($scopeIds, $from, $until);
+            $totalProcedures = $summary['total_procedures'];
+            $totalRevenue = $summary['total_revenue'];
         } else {
             $baseQuery = $this->applyRelatedBranchScope(PlanItem::query(), 'treatmentPlan');
             $this->applyDateRange($baseQuery, 'plan_items.created_at');
@@ -171,7 +142,7 @@ class RevenueStatistical extends BaseReportPage
             return (bool) $this->usesRevenueAggregateDecision['value'];
         }
 
-        $usesAggregate = app(HotReportAggregateReadinessService::class)
+        $usesAggregate = $this->hotReportAggregates()
             ->shouldUseRevenueAggregate($scopeIds, $from, $until);
 
         $this->usesRevenueAggregateDecision = [
@@ -180,6 +151,11 @@ class RevenueStatistical extends BaseReportPage
         ];
 
         return $usesAggregate;
+    }
+
+    protected function hotReportAggregates(): HotReportAggregateReadModelService
+    {
+        return app(HotReportAggregateReadModelService::class);
     }
 
     /**

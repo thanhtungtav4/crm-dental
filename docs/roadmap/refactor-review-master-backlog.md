@@ -344,6 +344,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-012] Reporting and snapshot platform convergence
 
+- Status: `In progress`
 - Module: `KPI`, `OPS`, `FIN`, `INV`, `CARE`, `SUP`
 - Description:
   - Tiep tuc tach report pages khoi ad-hoc query logic, chot read-model/snapshot contract, freshness policy, export scope, va query performance lane.
@@ -359,6 +360,9 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 - Recommended direction:
   - Tiep tuc mo rong `BaseReportPage`/snapshot contracts.
   - Chot query-shape review, export scope, va freshness SLA o cap platform.
+  - Tien do hien tai:
+    - da tao `HotReportAggregateReadModelService` de gom readiness, aggregate breakdown query, va summary stats cho `RevenueStatistical` va `CustomsCareStatistical`
+    - da keo `RevenueStatistical` va `CustomsCareStatistical` ve dung chung hot-report reader thay vi moi page tu giu aggregate query/stats branch-scope rieng
 - Tests needed:
   - report scope/export tests
   - performance/explain checks cho heavy paths
@@ -399,6 +403,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong tiep lane `provider run/readiness` va `maintenance visibility` sang bo `EMR maintenance commands`, de `emr:sync-events`, `emr:reconcile-integrity`, `emr:reconcile-clinical-media`, va `emr:prune-clinical-media` duoc surfacing nhat quan trong tracked OPS automation catalog va smoke pack
     - da mo rong tiep lane `provider run/readiness` sang `google-calendar:sync-events`, de Google Calendar sync lane khong bi tach khoi tracked OPS automation catalog va smoke pack khi so voi `EMR` / `ZNS`
     - da mo rong tiep lane `release gate / readiness verification` bang `OpsReleaseGateCatalog`, de checklist release production va strict readiness signoff dung chung mot source of truth cho required gates
+    - da mo rong tiep lane `provider-health/readiness` sang `Web Lead API`, de token inbound, default branch drift, realtime notify roles, va runtime mailer noi bo duoc surfacing chung tren `IntegrationSettings` va `OpsControlCenterService`
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

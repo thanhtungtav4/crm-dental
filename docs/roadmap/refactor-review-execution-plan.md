@@ -160,6 +160,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da gom `tracked commands` va `smoke commands` vao `OpsAutomationCatalog`, de OPS cockpit reader va smoke pack dung chung mot command catalog thay vi drift theo hai danh sach rieng.
   - `RRB-010` da mo rong `OpsAutomationCatalog` sang scheduler definitions, de `routes/console.php` va `SchedulerHardeningCommandTest` doc chung target catalog cho wrapper automations thay vi lap lai danh sach command.
   - `RRB-010` da tao `OpsReleaseGateCatalog`, de `RunReleaseGates` va `VerifyProductionReadinessReport` dung chung release-gate contract cho required commands thay vi drift giua execute-side va verify-side.
+  - `RRB-012` da bat dau lane hot-report aggregate convergence bang `HotReportAggregateReadModelService`, de `RevenueStatistical` va `CustomsCareStatistical` dung chung readiness, aggregate breakdown query, va summary stats contract.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
   - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
   - `RRB-013` da tiep tuc lane `payload retention / pruning`: `popups:prune` va `photos:prune` da dung chung retention candidate reader voi control-plane, tranh viec command layer va OPS/Integration surfaces dien giai retention theo nhieu cach.
@@ -168,6 +169,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-013` da mo rong them lane `maintenance visibility` sang bo EMR commands, de scheduler/release-gate lanes `sync / reconcile / prune / dicom readiness` khong con bi tach khoi tracked OPS automation catalog va smoke surface.
   - `RRB-013` da mo rong them lane `maintenance visibility` sang `google-calendar:sync-events`, de provider lane nay duoc surfacing dung muc uu tien van hanh nhu `EMR` va `ZNS`.
   - `RRB-013` da mo rong them lane `release gate / readiness verification`, de command execute-side va strict signoff verify-side dung cung mot release-gate catalog khi xac dinh checklist production bat buoc.
+  - `RRB-013` da mo rong them provider-health/readiness lane sang `Web Lead API`, de inbound token, default branch drift, realtime notify roles, va runtime mailer noi bo cung dung contract health chung tren `IntegrationSettings` va `OpsControlCenterService`.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.
