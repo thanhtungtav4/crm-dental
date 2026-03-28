@@ -76,7 +76,7 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
         ->where('snapshot_id', $snapshot?->id)
         ->get();
 
-    expect($alerts->count())->toBeGreaterThanOrEqual(3)
+    expect($alerts->count())->toBe(2)
         ->and($alerts->every(fn (OperationalKpiAlert $alert) => $alert->status === OperationalKpiAlert::STATUS_NEW))->toBeTrue()
         ->and($alerts->every(fn (OperationalKpiAlert $alert) => (int) $alert->owner_user_id === $manager->id))->toBeTrue();
 });
@@ -226,4 +226,121 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
         ->where('snapshot_id', $snapshot->id)
         ->where('status', OperationalKpiAlert::STATUS_RESOLVED)
         ->count())->toBeGreaterThan(0);
+});
+
+it('auto resolves chair and acceptance alerts when the snapshot sample becomes inapplicable', function () {
+    $snapshotDate = now()->subDay()->startOfDay()->addHours(10);
+
+    $branch = Branch::factory()->create();
+
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $doctor = User::factory()->create(['branch_id' => $branch->id]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'phone' => '0988000021',
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'phone' => '0988000021',
+    ]);
+
+    $appointment = Appointment::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => $snapshotDate->copy()->addMinutes(15),
+        'status' => Appointment::STATUS_CONFIRMED,
+    ]);
+
+    VisitEpisode::query()->updateOrCreate(
+        ['appointment_id' => $appointment->id],
+        [
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'branch_id' => $branch->id,
+            'scheduled_at' => $snapshotDate->copy()->addMinutes(30),
+            'planned_duration_minutes' => 120,
+            'chair_minutes' => 0,
+            'status' => VisitEpisode::STATUS_COMPLETED,
+        ],
+    );
+
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'status' => TreatmentPlan::STATUS_DRAFT,
+        'created_at' => $snapshotDate,
+        'updated_at' => $snapshotDate,
+    ]);
+
+    $planItem = PlanItem::query()->create([
+        'treatment_plan_id' => $plan->id,
+        'name' => 'Điều trị đang chờ duyệt',
+        'approval_status' => PlanItem::APPROVAL_PROPOSED,
+        'status' => PlanItem::STATUS_PENDING,
+    ]);
+    $planItem->forceFill([
+        'created_at' => $snapshotDate,
+        'updated_at' => $snapshotDate,
+    ])->saveQuietly();
+
+    $this->actingAs($manager);
+
+    $this->artisan('reports:snapshot-operational-kpis', [
+        '--date' => $snapshotDate->toDateString(),
+        '--branch_id' => $branch->id,
+    ])->assertSuccessful();
+
+    $snapshot = ReportSnapshot::query()
+        ->where('snapshot_key', 'operational_kpi_pack')
+        ->whereDate('snapshot_date', $snapshotDate->toDateString())
+        ->where('branch_id', $branch->id)
+        ->firstOrFail();
+
+    expect(OperationalKpiAlert::query()
+        ->where('snapshot_id', $snapshot->id)
+        ->whereIn('metric_key', ['chair_utilization_rate', 'treatment_acceptance_rate'])
+        ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
+        ->count())->toBe(2);
+
+    VisitEpisode::query()
+        ->where('branch_id', $branch->id)
+        ->delete();
+
+    PlanItem::query()
+        ->where('treatment_plan_id', $plan->id)
+        ->delete();
+
+    $this->artisan('reports:snapshot-operational-kpis', [
+        '--date' => $snapshotDate->toDateString(),
+        '--branch_id' => $branch->id,
+    ])->assertSuccessful();
+
+    $snapshot = ReportSnapshot::query()
+        ->where('snapshot_key', 'operational_kpi_pack')
+        ->whereDate('snapshot_date', $snapshotDate->toDateString())
+        ->where('branch_id', $branch->id)
+        ->firstOrFail();
+
+    expect((int) data_get($snapshot->payload, 'treatment_acceptance_sample_size'))->toBe(0)
+        ->and((float) data_get($snapshot->payload, 'chair_utilization_planned_minutes'))->toBe(0.0);
+
+    expect(OperationalKpiAlert::query()
+        ->where('snapshot_id', $snapshot->id)
+        ->whereIn('metric_key', ['chair_utilization_rate', 'treatment_acceptance_rate'])
+        ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
+        ->count())->toBe(0);
+
+    expect(OperationalKpiAlert::query()
+        ->where('snapshot_id', $snapshot->id)
+        ->whereIn('metric_key', ['chair_utilization_rate', 'treatment_acceptance_rate'])
+        ->where('status', OperationalKpiAlert::STATUS_RESOLVED)
+        ->count())->toBe(2);
 });

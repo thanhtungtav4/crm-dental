@@ -31,6 +31,11 @@ class OperationalKpiAlertService
 
         foreach ($definitions as $definition) {
             $metricKey = $definition['metric_key'];
+
+            if (! $this->metricIsApplicable($definition, $payload)) {
+                continue;
+            }
+
             $observedValue = round((float) data_get($payload, $metricKey, 0), 2);
             $thresholdValue = round((float) $definition['threshold_value'], 2);
 
@@ -128,7 +133,15 @@ class OperationalKpiAlertService
     }
 
     /**
-     * @return array<int, array{metric_key:string,metric_label:string,direction:string,threshold_value:float,title:string}>
+     * @return array<int, array{
+     *     metric_key:string,
+     *     metric_label:string,
+     *     direction:string,
+     *     threshold_value:float,
+     *     title:string,
+     *     applicability_key:string,
+     *     applicability_min:float
+     * }>
      */
     protected function metricDefinitions(): array
     {
@@ -139,6 +152,8 @@ class OperationalKpiAlertService
                 'direction' => 'max',
                 'threshold_value' => ClinicRuntimeSettings::kpiNoShowRateMaxThreshold(),
                 'title' => 'No-show vượt ngưỡng',
+                'applicability_key' => 'booking_count',
+                'applicability_min' => 1,
             ],
             [
                 'metric_key' => 'chair_utilization_rate',
@@ -146,6 +161,8 @@ class OperationalKpiAlertService
                 'direction' => 'min',
                 'threshold_value' => ClinicRuntimeSettings::kpiChairUtilizationRateMinThreshold(),
                 'title' => 'Chair utilization dưới ngưỡng',
+                'applicability_key' => 'chair_utilization_planned_minutes',
+                'applicability_min' => 1,
             ],
             [
                 'metric_key' => 'treatment_acceptance_rate',
@@ -153,8 +170,22 @@ class OperationalKpiAlertService
                 'direction' => 'min',
                 'threshold_value' => ClinicRuntimeSettings::kpiTreatmentAcceptanceRateMinThreshold(),
                 'title' => 'Treatment acceptance dưới ngưỡng',
+                'applicability_key' => 'treatment_acceptance_sample_size',
+                'applicability_min' => 1,
             ],
         ];
+    }
+
+    /**
+     * @param  array{
+     *     applicability_key:string,
+     *     applicability_min:float
+     * }  $definition
+     * @param  array<string, mixed>  $payload
+     */
+    protected function metricIsApplicable(array $definition, array $payload): bool
+    {
+        return (float) data_get($payload, $definition['applicability_key'], 0) >= $definition['applicability_min'];
     }
 
     protected function resolveSeverity(string $direction, float $thresholdValue, float $observedValue): string
