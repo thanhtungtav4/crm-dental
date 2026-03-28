@@ -10,8 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class GoogleCalendarSyncEventPublisher
 {
+    protected ?array $googleProviderHealthCache = null;
+
     public function __construct(
         protected GoogleCalendarAppointmentPayloadBuilder $payloadBuilder,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
     ) {}
 
     public function publishForAppointmentId(?int $appointmentId, ?string $eventType = null): ?GoogleCalendarSyncEvent
@@ -32,6 +35,10 @@ class GoogleCalendarSyncEventPublisher
     public function publishForAppointment(Appointment $appointment, ?string $eventType = null): ?GoogleCalendarSyncEvent
     {
         if (! $this->shouldPushToGoogle()) {
+            return null;
+        }
+
+        if (! $this->isGoogleRuntimeReady()) {
             return null;
         }
 
@@ -103,6 +110,34 @@ class GoogleCalendarSyncEventPublisher
     {
         return ClinicRuntimeSettings::isGoogleCalendarEnabled()
             && ClinicRuntimeSettings::googleCalendarAllowsPushToGoogle();
+    }
+
+    protected function isGoogleRuntimeReady(): bool
+    {
+        return blank($this->googleProviderHealth()['runtime_error_message'] ?? null);
+    }
+
+    /**
+     * @return array{
+     *   key:string,
+     *   label:string,
+     *   description:string,
+     *   enabled:bool,
+     *   tone:string,
+     *   status:string,
+     *   score:int,
+     *   issues:array<int, string>,
+     *   recommendations:array<int, string>,
+     *   meta:array<int, array{label:string, value:int|string}>,
+     *   issue_count:int,
+     *   recommendation_count:int,
+     *   runtime_error_message:?string,
+     *   webhook_url:?string
+     * }
+     */
+    protected function googleProviderHealth(): array
+    {
+        return $this->googleProviderHealthCache ??= $this->integrationProviderHealthReadModelService->provider('google_calendar');
     }
 
     protected function resolveEventType(Appointment $appointment): string

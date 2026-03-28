@@ -8,9 +8,9 @@ use App\Models\User;
 use App\Services\EmrIntegrationService;
 use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationOperationalReadModelService;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\IntegrationSecretRotationService;
 use App\Services\IntegrationSettingsAuditReadModelService;
-use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
@@ -940,7 +940,7 @@ class IntegrationSettings extends Page
 
     public function testZaloReadiness(): void
     {
-        $report = app(ZaloIntegrationService::class)->auditOaReadiness();
+        $report = app(IntegrationProviderHealthReadModelService::class)->provider('zalo_oa');
 
         $body = collect([
             'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
@@ -958,7 +958,7 @@ class IntegrationSettings extends Page
 
     public function testZnsReadiness(): void
     {
-        $report = app(ZaloIntegrationService::class)->auditZnsReadiness();
+        $report = app(IntegrationProviderHealthReadModelService::class)->provider('zns');
 
         $body = collect([
             'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
@@ -1227,6 +1227,29 @@ class IntegrationSettings extends Page
         }
 
         return app(IntegrationOperationalReadModelService::class)->activeGraceRotations();
+    }
+
+    /**
+     * @return array<int, array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     enabled:bool,
+     *     tone:string,
+     *     status:string,
+     *     score:int,
+     *     issues:array<int, string>,
+     *     recommendations:array<int, string>,
+     *     meta:array<int, array{label:string, value:int|string}>,
+     *     issue_count:int,
+     *     recommendation_count:int,
+     *     runtime_error_message:?string,
+     *     webhook_url:?string
+     * }>
+     */
+    public function getProviderHealthCards(): array
+    {
+        return app(IntegrationProviderHealthReadModelService::class)->cards();
     }
 
     protected function normalizeValueForCompare(mixed $value, string $type): mixed

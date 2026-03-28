@@ -40,6 +40,7 @@ class OpsControlCenterService
         protected BackupArtifactManifestService $manifestService,
         protected GovernanceAuditReadModelService $governanceAuditReadModelService,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
         protected HotReportAggregateReadinessService $hotReportAggregateReadinessService,
         protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
         protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
@@ -451,6 +452,8 @@ class OpsControlCenterService
      */
     protected function integrationOperationsSummary(): array
     {
+        $providerCards = $this->integrationProviderHealthReadModelService->cards();
+        $providerCounts = $this->integrationProviderHealthReadModelService->counts();
         $activeGraceRotations = $this->integrationOperationalReadModelService
             ->activeGraceRotations()
             ->map(fn (array $rotation): array => [
@@ -515,12 +518,15 @@ class OpsControlCenterService
         $expiredCount = count($expiredGraceRotations);
         $activeCount = count($activeGraceRotations);
         $retentionBacklog = collect($retentionCandidates)->sum('total');
-        $tone = $expiredCount > 0
+        $providerDriftCount = (int) ($providerCounts['degraded'] ?? 0);
+        $tone = ($expiredCount > 0 || $providerDriftCount > 0)
             ? 'danger'
             : (($activeCount > 0 || $retentionBacklog > 0) ? 'warning' : 'success');
         $status = $expiredCount > 0
             ? 'Expired grace tokens'
-            : (($activeCount > 0 || $retentionBacklog > 0) ? 'Needs review' : 'Healthy');
+            : ($providerDriftCount > 0
+                ? 'Provider config drift'
+                : (($activeCount > 0 || $retentionBacklog > 0) ? 'Needs review' : 'Healthy'));
 
         return [
             'tone' => $tone,
@@ -539,6 +545,14 @@ class OpsControlCenterService
                     'value' => $retentionBacklog,
                 ],
                 [
+                    'label' => 'Provider healthy',
+                    'value' => (int) ($providerCounts['healthy'] ?? 0),
+                ],
+                [
+                    'label' => 'Provider drift',
+                    'value' => $providerDriftCount,
+                ],
+                [
                     'label' => 'Lead mail retryable',
                     'value' => $this->integrationOperationalReadModelService->webLeadRetryableEmailCount(),
                 ],
@@ -547,6 +561,8 @@ class OpsControlCenterService
                     'value' => $this->integrationOperationalReadModelService->webLeadDeadEmailCount(),
                 ],
             ],
+            'providers' => $providerCards,
+            'provider_counts' => $providerCounts,
             'active_grace_rotations' => $activeGraceRotations,
             'expired_grace_rotations' => $expiredGraceRotations,
             'retention_candidates' => $retentionCandidates,
@@ -1278,10 +1294,11 @@ class OpsControlCenterService
         return [
             'title' => 'Integrations',
             'value' => (string) ($integrations['status'] ?? 'Unknown'),
-            'description' => 'Secret rotation grace state và retention backlog cho integration logs.',
+            'description' => 'Provider readiness, secret rotation grace state và retention backlog cho integration logs.',
             'tone' => (string) ($integrations['tone'] ?? 'warning'),
             'status' => 'Expired '.count((array) ($integrations['expired_grace_rotations'] ?? [])),
             'meta' => [
+                'Provider drift '.((int) data_get($integrations, 'provider_counts.degraded', 0)),
                 'Prune backlog '.collect((array) ($integrations['retention_candidates'] ?? []))->sum('total'),
             ],
         ];

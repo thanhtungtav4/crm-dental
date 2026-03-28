@@ -13,9 +13,19 @@ use Illuminate\Support\Facades\DB;
 
 class ZnsAutomationEventPublisher
 {
+    protected ?array $znsProviderHealthCache = null;
+
+    public function __construct(
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+    ) {}
+
     public function publishLeadWelcomeForWebLead(Customer $customer, string $requestId): ?ZnsAutomationEvent
     {
         if (! $this->shouldPublishLeadWelcome()) {
+            return null;
+        }
+
+        if (! $this->isZnsRuntimeReady()) {
             return null;
         }
 
@@ -57,6 +67,10 @@ class ZnsAutomationEventPublisher
                 reason: 'ZNS appointment reminder automation đang tắt.',
             );
 
+            return null;
+        }
+
+        if (! $this->isZnsRuntimeReady()) {
             return null;
         }
 
@@ -107,6 +121,10 @@ class ZnsAutomationEventPublisher
     public function publishBirthdayGreeting(Patient $patient, CarbonInterface $asOfDate): ?ZnsAutomationEvent
     {
         if (! $this->shouldPublishBirthdayGreeting()) {
+            return null;
+        }
+
+        if (! $this->isZnsRuntimeReady()) {
             return null;
         }
 
@@ -302,6 +320,37 @@ class ZnsAutomationEventPublisher
     {
         return ClinicRuntimeSettings::boolean('zns.enabled', false)
             && ClinicRuntimeSettings::znsAutoSendBirthdayGreeting();
+    }
+
+    protected function isZnsRuntimeReady(): bool
+    {
+        $providerHealth = $this->znsProviderHealth();
+
+        return ($providerHealth['enabled'] ?? false)
+            && blank($providerHealth['runtime_error_message'] ?? null);
+    }
+
+    /**
+     * @return array{
+     *   key:string,
+     *   label:string,
+     *   description:string,
+     *   enabled:bool,
+     *   tone:string,
+     *   status:string,
+     *   score:int,
+     *   issues:array<int, string>,
+     *   recommendations:array<int, string>,
+     *   meta:array<int, array{label:string, value:int|string}>,
+     *   issue_count:int,
+     *   recommendation_count:int,
+     *   runtime_error_message:?string,
+     *   webhook_url:?string
+     * }
+     */
+    protected function znsProviderHealth(): array
+    {
+        return $this->znsProviderHealthCache ??= $this->integrationProviderHealthReadModelService->provider('zns');
     }
 
     protected function isAppointmentReminderEligible(Appointment $appointment): bool

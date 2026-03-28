@@ -181,6 +181,72 @@
             </x-filament::section>
         @enderror
 
+        <x-filament::section heading="Provider health snapshot" description="Contract chung cho readiness, runtime drift va provider-specific hint.">
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach($this->getProviderHealthCards() as $provider)
+                    @php
+                        $toneClasses = match ($provider['tone'] ?? 'info') {
+                            'success' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+                            'warning' => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+                            'danger' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+                            default => 'border-info-200 bg-info-50 text-info-700 dark:border-info-900/60 dark:bg-info-950/30 dark:text-info-200',
+                        };
+                    @endphp
+
+                    <div class="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $provider['label'] }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $provider['description'] }}</p>
+                            </div>
+                            <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold">
+                                {{ $provider['status'] }}
+                            </span>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                            @if($provider['enabled'] ?? false)
+                                <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 font-semibold">
+                                    Score {{ $provider['score'] ?? 0 }}/100
+                                </span>
+                            @else
+                                <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 font-semibold">
+                                    Runtime disabled
+                                </span>
+                            @endif
+
+                            @if(((int) ($provider['issue_count'] ?? 0)) > 0)
+                                <span class="inline-flex rounded-full border border-danger-200 bg-danger-50 px-2.5 py-1 font-semibold text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100">
+                                    {{ $provider['issue_count'] }} issue
+                                </span>
+                            @endif
+                        </div>
+
+                        @if(! empty($provider['meta']))
+                            <div class="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                @foreach(array_slice($provider['meta'], 0, 2) as $meta)
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span>{{ $meta['label'] }}</span>
+                                        <span class="break-all font-medium text-gray-950 dark:text-white">{{ $meta['value'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if(filled($provider['runtime_error_message'] ?? null))
+                            <div class="mt-3 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-xs text-danger-900 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100">
+                                {{ $provider['runtime_error_message'] }}
+                            </div>
+                        @elseif(! empty($provider['issues']))
+                            <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300">
+                                {{ $provider['issues'][0] }}
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </x-filament::section>
+
         @foreach($this->getProviders() as $provider)
             <x-filament::section :heading="$provider['title']" :description="$provider['description']">
                 <div class="grid gap-4 md:grid-cols-2">

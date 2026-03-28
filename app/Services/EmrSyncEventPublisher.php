@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class EmrSyncEventPublisher
 {
+    protected ?array $emrProviderHealthCache = null;
+
     public function __construct(
         protected EmrPatientPayloadBuilder $payloadBuilder,
         protected EmrAuditLogger $emrAuditLogger,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
     ) {}
 
     public function publishForPatientId(?int $patientId, string $eventType): ?EmrSyncEvent
@@ -34,6 +37,10 @@ class EmrSyncEventPublisher
     public function publishForPatient(Patient $patient, string $eventType): ?EmrSyncEvent
     {
         if (! ClinicRuntimeSettings::isEmrEnabled()) {
+            return null;
+        }
+
+        if (! $this->isEmrRuntimeReady()) {
             return null;
         }
 
@@ -118,6 +125,34 @@ class EmrSyncEventPublisher
         );
 
         return $event;
+    }
+
+    protected function isEmrRuntimeReady(): bool
+    {
+        return blank($this->emrProviderHealth()['runtime_error_message'] ?? null);
+    }
+
+    /**
+     * @return array{
+     *   key:string,
+     *   label:string,
+     *   description:string,
+     *   enabled:bool,
+     *   tone:string,
+     *   status:string,
+     *   score:int,
+     *   issues:array<int, string>,
+     *   recommendations:array<int, string>,
+     *   meta:array<int, array{label:string, value:int|string}>,
+     *   issue_count:int,
+     *   recommendation_count:int,
+     *   runtime_error_message:?string,
+     *   webhook_url:?string
+     * }
+     */
+    protected function emrProviderHealth(): array
+    {
+        return $this->emrProviderHealthCache ??= $this->integrationProviderHealthReadModelService->provider('emr');
     }
 
     protected function eventKey(int $patientId, string $eventType, string $checksum): string

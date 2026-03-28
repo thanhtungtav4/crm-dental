@@ -297,6 +297,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua them grace-state reader cho integration secrets vao `IntegrationOperationalReadModelService`, va `OpsControlCenterService` / `IntegrationSettings` da bat dau doc active-expired grace rotations qua reader thay vi tro truc tiep vao write-side rotation service
     - da mo rong `ZnsOperationalReadModelService` them branch-scoped summary cards, va page `ZaloZns` da bat dau dung reader nay cho automation/delivery/campaign failure summary thay vi tu dem query raw tren page
     - da tao `IntegrationSettingsAuditReadModelService` de gom recent setting-log query, va page `IntegrationSettings` da doc recent audit trail qua reader nay thay vi tu query raw `ClinicSettingLog`
+    - da tao `IntegrationProviderHealthReadModelService` de hop nhat provider readiness contract cho `Zalo OA`, `ZNS`, `Google Calendar`, va `EMR`, va `OpsControlCenterService` da render cung mot lop provider-health thay vi page/command tu dien giai runtime drift theo tung cach rieng
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces
@@ -377,6 +378,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - Tien do hien tai:
     - da bat dau lane `config/runtime settings` bang fail-fast runtime readiness cho `emr:sync-events`, de command khong chay vao processing loop khi `emr.enabled=true` nhung `base_url/api_key` chua day du
     - da tiep tuc cung lane nay cho `zns:run-campaigns`, va da gom `ZnsProviderClient` thanh diem check chung cho provider credentials (`access_token`, `send_endpoint`) de `run-campaigns` va `sync-automation-events` khong dien giai runtime drift theo hai cach khac nhau
+    - da mo rong lane nay bang `IntegrationProviderHealthReadModelService`, de `OpsControlCenterService`, `IntegrationSettings` (readiness notification + snapshot section), `zns:run-campaigns`, `zns:sync-automation-events`, `google-calendar:sync-events`, `emr:sync-events`, va `ZnsCampaignRunnerService` dung chung contract readiness / runtime-error message cho provider thay vi tu noi suy raw setting rieng le
+    - da mo rong them publisher-side runtime guard cho `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher`, de control-plane khong tiep tuc sinh backlog outbox/event moi khi provider dang enabled nhung chua day du credential/runtime settings
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

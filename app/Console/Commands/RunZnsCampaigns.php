@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\ZnsCampaignRunnerService;
-use App\Services\ZnsProviderClient;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -31,8 +31,10 @@ class RunZnsCampaigns extends Command
     /**
      * Execute the console command.
      */
-    public function handle(ZnsCampaignRunnerService $runner, ZnsProviderClient $znsProviderClient): int
-    {
+    public function handle(
+        ZnsCampaignRunnerService $runner,
+        IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+    ): int {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy campaign ZNS.',
@@ -44,7 +46,9 @@ class RunZnsCampaigns extends Command
             return self::SUCCESS;
         }
 
-        if (($configurationError = $znsProviderClient->configurationErrorMessage()) !== null) {
+        $providerHealth = $integrationProviderHealthReadModelService->provider('zns');
+
+        if (($configurationError = $providerHealth['runtime_error_message'] ?? null) !== null) {
             $this->error($configurationError.' Không thể chạy campaign ZNS.');
 
             return self::FAILURE;

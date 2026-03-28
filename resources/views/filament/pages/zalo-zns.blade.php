@@ -1,5 +1,8 @@
 <x-filament::section>
-    @php($summary = $this->operationalSummary)
+    @php
+        $summary = $this->operationalSummary;
+        $providerHealth = $this->providerHealth;
+    @endphp
 
     <div class="space-y-4">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -30,6 +33,65 @@
             <div class="rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-400/30 dark:bg-violet-500/10">
                 <p class="text-xs text-violet-700 dark:text-violet-300">Campaign failed</p>
                 <p class="text-xl font-semibold text-violet-700 dark:text-violet-300">{{ number_format($summary['campaigns_failed']) }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/60">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Provider readiness</h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dùng chung contract với OPS và Integration Settings để triage nhanh runtime drift.</p>
+                </div>
+                <span class="inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200">
+                    {{ collect($providerHealth)->where('tone', 'danger')->count() }} drift
+                </span>
+            </div>
+
+            <div class="mt-3 grid gap-3 md:grid-cols-2">
+                @foreach($providerHealth as $provider)
+                    @php
+                        $toneClasses = match ($provider['tone'] ?? 'info') {
+                            'success' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+                            'warning' => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+                            'danger' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+                            default => 'border-info-200 bg-info-50 text-info-700 dark:border-info-900/60 dark:bg-info-950/30 dark:text-info-200',
+                        };
+                    @endphp
+
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950/60">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $provider['label'] }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $provider['description'] }}</p>
+                            </div>
+                            <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold">
+                                {{ $provider['status'] }}
+                            </span>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                            @if($provider['enabled'] ?? false)
+                                <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 font-semibold">
+                                    Score {{ $provider['score'] ?? 0 }}/100
+                                </span>
+                            @else
+                                <span class="{{ $toneClasses }} inline-flex rounded-full border px-2.5 py-1 font-semibold">
+                                    Runtime disabled
+                                </span>
+                            @endif
+                        </div>
+
+                        @if(filled($provider['runtime_error_message'] ?? null))
+                            <div class="mt-3 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-xs text-danger-900 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100">
+                                {{ $provider['runtime_error_message'] }}
+                            </div>
+                        @elseif(! empty($provider['issues']))
+                            <div class="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-300">
+                                {{ $provider['issues'][0] }}
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
             </div>
         </div>
 

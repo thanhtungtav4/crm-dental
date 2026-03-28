@@ -9,6 +9,7 @@ use App\Models\GoogleCalendarSyncLog;
 use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationOperationalReadModelService;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -30,6 +31,7 @@ class SyncGoogleCalendarEvents extends Command
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
     ) {
         parent::__construct();
     }
@@ -53,8 +55,10 @@ class SyncGoogleCalendarEvents extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->googleCalendarIntegrationService->isConfigured()) {
-            $this->error('Google Calendar chưa cấu hình đầy đủ (client_id/client_secret/refresh_token/calendar_id).');
+        $providerHealth = $this->integrationProviderHealthReadModelService->provider('google_calendar');
+
+        if (($providerHealth['runtime_error_message'] ?? null) !== null) {
+            $this->error((string) $providerHealth['runtime_error_message']);
 
             return self::FAILURE;
         }

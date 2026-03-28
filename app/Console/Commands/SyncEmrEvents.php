@@ -11,6 +11,7 @@ use App\Services\EmrAuditLogger;
 use App\Services\EmrIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationOperationalReadModelService;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -32,6 +33,7 @@ class SyncEmrEvents extends Command
         protected EmrAuditLogger $emrAuditLogger,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
     ) {
         parent::__construct();
     }
@@ -53,8 +55,10 @@ class SyncEmrEvents extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->emrIntegrationService->isConfigured()) {
-            $this->error('EMR chưa cấu hình đầy đủ (base_url/api_key).');
+        $providerHealth = $this->integrationProviderHealthReadModelService->provider('emr');
+
+        if (($providerHealth['runtime_error_message'] ?? null) !== null) {
+            $this->error((string) $providerHealth['runtime_error_message']);
 
             return self::FAILURE;
         }

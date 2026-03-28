@@ -55,6 +55,8 @@ it('renders manager report and zns hot paths with seeded operational markers', f
         ->get(ZaloZns::getUrl())
         ->assertOk()
         ->assertSee('Zalo ZNS')
+        ->assertSee('Provider readiness')
+        ->assertSee('Zalo OA')
         ->assertSee('Automation dead-letter')
         ->assertSee('Campaign đang chạy')
         ->assertSee('Nhắc lịch hẹn');

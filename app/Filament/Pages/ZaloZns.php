@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
 use App\Support\BranchAccess;
@@ -85,6 +86,34 @@ class ZaloZns extends Page implements HasTable
                 ->where('status', ZnsCampaign::STATUS_RUNNING)
                 ->count(),
             'campaigns_failed' => (int) ($summaryCards->get('Campaign failed')['value'] ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *   key:string,
+     *   label:string,
+     *   description:string,
+     *   enabled:bool,
+     *   tone:string,
+     *   status:string,
+     *   score:int,
+     *   issues:array<int, string>,
+     *   recommendations:array<int, string>,
+     *   meta:array<int, array{label:string, value:int|string}>,
+     *   issue_count:int,
+     *   recommendation_count:int,
+     *   runtime_error_message:?string,
+     *   webhook_url:?string
+     * }>
+     */
+    public function getProviderHealthProperty(): array
+    {
+        $service = app(IntegrationProviderHealthReadModelService::class);
+
+        return [
+            $service->provider('zalo_oa'),
+            $service->provider('zns'),
         ];
     }
 

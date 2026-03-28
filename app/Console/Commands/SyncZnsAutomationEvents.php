@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
+use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
 use App\Services\ZnsProviderClient;
@@ -29,6 +30,7 @@ class SyncZnsAutomationEvents extends Command
         protected ZnsProviderClient $znsProviderClient,
         protected ZnsPayloadSanitizer $payloadSanitizer,
         protected ZnsOperationalReadModelService $znsOperationalReadModelService,
+        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
     ) {
         parent::__construct();
     }
@@ -46,7 +48,9 @@ class SyncZnsAutomationEvents extends Command
             return self::SUCCESS;
         }
 
-        if (($configurationError = $this->znsProviderClient->configurationErrorMessage()) !== null) {
+        $providerHealth = $this->integrationProviderHealthReadModelService->provider('zns');
+
+        if (($configurationError = $providerHealth['runtime_error_message'] ?? null) !== null) {
             $this->error($configurationError.' Không thể xử lý event automation.');
 
             return self::FAILURE;

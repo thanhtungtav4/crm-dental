@@ -56,6 +56,45 @@ it('syncs google calendar outbox event successfully and persists appointment map
         ->and($log?->status)->toBe(GoogleCalendarSyncEvent::STATUS_SYNCED);
 });
 
+it('fails fast when google calendar sync runtime is enabled but not fully configured', function (): void {
+    configureGoogleCalendarRuntime();
+
+    ClinicSetting::setValue('google_calendar.calendar_id', '', [
+        'group' => 'google_calendar',
+        'label' => 'Google Calendar ID',
+        'value_type' => 'text',
+        'is_secret' => false,
+        'is_active' => true,
+    ]);
+
+    $this->artisan('google-calendar:sync-events')
+        ->expectsOutputToContain('Google Calendar chưa cấu hình đầy đủ (client_id/client_secret/refresh_token/calendar_id).')
+        ->assertFailed();
+});
+
+it('does not enqueue google calendar outbox events when runtime is misconfigured', function (): void {
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(6),
+        'duration_minutes' => 30,
+    ]);
+
+    configureGoogleCalendarRuntime();
+
+    ClinicSetting::setValue('google_calendar.calendar_id', '', [
+        'group' => 'google_calendar',
+        'label' => 'Google Calendar ID',
+        'value_type' => 'text',
+        'is_secret' => false,
+        'is_active' => true,
+    ]);
+
+    $event = app(GoogleCalendarSyncEventPublisher::class)->publishForAppointment($appointment->fresh());
+
+    expect($event)->toBeNull()
+        ->and(GoogleCalendarSyncEvent::query()->count())->toBe(0);
+});
+
 it('moves google calendar outbox event to dead letter after max attempts', function (): void {
     $appointment = Appointment::factory()->create([
         'status' => Appointment::STATUS_SCHEDULED,

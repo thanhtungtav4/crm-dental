@@ -72,6 +72,24 @@ it('fails fast when emr sync runtime is enabled but not fully configured', funct
         ->assertFailed();
 });
 
+it('does not enqueue emr outbox events when runtime is misconfigured', function (): void {
+    [$patient] = seedEmrPatientAggregate();
+
+    configureEmrRuntime();
+
+    ClinicSetting::setValue('emr.api_key', '', [
+        'group' => 'emr',
+        'value_type' => 'text',
+        'is_secret' => true,
+        'is_active' => true,
+    ]);
+
+    $event = app(EmrSyncEventPublisher::class)->publishForPatient($patient, 'manual.sync');
+
+    expect($event)->toBeNull()
+        ->and(EmrSyncEvent::query()->count())->toBe(0);
+});
+
 it('moves emr outbox event to dead letter after max attempts', function () {
     [$patient] = seedEmrPatientAggregate();
 

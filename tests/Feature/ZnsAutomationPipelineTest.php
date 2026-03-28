@@ -73,6 +73,40 @@ it('publishes lead welcome zns event from web lead ingestion and syncs successfu
         ->and($log?->status)->toBe(ZnsAutomationEvent::STATUS_SENT);
 });
 
+it('does not enqueue lead welcome zns events when provider runtime is misconfigured', function (): void {
+    $branch = Branch::factory()->create([
+        'code' => 'BR-ZNS-WEB-LEAD-MISCONFIG',
+        'active' => true,
+    ]);
+
+    configureWebLeadApiForZns(
+        enabled: true,
+        token: 'web-token-zns-misconfig',
+        defaultBranchCode: $branch->code,
+    );
+    configureZnsAutomationRuntime(
+        autoLeadWelcome: true,
+        templateLeadWelcome: 'tpl_lead_welcome_002',
+    );
+
+    ClinicSetting::setValue('zns.access_token', '', [
+        'group' => 'zns',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+
+    $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Lead ZNS Misconfigured',
+        'phone' => '0907777999',
+        'branch_code' => $branch->code,
+    ], [
+        'Authorization' => 'Bearer web-token-zns-misconfig',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ])->assertCreated();
+
+    expect(ZnsAutomationEvent::query()->count())->toBe(0);
+});
+
 it('keeps deterministic idempotency key for concurrent appointment reminder publish attempts', function (): void {
     configureZnsAutomationRuntime(
         autoAppointmentReminder: true,
@@ -114,6 +148,40 @@ it('keeps deterministic idempotency key for concurrent appointment reminder publ
             ->where('appointment_id', $appointmentId)
             ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
             ->count())->toBe(1);
+});
+
+it('does not cancel existing appointment reminders when zns runtime becomes misconfigured', function (): void {
+    configureZnsAutomationRuntime(
+        autoAppointmentReminder: true,
+        templateAppointment: 'tpl_appointment_runtime_guard',
+    );
+
+    $appointment = Appointment::factory()->create([
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addHours(30),
+        'reminder_hours' => 24,
+    ]);
+
+    $existingEvent = ZnsAutomationEvent::query()
+        ->where('appointment_id', $appointment->id)
+        ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
+        ->firstOrFail();
+
+    ClinicSetting::setValue('zns.access_token', '', [
+        'group' => 'zns',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+
+    $result = app(ZnsAutomationEventPublisher::class)
+        ->publishAppointmentReminder($appointment->fresh());
+
+    expect($result)->toBeNull()
+        ->and(ZnsAutomationEvent::query()
+            ->where('appointment_id', $appointment->id)
+            ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
+            ->count())->toBe(1)
+        ->and($existingEvent->fresh()?->status)->toBe(ZnsAutomationEvent::STATUS_PENDING);
 });
 
 it('reclaims stale processing zns automation events and retries successfully', function (): void {
