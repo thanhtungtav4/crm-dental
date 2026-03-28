@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -24,31 +25,7 @@ class UserProvisioningAuthorizer
 
     public function scopeAssignableBranches(Builder $query, ?User $actor, bool $activeOnly = true): Builder
     {
-        if ($activeOnly) {
-            $query->where('active', true);
-        }
-
-        if (! $actor instanceof User) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        if ($actor->hasRole('Admin')) {
-            return $query->orderBy('name');
-        }
-
-        $branchIds = collect($actor->accessibleBranchIds())
-            ->map(fn (mixed $branchId): int => (int) $branchId)
-            ->filter(fn (int $branchId): bool => $branchId > 0)
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($branchIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query
-            ->whereIn('id', $branchIds)
+        return BranchAccess::scopeBranchQueryForUser($query, $actor, $activeOnly)
             ->orderBy('name');
     }
 

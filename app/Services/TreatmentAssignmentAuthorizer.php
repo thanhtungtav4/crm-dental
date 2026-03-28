@@ -186,21 +186,7 @@ class TreatmentAssignmentAuthorizer
 
     protected function scopeQueryByActorBranches(Builder $query, ?User $actor, string $column): Builder
     {
-        if (! $actor instanceof User) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        if ($actor->hasRole('Admin')) {
-            return $query;
-        }
-
-        $branchIds = BranchAccess::accessibleBranchIds($actor, true);
-
-        if ($branchIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn($column, $branchIds);
+        return BranchAccess::scopeQueryByUserAccessibleBranches($query, $actor, $column);
     }
 
     protected function normalizeNullableInt(mixed $value): ?int

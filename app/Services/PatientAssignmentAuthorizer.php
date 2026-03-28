@@ -125,7 +125,7 @@ class PatientAssignmentAuthorizer
             actor: $actor,
             branchId: isset($data['branch_id']) && filled($data['branch_id'])
                 ? (int) $data['branch_id']
-                : BranchAccess::defaultBranchIdForCurrentUser(),
+                : BranchAccess::defaultBranchIdForUser($actor),
             field: 'branch_id',
             message: 'Bạn không thể tạo hoặc cập nhật khách hàng ở chi nhánh ngoài phạm vi được phân quyền.',
         );
@@ -291,7 +291,8 @@ class PatientAssignmentAuthorizer
         }
 
         if ($branchId !== null) {
-            BranchAccess::assertCanAccessBranch(
+            BranchAccess::assertUserCanAccessBranch(
+                user: $actor,
                 branchId: $branchId,
                 field: $field,
                 message: 'Bạn không có quyền gán dữ liệu sang chi nhánh ngoài phạm vi được phân quyền.',
@@ -320,7 +321,8 @@ class PatientAssignmentAuthorizer
             ]);
         }
 
-        BranchAccess::assertCanAccessBranch(
+        BranchAccess::assertUserCanAccessBranch(
+            user: $actor,
             branchId: $branchId,
             field: $field,
             message: $message,
