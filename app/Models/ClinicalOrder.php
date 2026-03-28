@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\NullableEncrypted;
+use App\Services\ClinicalOrderWorkflowService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,13 @@ use Illuminate\Validation\ValidationException;
 class ClinicalOrder extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
 
     public const STATUS_PENDING = 'pending';
 
@@ -65,6 +73,12 @@ class ClinicalOrder extends Model
             $order->status = strtolower(trim((string) ($order->status ?: self::STATUS_PENDING)));
 
             if ($order->exists && $order->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'CLINICAL_ORDER_STATE_INVALID: Trang thai chi dinh chi duoc thay doi qua ClinicalOrderWorkflowService.',
+                    ]);
+                }
+
                 $fromStatus = strtolower(trim((string) ($order->getOriginal('status') ?: self::STATUS_PENDING)));
                 $toStatus = strtolower(trim((string) ($order->status ?: self::STATUS_PENDING)));
 
@@ -156,23 +170,40 @@ class ClinicalOrder extends Model
 
     public function markInProgress(): void
     {
-        $this->status = self::STATUS_IN_PROGRESS;
-        $this->save();
+        app(ClinicalOrderWorkflowService::class)->markInProgress($this);
     }
 
-    public function markCompleted(): void
+    public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): void
     {
-        $this->status = self::STATUS_COMPLETED;
-        $this->save();
+        app(ClinicalOrderWorkflowService::class)->markCompleted($this, $actorId, $reason, $trigger);
     }
 
-    public function cancel(?string $reason = null): void
+    public function cancel(?string $reason = null, ?int $actorId = null): void
     {
-        $this->status = self::STATUS_CANCELLED;
-        if (filled($reason)) {
-            $this->notes = trim((string) (($this->notes ? $this->notes."\n" : '').$reason));
+        app(ClinicalOrderWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
         }
-        $this->save();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 
     public static function canTransition(string $fromStatus, string $toStatus): bool

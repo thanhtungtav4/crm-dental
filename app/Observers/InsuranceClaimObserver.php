@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\InsuranceClaim;
 use App\Models\Invoice;
 use App\Support\WorkflowAuditMetadata;
+use Illuminate\Support\Arr;
 
 class InsuranceClaimObserver
 {
@@ -30,6 +31,12 @@ class InsuranceClaimObserver
             return;
         }
 
+        $managedContext = InsuranceClaim::currentManagedTransitionContext();
+        $managedActorId = data_get($managedContext, 'actor_id');
+        $reason = is_string(data_get($managedContext, 'reason'))
+            ? (string) data_get($managedContext, 'reason')
+            : null;
+
         $action = match ($insuranceClaim->status) {
             InsuranceClaim::STATUS_APPROVED => AuditLog::ACTION_APPROVE,
             InsuranceClaim::STATUS_DENIED => AuditLog::ACTION_FAIL,
@@ -42,13 +49,17 @@ class InsuranceClaimObserver
             entityType: AuditLog::ENTITY_INSURANCE_CLAIM,
             entityId: $insuranceClaim->id,
             action: $action,
-            actorId: auth()->id(),
+            actorId: is_numeric($managedActorId) ? (int) $managedActorId : auth()->id(),
             branchId: $this->resolveBranchId($insuranceClaim),
             patientId: $insuranceClaim->patient_id,
             metadata: WorkflowAuditMetadata::transition(
                 fromStatus: (string) ($insuranceClaim->getOriginal('status') ?: InsuranceClaim::STATUS_DRAFT),
                 toStatus: $insuranceClaim->status,
-                metadata: $this->buildMetadata($insuranceClaim),
+                reason: $reason,
+                metadata: array_merge(
+                    $this->buildMetadata($insuranceClaim),
+                    Arr::except($managedContext, ['actor_id', 'reason']),
+                ),
             ),
         );
     }

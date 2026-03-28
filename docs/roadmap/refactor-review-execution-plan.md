@@ -119,6 +119,8 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `PlanItem` voi workflow service canonical cho start / complete / cancel / complete-visit lanes.
   - `RRB-009` da mo rong them sang `ReceiptExpense` voi workflow service canonical, model guard, table/page actions co ly do, va structured audit metadata.
   - `RRB-009` da mo rong them sang `MaterialIssueNote` voi workflow service canonical, model guard, table/page actions co ly do, va transition audit metadata.
+  - `RRB-009` da mo rong them sang `InsuranceClaim` voi workflow service canonical, managed transition context, va payment-linked audit metadata.
+  - `RRB-009` da mo rong them sang `ClinicalOrder` / `ClinicalResult` voi workflow service canonical, managed transition context, va EMR audit metadata co `reason` / `trigger`.
   - `RRB-009` da keo them `Payment` refund / reversal audit metadata ve pattern `reason` / `trigger` / canonical identifiers.
   - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`, va da cover them `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, va mo ta finance timeline than thien hon cho `Payment`.
   - Chua mo wave rieng cho `CARE` / `OPS` beyond baseline packs.

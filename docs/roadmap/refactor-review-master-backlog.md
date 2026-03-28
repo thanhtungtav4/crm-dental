@@ -235,6 +235,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `PlanItem` mutation lane vao workflow service canonical, guided actions, va audit transition metadata tren nhanh backlog
     - da dua `ReceiptExpense` mutation lane vao workflow service canonical, model guard, guided actions, va structured audit metadata tren nhanh backlog
     - da dua `MaterialIssueNote` mutation lane vao workflow service canonical, model guard, guided actions, va transition audit metadata tren nhanh backlog
+    - da dua `InsuranceClaim` vao workflow service canonical, managed transition context, va audit metadata `reason` / `trigger` / `payment_id`
+    - da dua `ClinicalOrder` / `ClinicalResult` vao workflow service canonical, managed transition context, va EMR audit metadata `reason` / `trigger`
     - da chuan hoa them `Payment` refund / reversal audit metadata theo pattern `reason` / `trigger` / canonical identifiers
     - `CARE` va `OPS` chua can lane refactor rieng trong wave nay
 - Tests needed:

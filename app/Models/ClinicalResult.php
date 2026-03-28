@@ -4,18 +4,26 @@ namespace App\Models;
 
 use App\Casts\NullableEncrypted;
 use App\Services\ClinicalEvidenceGateService;
+use App\Services\ClinicalOrderWorkflowService;
+use App\Services\ClinicalResultWorkflowService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ClinicalResult extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
 
     public const STATUS_DRAFT = 'draft';
 
@@ -70,6 +78,12 @@ class ClinicalResult extends Model
             $result->status = strtolower(trim((string) ($result->status ?: self::STATUS_DRAFT)));
 
             if ($result->exists && $result->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'CLINICAL_RESULT_STATE_INVALID: Trang thai ket qua chi duoc thay doi qua ClinicalResultWorkflowService.',
+                    ]);
+                }
+
                 $fromStatus = strtolower(trim((string) ($result->getOriginal('status') ?: self::STATUS_DRAFT)));
                 $toStatus = strtolower(trim((string) ($result->status ?: self::STATUS_DRAFT)));
 
@@ -146,7 +160,12 @@ class ClinicalResult extends Model
                 return;
             }
 
-            $order->markCompleted();
+            app(ClinicalOrderWorkflowService::class)->markCompleted(
+                order: $order,
+                actorId: is_numeric($result->verified_by) ? (int) $result->verified_by : null,
+                reason: 'Ket qua chi dinh da duoc chot.',
+                trigger: 'result_finalized',
+            );
         });
     }
 
@@ -195,20 +214,12 @@ class ClinicalResult extends Model
      */
     public function markPreliminary(?array $payload = null, ?string $interpretation = null, ?string $notes = null): void
     {
-        if ($payload !== null) {
-            $this->payload = $payload;
-        }
-
-        if ($interpretation !== null) {
-            $this->interpretation = $interpretation;
-        }
-
-        if ($notes !== null) {
-            $this->notes = $notes;
-        }
-
-        $this->status = self::STATUS_PRELIMINARY;
-        $this->save();
+        app(ClinicalResultWorkflowService::class)->markPreliminary(
+            result: $this,
+            payload: $payload,
+            interpretation: $interpretation,
+            notes: $notes,
+        );
     }
 
     /**
@@ -221,30 +232,14 @@ class ClinicalResult extends Model
         ?string $notes = null,
         ?string $evidenceOverrideReason = null,
     ): void {
-        DB::transaction(function () use ($verifiedBy, $payload, $interpretation, $notes, $evidenceOverrideReason): void {
-            if ($payload !== null) {
-                $this->payload = $payload;
-            }
-
-            if ($interpretation !== null) {
-                $this->interpretation = $interpretation;
-            }
-
-            if ($notes !== null) {
-                $this->notes = $notes;
-            }
-
-            if ($verifiedBy !== null) {
-                $this->verified_by = $verifiedBy;
-            }
-
-            if ($evidenceOverrideReason !== null) {
-                $this->evidence_override_reason = $evidenceOverrideReason;
-            }
-
-            $this->status = self::STATUS_FINAL;
-            $this->save();
-        }, 3);
+        app(ClinicalResultWorkflowService::class)->finalize(
+            result: $this,
+            verifiedBy: $verifiedBy,
+            payload: $payload,
+            interpretation: $interpretation,
+            notes: $notes,
+            evidenceOverrideReason: $evidenceOverrideReason,
+        );
     }
 
     /**
@@ -252,20 +247,35 @@ class ClinicalResult extends Model
      */
     public function amend(?array $payload = null, ?string $interpretation = null, ?string $notes = null): void
     {
-        if ($payload !== null) {
-            $this->payload = $payload;
-        }
+        app(ClinicalResultWorkflowService::class)->amend(
+            result: $this,
+            payload: $payload,
+            interpretation: $interpretation,
+            notes: $notes,
+        );
+    }
 
-        if ($interpretation !== null) {
-            $this->interpretation = $interpretation;
-        }
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
 
-        if ($notes !== null) {
-            $this->notes = $notes;
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
         }
+    }
 
-        $this->status = self::STATUS_AMENDED;
-        $this->save();
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 
     public static function canTransition(string $fromStatus, string $toStatus): bool

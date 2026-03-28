@@ -2,8 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\ActionGate;
-use App\Support\ActionPermission;
+use App\Services\InsuranceClaimWorkflowService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +12,13 @@ use Illuminate\Validation\ValidationException;
 class InsuranceClaim extends Model
 {
     use HasFactory;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
 
     public const STATUS_DRAFT = 'draft';
 
@@ -92,10 +98,11 @@ class InsuranceClaim extends Model
             }
 
             if ($claim->exists && $claim->isDirty('status')) {
-                ActionGate::authorize(
-                    ActionPermission::INSURANCE_CLAIM_DECISION,
-                    'Bạn không có quyền phê duyệt/từ chối hồ sơ bảo hiểm.',
-                );
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'INSURANCE_CLAIM_STATE_INVALID: Trang thai ho so bao hiem chi duoc thay doi qua InsuranceClaimWorkflowService.',
+                    ]);
+                }
 
                 $fromStatus = (string) $claim->getOriginal('status');
                 $toStatus = (string) $claim->status;
@@ -161,76 +168,49 @@ class InsuranceClaim extends Model
 
     public function submit(): void
     {
-        $this->status = self::STATUS_SUBMITTED;
-        $this->save();
+        app(InsuranceClaimWorkflowService::class)->submit($this);
     }
 
     public function approve(?float $amountApproved = null): void
     {
-        if ($amountApproved !== null) {
-            $this->amount_approved = max(0, round($amountApproved, 2));
-        }
-
-        if ((float) $this->amount_approved <= 0) {
-            $this->amount_approved = (float) $this->amount_claimed;
-        }
-
-        $this->status = self::STATUS_APPROVED;
-        $this->save();
+        app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved);
     }
 
     public function deny(string $reasonCode, ?string $note = null): void
     {
-        $this->denial_reason_code = trim($reasonCode);
-        $this->denial_note = $note;
-        $this->status = self::STATUS_DENIED;
-        $this->save();
+        app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note);
     }
 
     public function resubmit(): void
     {
-        $this->status = self::STATUS_RESUBMITTED;
-        $this->save();
+        app(InsuranceClaimWorkflowService::class)->resubmit($this);
     }
 
     public function markPaid(?float $amount = null, string $method = 'transfer', ?string $note = null): Payment
     {
-        if (! in_array($this->status, [self::STATUS_APPROVED, self::STATUS_RESUBMITTED], true)) {
-            throw ValidationException::withMessages([
-                'status' => 'Chỉ hồ sơ bảo hiểm đã duyệt mới được ghi nhận đã thanh toán.',
-            ]);
+        return app(InsuranceClaimWorkflowService::class)->markPaid($this, $amount, $method, $note);
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
         }
+    }
 
-        $invoice = $this->invoice;
-
-        if (! $invoice) {
-            throw ValidationException::withMessages([
-                'invoice_id' => 'Không tìm thấy hóa đơn gắn với hồ sơ bảo hiểm.',
-            ]);
-        }
-
-        $paymentAmount = $amount !== null
-            ? max(0, round($amount, 2))
-            : max(0, (float) ($this->amount_approved ?: $this->amount_claimed));
-
-        $payment = $invoice->recordPayment(
-            amount: $paymentAmount,
-            method: $method,
-            notes: $note,
-            paidAt: now(),
-            direction: 'receipt',
-            refundReason: null,
-            transactionRef: 'CLAIM-'.$this->id.'-PAID',
-            paymentSource: 'insurance',
-            insuranceClaimNumber: $this->claim_number,
-            receivedBy: auth()->id(),
-            reversalOfId: null,
-            isDeposit: false,
-        );
-
-        $this->status = self::STATUS_PAID;
-        $this->save();
-
-        return $payment;
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 }

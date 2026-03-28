@@ -7,6 +7,7 @@ use App\Models\ClinicalResult;
 use App\Models\EmrAuditLog;
 use App\Services\EmrAuditLogger;
 use App\Services\ExamSessionLifecycleService;
+use Illuminate\Support\Arr;
 
 class ClinicalResultObserver
 {
@@ -41,6 +42,9 @@ class ClinicalResultObserver
             return;
         }
 
+        $managedContext = ClinicalResult::currentManagedTransitionContext();
+        $managedActorId = data_get($managedContext, 'actor_id');
+
         $statusTo = (string) $clinicalResult->status;
         $action = match ($statusTo) {
             ClinicalResult::STATUS_FINAL => EmrAuditLog::ACTION_FINALIZE,
@@ -55,8 +59,10 @@ class ClinicalResultObserver
             patientId: $clinicalResult->patient_id ? (int) $clinicalResult->patient_id : null,
             visitEpisodeId: $clinicalResult->visit_episode_id ? (int) $clinicalResult->visit_episode_id : null,
             branchId: $clinicalResult->branch_id ? (int) $clinicalResult->branch_id : null,
-            actorId: $clinicalResult->verified_by ? (int) $clinicalResult->verified_by : auth()->id(),
-            context: [
+            actorId: is_numeric($managedActorId)
+                ? (int) $managedActorId
+                : ($clinicalResult->verified_by ? (int) $clinicalResult->verified_by : auth()->id()),
+            context: array_merge([
                 'result_code' => $clinicalResult->result_code,
                 'clinical_order_id' => $clinicalResult->clinical_order_id,
                 'status_from' => (string) $clinicalResult->getOriginal('status'),
@@ -64,7 +70,7 @@ class ClinicalResultObserver
                 'evidence_override_reason' => $clinicalResult->evidence_override_reason,
                 'evidence_override_by' => $clinicalResult->evidence_override_by,
                 'evidence_override_at' => $clinicalResult->evidence_override_at?->toISOString(),
-            ],
+            ], Arr::except($managedContext, ['actor_id'])),
         );
 
         $this->syncExamSessionLifecycle($clinicalResult);

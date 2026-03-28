@@ -511,9 +511,8 @@ it('blocks direct refund payment and insurance decision without action permissio
         'received_by' => $unauthorizedUser->id,
     ]))->toThrow(ValidationException::class, 'không có quyền thực hiện hoàn tiền');
 
-    expect(fn () => $claim->update([
-        'status' => InsuranceClaim::STATUS_SUBMITTED,
-    ]))->toThrow(ValidationException::class, 'không có quyền phê duyệt/từ chối hồ sơ bảo hiểm');
+    expect(fn () => $claim->submit())
+        ->toThrow(ValidationException::class, 'không có quyền phê duyệt/từ chối hồ sơ bảo hiểm');
 });
 
 it('allows users with action permission to execute protected actions', function () {

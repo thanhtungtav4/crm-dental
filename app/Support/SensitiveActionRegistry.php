@@ -74,7 +74,7 @@ class SensitiveActionRegistry
             ActionPermission::INSURANCE_CLAIM_DECISION => [
                 'allowed_roles' => ['Admin', 'Manager'],
                 'guard_markers' => [
-                    ['path' => 'app/Models/InsuranceClaim.php', 'contains' => 'ActionPermission::INSURANCE_CLAIM_DECISION'],
+                    ['path' => 'app/Services/InsuranceClaimWorkflowService.php', 'contains' => 'ActionPermission::INSURANCE_CLAIM_DECISION'],
                 ],
                 'authorization_test_markers' => [
                     ['path' => 'tests/Feature/ActionSecurityCoverageTest.php', 'contains' => 'ActionPermission::INSURANCE_CLAIM_DECISION'],
