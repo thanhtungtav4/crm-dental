@@ -98,6 +98,8 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
         ->assertSee('Web Lead API Token')
         ->assertSee('Lead mail retryable')
         ->assertSee('Lead mail dead')
+        ->assertSee('Popup announcement logs')
+        ->assertSee('Patient photos')
         ->assertSee('Delivery mail web lead')
         ->assertSee('Revenue aggregate')
         ->assertSee('ZNS automation events')

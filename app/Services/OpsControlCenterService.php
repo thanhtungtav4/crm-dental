@@ -513,6 +513,27 @@ class OpsControlCenterService
                 ),
                 description: 'Google Calendar log + event đã đủ điều kiện prune.',
             ),
+            $this->integrationRetentionCandidate(
+                label: 'Popup announcement logs',
+                retentionDays: ClinicRuntimeSettings::popupAnnouncementRetentionDays(),
+                total: $this->integrationOperationalReadModelService->popupDeliveryRetentionCandidateCount(
+                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
+                ) + $this->integrationOperationalReadModelService->popupAnnouncementRetentionCandidateCount(
+                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
+                ),
+                description: 'Popup delivery và announcement log đã quá hạn retention.',
+            ),
+            $this->integrationRetentionCandidate(
+                label: 'Patient photos',
+                retentionDays: ClinicRuntimeSettings::patientPhotoRetentionDays(),
+                total: ClinicRuntimeSettings::patientPhotoRetentionEnabled()
+                    ? $this->integrationOperationalReadModelService->patientPhotoRetentionCandidateCount(
+                        ClinicRuntimeSettings::patientPhotoRetentionDays(),
+                        ClinicRuntimeSettings::patientPhotoRetentionIncludeXray()
+                    )
+                    : 0,
+                description: 'Ảnh bệnh nhân đã quá hạn retention theo runtime setting hiện tại.',
+            ),
         ];
 
         $expiredCount = count($expiredGraceRotations);
