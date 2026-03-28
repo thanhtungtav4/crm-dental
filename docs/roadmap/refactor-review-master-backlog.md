@@ -165,6 +165,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-007] Shared hashed identity and search contract
 
+- Status: `Completed`
 - Module: `PAT`, `APPT`, `CARE`, `INT`
 - Description:
   - Rut gon cac pattern hash search cho phone/email/identity thanh contract chung de tranh drift giua lead, customer, patient, va care surfaces.
@@ -185,6 +186,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-008] Shared actor and branch scope contract
 
+- Status: `Completed`
 - Module: `GOV`, `PAT`, `APPT`, `CLIN`, `TRT`, `FIN`, `INV`, `SUP`, `CARE`
 - Description:
   - Rut gon cac authorizer/scope helper thanh mot contract on dinh cho actor scope, branch scope, selector scope, va forged-payload sanitize.
@@ -209,6 +211,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-009] Shared workflow action and audit-reason contract
 
+- Status: `In progress`
 - Module: `APPT`, `TRT`, `FIN`, `SUP`, `ZNS`, `CARE`, `OPS`
 - Description:
   - Chuan hoa pattern workflow service, guided actions, confirm modal, va audit reason metadata tren cac module co state machine.
@@ -224,6 +227,11 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - form khong sua raw status
     - page/table actions di qua service canonical
     - ly do, actor, timestamp duoc ghi nhat quan
+  - Tien do hien tai:
+    - da chuan hoa `WorkflowAuditMetadata` tren `APPT`, `TRT`, `FIN`, `SUP`, `ZNS`
+    - da bo sung audit trail / structured transition metadata cho `FactoryOrder`
+    - da keo observer-based workflow audit cua `Appointment`, `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
+    - `CARE` va `OPS` chua can lane refactor rieng trong wave nay
 - Tests needed:
   - workflow transition contract tests
   - browser checks cho dangerous/destructive actions
@@ -232,6 +240,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-010] Unified audit timeline and read-model conventions
 
+- Status: `In progress`
 - Module: `GOV`, `CLIN`, `FIN`, `INT`, `OPS`, `ZNS`
 - Description:
   - Tiep tuc hop nhat cach doc audit timeline, operational event, va provenance read-model de de trace incident va nghiep vu.
@@ -246,6 +255,11 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 - Recommended direction:
   - Dung approach giong `ClinicalAuditTimelineService` lam tham chieu.
   - Tach event writer voi event reader de khong rang buoc UI vao table raw.
+  - Tien do hien tai:
+    - da tao `PatientOperationalTimelineService`
+    - da tach patient activity timeline khoi widget query thuan raw
+    - da dua `FactoryOrder`, `InsuranceClaim`, `TreatmentSession` vao patient operational timeline read-model
+    - cac audit metadata moi da du structured hon de phuc vu read-model phase sau
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces

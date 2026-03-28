@@ -21,6 +21,8 @@
 - Governance delegation matrix da duoc formalize thanh tai lieu van hanh.
 - Trung tam rui ro da chuyen tu `rollout safety` sang `shared contracts`, `workflow convergence`, va `structural convergence`.
 - Chuong trinh hien tai nen di tiep theo batch nho, uu tien rollout/smoke test truoc, refactor sau.
+- `RRB-007` va `RRB-008` da duoc dong qua shared identity/search contract va actor/branch scope contract.
+- `RRB-009` va `RRB-010` dang duoc trien khai theo batch nho tren branch lam viec, chua push runtime len `main`.
 
 ## Program Verdict
 
@@ -29,6 +31,8 @@
   - Code baseline: `Dat`
   - Migration/backfill rollout: `Dat`
   - Real-infrastructure smoke test: `Dat`
+  - Shared contracts: `Dang tien sat muc on dinh`
+  - Workflow and audit convergence: `Dang trien khai`
   - Structural simplification: `Dang trien khai`
 
 ## Module Conclusions
@@ -194,8 +198,8 @@
 
 ## Top Risks Remaining
 
-1. Shared contracts chua duoc rut gon thanh primitive on dinh toan he thong
-   - scope, search/hash, workflow, va audit timeline van phan tan o nhieu lane.
+1. Workflow va audit timeline van chua hoan tat tren moi lane uu tien
+   - shared scope/search contracts da co primitive chung, nhung workflow/read-model van dang duoc hop nhat tiep.
 2. Structural convergence giua TRT/INV/FIN/SUP van con mo
    - immutable adjustment/void/reversal strategy van la bai toan lon nhat con lai.
 3. Reporting va integration control-plane van co du dia tiep tuc don gian hoa
@@ -203,9 +207,9 @@
 
 ## Quick Wins
 
-1. RRB-007: shared hashed identity/search contract.
-2. RRB-008: shared actor/branch scope contract.
-3. RRB-009 va RRB-010: workflow + audit convergence.
+1. RRB-009 va RRB-010: workflow + audit convergence.
+2. Mo rong read-model timeline ngoai patient activity neu nghiep vu can.
+3. Chot lane observer/service con lai truoc khi vao structural refactor lon.
 
 ## Structural Risks
 
@@ -215,9 +219,8 @@
 
 ## Suggested Implementation Order
 
-1. Hoan tat Phase 3 voi `RRB-007` va `RRB-008`.
-2. Chot `RRB-009` va `RRB-010` cho workflow/audit lanes uu tien.
-3. Sau do moi vao `RRB-011`, `RRB-012`, `RRB-013`.
+1. Chot `RRB-009` va `RRB-010` cho workflow/audit lanes uu tien.
+2. Sau do moi vao `RRB-011`, `RRB-012`, `RRB-013`.
 
 ## Canonical Next Documents
 
