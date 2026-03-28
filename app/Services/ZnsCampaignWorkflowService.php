@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\ZnsCampaign;
+use App\Support\WorkflowAuditMetadata;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -71,7 +72,7 @@ class ZnsCampaignWorkflowService
             ],
             auditAction: AuditLog::ACTION_UPDATE,
             metadata: [
-                'reason' => $this->normalizeReason($reason),
+                'reason' => WorkflowAuditMetadata::normalizeReason($reason),
             ],
         );
     }
@@ -91,7 +92,7 @@ class ZnsCampaignWorkflowService
             ],
             auditAction: AuditLog::ACTION_RUN,
             metadata: [
-                'reason' => $this->normalizeReason($reason),
+                'reason' => WorkflowAuditMetadata::normalizeReason($reason),
                 'trigger' => 'manual_run',
             ],
         );
@@ -101,7 +102,7 @@ class ZnsCampaignWorkflowService
     {
         $this->authorizeUpdate($campaign);
 
-        $resolvedReason = $this->normalizeReason($reason);
+        $resolvedReason = WorkflowAuditMetadata::normalizeReason($reason);
 
         if ($resolvedReason === null) {
             throw ValidationException::withMessages([
@@ -135,7 +136,7 @@ class ZnsCampaignWorkflowService
             ],
             auditAction: AuditLog::ACTION_RUN,
             metadata: [
-                'reason' => $this->normalizeReason($reason),
+                'reason' => WorkflowAuditMetadata::normalizeReason($reason),
                 'trigger' => 'runner_claim',
             ],
             authorize: false,
@@ -153,7 +154,7 @@ class ZnsCampaignWorkflowService
             ],
             auditAction: AuditLog::ACTION_FAIL,
             metadata: [
-                'reason' => $this->normalizeReason($reason),
+                'reason' => WorkflowAuditMetadata::normalizeReason($reason),
             ],
             authorize: false,
         );
@@ -261,10 +262,12 @@ class ZnsCampaignWorkflowService
                 campaign: $lockedCampaign,
                 action: $auditAction,
                 actorId: $this->resolveActorId($actorId),
-                metadata: array_merge($metadata, [
-                    'status_from' => $fromStatus,
-                    'status_to' => $targetStatus,
-                ]),
+                metadata: WorkflowAuditMetadata::transition(
+                    fromStatus: $fromStatus,
+                    toStatus: $targetStatus,
+                    reason: data_get($metadata, 'reason'),
+                    metadata: $metadata,
+                ),
             );
 
             return $lockedCampaign;
@@ -283,13 +286,6 @@ class ZnsCampaignWorkflowService
     protected function resolveActorId(?int $actorId): ?int
     {
         return $actorId ?? (is_numeric(auth()->id()) ? (int) auth()->id() : null);
-    }
-
-    protected function normalizeReason(?string $reason): ?string
-    {
-        $resolvedReason = trim((string) $reason);
-
-        return $resolvedReason !== '' ? $resolvedReason : null;
     }
 
     /**

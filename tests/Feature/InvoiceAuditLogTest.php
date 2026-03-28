@@ -57,5 +57,7 @@ it('records audit log when invoice is cancelled through workflow service', funct
         ->and($log->patient_id)->toBe($invoice->patient_id)
         ->and($log->branch_id)->toBe($invoice->resolveBranchId())
         ->and($log->metadata['previous_status'] ?? null)->toBe('issued')
+        ->and($log->metadata['status_from'] ?? null)->toBe('issued')
+        ->and($log->metadata['status_to'] ?? null)->toBe(Invoice::STATUS_CANCELLED)
         ->and($log->metadata['reason'] ?? null)->toBe('Cap nhat sai');
 });

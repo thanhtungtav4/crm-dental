@@ -110,6 +110,8 @@ it('cancels invoice through workflow service with audit trail', function (): voi
 
     expect($log)->not->toBeNull()
         ->and($log->metadata['previous_status'] ?? null)->toBe(Invoice::STATUS_ISSUED)
+        ->and($log->metadata['status_from'] ?? null)->toBe(Invoice::STATUS_ISSUED)
+        ->and($log->metadata['status_to'] ?? null)->toBe(Invoice::STATUS_CANCELLED)
         ->and($log->metadata['reason'] ?? null)->toBe('Tao nham hoa don');
 });
 

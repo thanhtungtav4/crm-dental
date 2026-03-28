@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AuditLog;
+use App\Support\WorkflowAuditMetadata;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -29,6 +30,7 @@ class AppointmentSchedulingService
             $lockedAppointment = $this->lockAppointment($appointment);
             $normalizedStartAt = $this->extractNormalizedStartAt($data);
             $originalStartAt = $lockedAppointment->date?->copy();
+            $fromStatus = Appointment::normalizeStatus($lockedAppointment->status) ?? Appointment::DEFAULT_STATUS;
             $isSlotChanged = $normalizedStartAt !== null
                 && ($originalStartAt?->format('Y-m-d H:i:s') !== $normalizedStartAt->format('Y-m-d H:i:s'));
 
@@ -56,6 +58,7 @@ class AppointmentSchedulingService
                     appointment: $lockedAppointment,
                     originalStartAt: $originalStartAt,
                     newStartAt: $normalizedStartAt,
+                    fromStatus: $fromStatus,
                     reason: $reason,
                     force: false,
                     source: 'form',
@@ -76,6 +79,7 @@ class AppointmentSchedulingService
             $lockedAppointment = $this->lockAppointment($appointment);
             $normalizedStartAt = $this->normalizeDateTime($startAt);
             $reason = trim((string) $reason);
+            $fromStatus = Appointment::normalizeStatus($lockedAppointment->status) ?? Appointment::DEFAULT_STATUS;
 
             if ($reason === '') {
                 throw ValidationException::withMessages([
@@ -110,6 +114,7 @@ class AppointmentSchedulingService
                 appointment: $lockedAppointment,
                 originalStartAt: $originalStartAt,
                 newStartAt: $normalizedStartAt,
+                fromStatus: $fromStatus,
                 reason: $reason,
                 force: $force,
                 source: 'calendar',
@@ -243,6 +248,7 @@ class AppointmentSchedulingService
         Appointment $appointment,
         ?CarbonInterface $originalStartAt,
         CarbonInterface $newStartAt,
+        string $fromStatus,
         string $reason,
         bool $force,
         string $source,
@@ -264,17 +270,21 @@ class AppointmentSchedulingService
             actorId: $actorId,
             branchId: $appointment->branch_id ? (int) $appointment->branch_id : null,
             patientId: $appointment->patient_id ? (int) $appointment->patient_id : null,
-            metadata: [
-                'patient_id' => $appointment->patient_id,
-                'customer_id' => $appointment->customer_id,
-                'doctor_id' => $appointment->doctor_id,
-                'branch_id' => $appointment->branch_id,
-                'from_at' => $originalStartAt?->format('Y-m-d H:i:s'),
-                'to_at' => $newStartAt->format('Y-m-d H:i:s'),
-                'reason' => $reason,
-                'force' => $force,
-                'source' => $source,
-            ],
+            metadata: WorkflowAuditMetadata::transition(
+                fromStatus: $fromStatus,
+                toStatus: Appointment::STATUS_RESCHEDULED,
+                reason: $reason,
+                metadata: [
+                    'patient_id' => $appointment->patient_id,
+                    'customer_id' => $appointment->customer_id,
+                    'doctor_id' => $appointment->doctor_id,
+                    'branch_id' => $appointment->branch_id,
+                    'from_at' => $originalStartAt?->format('Y-m-d H:i:s'),
+                    'to_at' => $newStartAt->format('Y-m-d H:i:s'),
+                    'force' => $force,
+                    'source' => $source,
+                ],
+            ),
         );
     }
 }
