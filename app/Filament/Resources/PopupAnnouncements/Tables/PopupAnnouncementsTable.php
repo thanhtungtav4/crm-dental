@@ -30,7 +30,26 @@ class PopupAnnouncementsTable
                 TextColumn::make('title')
                     ->label('Tiêu đề')
                     ->searchable()
-                    ->wrap(),
+                    ->wrap()
+                    ->description(function (PopupAnnouncement $record): ?string {
+                        $metadata = [];
+
+                        if ($record->require_ack) {
+                            $metadata[] = 'Cần xác nhận';
+                        }
+
+                        if ($record->starts_at !== null) {
+                            $metadata[] = 'Bắt đầu '.$record->starts_at->format('d/m/Y H:i');
+                        } elseif ($record->status === PopupAnnouncement::STATUS_PUBLISHED) {
+                            $metadata[] = 'Đang phát ngay';
+                        }
+
+                        if ($record->ends_at !== null) {
+                            $metadata[] = 'Kết thúc '.$record->ends_at->format('d/m/Y H:i');
+                        }
+
+                        return $metadata === [] ? null : implode(' · ', $metadata);
+                    }),
                 TextColumn::make('priority')
                     ->label('Ưu tiên')
                     ->badge()
@@ -57,6 +76,7 @@ class PopupAnnouncementsTable
                 TextColumn::make('target_role_names')
                     ->label('Nhóm quyền')
                     ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
+                    ->wrap()
                     ->toggleable(),
                 TextColumn::make('target_branch_ids')
                     ->label('Chi nhánh')
@@ -83,6 +103,7 @@ class PopupAnnouncementsTable
                             ->map(fn (int $branchId): string => $branchMap[$branchId] ?? (string) $branchId)
                             ->implode(', ');
                     })
+                    ->wrap()
                     ->toggleable(),
                 TextColumn::make('starts_at')
                     ->label('Bắt đầu')
@@ -95,7 +116,9 @@ class PopupAnnouncementsTable
                 TextColumn::make('deliveries_count')
                     ->counts('deliveries')
                     ->label('Lượt gửi')
-                    ->numeric(),
+                    ->numeric()
+                    ->badge()
+                    ->color('gray'),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -103,8 +126,12 @@ class PopupAnnouncementsTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->slideOver()
+                    ->modalWidth('5xl'),
+                EditAction::make()
+                    ->slideOver()
+                    ->modalWidth('6xl'),
                 Action::make('publishNow')
                     ->label('Phát ngay')
                     ->icon('heroicon-o-bell-alert')
@@ -115,6 +142,8 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
                     ->requiresConfirmation()
+                    ->modalHeading('Phát popup ngay bây giờ?')
+                    ->modalDescription('Popup sẽ được gửi tới đúng nhóm quyền và chi nhánh đang cấu hình ngay sau khi xác nhận.')
                     ->action(function (PopupAnnouncement $record): void {
                         $record->forceFill([
                             'status' => PopupAnnouncement::STATUS_PUBLISHED,
@@ -141,6 +170,8 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
                     ->requiresConfirmation()
+                    ->modalHeading('Hủy popup này?')
+                    ->modalDescription('Popup sẽ ngừng được phát cho các user mới sau khi xác nhận.')
                     ->action(function (PopupAnnouncement $record): void {
                         $record->forceFill([
                             'status' => PopupAnnouncement::STATUS_CANCELLED,

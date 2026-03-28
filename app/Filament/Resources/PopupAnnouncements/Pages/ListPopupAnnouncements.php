@@ -13,7 +13,13 @@ class ListPopupAnnouncements extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->label('Tạo popup')
+                ->color('info')
+                ->slideOver()
+                ->modalWidth('6xl')
+                ->modalHeading('Tạo popup nội bộ')
+                ->modalDescription('Soạn nội dung, chọn nhóm nhận và thời điểm hiển thị trước khi phát.'),
         ];
     }
 }
