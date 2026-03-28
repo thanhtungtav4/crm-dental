@@ -363,6 +363,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - Tien do hien tai:
     - da tao `HotReportAggregateReadModelService` de gom readiness, aggregate breakdown query, va summary stats cho `RevenueStatistical` va `CustomsCareStatistical`
     - da keo `RevenueStatistical` va `CustomsCareStatistical` ve dung chung hot-report reader thay vi moi page tu giu aggregate query/stats branch-scope rieng
+    - da mo rong tiep hot-report reader sang `TrickGroupStatistical`, de lane doanh thu theo nhom thu thuat cung dung chung aggregate readiness, aggregate breakdown query, va summary stats contract tu `report_revenue_daily_aggregates`
 - Tests needed:
   - report scope/export tests
   - performance/explain checks cho heavy paths

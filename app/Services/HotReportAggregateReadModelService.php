@@ -56,6 +56,29 @@ class HotReportAggregateReadModelService
 
     /**
      * @param  array<int, int>  $scopeIds
+     */
+    public function revenueCategoryBreakdownQuery(array $scopeIds): Builder
+    {
+        if ($scopeIds === []) {
+            return ReportRevenueDailyAggregate::query()
+                ->from('report_revenue_daily_aggregates as revenue_daily')
+                ->whereRaw('1 = 0');
+        }
+
+        return ReportRevenueDailyAggregate::query()
+            ->from('report_revenue_daily_aggregates as revenue_daily')
+            ->selectRaw('
+                MAX(revenue_daily.category_name) as category_name,
+                SUM(revenue_daily.total_count) as total_count,
+                SUM(revenue_daily.total_revenue) as total_revenue,
+                MAX(revenue_daily.snapshot_date) as snapshot_date
+            ')
+            ->whereIn('revenue_daily.branch_scope_id', $scopeIds)
+            ->groupBy('revenue_daily.category_name');
+    }
+
+    /**
+     * @param  array<int, int>  $scopeIds
      * @return array{total_procedures:int,total_revenue:float}
      */
     public function revenueSummary(array $scopeIds, ?string $from, ?string $until): array

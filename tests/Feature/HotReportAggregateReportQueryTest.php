@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\Reports\CustomsCareStatistical;
 use App\Filament\Pages\Reports\RevenueStatistical;
+use App\Filament\Pages\Reports\TrickGroupStatistical;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Note;
@@ -67,6 +68,10 @@ it('switches revenue and care reports to aggregate tables when bounded pre-aggre
         ->set('tableFilters.date_range.from', now()->toDateString())
         ->set('tableFilters.date_range.until', now()->toDateString())
         ->instance();
+    $trickGroupPage = Livewire::test(TrickGroupStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance();
 
     $revenueQueryMethod = new \ReflectionMethod($revenuePage, 'getTableQuery');
     $revenueQueryMethod->setAccessible(true);
@@ -75,10 +80,14 @@ it('switches revenue and care reports to aggregate tables when bounded pre-aggre
     $careQueryMethod = new \ReflectionMethod($carePage, 'getTableQuery');
     $careQueryMethod->setAccessible(true);
     $careQuery = $careQueryMethod->invoke($carePage);
+    $trickGroupQueryMethod = new \ReflectionMethod($trickGroupPage, 'getTableQuery');
+    $trickGroupQueryMethod->setAccessible(true);
+    $trickGroupQuery = $trickGroupQueryMethod->invoke($trickGroupPage);
 
     expect($revenueQuery->toSql())
         ->toContain('report_revenue_daily_aggregates')
-        ->and($careQuery->toSql())->toContain('report_care_queue_daily_aggregates');
+        ->and($careQuery->toSql())->toContain('report_care_queue_daily_aggregates')
+        ->and($trickGroupQuery->toSql())->toContain('report_revenue_daily_aggregates');
 });
 
 it('falls back to raw report queries when aggregate range is unbounded', function (): void {
@@ -170,15 +179,19 @@ it('falls back to raw report queries when aggregate range is unbounded', functio
 
     $revenuePage = Livewire::test(RevenueStatistical::class)->instance();
     $carePage = Livewire::test(CustomsCareStatistical::class)->instance();
+    $trickGroupPage = Livewire::test(TrickGroupStatistical::class)->instance();
 
     $revenueQueryMethod = new \ReflectionMethod($revenuePage, 'getTableQuery');
     $revenueQueryMethod->setAccessible(true);
     $careQueryMethod = new \ReflectionMethod($carePage, 'getTableQuery');
     $careQueryMethod->setAccessible(true);
+    $trickGroupQueryMethod = new \ReflectionMethod($trickGroupPage, 'getTableQuery');
+    $trickGroupQueryMethod->setAccessible(true);
 
     expect($revenueQueryMethod->invoke($revenuePage)->toSql())
         ->toContain('plan_items')
-        ->and($careQueryMethod->invoke($carePage)->toSql())->toContain('select care_type, care_status');
+        ->and($careQueryMethod->invoke($carePage)->toSql())->toContain('select care_type, care_status')
+        ->and($trickGroupQueryMethod->invoke($trickGroupPage)->toSql())->toContain('plan_items');
 });
 
 it('falls back to raw report queries when today aggregate is stale', function (): void {
@@ -233,13 +246,20 @@ it('falls back to raw report queries when today aggregate is stale', function ()
         ->set('tableFilters.date_range.from', now()->toDateString())
         ->set('tableFilters.date_range.until', now()->toDateString())
         ->instance();
+    $trickGroupPage = Livewire::test(TrickGroupStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance();
 
     $revenueQueryMethod = new \ReflectionMethod($revenuePage, 'getTableQuery');
     $revenueQueryMethod->setAccessible(true);
     $careQueryMethod = new \ReflectionMethod($carePage, 'getTableQuery');
     $careQueryMethod->setAccessible(true);
+    $trickGroupQueryMethod = new \ReflectionMethod($trickGroupPage, 'getTableQuery');
+    $trickGroupQueryMethod->setAccessible(true);
 
     expect($revenueQueryMethod->invoke($revenuePage)->toSql())
         ->toContain('plan_items')
-        ->and($careQueryMethod->invoke($carePage)->toSql())->toContain('select care_type, care_status');
+        ->and($careQueryMethod->invoke($carePage)->toSql())->toContain('select care_type, care_status')
+        ->and($trickGroupQueryMethod->invoke($trickGroupPage)->toSql())->toContain('plan_items');
 });

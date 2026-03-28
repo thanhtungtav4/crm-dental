@@ -177,6 +177,78 @@ it('scopes revenue statistical aggregates to accessible branches when no branch 
         ->and($stats[1]['value'])->toBe(number_format(3_000_000).' đ');
 });
 
+it('scopes trick-group aggregates to accessible branches when no branch filter is selected', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $categoryA = ServiceCategory::query()->create([
+        'name' => 'Nhóm A',
+        'code' => 'nhom-a',
+        'active' => true,
+    ]);
+    $categoryB = ServiceCategory::query()->create([
+        'name' => 'Nhóm B',
+        'code' => 'nhom-b',
+        'active' => true,
+    ]);
+
+    $serviceA = Service::query()->create([
+        'category_id' => $categoryA->id,
+        'name' => 'Thu thuat A',
+        'code' => 'tt-a',
+        'default_price' => 1_000_000,
+        'active' => true,
+    ]);
+
+    $serviceB = Service::query()->create([
+        'category_id' => $categoryB->id,
+        'name' => 'Thu thuat B',
+        'code' => 'tt-b',
+        'default_price' => 2_000_000,
+        'active' => true,
+    ]);
+
+    ReportRevenueDailyAggregate::query()->create([
+        'snapshot_date' => now()->toDateString(),
+        'branch_id' => $branchA->id,
+        'branch_scope_id' => $branchA->id,
+        'service_id' => $serviceA->id,
+        'service_name' => $serviceA->name,
+        'category_name' => $categoryA->name,
+        'total_count' => 2,
+        'total_revenue' => 3_000_000,
+        'generated_at' => now(),
+    ]);
+
+    ReportRevenueDailyAggregate::query()->create([
+        'snapshot_date' => now()->toDateString(),
+        'branch_id' => $branchB->id,
+        'branch_scope_id' => $branchB->id,
+        'service_id' => $serviceB->id,
+        'service_name' => $serviceB->name,
+        'category_name' => $categoryB->name,
+        'total_count' => 7,
+        'total_revenue' => 9_000_000,
+        'generated_at' => now(),
+    ]);
+
+    $this->actingAs($manager);
+
+    $stats = Livewire::test(TrickGroupStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance()
+        ->getStats();
+
+    expect($stats[0]['value'])->toBe(number_format(2))
+        ->and($stats[1]['value'])->toBe(number_format(3_000_000).' đ');
+});
+
 it('hides inaccessible KPI snapshots when a non-admin forges another branch filter', function (): void {
     $branchA = Branch::factory()->create();
     $branchB = Branch::factory()->create();
