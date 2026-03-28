@@ -299,6 +299,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong `ZnsOperationalReadModelService` them branch-scoped summary cards, va page `ZaloZns` da bat dau dung reader nay cho automation/delivery/campaign failure summary thay vi tu dem query raw tren page
     - da tao `IntegrationSettingsAuditReadModelService` de gom recent setting-log query, va page `IntegrationSettings` da doc recent audit trail qua reader nay thay vi tu query raw `ClinicSettingLog`
     - da tao `IntegrationProviderHealthReadModelService` de hop nhat provider readiness contract cho `Zalo OA`, `ZNS`, `Google Calendar`, va `EMR`, va `OpsControlCenterService` da render cung mot lop provider-health thay vi page/command tu dien giai runtime drift theo tung cach rieng
+    - da mo rong `IntegrationOperationalReadModelService` sang lane `popups:prune` va `photos:prune`, de popup log retention va patient photo retention candidate query duoc dung lai boi command thay vi moi lenh tu query rieng
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces
@@ -382,6 +383,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong lane nay bang `IntegrationProviderHealthReadModelService`, de `OpsControlCenterService`, `IntegrationSettings` (readiness notification + snapshot section), `zns:run-campaigns`, `zns:sync-automation-events`, `google-calendar:sync-events`, `emr:sync-events`, va `ZnsCampaignRunnerService` dung chung contract readiness / runtime-error message cho provider thay vi tu noi suy raw setting rieng le
     - da mo rong them publisher-side runtime guard cho `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher`, de control-plane khong tiep tuc sinh backlog outbox/event moi khi provider dang enabled nhung chua day du credential/runtime settings
     - da mo rong tiep lane `secret rotation / revoke` bang `expiredGraceRotationSummary()` trong `IntegrationOperationalReadModelService`, de `integrations:revoke-rotated-secrets` preview expired keys qua cung reader voi OPS va Integration Settings, thay vi command tu ngầm doc trang thai grace tu write-side service
+    - da mo rong tiep lane `payload retention / pruning` bang cach dua `popups:prune` va `photos:prune` qua `IntegrationOperationalReadModelService`, de command layer khong con tu sao chep retention candidate rules cua popup logs va patient photos
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

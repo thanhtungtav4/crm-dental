@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PopupAnnouncement;
-use App\Models\PopupAnnouncementDelivery;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -14,7 +13,7 @@ class PrunePopupAnnouncementLogs extends Command
 
     protected $description = 'Dọn log popup announcement theo retention policy runtime';
 
-    public function handle(): int
+    public function handle(IntegrationOperationalReadModelService $integrationOperationalReadModelService): int
     {
         $daysOption = $this->option('days');
         $retentionDays = is_numeric($daysOption)
@@ -29,34 +28,12 @@ class PrunePopupAnnouncementLogs extends Command
 
         $cutoff = now()->subDays($retentionDays);
 
-        $deliveriesDeleted = PopupAnnouncementDelivery::query()
-            ->whereIn('status', [
-                PopupAnnouncementDelivery::STATUS_ACKNOWLEDGED,
-                PopupAnnouncementDelivery::STATUS_DISMISSED,
-                PopupAnnouncementDelivery::STATUS_EXPIRED,
-            ])
-            ->where(function ($query) use ($cutoff): void {
-                $query
-                    ->where('acknowledged_at', '<', $cutoff)
-                    ->orWhere('dismissed_at', '<', $cutoff)
-                    ->orWhere('expired_at', '<', $cutoff)
-                    ->orWhere(function ($nested) use ($cutoff): void {
-                        $nested
-                            ->whereNull('acknowledged_at')
-                            ->whereNull('dismissed_at')
-                            ->whereNull('expired_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
+        $deliveriesDeleted = $integrationOperationalReadModelService
+            ->popupDeliveryRetentionQuery($retentionDays)
             ->delete();
 
-        $announcementsDeleted = PopupAnnouncement::query()
-            ->whereIn('status', [
-                PopupAnnouncement::STATUS_CANCELLED,
-                PopupAnnouncement::STATUS_EXPIRED,
-            ])
-            ->where('updated_at', '<', $cutoff)
-            ->whereDoesntHave('deliveries')
+        $announcementsDeleted = $integrationOperationalReadModelService
+            ->popupAnnouncementRetentionQuery($retentionDays)
             ->delete();
 
         $this->line(sprintf(

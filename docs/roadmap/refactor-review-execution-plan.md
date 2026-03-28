@@ -149,8 +149,10 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da mo rong them `ZnsOperationalReadModelService` vao page `ZaloZns` cho branch-scoped operational summary cards, de page khong con tu dem ad-hoc raw query cho pending/retry/dead delivery va campaign failed.
   - `RRB-010` da bo sung `IntegrationSettingsAuditReadModelService` de page `IntegrationSettings` dung reader chung cho recent setting logs, tiep tuc loai bo raw audit-query khoi page logic.
   - `RRB-010` da bo sung `IntegrationProviderHealthReadModelService` de `OpsControlCenterService` render provider-readiness cho `Zalo OA`, `ZNS`, `Google Calendar`, va `EMR` bang contract chung thay vi page/service/command tu dien giai tung provider rieng.
+  - `RRB-010` da mo rong them `IntegrationOperationalReadModelService` sang lane `popups:prune` va `photos:prune`, de popup logs va patient photos retention candidate query khong con bi lap lai o command layer.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
   - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
+  - `RRB-013` da tiep tuc lane `payload retention / pruning`: `popups:prune` va `photos:prune` da dung chung retention candidate reader voi control-plane, tranh viec command layer va OPS/Integration surfaces dien giai retention theo nhieu cach.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.

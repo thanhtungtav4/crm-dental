@@ -6,6 +6,9 @@ use App\Models\EmrSyncEvent;
 use App\Models\EmrSyncLog;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
+use App\Models\PatientPhoto;
+use App\Models\PopupAnnouncement;
+use App\Models\PopupAnnouncementDelivery;
 use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
@@ -47,6 +50,24 @@ class IntegrationOperationalReadModelService
     public function zaloWebhookRetentionCandidateCount(int $retentionDays): int
     {
         return $this->zaloWebhookRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function popupDeliveryRetentionCandidateCount(int $retentionDays): int
+    {
+        return $this->popupDeliveryRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function popupAnnouncementRetentionCandidateCount(int $retentionDays): int
+    {
+        return $this->popupAnnouncementRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function patientPhotoRetentionCandidateCount(int $retentionDays, bool $includeXray = false): int
+    {
+        return $this->patientPhotoRetentionQuery($retentionDays, $includeXray)
             ->count();
     }
 
@@ -196,6 +217,49 @@ class IntegrationOperationalReadModelService
             });
     }
 
+    public function popupDeliveryRetentionQuery(int $retentionDays): Builder
+    {
+        $cutoff = now()->subDays($retentionDays);
+
+        return PopupAnnouncementDelivery::query()
+            ->whereIn('status', [
+                PopupAnnouncementDelivery::STATUS_ACKNOWLEDGED,
+                PopupAnnouncementDelivery::STATUS_DISMISSED,
+                PopupAnnouncementDelivery::STATUS_EXPIRED,
+            ])
+            ->where(function (Builder $query) use ($cutoff): void {
+                $query
+                    ->where('acknowledged_at', '<', $cutoff)
+                    ->orWhere('dismissed_at', '<', $cutoff)
+                    ->orWhere('expired_at', '<', $cutoff)
+                    ->orWhere(function (Builder $nested) use ($cutoff): void {
+                        $nested
+                            ->whereNull('acknowledged_at')
+                            ->whereNull('dismissed_at')
+                            ->whereNull('expired_at')
+                            ->where('updated_at', '<', $cutoff);
+                    });
+            });
+    }
+
+    public function popupAnnouncementRetentionQuery(int $retentionDays): Builder
+    {
+        return PopupAnnouncement::query()
+            ->whereIn('status', [
+                PopupAnnouncement::STATUS_CANCELLED,
+                PopupAnnouncement::STATUS_EXPIRED,
+            ])
+            ->where('updated_at', '<', now()->subDays($retentionDays))
+            ->whereDoesntHave('deliveries');
+    }
+
+    public function patientPhotoRetentionQuery(int $retentionDays, bool $includeXray = false): Builder
+    {
+        return PatientPhoto::query()
+            ->whereIn('type', $this->patientPhotoRetentionTypes($includeXray))
+            ->whereDate('date', '<', now()->subDays($retentionDays)->startOfDay()->toDateString());
+    }
+
     public function emrLogRetentionQuery(int $retentionDays): Builder
     {
         return EmrSyncLog::query()
@@ -246,5 +310,23 @@ class IntegrationOperationalReadModelService
                             ->where('updated_at', '<', $cutoff);
                     });
             });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function patientPhotoRetentionTypes(bool $includeXray): array
+    {
+        $types = [
+            PatientPhoto::TYPE_NORMAL,
+            PatientPhoto::TYPE_EXTERNAL,
+            PatientPhoto::TYPE_INTERNAL,
+        ];
+
+        if ($includeXray) {
+            $types[] = PatientPhoto::TYPE_XRAY;
+        }
+
+        return $types;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PatientPhoto;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +16,7 @@ class PrunePatientPhotos extends Command
 
     protected $description = 'Dọn ảnh bệnh nhân quá hạn retention policy.';
 
-    public function handle(): int
+    public function handle(IntegrationOperationalReadModelService $integrationOperationalReadModelService): int
     {
         $daysOption = $this->option('days');
         $days = is_numeric($daysOption)
@@ -37,17 +37,9 @@ class PrunePatientPhotos extends Command
         }
 
         $includeXray = (bool) $this->option('include-xray') || ClinicRuntimeSettings::patientPhotoRetentionIncludeXray();
-        $types = ['normal', 'ext', 'int'];
-
-        if ($includeXray) {
-            $types[] = 'xray';
-        }
-
         $cutoff = now()->subDays($days)->startOfDay();
 
-        $query = PatientPhoto::query()
-            ->whereIn('type', $types)
-            ->whereDate('date', '<', $cutoff->toDateString());
+        $query = $integrationOperationalReadModelService->patientPhotoRetentionQuery($days, $includeXray);
 
         $candidateCount = (clone $query)->count();
         if ($candidateCount === 0) {

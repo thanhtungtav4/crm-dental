@@ -9,6 +9,10 @@ use App\Models\EmrSyncLog;
 use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Models\Patient;
+use App\Models\PatientPhoto;
+use App\Models\PopupAnnouncement;
+use App\Models\PopupAnnouncementDelivery;
+use App\Models\User;
 use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
@@ -361,6 +365,90 @@ it('reads active and expired grace rotations from the shared integration reader'
     } finally {
         Carbon::setTestNow();
     }
+});
+
+it('computes popup and patient photo retention counts from the shared integration reader', function (): void {
+    [$branch, $patient] = seedIntegrationOperationalReadModelEntities();
+
+    $user = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $oldAnnouncement = PopupAnnouncement::query()->create([
+        'title' => 'Popup old cancelled',
+        'message' => 'Popup cũ đã hủy',
+        'status' => PopupAnnouncement::STATUS_CANCELLED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [],
+    ]);
+    markIntegrationOperationalRecordOld($oldAnnouncement, 45);
+
+    $announcementWithDelivery = PopupAnnouncement::query()->create([
+        'title' => 'Popup expired with delivery',
+        'message' => 'Popup có delivery nên chưa được xóa record cha',
+        'status' => PopupAnnouncement::STATUS_EXPIRED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [],
+    ]);
+    markIntegrationOperationalRecordOld($announcementWithDelivery, 45);
+
+    $announcementOnlyParent = PopupAnnouncement::query()->create([
+        'title' => 'Popup old without delivery',
+        'message' => 'Popup cũ không còn delivery',
+        'status' => PopupAnnouncement::STATUS_EXPIRED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [],
+    ]);
+    markIntegrationOperationalRecordOld($announcementOnlyParent, 45);
+
+    PopupAnnouncementDelivery::query()->create([
+        'popup_announcement_id' => $announcementWithDelivery->id,
+        'user_id' => $user->id,
+        'branch_id' => $branch->id,
+        'status' => PopupAnnouncementDelivery::STATUS_DISMISSED,
+        'dismissed_at' => now()->subDays(45),
+        'updated_at' => now()->subDays(45),
+    ]);
+
+    PopupAnnouncementDelivery::query()->create([
+        'popup_announcement_id' => $oldAnnouncement->id,
+        'user_id' => $user->id,
+        'branch_id' => $branch->id,
+        'status' => PopupAnnouncementDelivery::STATUS_ACKNOWLEDGED,
+        'acknowledged_at' => now()->subDays(45),
+        'updated_at' => now()->subDays(45),
+    ]);
+
+    PatientPhoto::query()->create([
+        'patient_id' => $patient->id,
+        'type' => PatientPhoto::TYPE_EXTERNAL,
+        'date' => now()->subDays(60)->toDateString(),
+        'title' => 'Old extra oral',
+        'content' => ['patient-photos/ext/old.jpg'],
+    ]);
+
+    PatientPhoto::query()->create([
+        'patient_id' => $patient->id,
+        'type' => PatientPhoto::TYPE_EXTERNAL,
+        'date' => now()->subDays(5)->toDateString(),
+        'title' => 'Fresh extra oral',
+        'content' => ['patient-photos/ext/fresh.jpg'],
+    ]);
+
+    PatientPhoto::query()->create([
+        'patient_id' => $patient->id,
+        'type' => PatientPhoto::TYPE_XRAY,
+        'date' => now()->subDays(90)->toDateString(),
+        'title' => 'Old xray',
+        'content' => ['patient-photos/xray/old.jpg'],
+    ]);
+
+    $service = app(IntegrationOperationalReadModelService::class);
+
+    expect($service->popupDeliveryRetentionCandidateCount(30))->toBe(2)
+        ->and($service->popupAnnouncementRetentionCandidateCount(30))->toBe(1)
+        ->and($service->patientPhotoRetentionCandidateCount(30))->toBe(1)
+        ->and($service->patientPhotoRetentionCandidateCount(30, true))->toBe(2);
 });
 
 function seedIntegrationOperationalReadModelEntities(): array
