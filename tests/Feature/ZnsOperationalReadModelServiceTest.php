@@ -2,6 +2,7 @@
 
 use App\Models\Branch;
 use App\Models\ZnsAutomationEvent;
+use App\Models\ZnsAutomationLog;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsOperationalReadModelService;
@@ -226,8 +227,27 @@ it('computes zns retention candidates from terminal automation and delivery stat
         'sent_at' => null,
     ]);
 
+    ZnsAutomationLog::query()->create([
+        'zns_automation_event_id' => $sentEvent->id,
+        'attempt' => 1,
+        'status' => ZnsAutomationEvent::STATUS_SENT,
+        'request_payload' => ['event_key' => 'evt-sent-old'],
+        'response_payload' => ['message' => 'ok'],
+        'attempted_at' => Carbon::parse('2026-03-20 07:30:00'),
+    ]);
+
+    ZnsAutomationLog::query()->create([
+        'zns_automation_event_id' => $deadEvent->id,
+        'attempt' => 1,
+        'status' => ZnsAutomationEvent::STATUS_DEAD,
+        'request_payload' => ['event_key' => 'evt-dead-old'],
+        'response_payload' => ['message' => 'dead'],
+        'attempted_at' => now()->subDay(),
+    ]);
+
     $service = app(ZnsOperationalReadModelService::class);
 
     expect($service->automationRetentionCandidateCount(5))->toBe(2)
+        ->and($service->automationLogRetentionCandidateCount(5))->toBe(1)
         ->and($service->deliveryRetentionCandidateCount(5))->toBe(3);
 });

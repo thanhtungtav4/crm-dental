@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ZnsAutomationEvent;
+use App\Models\ZnsAutomationLog;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
 use Illuminate\Database\Eloquent\Builder;
@@ -120,6 +121,13 @@ class ZnsOperationalReadModelService
                             ->where('updated_at', '<', $cutoff);
                     });
             })
+            ->count();
+    }
+
+    public function automationLogRetentionCandidateCount(int $retentionDays): int
+    {
+        return ZnsAutomationLog::query()
+            ->where('attempted_at', '<', now()->subDays($retentionDays))
             ->count();
     }
 

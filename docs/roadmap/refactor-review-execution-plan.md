@@ -141,7 +141,8 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da mo rong them `ReportSnapshotReadModelService` de gom generic snapshot lookup cho `CheckSnapshotSla` va `CompareReportSnapshots`.
   - `RRB-010` da mo rong them `PatientActivityTimelineReadModelService` de hop nhat appointment / treatment plan / invoice / payment / note / branch-log entries voi `PatientOperationalTimelineService` va `ClinicalAuditTimelineService`, dua `PatientActivityTimelineWidget` ve dung vai tro render read-model.
   - `RRB-010` da mo rong them `GovernanceAuditReadModelService` de gom recent governance-relevant audits va branch-visible filtering cho `OpsControlCenterService`.
-  - `RRB-010` da mo rong them `ZnsOperationalReadModelService` de hop nhat summary-card counts, retention candidate rules, va phan ZNS backlog count duoc tai su dung boi `OpsControlCenterService` cung `CheckObservabilityHealth`.
+  - `RRB-010` da mo rong them `ZnsOperationalReadModelService` de hop nhat summary-card counts, retention candidate rules, bao gom ca `automation log retention`, va phan ZNS backlog count duoc tai su dung boi `OpsControlCenterService` cung `CheckObservabilityHealth`.
+  - `RRB-010` da mo rong them `IntegrationOperationalReadModelService` de hop nhat web-lead retention candidates, lead-mail retry/dead backlog, webhook retention, EMR retention, va Google Calendar retention counts cho `OpsControlCenterService` cung `ops:check-observability-health`, loai bo raw integration counting khoi cockpit service va release gate command.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.

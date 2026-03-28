@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\EmrSyncEvent;
-use App\Models\GoogleCalendarSyncEvent;
 use App\Models\ZnsAutomationEvent;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Services\OperationalAutomationAuditReadModelService;
 use App\Services\OperationalKpiAlertReadModelService;
 use App\Services\OperationalKpiSnapshotReadModelService;
@@ -26,6 +25,7 @@ class CheckObservabilityHealth extends Command
 
     public function __construct(
         protected OpsCommandAuthorizer $authorizer,
+        protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
         protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
         protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
         protected OperationalKpiSnapshotReadModelService $operationalKpiSnapshotReadModelService,
@@ -47,13 +47,13 @@ class CheckObservabilityHealth extends Command
         $runbookMap = ClinicRuntimeSettings::opsAlertRunbookMap();
 
         $deadBacklog = [
-            'google' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)->count(),
-            'emr' => EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_DEAD)->count(),
+            'google' => $this->integrationOperationalReadModelService->googleCalendarDeadBacklogCount(),
+            'emr' => $this->integrationOperationalReadModelService->emrDeadBacklogCount(),
             'zns' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_DEAD)->count(),
         ];
         $failedBacklog = [
-            'google' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_FAILED)->count(),
-            'emr' => EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_FAILED)->count(),
+            'google' => $this->integrationOperationalReadModelService->googleCalendarFailedBacklogCount(),
+            'emr' => $this->integrationOperationalReadModelService->emrFailedBacklogCount(),
             'zns' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_FAILED)->count(),
         ];
 

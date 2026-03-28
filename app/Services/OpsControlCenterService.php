@@ -17,18 +17,10 @@ use App\Filament\Resources\Users\UserResource;
 use App\Filament\Resources\WebLeadEmailDeliveries\WebLeadEmailDeliveryResource;
 use App\Filament\Resources\ZnsCampaigns\ZnsCampaignResource;
 use App\Models\AuditLog;
-use App\Models\EmrSyncEvent;
-use App\Models\EmrSyncLog;
-use App\Models\GoogleCalendarSyncEvent;
-use App\Models\GoogleCalendarSyncLog;
 use App\Models\InstallmentPlan;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
-use App\Models\WebLeadEmailDelivery;
-use App\Models\WebLeadIngestion;
-use App\Models\ZaloWebhookEvent;
-use App\Models\ZnsAutomationLog;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -47,6 +39,7 @@ class OpsControlCenterService
         protected AutomationActorResolver $automationActorResolver,
         protected BackupArtifactManifestService $manifestService,
         protected GovernanceAuditReadModelService $governanceAuditReadModelService,
+        protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
         protected IntegrationSecretRotationService $integrationSecretRotationService,
         protected HotReportAggregateReadinessService $hotReportAggregateReadinessService,
         protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
@@ -481,38 +474,41 @@ class OpsControlCenterService
             $this->integrationRetentionCandidate(
                 label: 'Web lead ingestion',
                 retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
-                total: $this->webLeadRetentionCandidates(),
+                total: $this->integrationOperationalReadModelService->webLeadIngestionRetentionCandidateCount(
+                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
+                ),
                 description: 'Lead ingestion log quá hạn retention.',
             ),
             $this->integrationRetentionCandidate(
                 label: 'Web lead internal email deliveries',
                 retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
-                total: WebLeadEmailDelivery::query()
-                    ->whereIn('status', [
-                        WebLeadEmailDelivery::STATUS_SENT,
-                        WebLeadEmailDelivery::STATUS_DEAD,
-                        WebLeadEmailDelivery::STATUS_SKIPPED,
-                    ])
-                    ->where('updated_at', '<', now()->subDays(ClinicRuntimeSettings::webLeadOperationalRetentionDays()))
-                    ->count(),
+                total: $this->integrationOperationalReadModelService->webLeadTerminalEmailRetentionCandidateCount(
+                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
+                ),
                 description: 'Delivery log email nội bộ đã terminal và quá hạn review window.',
             ),
             $this->integrationRetentionCandidate(
                 label: 'Zalo webhook',
                 retentionDays: ClinicRuntimeSettings::zaloWebhookRetentionDays(),
-                total: $this->zaloWebhookRetentionCandidates(),
+                total: $this->integrationOperationalReadModelService->zaloWebhookRetentionCandidateCount(
+                    ClinicRuntimeSettings::zaloWebhookRetentionDays()
+                ),
                 description: 'Webhook inbound đã quá hạn retention.',
             ),
             $this->integrationRetentionCandidate(
                 label: 'EMR outbox',
                 retentionDays: ClinicRuntimeSettings::emrOperationalRetentionDays(),
-                total: $this->emrRetentionCandidates(),
+                total: $this->integrationOperationalReadModelService->emrRetentionCandidateCount(
+                    ClinicRuntimeSettings::emrOperationalRetentionDays()
+                ),
                 description: 'EMR log + event đã đồng bộ xong và đủ điều kiện prune.',
             ),
             $this->integrationRetentionCandidate(
                 label: 'Google Calendar outbox',
                 retentionDays: ClinicRuntimeSettings::googleCalendarOperationalRetentionDays(),
-                total: $this->googleCalendarRetentionCandidates(),
+                total: $this->integrationOperationalReadModelService->googleCalendarRetentionCandidateCount(
+                    ClinicRuntimeSettings::googleCalendarOperationalRetentionDays()
+                ),
                 description: 'Google Calendar log + event đã đủ điều kiện prune.',
             ),
         ];
@@ -545,15 +541,11 @@ class OpsControlCenterService
                 ],
                 [
                     'label' => 'Lead mail retryable',
-                    'value' => WebLeadEmailDelivery::query()
-                        ->where('status', WebLeadEmailDelivery::STATUS_RETRYABLE)
-                        ->count(),
+                    'value' => $this->integrationOperationalReadModelService->webLeadRetryableEmailCount(),
                 ],
                 [
                     'label' => 'Lead mail dead',
-                    'value' => WebLeadEmailDelivery::query()
-                        ->where('status', WebLeadEmailDelivery::STATUS_DEAD)
-                        ->count(),
+                    'value' => $this->integrationOperationalReadModelService->webLeadDeadEmailCount(),
                 ],
             ],
             'active_grace_rotations' => $activeGraceRotations,
@@ -586,7 +578,7 @@ class OpsControlCenterService
             $this->integrationRetentionCandidate(
                 label: 'ZNS automation logs',
                 retentionDays: $retentionDays,
-                total: ZnsAutomationLog::query()->where('attempted_at', '<', now()->subDays($retentionDays))->count(),
+                total: $this->znsOperationalReadModelService->automationLogRetentionCandidateCount($retentionDays),
                 description: 'Log automation đủ điều kiện prune.',
             ),
             $this->integrationRetentionCandidate(
@@ -1042,11 +1034,11 @@ class OpsControlCenterService
         $runbookMap = ClinicRuntimeSettings::opsAlertRunbookMap();
 
         $metrics = [
-            'dead_backlog_total' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)->count()
-                + EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_DEAD)->count()
+            'dead_backlog_total' => $this->integrationOperationalReadModelService->googleCalendarDeadBacklogCount()
+                + $this->integrationOperationalReadModelService->emrDeadBacklogCount()
                 + $this->znsOperationalReadModelService->automationDeadCount(),
-            'retryable_failed_backlog_total' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_FAILED)->count()
-                + EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_FAILED)->count()
+            'retryable_failed_backlog_total' => $this->integrationOperationalReadModelService->googleCalendarFailedBacklogCount()
+                + $this->integrationOperationalReadModelService->emrFailedBacklogCount()
                 + $this->znsOperationalReadModelService->automationFailedCount(),
             'open_kpi_alerts' => $this->operationalKpiAlertReadModelService->openAlertCount(),
             'snapshot_sla_violations' => $this->operationalKpiSnapshotReadModelService
@@ -1186,91 +1178,6 @@ class OpsControlCenterService
             'description' => $description,
             'tone' => $total > 0 ? 'warning' : 'success',
         ];
-    }
-
-    protected function webLeadRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::webLeadOperationalRetentionDays());
-
-        return WebLeadIngestion::query()
-            ->whereIn('status', [
-                WebLeadIngestion::STATUS_CREATED,
-                WebLeadIngestion::STATUS_MERGED,
-                WebLeadIngestion::STATUS_FAILED,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-    }
-
-    protected function zaloWebhookRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::zaloWebhookRetentionDays());
-
-        return ZaloWebhookEvent::query()
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('received_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('received_at')
-                            ->where('created_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-    }
-
-    protected function emrRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::emrOperationalRetentionDays());
-        $logs = EmrSyncLog::query()->where('attempted_at', '<', $cutoff)->count();
-        $events = EmrSyncEvent::query()
-            ->whereIn('status', [
-                EmrSyncEvent::STATUS_SYNCED,
-                EmrSyncEvent::STATUS_DEAD,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-
-        return $logs + $events;
-    }
-
-    protected function googleCalendarRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::googleCalendarOperationalRetentionDays());
-        $logs = GoogleCalendarSyncLog::query()->where('attempted_at', '<', $cutoff)->count();
-        $events = GoogleCalendarSyncEvent::query()
-            ->whereIn('status', [
-                GoogleCalendarSyncEvent::STATUS_SYNCED,
-                GoogleCalendarSyncEvent::STATUS_DEAD,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-
-        return $logs + $events;
     }
 
     protected function currentUser(): ?User
