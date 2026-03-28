@@ -118,6 +118,8 @@ class CustomerCare extends Page implements HasTable
      *   total_open:int,
      *   overdue:int,
      *   due_today:int,
+     *   unassigned:int,
+     *   owned_by_me:int,
      *   priority_no_show:int,
      *   priority_recall:int,
      *   priority_follow_up:int,
@@ -140,6 +142,10 @@ class CustomerCare extends Page implements HasTable
         $dueToday = (clone $baseQuery)
             ->whereDate('care_at', $today)
             ->count();
+        $unassigned = (clone $baseQuery)
+            ->whereNull('user_id')
+            ->count();
+        $ownedByMe = $this->careSummaryOwnedByCurrentUser($baseQuery);
 
         $priorityNoShow = (clone $baseQuery)->where('care_type', 'no_show_recovery')->count();
         $priorityRecall = (clone $baseQuery)->where('care_type', 'recall_recare')->count();
@@ -180,6 +186,8 @@ class CustomerCare extends Page implements HasTable
             'total_open' => (int) $totalOpen,
             'overdue' => (int) $overdue,
             'due_today' => (int) $dueToday,
+            'unassigned' => (int) $unassigned,
+            'owned_by_me' => (int) $ownedByMe,
             'priority_no_show' => (int) $priorityNoShow,
             'priority_recall' => (int) $priorityRecall,
             'priority_follow_up' => (int) $priorityFollowUp,
@@ -472,6 +480,12 @@ class CustomerCare extends Page implements HasTable
                 ->badge()
                 ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
                 ->color(fn ($state) => $this->getCareStatusColor($state)),
+            TextColumn::make('ownership_status')
+                ->label('Phụ trách')
+                ->state(fn ($record): string => $this->resolvePriorityQueueOwnershipStatus($record))
+                ->badge()
+                ->formatStateUsing(fn (string $state): string => $this->formatPriorityQueueOwnershipStatus($state))
+                ->color(fn (string $state): string => $this->getPriorityQueueOwnershipStatusColor($state)),
             TextColumn::make('triage_bucket')
                 ->label('Ưu tiên xử lý')
                 ->state(fn ($record): string => $this->resolvePriorityQueueBucket($record))
@@ -757,6 +771,14 @@ class CustomerCare extends Page implements HasTable
 
                     return $this->applyPriorityQueueBucketFilter($query, is_string($bucket) ? $bucket : null);
                 }),
+            SelectFilter::make('ownership_status')
+                ->label('Phụ trách')
+                ->options($this->getPriorityQueueOwnershipStatusOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    $status = $data['value'] ?? null;
+
+                    return $this->applyPriorityQueueOwnershipFilter($query, is_string($status) ? $status : null);
+                }),
             SelectFilter::make('care_type')
                 ->label('Loại ưu tiên')
                 ->options($this->priorityCareTypeOptions()),
@@ -965,6 +987,48 @@ class CustomerCare extends Page implements HasTable
         };
     }
 
+    /**
+     * @return array<string, string>
+     */
+    protected function getPriorityQueueOwnershipStatusOptions(): array
+    {
+        return [
+            'mine' => 'Tôi đang phụ trách',
+            'assigned' => 'Đã phân công',
+            'unassigned' => 'Chưa phân công',
+        ];
+    }
+
+    protected function resolvePriorityQueueOwnershipStatus($record): string
+    {
+        $authUser = auth()->user();
+
+        if (! $record->user_id) {
+            return 'unassigned';
+        }
+
+        if ($authUser instanceof User && (int) $record->user_id === $authUser->id) {
+            return 'mine';
+        }
+
+        return 'assigned';
+    }
+
+    protected function formatPriorityQueueOwnershipStatus(?string $status): string
+    {
+        return Arr::get($this->getPriorityQueueOwnershipStatusOptions(), $status, 'Chưa xác định');
+    }
+
+    protected function getPriorityQueueOwnershipStatusColor(?string $status): string
+    {
+        return match ($status) {
+            'mine' => 'primary',
+            'assigned' => 'success',
+            'unassigned' => 'gray',
+            default => 'gray',
+        };
+    }
+
     protected function formatPriorityQueueSla($record): string
     {
         $careAt = $record->care_at;
@@ -1012,6 +1076,37 @@ class CustomerCare extends Page implements HasTable
             'unscheduled' => $query->whereNull('care_at'),
             default => $query,
         };
+    }
+
+    protected function applyPriorityQueueOwnershipFilter(Builder $query, ?string $status): Builder
+    {
+        if (! in_array($status, array_keys($this->getPriorityQueueOwnershipStatusOptions()), true)) {
+            return $query;
+        }
+
+        $authUser = auth()->user();
+
+        return match ($status) {
+            'mine' => $authUser instanceof User
+                ? $query->where('user_id', $authUser->id)
+                : $query->whereRaw('1 = 0'),
+            'assigned' => $query->whereNotNull('user_id'),
+            'unassigned' => $query->whereNull('user_id'),
+            default => $query,
+        };
+    }
+
+    protected function careSummaryOwnedByCurrentUser(Builder $baseQuery): int
+    {
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User) {
+            return 0;
+        }
+
+        return (clone $baseQuery)
+            ->where('user_id', $authUser->id)
+            ->count();
     }
 
     protected function formatAppointmentStatus(?string $state): string

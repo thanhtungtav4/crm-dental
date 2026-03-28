@@ -4,7 +4,7 @@
             $slaSummary = $this->slaSummary;
         @endphp
 
-        <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div class="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
             <div class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/60">
                 <p class="text-xs text-gray-500">Ticket đang mở</p>
                 <p class="text-xl font-semibold">{{ number_format($slaSummary['total_open']) }}</p>
@@ -16,6 +16,14 @@
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-500/10">
                 <p class="text-xs text-amber-700 dark:text-amber-300">Đến hạn hôm nay</p>
                 <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">{{ number_format($slaSummary['due_today']) }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-400/30 dark:bg-slate-500/10">
+                <p class="text-xs text-slate-700 dark:text-slate-300">Chưa phân công</p>
+                <p class="text-xl font-semibold text-slate-700 dark:text-slate-300">{{ number_format($slaSummary['unassigned']) }}</p>
+            </div>
+            <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-400/30 dark:bg-indigo-500/10">
+                <p class="text-xs text-indigo-700 dark:text-indigo-300">Đang do tôi phụ trách</p>
+                <p class="text-xl font-semibold text-indigo-700 dark:text-indigo-300">{{ number_format($slaSummary['owned_by_me']) }}</p>
             </div>
             <div class="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-400/30 dark:bg-blue-500/10">
                 <p class="text-xs text-blue-700 dark:text-blue-300">Queue No-show</p>
