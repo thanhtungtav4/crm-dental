@@ -364,6 +364,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tao `HotReportAggregateReadModelService` de gom readiness, aggregate breakdown query, va summary stats cho `RevenueStatistical` va `CustomsCareStatistical`
     - da keo `RevenueStatistical` va `CustomsCareStatistical` ve dung chung hot-report reader thay vi moi page tu giu aggregate query/stats branch-scope rieng
     - da mo rong tiep hot-report reader sang `TrickGroupStatistical`, de lane doanh thu theo nhom thu thuat cung dung chung aggregate readiness, aggregate breakdown query, va summary stats contract tu `report_revenue_daily_aggregates`
+    - da tao `FinancialReportReadModelService` de gom cashflow/invoice-balance query va summary contract cho `RevenueExpenditure` va `OwedStatistical`, de hai page finance report nay khong con giu branch-scoped stats/query logic rieng trong page class
 - Tests needed:
   - report scope/export tests
   - performance/explain checks cho heavy paths

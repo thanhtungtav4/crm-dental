@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\ReceiptExpense;
+use App\Services\FinancialReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,15 +34,8 @@ class RevenueExpenditure extends BaseReportPage
             return ReceiptExpense::query()->whereRaw('1 = 0');
         }
 
-        return $this->applyDirectBranchScope(
-            ReceiptExpense::query()
-                ->selectRaw(
-                    'payment_method, sum(case when voucher_type = ? then amount else 0 end) as total_expense, sum(case when voucher_type = ? then 0 else amount end) as total_receipt',
-                    ['expense', 'expense']
-                )
-                ->groupBy('payment_method'),
-            'clinic_id',
-        );
+        return $this->financialReports()
+            ->cashflowBreakdownQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -93,11 +87,14 @@ class RevenueExpenditure extends BaseReportPage
             ];
         }
 
-        $baseQuery = $this->applyDirectBranchScope(ReceiptExpense::query(), 'clinic_id');
-        $this->applyDateRange($baseQuery, 'voucher_date');
-
-        $totalReceipt = (clone $baseQuery)->where('voucher_type', '!=', 'expense')->sum('amount');
-        $totalExpense = (clone $baseQuery)->where('voucher_type', 'expense')->sum('amount');
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->financialReports()->cashflowSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+        );
+        $totalReceipt = $summary['total_receipt'];
+        $totalExpense = $summary['total_expense'];
 
         return [
             ['label' => 'Tổng thu', 'value' => number_format($totalReceipt).' đ'],
@@ -123,5 +120,10 @@ class RevenueExpenditure extends BaseReportPage
         }
 
         return $this->hasReceiptsExpenseTable = Schema::hasTable('receipts_expense');
+    }
+
+    protected function financialReports(): FinancialReportReadModelService
+    {
+        return app(FinancialReportReadModelService::class);
     }
 }

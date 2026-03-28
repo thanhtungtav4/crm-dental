@@ -12,8 +12,10 @@ use App\Filament\Pages\Reports\TrickGroupStatistical;
 use App\Models\Appointment;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\PatientRiskProfile;
+use App\Models\ReceiptExpense;
 use App\Models\ReportRevenueDailyAggregate;
 use App\Models\ReportSnapshot;
 use App\Models\Service;
@@ -247,6 +249,153 @@ it('scopes trick-group aggregates to accessible branches when no branch filter i
 
     expect($stats[0]['value'])->toBe(number_format(2))
         ->and($stats[1]['value'])->toBe(number_format(3_000_000).' đ');
+});
+
+it('scopes revenue expenditure stats to accessible branches when no branch filter is selected', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+    $patientA = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+    ]);
+
+    $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
+    $patientB = Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+    ]);
+
+    ReceiptExpense::query()->create([
+        'clinic_id' => $branchA->id,
+        'patient_id' => $patientA->id,
+        'voucher_code' => 'RE-A',
+        'voucher_type' => 'receipt',
+        'voucher_date' => now()->toDateString(),
+        'group_code' => 'receipt',
+        'category_code' => 'service',
+        'amount' => 2_500_000,
+        'payment_method' => 'transfer',
+        'payer_or_receiver' => 'Khach A',
+        'content' => 'Thu branch A',
+        'status' => ReceiptExpense::STATUS_POSTED,
+    ]);
+
+    ReceiptExpense::query()->create([
+        'clinic_id' => $branchA->id,
+        'patient_id' => $patientA->id,
+        'voucher_code' => 'EX-A',
+        'voucher_type' => 'expense',
+        'voucher_date' => now()->toDateString(),
+        'group_code' => 'expense',
+        'category_code' => 'ops',
+        'amount' => 400_000,
+        'payment_method' => 'cash',
+        'payer_or_receiver' => 'Vendor A',
+        'content' => 'Chi branch A',
+        'status' => ReceiptExpense::STATUS_POSTED,
+    ]);
+
+    ReceiptExpense::query()->create([
+        'clinic_id' => $branchB->id,
+        'patient_id' => $patientB->id,
+        'voucher_code' => 'RE-B',
+        'voucher_type' => 'receipt',
+        'voucher_date' => now()->toDateString(),
+        'group_code' => 'receipt',
+        'category_code' => 'service',
+        'amount' => 9_900_000,
+        'payment_method' => 'cash',
+        'payer_or_receiver' => 'Khach B',
+        'content' => 'Thu branch B',
+        'status' => ReceiptExpense::STATUS_POSTED,
+    ]);
+
+    $this->actingAs($manager);
+
+    $stats = Livewire::test(RevenueExpenditure::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance()
+        ->getStats();
+
+    expect($stats)->toBe([
+        ['label' => 'Tổng thu', 'value' => '2,500,000 đ'],
+        ['label' => 'Tổng chi', 'value' => '400,000 đ'],
+        ['label' => 'Biến động', 'value' => '2,100,000 đ'],
+    ]);
+});
+
+it('scopes owed report rows and stats to accessible branches when no branch filter is selected', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+    $patientA = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+    ]);
+
+    $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
+    $patientB = Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+    ]);
+
+    Invoice::query()->create([
+        'patient_id' => $patientA->id,
+        'branch_id' => $branchA->id,
+        'invoice_no' => 'INV-SCOPE-A',
+        'subtotal' => 2_000_000,
+        'discount_amount' => 0,
+        'tax_amount' => 0,
+        'total_amount' => 2_000_000,
+        'paid_amount' => 1_250_000,
+        'status' => Invoice::STATUS_PARTIAL,
+        'issued_at' => now(),
+    ]);
+
+    Invoice::query()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+        'invoice_no' => 'INV-SCOPE-B',
+        'subtotal' => 5_000_000,
+        'discount_amount' => 0,
+        'tax_amount' => 0,
+        'total_amount' => 5_000_000,
+        'paid_amount' => 250_000,
+        'status' => Invoice::STATUS_PARTIAL,
+        'issued_at' => now(),
+    ]);
+
+    $this->actingAs($manager);
+
+    $page = Livewire::test(OwedStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance();
+
+    $records = invokeTableQuery($page)->get();
+    $stats = $page->getStats();
+
+    expect($records)->toHaveCount(1)
+        ->and((int) $records->first()->branch_id)->toBe($branchA->id)
+        ->and($stats)->toBe([
+            ['label' => 'Tổng phải thanh toán', 'value' => '2,000,000 đ'],
+            ['label' => 'Đã thanh toán', 'value' => '1,250,000 đ'],
+            ['label' => 'Công nợ', 'value' => '750,000 đ'],
+        ]);
 });
 
 it('hides inaccessible KPI snapshots when a non-admin forges another branch filter', function (): void {

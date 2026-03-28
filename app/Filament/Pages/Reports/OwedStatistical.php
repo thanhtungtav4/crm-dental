@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Invoice;
+use App\Services\FinancialReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,9 +26,8 @@ class OwedStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->applyDirectBranchScope(
-            Invoice::query()->with(['patient']),
-        );
+        return $this->financialReports()
+            ->invoiceBalanceQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -85,17 +84,25 @@ class OwedStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = $this->applyDirectBranchScope(Invoice::query());
-        $this->applyDateRange($baseQuery, 'issued_at');
-
-        $totalAmount = (clone $baseQuery)->sum('total_amount');
-        $paidAmount = (clone $baseQuery)->sum('paid_amount');
-        $balance = $totalAmount - $paidAmount;
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->financialReports()->invoiceBalanceSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+        );
+        $totalAmount = $summary['total_amount'];
+        $paidAmount = $summary['paid_amount'];
+        $balance = $summary['balance'];
 
         return [
             ['label' => 'Tổng phải thanh toán', 'value' => number_format($totalAmount).' đ'],
             ['label' => 'Đã thanh toán', 'value' => number_format($paidAmount).' đ'],
             ['label' => 'Công nợ', 'value' => number_format($balance).' đ'],
         ];
+    }
+
+    protected function financialReports(): FinancialReportReadModelService
+    {
+        return app(FinancialReportReadModelService::class);
     }
 }
