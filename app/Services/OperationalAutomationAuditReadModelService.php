@@ -31,6 +31,7 @@ class OperationalAutomationAuditReadModelService
             'reports:check-snapshot-sla',
             'reports:compare-snapshots',
             'reports:snapshot-hot-aggregates',
+            'emr:check-dicom-readiness',
             'zns:sync-automation-events',
             'zns:prune-operational-data',
             'zns:run-campaigns',

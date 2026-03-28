@@ -298,12 +298,13 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua them grace-state reader cho integration secrets vao `IntegrationOperationalReadModelService`, va `OpsControlCenterService` / `IntegrationSettings` da bat dau doc active-expired grace rotations qua reader thay vi tro truc tiep vao write-side rotation service
     - da mo rong `ZnsOperationalReadModelService` them branch-scoped summary cards, va page `ZaloZns` da bat dau dung reader nay cho automation/delivery/campaign failure summary thay vi tu dem query raw tren page
     - da tao `IntegrationSettingsAuditReadModelService` de gom recent setting-log query, va page `IntegrationSettings` da doc recent audit trail qua reader nay thay vi tu query raw `ClinicSettingLog`
-    - da tao `IntegrationProviderHealthReadModelService` de hop nhat provider readiness contract cho `Zalo OA`, `ZNS`, `Google Calendar`, va `EMR`, va `OpsControlCenterService` da render cung mot lop provider-health thay vi page/command tu dien giai runtime drift theo tung cach rieng
+    - da tao `IntegrationProviderHealthReadModelService` de hop nhat provider readiness contract cho `Zalo OA`, `ZNS`, `Google Calendar`, `EMR`, va `DICOM / PACS`, va `OpsControlCenterService` da render cung mot lop provider-health thay vi page/command tu dien giai runtime drift theo tung cach rieng
     - da mo rong `IntegrationOperationalReadModelService` sang lane `popups:prune` va `photos:prune`, de popup log retention va patient photo retention candidate query duoc dung lai boi command thay vi moi lenh tu query rieng
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
     - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
     - da mo rong `IntegrationOperationalReadModelService` sang lane `EMR clinical media`, de `emr:prune-clinical-media` va `OpsControlCenterService` dung chung candidate query cho retention class `temporary` / `clinical_operational`
+    - da mo rong them provider-health/readiness lane cho `DICOM / PACS`, de `IntegrationSettings` va `OpsControlCenterService` doc cung contract voi `emr:check-dicom-readiness`, dong thoi `OperationalAutomationAuditReadModelService` bat dau track command nay trong recent OPS runs va observability control-plane catalog
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces
@@ -389,6 +390,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong tiep lane `secret rotation / revoke` bang `expiredGraceRotationSummary()` trong `IntegrationOperationalReadModelService`, de `integrations:revoke-rotated-secrets` preview expired keys qua cung reader voi OPS va Integration Settings, thay vi command tu ngầm doc trang thai grace tu write-side service
     - da mo rong tiep lane `payload retention / pruning` bang cach dua `popups:prune` va `photos:prune` qua `IntegrationOperationalReadModelService`, de command layer khong con tu sao chep retention candidate rules cua popup logs va patient photos
     - da mo rong tiep lane `payload retention / pruning` sang `EMR clinical media`, de `emr:prune-clinical-media` va OPS cung doc mot retention contract cho `temporary` / `clinical_operational`
+    - da mo rong tiep lane `provider run/readiness` sang `emr:check-dicom-readiness`, de DICOM/PACS readiness gate duoc surfacing nhu mot provider card first-class va command nay di vao tracked OPS automation catalog thay vi ton tai rieng le ben ngoai provider-health contract
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

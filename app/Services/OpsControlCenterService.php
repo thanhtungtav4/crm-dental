@@ -1213,6 +1213,7 @@ class OpsControlCenterService
             'php artisan ops:check-observability-health --strict',
             'php artisan integrations:revoke-rotated-secrets --dry-run --strict',
             'php artisan integrations:prune-operational-data --dry-run --strict',
+            'php artisan emr:check-dicom-readiness --strict',
             'php artisan reports:check-snapshot-sla --date='.KpiScenarioSeeder::snapshotDate().' --dry-run',
             'php artisan reports:snapshot-hot-aggregates --date='.KpiScenarioSeeder::snapshotDate().' --dry-run',
             'php artisan zns:sync-automation-events --dry-run --strict-exit',

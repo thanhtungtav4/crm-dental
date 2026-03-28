@@ -61,6 +61,7 @@ it('renders concrete input html for integration text fields', function () {
         ->not->toContain('<x-filament::input')
         ->toContain('Provider health snapshot')
         ->toContain('Runtime disabled')
+        ->toContain('DICOM / PACS')
         ->toContain('class="fi-input"')
         ->toContain('wire:model.blur="settings.google_calendar_client_id"')
         ->toContain('wire:model.blur="settings.emr_provider"')

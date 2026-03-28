@@ -21,6 +21,10 @@ it('builds shared provider health cards and counts from runtime settings', funct
     configureIntegrationProviderHealth('google_calendar.client_secret', 'gcal-client-secret', 'text', 'google_calendar', isSecret: true);
     configureIntegrationProviderHealth('google_calendar.refresh_token', 'gcal-refresh-token', 'text', 'google_calendar', isSecret: true);
     configureIntegrationProviderHealth('google_calendar.calendar_id', '', 'text', 'google_calendar');
+    configureIntegrationProviderHealth('emr.dicom.enabled', true, 'boolean', 'emr');
+    configureIntegrationProviderHealth('emr.dicom.base_url', 'https://dicom.example.test', 'text', 'emr');
+    configureIntegrationProviderHealth('emr.dicom.facility_code', 'HCM-01', 'text', 'emr');
+    configureIntegrationProviderHealth('emr.dicom.auth_token', 'dicom-provider-health-token', 'text', 'emr', isSecret: true);
 
     $service = app(IntegrationProviderHealthReadModelService::class);
     $cards = collect($service->cards())->keyBy('key');
@@ -31,14 +35,16 @@ it('builds shared provider health cards and counts from runtime settings', funct
         'zns',
         'google_calendar',
         'emr',
+        'dicom',
     ])
         ->and($cards->get('zalo_oa')['status'])->toBe('Healthy')
         ->and($cards->get('zalo_oa')['webhook_url'])->toContain('/api/v1/integrations/zalo/webhook')
         ->and($cards->get('zns')['runtime_error_message'])->toBe('Thiếu ZNS access token.')
         ->and($cards->get('google_calendar')['runtime_error_message'])->toBe('Google Calendar chưa cấu hình đầy đủ (client_id/client_secret/refresh_token/calendar_id).')
         ->and($cards->get('emr')['status'])->toBe('Disabled')
+        ->and($cards->get('dicom')['status'])->toBe('Healthy')
         ->and($counts)->toBe([
-            'healthy' => 1,
+            'healthy' => 2,
             'degraded' => 2,
             'disabled' => 1,
         ]);

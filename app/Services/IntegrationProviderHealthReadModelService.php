@@ -8,6 +8,7 @@ use InvalidArgumentException;
 class IntegrationProviderHealthReadModelService
 {
     public function __construct(
+        protected DicomReadinessService $dicomReadinessService,
         protected EmrIntegrationService $emrIntegrationService,
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
         protected ZaloIntegrationService $zaloIntegrationService,
@@ -39,6 +40,7 @@ class IntegrationProviderHealthReadModelService
             $this->provider('zns'),
             $this->provider('google_calendar'),
             $this->provider('emr'),
+            $this->provider('dicom'),
         ];
     }
 
@@ -81,6 +83,7 @@ class IntegrationProviderHealthReadModelService
             'zns' => $this->znsCard(),
             'google_calendar' => $this->googleCalendarCard(),
             'emr' => $this->emrCard(),
+            'dicom' => $this->dicomCard(),
             default => throw new InvalidArgumentException("Unsupported integration provider [{$key}]."),
         };
     }
@@ -394,12 +397,85 @@ class IntegrationProviderHealthReadModelService
                     'value' => ClinicRuntimeSettings::emrClinicCode() !== '' ? ClinicRuntimeSettings::emrClinicCode() : '-',
                 ],
                 [
-                    'label' => 'DICOM ready',
-                    'value' => ClinicRuntimeSettings::dicomIntegrationEnabled() ? 'Enabled' : 'Disabled',
+                    'label' => 'Retention days',
+                    'value' => ClinicRuntimeSettings::emrOperationalRetentionDays(),
                 ],
             ],
             runtimeErrorMessage: $enabled && ! $this->emrIntegrationService->isConfigured()
                 ? 'EMR chưa cấu hình đầy đủ (base_url/api_key).'
+                : null,
+        );
+    }
+
+    /**
+     * @return array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     enabled:bool,
+     *     tone:string,
+     *     status:string,
+     *     score:int,
+     *     issues:array<int, string>,
+     *     recommendations:array<int, string>,
+     *     meta:array<int, array{label:string, value:int|string}>,
+     *     issue_count:int,
+     *     recommendation_count:int,
+     *     runtime_error_message:?string,
+     *     webhook_url:?string
+     * }
+     */
+    protected function dicomCard(): array
+    {
+        $snapshot = $this->dicomReadinessService->snapshot();
+        $enabled = (bool) ($snapshot['enabled'] ?? false);
+        $checks = collect($snapshot['checks'] ?? []);
+        $issues = $checks
+            ->filter(fn (array $check): bool => ($check['passed'] ?? false) !== true)
+            ->map(fn (array $check): string => (string) ($check['message'] ?? 'DICOM readiness chưa đạt.'))
+            ->values()
+            ->all();
+        $recommendations = [];
+
+        if (! $enabled) {
+            $recommendations[] = 'Bật DICOM/PACS khi cần readiness gate riêng cho imaging upload và PACS endpoint.';
+        }
+
+        if ($enabled && $issues === []) {
+            $recommendations[] = 'Chạy emr:check-dicom-readiness --probe --strict sau mỗi lần đổi DICOM base URL hoặc auth token.';
+        }
+
+        if ($enabled && $issues !== []) {
+            $recommendations[] = 'Bổ sung đầy đủ DICOM base URL, facility code, và auth token trước khi bật strict readiness gate.';
+        }
+
+        return $this->buildCard(
+            key: 'dicom',
+            label: 'DICOM / PACS',
+            description: 'Readiness gate cho imaging endpoint, facility code và auth token của PACS/DICOM.',
+            enabled: $enabled,
+            issues: $issues,
+            recommendations: $recommendations,
+            meta: [
+                [
+                    'label' => 'Base URL',
+                    'value' => (string) data_get($snapshot, 'config.base_url', '-') ?: '-',
+                ],
+                [
+                    'label' => 'Facility',
+                    'value' => (string) data_get($snapshot, 'config.facility_code', '-') ?: '-',
+                ],
+                [
+                    'label' => 'Timeout',
+                    'value' => (int) data_get($snapshot, 'config.timeout_seconds', 0).'s',
+                ],
+                [
+                    'label' => 'Probe',
+                    'value' => 'Config only',
+                ],
+            ],
+            runtimeErrorMessage: $enabled && $issues !== []
+                ? (string) ($issues[0] ?? 'DICOM/PACS chưa cấu hình đầy đủ.')
                 : null,
         );
     }

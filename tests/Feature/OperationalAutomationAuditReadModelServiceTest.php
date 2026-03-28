@@ -114,6 +114,7 @@ it('tracks popup and photo automation commands in the shared automation reader',
     $commands = app(OperationalAutomationAuditReadModelService::class)->trackedCommands();
 
     expect($commands)
+        ->toContain('emr:check-dicom-readiness')
         ->toContain('popups:dispatch-due')
         ->toContain('popups:prune')
         ->toContain('photos:prune');
