@@ -125,6 +125,29 @@ class IntegrationOperationalReadModelService
         return $this->integrationSecretRotationService->expiredGraceRotations();
     }
 
+    /**
+     * @return array{
+     *     total:int,
+     *     keys:array<int, string>,
+     *     display_names:array<int, string>,
+     *     max_expired_minutes:int
+     * }
+     */
+    public function expiredGraceRotationSummary(): array
+    {
+        $rotations = $this->expiredGraceRotations()->values();
+
+        return [
+            'total' => $rotations->count(),
+            'keys' => $rotations->pluck('key')->map(fn (mixed $key): string => (string) $key)->values()->all(),
+            'display_names' => $rotations->pluck('display_name')->map(fn (mixed $label): string => (string) $label)->values()->all(),
+            'max_expired_minutes' => (int) $rotations
+                ->pluck('expired_minutes')
+                ->map(fn (mixed $minutes): int => (int) $minutes)
+                ->max(),
+        ];
+    }
+
     public function webLeadIngestionRetentionQuery(int $retentionDays): Builder
     {
         $cutoff = now()->subDays($retentionDays);

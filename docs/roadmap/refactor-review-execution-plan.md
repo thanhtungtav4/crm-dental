@@ -149,6 +149,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da bo sung `IntegrationSettingsAuditReadModelService` de page `IntegrationSettings` dung reader chung cho recent setting logs, tiep tuc loai bo raw audit-query khoi page logic.
   - `RRB-010` da bo sung `IntegrationProviderHealthReadModelService` de `OpsControlCenterService` render provider-readiness cho `Zalo OA`, `ZNS`, `Google Calendar`, va `EMR` bang contract chung thay vi page/service/command tu dien giai tung provider rieng.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
+  - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.

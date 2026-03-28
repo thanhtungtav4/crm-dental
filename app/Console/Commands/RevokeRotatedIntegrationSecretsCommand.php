@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Services\IntegrationSecretRotationService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -18,6 +19,7 @@ class RevokeRotatedIntegrationSecretsCommand extends Command
 
     public function __construct(
         protected IntegrationSecretRotationService $rotationService,
+        protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
     ) {
         parent::__construct();
     }
@@ -31,12 +33,14 @@ class RevokeRotatedIntegrationSecretsCommand extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $strict = (bool) $this->option('strict');
+        $expiredPreview = $this->integrationOperationalReadModelService->expiredGraceRotationSummary();
 
         try {
             $summary = $this->rotationService->revokeExpired(
                 dryRun: $dryRun,
                 actorId: auth()->id(),
             );
+            $summary['expired_preview'] = $expiredPreview;
 
             $this->line(sprintf(
                 'dry_run=%s total_expired=%d revoked=%d',
@@ -44,6 +48,10 @@ class RevokeRotatedIntegrationSecretsCommand extends Command
                 (int) $summary['total_expired'],
                 (int) $summary['revoked'],
             ));
+
+            if ($expiredPreview['keys'] !== []) {
+                $this->line('expired_keys='.implode(', ', $expiredPreview['keys']));
+            }
 
             AuditLog::record(
                 entityType: AuditLog::ENTITY_AUTOMATION,
@@ -66,6 +74,7 @@ class RevokeRotatedIntegrationSecretsCommand extends Command
                 metadata: [
                     'command' => 'integrations:revoke-rotated-secrets',
                     'dry_run' => $dryRun,
+                    'expired_preview' => $expiredPreview,
                     'error' => $throwable->getMessage(),
                 ],
             );

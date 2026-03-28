@@ -31,6 +31,7 @@ it('supports dry run when expired integration secret grace tokens exist', functi
         '--dry-run' => true,
     ])
         ->expectsOutputToContain('dry_run=yes')
+        ->expectsOutputToContain('expired_keys=web_lead.api_token')
         ->assertSuccessful();
 
     expect(ClinicSetting::getValue('web_lead.api_token_previous_secret'))->toBe('dry-run-old-web-token');
@@ -44,7 +45,9 @@ it('supports dry run when expired integration secret grace tokens exist', functi
 
     expect($audit)->not->toBeNull()
         ->and((int) data_get($audit?->metadata, 'summary.total_expired'))->toBeGreaterThanOrEqual(1)
-        ->and((int) data_get($audit?->metadata, 'summary.revoked'))->toBe(0);
+        ->and((int) data_get($audit?->metadata, 'summary.revoked'))->toBe(0)
+        ->and((int) data_get($audit?->metadata, 'summary.expired_preview.total'))->toBeGreaterThanOrEqual(1)
+        ->and((array) data_get($audit?->metadata, 'summary.expired_preview.keys', []))->toContain('web_lead.api_token');
 });
 
 it('revokes expired zalo webhook grace token and keeps the active token valid', function (): void {
@@ -81,6 +84,7 @@ it('revokes expired zalo webhook grace token and keeps the active token valid', 
 
     $this->artisan('integrations:revoke-rotated-secrets')
         ->expectsOutputToContain('dry_run=no')
+        ->expectsOutputToContain('expired_keys=zalo.webhook_token')
         ->assertSuccessful();
 
     expect(ClinicSetting::getValue('zalo.webhook_token_previous_secret'))->toBeNull();
@@ -101,5 +105,7 @@ it('revokes expired zalo webhook grace token and keeps the active token valid', 
 
     expect($audit)->not->toBeNull()
         ->and((int) data_get($audit?->metadata, 'summary.total_expired'))->toBeGreaterThanOrEqual(1)
-        ->and((int) data_get($audit?->metadata, 'summary.revoked'))->toBeGreaterThanOrEqual(1);
+        ->and((int) data_get($audit?->metadata, 'summary.revoked'))->toBeGreaterThanOrEqual(1)
+        ->and((int) data_get($audit?->metadata, 'summary.expired_preview.total'))->toBeGreaterThanOrEqual(1)
+        ->and((array) data_get($audit?->metadata, 'summary.expired_preview.keys', []))->toContain('zalo.webhook_token');
 });

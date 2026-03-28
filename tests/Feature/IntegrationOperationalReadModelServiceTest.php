@@ -346,13 +346,18 @@ it('reads active and expired grace rotations from the shared integration reader'
         $service = app(IntegrationOperationalReadModelService::class);
         $activeRotations = $service->activeGraceRotations();
         $expiredRotations = $service->expiredGraceRotations();
+        $expiredSummary = $service->expiredGraceRotationSummary();
 
         expect($activeRotations)->toHaveCount(1)
             ->and($expiredRotations)->toHaveCount(1)
             ->and($activeRotations->firstWhere('key', 'web_lead.api_token'))->not->toBeNull()
             ->and($expiredRotations->firstWhere('key', 'emr.api_key'))->not->toBeNull()
             ->and((int) $activeRotations->firstWhere('key', 'web_lead.api_token')['remaining_minutes'])->toBeGreaterThan(0)
-            ->and((int) $expiredRotations->firstWhere('key', 'emr.api_key')['expired_minutes'])->toBeGreaterThan(0);
+            ->and((int) $expiredRotations->firstWhere('key', 'emr.api_key')['expired_minutes'])->toBeGreaterThan(0)
+            ->and($expiredSummary['total'])->toBe(1)
+            ->and($expiredSummary['keys'])->toContain('emr.api_key')
+            ->and($expiredSummary['display_names'])->toContain('EMR API Key')
+            ->and($expiredSummary['max_expired_minutes'])->toBeGreaterThan(0);
     } finally {
         Carbon::setTestNow();
     }

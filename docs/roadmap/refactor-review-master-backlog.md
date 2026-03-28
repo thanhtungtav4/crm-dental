@@ -380,6 +380,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tiep tuc cung lane nay cho `zns:run-campaigns`, va da gom `ZnsProviderClient` thanh diem check chung cho provider credentials (`access_token`, `send_endpoint`) de `run-campaigns` va `sync-automation-events` khong dien giai runtime drift theo hai cach khac nhau
     - da mo rong lane nay bang `IntegrationProviderHealthReadModelService`, de `OpsControlCenterService`, `IntegrationSettings` (readiness notification + snapshot section), `zns:run-campaigns`, `zns:sync-automation-events`, `google-calendar:sync-events`, `emr:sync-events`, va `ZnsCampaignRunnerService` dung chung contract readiness / runtime-error message cho provider thay vi tu noi suy raw setting rieng le
     - da mo rong them publisher-side runtime guard cho `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher`, de control-plane khong tiep tuc sinh backlog outbox/event moi khi provider dang enabled nhung chua day du credential/runtime settings
+    - da mo rong tiep lane `secret rotation / revoke` bang `expiredGraceRotationSummary()` trong `IntegrationOperationalReadModelService`, de `integrations:revoke-rotated-secrets` preview expired keys qua cung reader voi OPS va Integration Settings, thay vi command tu ngầm doc trang thai grace tu write-side service
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests
