@@ -4,6 +4,8 @@ namespace App\Observers;
 
 use App\Models\AuditLog;
 use App\Models\InsuranceClaim;
+use App\Models\Invoice;
+use App\Support\WorkflowAuditMetadata;
 
 class InsuranceClaimObserver
 {
@@ -14,7 +16,11 @@ class InsuranceClaimObserver
             entityId: $insuranceClaim->id,
             action: AuditLog::ACTION_CREATE,
             actorId: auth()->id(),
-            metadata: $this->buildMetadata($insuranceClaim, null),
+            branchId: $this->resolveBranchId($insuranceClaim),
+            patientId: $insuranceClaim->patient_id,
+            metadata: array_merge($this->buildMetadata($insuranceClaim), [
+                'status_to' => $insuranceClaim->status,
+            ]),
         );
     }
 
@@ -37,11 +43,17 @@ class InsuranceClaimObserver
             entityId: $insuranceClaim->id,
             action: $action,
             actorId: auth()->id(),
-            metadata: $this->buildMetadata($insuranceClaim, (string) $insuranceClaim->getOriginal('status')),
+            branchId: $this->resolveBranchId($insuranceClaim),
+            patientId: $insuranceClaim->patient_id,
+            metadata: WorkflowAuditMetadata::transition(
+                fromStatus: (string) ($insuranceClaim->getOriginal('status') ?: InsuranceClaim::STATUS_DRAFT),
+                toStatus: $insuranceClaim->status,
+                metadata: $this->buildMetadata($insuranceClaim),
+            ),
         );
     }
 
-    protected function buildMetadata(InsuranceClaim $insuranceClaim, ?string $fromStatus): array
+    protected function buildMetadata(InsuranceClaim $insuranceClaim): array
     {
         return [
             'invoice_id' => $insuranceClaim->invoice_id,
@@ -50,8 +62,6 @@ class InsuranceClaimObserver
             'payer_name' => $insuranceClaim->payer_name,
             'amount_claimed' => $insuranceClaim->amount_claimed,
             'amount_approved' => $insuranceClaim->amount_approved,
-            'status_from' => $fromStatus,
-            'status_to' => $insuranceClaim->status,
             'denial_reason_code' => $insuranceClaim->denial_reason_code,
             'submitted_at' => $insuranceClaim->submitted_at?->toDateTimeString(),
             'approved_at' => $insuranceClaim->approved_at?->toDateTimeString(),
@@ -59,5 +69,18 @@ class InsuranceClaimObserver
             'paid_at' => $insuranceClaim->paid_at?->toDateTimeString(),
             'cancelled_at' => $insuranceClaim->cancelled_at?->toDateTimeString(),
         ];
+    }
+
+    protected function resolveBranchId(InsuranceClaim $insuranceClaim): ?int
+    {
+        $branchId = $insuranceClaim->invoice?->branch_id;
+
+        if (! is_numeric($branchId) && is_numeric($insuranceClaim->invoice_id)) {
+            $branchId = Invoice::query()
+                ->whereKey((int) $insuranceClaim->invoice_id)
+                ->value('branch_id');
+        }
+
+        return is_numeric($branchId) ? (int) $branchId : null;
     }
 }
