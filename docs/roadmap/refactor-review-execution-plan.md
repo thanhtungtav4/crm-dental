@@ -157,6 +157,9 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da tiep tuc dong bo `emr:check-dicom-readiness` vao `OperationalAutomationAuditReadModelService`, de DICOM readiness gate xuat hien trong recent OPS runs va observability control-plane catalog thay vi ton tai rieng le ngoai reader contract.
   - `RRB-010` da mo rong them tracked automation catalog va OPS smoke pack sang `emr:sync-events`, `emr:reconcile-integrity`, `emr:reconcile-clinical-media`, va `emr:prune-clinical-media`, de bo EMR maintenance commands da co trong scheduler/release gates duoc surfacing dong nhat trong cockpit.
   - `RRB-010` da mo rong them tracked automation catalog va OPS smoke pack sang `google-calendar:sync-events`, de Google Calendar sync lane cung xuat hien nhat quan trong recent OPS runs va command pack cua cockpit.
+  - `RRB-010` da gom `tracked commands` va `smoke commands` vao `OpsAutomationCatalog`, de OPS cockpit reader va smoke pack dung chung mot command catalog thay vi drift theo hai danh sach rieng.
+  - `RRB-010` da mo rong `OpsAutomationCatalog` sang scheduler definitions, de `routes/console.php` va `SchedulerHardeningCommandTest` doc chung target catalog cho wrapper automations thay vi lap lai danh sach command.
+  - `RRB-010` da tao `OpsReleaseGateCatalog`, de `RunReleaseGates` va `VerifyProductionReadinessReport` dung chung release-gate contract cho required commands thay vi drift giua execute-side va verify-side.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
   - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
   - `RRB-013` da tiep tuc lane `payload retention / pruning`: `popups:prune` va `photos:prune` da dung chung retention candidate reader voi control-plane, tranh viec command layer va OPS/Integration surfaces dien giai retention theo nhieu cach.
@@ -164,6 +167,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-013` da mo rong them lane `provider run/readiness` sang `DICOM / PACS`, de provider-health snapshot tren `IntegrationSettings` va `OpsControlCenterService` dung cung readiness contract voi `emr:check-dicom-readiness`, tranh viec command gate va page health surface dien giai readiness imaging theo hai cach khac nhau.
   - `RRB-013` da mo rong them lane `maintenance visibility` sang bo EMR commands, de scheduler/release-gate lanes `sync / reconcile / prune / dicom readiness` khong con bi tach khoi tracked OPS automation catalog va smoke surface.
   - `RRB-013` da mo rong them lane `maintenance visibility` sang `google-calendar:sync-events`, de provider lane nay duoc surfacing dung muc uu tien van hanh nhu `EMR` va `ZNS`.
+  - `RRB-013` da mo rong them lane `release gate / readiness verification`, de command execute-side va strict signoff verify-side dung cung mot release-gate catalog khi xac dinh checklist production bat buoc.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\OpsCommandAuthorizer;
 use App\Services\ProductionReadinessSignerResolver;
+use App\Support\OpsReleaseGateCatalog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -323,25 +324,9 @@ class VerifyProductionReadinessReport extends Command
      */
     protected function requiredGateCommands(array $report): array
     {
-        $commands = [
-            'schema:assert-no-pending-migrations',
-            'schema:assert-critical-foreign-keys',
-            'security:assert-action-permission-baseline',
-            'emr:reconcile-clinical-media',
-            'reports:explain-ops-hotpaths',
-            'security:check-automation-actor',
-            'ops:check-backup-health',
-            'ops:run-restore-drill',
-            'ops:check-alert-runbook-map',
-            'ops:check-observability-health',
-            'emr:check-dicom-readiness',
-        ];
-
-        if ((bool) ($report['with_finance'] ?? false)) {
-            $commands[] = 'finance:reconcile-branch-attribution';
-        }
-
-        return $commands;
+        return OpsReleaseGateCatalog::requiredProductionCommands(
+            withFinance: (bool) ($report['with_finance'] ?? false),
+        );
     }
 
     /**

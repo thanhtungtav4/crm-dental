@@ -2,6 +2,7 @@
 
 use App\Models\AuditLog;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\OpsAutomationCatalog;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Process\ProcessResult as ProcessResultContract;
 use Illuminate\Process\PendingProcess;
@@ -119,38 +120,7 @@ it('records SLA alert when runtime exceeds alert threshold', function () {
 });
 
 it('schedules critical automations via hardened wrapper with single-node lock', function () {
-    $expectedTargets = [
-        'care:generate-birthday-tickets',
-        'care:generate-recall-tickets',
-        'reports:snapshot-operational-kpis',
-        'reports:snapshot-hot-aggregates',
-        'growth:run-loyalty-program',
-        'patients:score-risk',
-        'mpi:sync',
-        'finance:run-invoice-aging-reminders',
-        'care:run-plan-follow-up',
-        'growth:run-reactivation-flow',
-        'reports:check-snapshot-sla',
-        'ops:create-backup-artifact',
-        'ops:run-restore-drill',
-        'ops:check-alert-runbook-map',
-        'ops:check-observability-health',
-        'emr:sync-events',
-        'emr:reconcile-integrity',
-        'emr:reconcile-clinical-media',
-        'google-calendar:sync-events',
-        'integrations:prune-operational-data',
-        'integrations:revoke-rotated-secrets',
-        'zns:run-campaigns',
-        'zns:sync-automation-events',
-        'zns:prune-operational-data',
-        'popups:dispatch-due',
-        'popups:prune',
-        'photos:prune',
-        'emr:prune-clinical-media',
-        'appointments:run-no-show-recovery',
-        'invoices:sync-overdue-status',
-    ];
+    $expectedTargets = OpsAutomationCatalog::scheduledAutomationTargets();
 
     $events = collect(app(Schedule::class)->events())
         ->filter(fn ($event) => str_contains((string) $event->command, 'ops:run-scheduled-command'))

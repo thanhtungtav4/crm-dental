@@ -307,6 +307,9 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong them provider-health/readiness lane cho `DICOM / PACS`, de `IntegrationSettings` va `OpsControlCenterService` doc cung contract voi `emr:check-dicom-readiness`, dong thoi `OperationalAutomationAuditReadModelService` bat dau track command nay trong recent OPS runs va observability control-plane catalog
     - da mo rong them tracked control-plane command catalog sang `emr:sync-events`, `emr:reconcile-integrity`, `emr:reconcile-clinical-media`, va `emr:prune-clinical-media`, de recent OPS runs va smoke pack khong bo sot cac lane EMR maintenance da co trong scheduler/release gates
     - da mo rong them tracked control-plane command catalog sang `google-calendar:sync-events`, de Google Calendar sync lane duoc surfacing cung lop voi `EMR` / `ZNS` trong recent OPS runs va smoke pack
+    - da gom `tracked commands` va `smoke commands` vao `OpsAutomationCatalog`, de `OperationalAutomationAuditReadModelService` va `OpsControlCenterService` doc chung mot command catalog thay vi giu hai danh sach rieng de drift
+    - da mo rong `OpsAutomationCatalog` sang scheduler definitions, de `routes/console.php` va `SchedulerHardeningCommandTest` cung doc mot target catalog thay vi lap lai danh sach target command wrapper
+    - da tao `OpsReleaseGateCatalog`, de `RunReleaseGates` va `VerifyProductionReadinessReport` doc chung mot release-gate contract thay vi giu required gate knowledge o hai noi rieng
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces
@@ -395,6 +398,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong tiep lane `provider run/readiness` sang `emr:check-dicom-readiness`, de DICOM/PACS readiness gate duoc surfacing nhu mot provider card first-class va command nay di vao tracked OPS automation catalog thay vi ton tai rieng le ben ngoai provider-health contract
     - da mo rong tiep lane `provider run/readiness` va `maintenance visibility` sang bo `EMR maintenance commands`, de `emr:sync-events`, `emr:reconcile-integrity`, `emr:reconcile-clinical-media`, va `emr:prune-clinical-media` duoc surfacing nhat quan trong tracked OPS automation catalog va smoke pack
     - da mo rong tiep lane `provider run/readiness` sang `google-calendar:sync-events`, de Google Calendar sync lane khong bi tach khoi tracked OPS automation catalog va smoke pack khi so voi `EMR` / `ZNS`
+    - da mo rong tiep lane `release gate / readiness verification` bang `OpsReleaseGateCatalog`, de checklist release production va strict readiness signoff dung chung mot source of truth cho required gates
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests

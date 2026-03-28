@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\OpsAutomationCatalog;
 use Carbon\CarbonInterface;
 use Database\Seeders\FinanceScenarioSeeder;
 use Database\Seeders\GovernanceScenarioSeeder;
@@ -1205,24 +1206,10 @@ class OpsControlCenterService
      */
     protected function smokeCommands(): array
     {
-        return [
-            'php artisan ops:check-backup-health --path="'.OpsScenarioSeeder::readyBackupPath().'" --strict',
-            'php artisan ops:check-backup-health --path="'.OpsScenarioSeeder::failMissingManifestBackupPath().'" --strict',
-            'php artisan ops:run-restore-drill --path="'.OpsScenarioSeeder::readyBackupPath().'" --strict',
-            'php artisan ops:verify-production-readiness-report "'.OpsScenarioSeeder::passReadinessReportPath().'" --qa=manager.q1@demo.ident.test --pm=admin@demo.ident.test --release-ref=REL-DEMO-OPS-001 --strict',
-            'php artisan ops:check-observability-health --strict',
-            'php artisan integrations:revoke-rotated-secrets --dry-run --strict',
-            'php artisan integrations:prune-operational-data --dry-run --strict',
-            'php artisan emr:reconcile-integrity --strict',
-            'php artisan emr:reconcile-clinical-media --strict',
-            'php artisan emr:check-dicom-readiness --strict',
-            'php artisan emr:prune-clinical-media --dry-run --strict',
-            'php artisan google-calendar:sync-events --dry-run --strict-exit',
-            'php artisan reports:check-snapshot-sla --date='.KpiScenarioSeeder::snapshotDate().' --dry-run',
-            'php artisan reports:snapshot-hot-aggregates --date='.KpiScenarioSeeder::snapshotDate().' --dry-run',
-            'php artisan zns:sync-automation-events --dry-run --strict-exit',
-            'php artisan zns:prune-operational-data --dry-run --strict',
-        ];
+        return OpsAutomationCatalog::smokeCommands(
+            snapshotDate: KpiScenarioSeeder::snapshotDate(),
+            readinessReportPath: OpsScenarioSeeder::passReadinessReportPath(),
+        );
     }
 
     /**

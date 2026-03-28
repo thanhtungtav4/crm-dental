@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Support\OpsAutomationCatalog;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -14,36 +15,7 @@ class OperationalAutomationAuditReadModelService
      */
     public function trackedCommands(): array
     {
-        return [
-            'security:check-automation-actor',
-            'ops:create-backup-artifact',
-            'ops:check-backup-health',
-            'ops:run-restore-drill',
-            'ops:run-release-gates',
-            'ops:run-production-readiness',
-            'ops:verify-production-readiness-report',
-            'ops:check-alert-runbook-map',
-            'ops:check-observability-health',
-            'reports:explain-ops-hotpaths',
-            'integrations:revoke-rotated-secrets',
-            'integrations:prune-operational-data',
-            'reports:snapshot-operational-kpis',
-            'reports:check-snapshot-sla',
-            'reports:compare-snapshots',
-            'reports:snapshot-hot-aggregates',
-            'emr:sync-events',
-            'emr:reconcile-integrity',
-            'emr:reconcile-clinical-media',
-            'emr:check-dicom-readiness',
-            'emr:prune-clinical-media',
-            'google-calendar:sync-events',
-            'zns:sync-automation-events',
-            'zns:prune-operational-data',
-            'zns:run-campaigns',
-            'popups:dispatch-due',
-            'popups:prune',
-            'photos:prune',
-        ];
+        return OpsAutomationCatalog::trackedCommands();
     }
 
     /**
@@ -51,13 +23,7 @@ class OperationalAutomationAuditReadModelService
      */
     public function trackedChannels(): array
     {
-        return [
-            'automation_actor_health',
-            'backup_artifact',
-            'release_gates',
-            'production_readiness',
-            'observability_health',
-        ];
+        return OpsAutomationCatalog::trackedChannels();
     }
 
     public function baseTrackedAutomationQuery(): Builder

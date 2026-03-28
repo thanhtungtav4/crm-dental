@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Services\OpsCommandAuthorizer;
+use App\Support\OpsReleaseGateCatalog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -164,97 +165,12 @@ class RunReleaseGates extends Command
      */
     protected function buildSteps(string $profile, bool $withFinance): array
     {
-        $steps = [
-            [
-                'name' => 'Schema drift gate',
-                'command' => 'schema:assert-no-pending-migrations',
-                'arguments' => [],
-            ],
-            [
-                'name' => 'Critical foreign key gate',
-                'command' => 'schema:assert-critical-foreign-keys',
-                'arguments' => [],
-            ],
-            [
-                'name' => 'Action permission baseline gate',
-                'command' => 'security:assert-action-permission-baseline',
-                'arguments' => [],
-            ],
-            [
-                'name' => 'Clinical media reconcile gate',
-                'command' => 'emr:reconcile-clinical-media',
-                'arguments' => ['--strict' => true],
-            ],
-        ];
-
-        if (in_array($profile, [self::PROFILE_OPS, self::PROFILE_PRODUCTION], true)) {
-            $steps[] = [
-                'name' => 'Ops hot-path EXPLAIN gate',
-                'command' => 'reports:explain-ops-hotpaths',
-                'arguments' => ['--strict' => true],
-            ];
-        }
-
-        if ($profile === self::PROFILE_PRODUCTION) {
-            $steps[] = [
-                'name' => 'Automation actor health gate',
-                'command' => 'security:check-automation-actor',
-                'arguments' => ['--strict' => true],
-            ];
-
-            $steps[] = [
-                'name' => 'Backup health gate',
-                'command' => 'ops:check-backup-health',
-                'arguments' => ['--strict' => true],
-            ];
-
-            $steps[] = [
-                'name' => 'Restore drill gate',
-                'command' => 'ops:run-restore-drill',
-                'arguments' => ['--strict' => true],
-            ];
-
-            $steps[] = [
-                'name' => 'Alert runbook map gate',
-                'command' => 'ops:check-alert-runbook-map',
-                'arguments' => ['--strict' => true],
-            ];
-
-            $steps[] = [
-                'name' => 'Cross-module observability gate',
-                'command' => 'ops:check-observability-health',
-                'arguments' => ['--strict' => true],
-            ];
-
-            $steps[] = [
-                'name' => 'DICOM readiness gate (optional)',
-                'command' => 'emr:check-dicom-readiness',
-                'arguments' => ['--strict' => true],
-            ];
-        }
-
-        if ($withFinance) {
-            $from = filled($this->option('from'))
-                ? (string) $this->option('from')
-                : now()->startOfMonth()->toDateString();
-            $to = filled($this->option('to'))
-                ? (string) $this->option('to')
-                : now()->toDateString();
-            $exportPath = storage_path('app/reconciliation/release-gate-finance-'.$from.'_'.$to.'.json');
-
-            $steps[] = [
-                'name' => 'Finance branch attribution reconciliation gate',
-                'command' => 'finance:reconcile-branch-attribution',
-                'arguments' => [
-                    '--from' => $from,
-                    '--to' => $to,
-                    '--export' => $exportPath,
-                    '--strict' => $profile === self::PROFILE_PRODUCTION,
-                ],
-            ];
-        }
-
-        return $steps;
+        return OpsReleaseGateCatalog::steps(
+            profile: $profile,
+            withFinance: $withFinance,
+            from: filled($this->option('from')) ? (string) $this->option('from') : null,
+            to: filled($this->option('to')) ? (string) $this->option('to') : null,
+        );
     }
 
     protected function normalizeProfile(string $profile): ?string
