@@ -44,6 +44,7 @@ class ClinicalNotesRelationManager extends RelationManager
                                 ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
                                 ->searchable()
                                 ->preload()
+                                ->helperText('Chỉ hiển thị bác sĩ thuộc chi nhánh đang chọn hoặc chi nhánh gốc của bệnh nhân.')
                                 ->columnSpan(1),
 
                             Select::make('treating_doctor_id')
@@ -51,6 +52,7 @@ class ClinicalNotesRelationManager extends RelationManager
                                 ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
                                 ->searchable()
                                 ->preload()
+                                ->helperText('Chỉ hiển thị bác sĩ thuộc chi nhánh đang chọn hoặc chi nhánh gốc của bệnh nhân.')
                                 ->columnSpan(1),
 
                             Select::make('branch_id')
@@ -278,6 +280,7 @@ class ClinicalNotesRelationManager extends RelationManager
                 ->panelLayout('grid')
                 ->reorderable()
                 ->appendFiles()
+                ->helperText('Tải ảnh/X-quang trực tiếp từ máy. Nếu file lớn bị gián đoạn, lưu phiếu rồi tải lại từng ảnh để tránh mất dữ liệu đang nhập.')
                 ->visible(fn (Get $get): bool => in_array($normalizedKey, (array) ($get('indications') ?? []), true))
                 ->columnSpanFull();
         }
