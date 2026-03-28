@@ -242,3 +242,75 @@ it('allows an authorized manager to rollback the latest applied merge from the d
             ->where('action', AuditLog::ACTION_ROLLBACK)
             ->exists())->toBeTrue();
 });
+
+it('marks stale open mpi cases as needing triage and leaves fresh or reviewed cases normal', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $manager->id,
+        'branch_id' => $branchB->id,
+        'is_primary' => false,
+        'is_active' => true,
+        'assigned_from' => null,
+        'assigned_until' => null,
+    ]);
+
+    $patientA = makePatientForBranch($branchA, 'Priority Patient A', '0904000001');
+    $patientB = makePatientForBranch($branchB, 'Priority Patient B', '0904000001', 'priority@example.test');
+
+    $staleCase = MasterPatientDuplicate::factory()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'phone',
+        'identity_value' => '0904000001',
+        'matched_patient_ids' => [$patientA->id, $patientB->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id],
+        'metadata' => ['patient_count' => 2, 'branch_count' => 2],
+        'created_at' => now()->subDays(MasterPatientDuplicate::STALE_OPEN_CASE_DAYS + 1),
+        'updated_at' => now()->subDays(MasterPatientDuplicate::STALE_OPEN_CASE_DAYS + 1),
+    ]);
+
+    $freshCase = MasterPatientDuplicate::factory()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'email',
+        'identity_hash' => hash('sha256', 'email|priority@example.test'),
+        'identity_value' => 'priority@example.test',
+        'matched_patient_ids' => [$patientA->id, $patientB->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id],
+        'metadata' => ['patient_count' => 2, 'branch_count' => 2],
+        'created_at' => now()->subDay(),
+        'updated_at' => now()->subDay(),
+    ]);
+
+    $resolvedCase = MasterPatientDuplicate::factory()->resolved()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'cccd',
+        'identity_hash' => hash('sha256', 'cccd|012345678901'),
+        'identity_value' => '012345678901',
+        'matched_patient_ids' => [$patientA->id, $patientB->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id],
+        'metadata' => ['patient_count' => 2, 'branch_count' => 2],
+        'created_at' => now()->subDays(MasterPatientDuplicate::STALE_OPEN_CASE_DAYS + 2),
+        'updated_at' => now()->subHours(2),
+    ]);
+
+    expect($staleCase->isStaleOpenCase())->toBeTrue()
+        ->and($freshCase->isStaleOpenCase())->toBeFalse()
+        ->and($resolvedCase->isStaleOpenCase())->toBeFalse();
+
+    $this->actingAs($manager);
+
+    Livewire::test(ListMasterPatientDuplicates::class)
+        ->assertCanSeeTableRecords([$staleCase, $freshCase, $resolvedCase])
+        ->assertSee('Cần ưu tiên')
+        ->assertSee('Bình thường')
+        ->assertSee('Quá 3 ngày');
+});

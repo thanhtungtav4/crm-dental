@@ -8,6 +8,7 @@ use App\Support\BranchAccess;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -17,6 +18,12 @@ class MasterPatientDuplicatesTable
     {
         return $table
             ->columns([
+                TextColumn::make('triage_priority')
+                    ->label('Ưu tiên')
+                    ->state(fn (MasterPatientDuplicate $record): string => $record->isStaleOpenCase() ? 'Cần ưu tiên' : 'Bình thường')
+                    ->badge()
+                    ->color(fn (MasterPatientDuplicate $record): string => $record->isStaleOpenCase() ? 'danger' : 'gray')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
@@ -53,6 +60,13 @@ class MasterPatientDuplicatesTable
                     ->label('Độ tin cậy')
                     ->formatStateUsing(fn (mixed $state): string => number_format((float) $state, 0).'%')
                     ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Mở từ')
+                    ->since()
+                    ->description(fn (MasterPatientDuplicate $record): ?string => $record->isStaleOpenCase()
+                        ? 'Quá '.MasterPatientDuplicate::STALE_OPEN_CASE_DAYS.' ngày'
+                        : null)
+                    ->sortable(),
                 TextColumn::make('reviewer.name')
                     ->label('Reviewer')
                     ->placeholder('-')
@@ -74,6 +88,23 @@ class MasterPatientDuplicatesTable
                 SelectFilter::make('status')
                     ->label('Trạng thái')
                     ->options(MasterPatientDuplicate::statusOptions()),
+                TernaryFilter::make('needs_triage')
+                    ->label('Ưu tiên xử lý')
+                    ->placeholder('Tất cả case')
+                    ->trueLabel('Chỉ case mở quá 3 ngày')
+                    ->falseLabel('Không phải case ưu tiên')
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query
+                            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                            ->where('created_at', '<=', MasterPatientDuplicate::staleOpenCaseThreshold()),
+                        false: fn (Builder $query): Builder => $query->where(function (Builder $priorityQuery): void {
+                            $priorityQuery
+                                ->where('status', '!=', MasterPatientDuplicate::STATUS_OPEN)
+                                ->orWhere('created_at', '>', MasterPatientDuplicate::staleOpenCaseThreshold());
+                        }),
+                        blank: fn (Builder $query): Builder => $query,
+                    )
+                    ->indicator('Đang lọc case cần ưu tiên'),
                 SelectFilter::make('identity_type')
                     ->label('Loại định danh')
                     ->options(MasterPatientDuplicate::identityTypeOptions()),

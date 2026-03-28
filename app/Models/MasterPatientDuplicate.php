@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,8 @@ class MasterPatientDuplicate extends Model
     public const STATUS_RESOLVED = 'resolved';
 
     public const STATUS_IGNORED = 'ignored';
+
+    public const STALE_OPEN_CASE_DAYS = 3;
 
     protected $fillable = [
         'patient_id',
@@ -158,6 +161,20 @@ class MasterPatientDuplicate extends Model
     public function canBeIgnored(): bool
     {
         return $this->status === self::STATUS_OPEN;
+    }
+
+    public function isStaleOpenCase(?CarbonInterface $referenceTime = null): bool
+    {
+        if ($this->status !== self::STATUS_OPEN || ! $this->created_at instanceof CarbonInterface) {
+            return false;
+        }
+
+        return $this->created_at->lte(static::staleOpenCaseThreshold($referenceTime));
+    }
+
+    public static function staleOpenCaseThreshold(?CarbonInterface $referenceTime = null): CarbonInterface
+    {
+        return ($referenceTime ?? now())->copy()->subDays(self::STALE_OPEN_CASE_DAYS);
     }
 
     public function latestAppliedMerge(): ?MasterPatientMerge
