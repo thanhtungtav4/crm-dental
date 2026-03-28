@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Models\Invoice;
+use App\Models\User;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\BranchAccess;
 use Illuminate\Console\Command;
 
 class SyncInvoiceOverdueStatus extends Command
@@ -21,14 +23,29 @@ class SyncInvoiceOverdueStatus extends Command
             'Bạn không có quyền chạy automation đồng bộ công nợ hóa đơn.',
         );
 
+        $actor = auth()->user();
         $updated = 0;
         $unchanged = 0;
         $dryRun = (bool) $this->option('dry-run');
+        $canPersistAcrossBranches = $actor instanceof User
+            && $actor->hasRole('AutomationService');
 
-        Invoice::query()
+        $query = Invoice::query()
             ->where('status', '!=', Invoice::STATUS_CANCELLED)
-            ->whereNotNull('due_date')
-            ->chunkById(200, function ($invoices) use (&$updated, &$unchanged, $dryRun): void {
+            ->whereNotNull('due_date');
+
+        if ($actor instanceof User && ! $actor->hasAnyRole(['Admin', 'AutomationService'])) {
+            $branchIds = BranchAccess::accessibleBranchIds($actor);
+
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('branch_id', $branchIds);
+            }
+        }
+
+        $query
+            ->chunkById(200, function ($invoices) use (&$updated, &$unchanged, $canPersistAcrossBranches, $dryRun): void {
                 foreach ($invoices as $invoice) {
                     $oldStatus = $invoice->status;
                     $oldPaidAt = $invoice->paid_at?->toDateTimeString();
@@ -47,7 +64,11 @@ class SyncInvoiceOverdueStatus extends Command
                     $updated++;
 
                     if (! $dryRun) {
-                        $invoice->save();
+                        if ($canPersistAcrossBranches) {
+                            $invoice->saveQuietly();
+                        } else {
+                            $invoice->save();
+                        }
                     }
                 }
             });

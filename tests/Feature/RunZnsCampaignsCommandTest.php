@@ -161,6 +161,32 @@ it('continues processing other campaigns when one campaign fails validation', fu
         ->and((int) ZnsCampaignDelivery::query()->where('zns_campaign_id', $validCampaign?->id)->count())->toBe(1);
 });
 
+it('treats disabled zns runtime as a no-op instead of a failed automation run', function (): void {
+    ClinicSetting::setValue('zns.enabled', false, [
+        'group' => 'zns',
+        'value_type' => 'boolean',
+    ]);
+
+    $branch = Branch::factory()->create();
+
+    ZnsCampaign::query()->create([
+        'name' => 'Disabled ZNS campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_SCHEDULED,
+        'template_id' => 'tpl_zns_disabled_001',
+        'scheduled_at' => now()->subMinute(),
+    ]);
+
+    Http::fake();
+
+    $this->artisan('zns:run-campaigns')
+        ->expectsOutputToContain('ZNS đang tắt, bỏ qua chạy campaign.')
+        ->assertSuccessful();
+
+    expect(ZnsCampaign::query()->value('status'))->toBe(ZnsCampaign::STATUS_SCHEDULED)
+        ->and(ZnsCampaignDelivery::query()->count())->toBe(0);
+});
+
 function configureZnsCommandRuntime(): void
 {
     ClinicSetting::setValue('zns.enabled', true, [

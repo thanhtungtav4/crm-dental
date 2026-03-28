@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Branch;
+use App\Models\ClinicSetting;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\User;
@@ -78,6 +80,77 @@ it('persists overdue status with command and keeps cancelled invoice unchanged',
         ->and($cancelledInvoice->fresh()->status)->toBe('cancelled');
 });
 
+it('allows automation actor without branch assignments to sync overdue invoices', function () {
+    $patient = Patient::factory()->create();
+    $automationActor = User::factory()->create([
+        'email' => 'automation.invoice.'.fake()->unique()->safeEmail(),
+        'branch_id' => null,
+    ]);
+    $automationActor->assignRole('AutomationService');
+    seedInvoiceAutomationActorSetting('scheduler.automation_actor_user_id', $automationActor->id, 'integer');
+    seedInvoiceAutomationActorSetting('scheduler.automation_actor_required_role', 'AutomationService');
+
+    $invoice = Invoice::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'invoice_no' => 'INV-AUTO-'.strtoupper(fake()->unique()->bothify('####??')),
+        'total_amount' => 1000000,
+        'paid_amount' => 0,
+        'status' => 'issued',
+        'due_date' => now()->subDay()->toDateString(),
+    ]);
+
+    $this->actingAs($automationActor);
+
+    $this->artisan('invoices:sync-overdue-status')
+        ->assertSuccessful();
+
+    expect($invoice->fresh()->status)->toBe('overdue');
+});
+
+it('scopes overdue sync command to the acting manager branch', function () {
+    $managerBranch = Branch::factory()->create();
+    $otherBranch = Branch::factory()->create();
+    $managerBranchPatient = Patient::factory()->create([
+        'first_branch_id' => $managerBranch->id,
+    ]);
+    $otherBranchPatient = Patient::factory()->create([
+        'first_branch_id' => $otherBranch->id,
+    ]);
+    $manager = User::factory()->create([
+        'branch_id' => $managerBranch->id,
+    ]);
+
+    $visibleInvoice = Invoice::query()->create([
+        'patient_id' => $managerBranchPatient->id,
+        'branch_id' => $managerBranchPatient->first_branch_id,
+        'invoice_no' => 'INV-MGR-'.strtoupper(fake()->unique()->bothify('####??')),
+        'total_amount' => 1000000,
+        'paid_amount' => 0,
+        'status' => 'issued',
+        'due_date' => now()->subDay()->toDateString(),
+    ]);
+
+    $hiddenInvoice = Invoice::query()->create([
+        'patient_id' => $otherBranchPatient->id,
+        'branch_id' => $otherBranchPatient->first_branch_id,
+        'invoice_no' => 'INV-OTH-'.strtoupper(fake()->unique()->bothify('####??')),
+        'total_amount' => 1000000,
+        'paid_amount' => 0,
+        'status' => 'issued',
+        'due_date' => now()->subDay()->toDateString(),
+    ]);
+
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $this->artisan('invoices:sync-overdue-status')
+        ->assertSuccessful();
+
+    expect($visibleInvoice->fresh()->status)->toBe('overdue')
+        ->and($hiddenInvoice->fresh()->status)->toBe('issued');
+});
+
 it('moves overdue invoice to paid when fully collected', function () {
     $patient = Patient::factory()->create();
 
@@ -148,3 +221,15 @@ it('keeps aggregate paid amount correct with mixed receipts and refunds', functi
         ->and($invoice->fresh()->calculateBalance())->toEqualWithDelta(600000.00, 0.01)
         ->and($invoice->fresh()->status)->toBe('partial');
 });
+
+function seedInvoiceAutomationActorSetting(string $key, mixed $value, string $type = 'text'): void
+{
+    ClinicSetting::setValue($key, $value, [
+        'group' => 'scheduler',
+        'label' => $key,
+        'value_type' => $type,
+        'is_secret' => false,
+        'is_active' => true,
+        'sort_order' => 900,
+    ]);
+}

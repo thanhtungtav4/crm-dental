@@ -7,6 +7,7 @@ use App\Models\ZnsCampaignDelivery;
 use App\Services\ZnsCampaignRunnerService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
@@ -35,6 +36,12 @@ class RunZnsCampaigns extends Command
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy campaign ZNS.',
         );
+
+        if (! ClinicRuntimeSettings::boolean('zns.enabled', false)) {
+            $this->info('ZNS đang tắt, bỏ qua chạy campaign.');
+
+            return self::SUCCESS;
+        }
 
         $campaignId = $this->option('campaign_id');
         $hasValidationFailure = false;
