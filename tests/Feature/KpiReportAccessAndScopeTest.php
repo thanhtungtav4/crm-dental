@@ -13,6 +13,7 @@ use App\Models\Appointment;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Material;
 use App\Models\Patient;
 use App\Models\PatientRiskProfile;
 use App\Models\ReceiptExpense;
@@ -376,6 +377,57 @@ it('scopes revenue expenditure stats to accessible branches when no branch filte
         ['label' => 'Tổng chi', 'value' => '400,000 đ'],
         ['label' => 'Biến động', 'value' => '2,100,000 đ'],
     ]);
+});
+
+it('scopes material report stats to accessible branches when no branch filter is selected', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    Material::query()->create([
+        'branch_id' => $branchA->id,
+        'name' => 'Vat tu A',
+        'sku' => 'VT-A',
+        'unit' => 'hop',
+        'stock_qty' => 2,
+        'min_stock' => 5,
+        'category' => 'consumable',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Material::query()->create([
+        'branch_id' => $branchB->id,
+        'name' => 'Vat tu B',
+        'sku' => 'VT-B',
+        'unit' => 'hop',
+        'stock_qty' => 10,
+        'min_stock' => 5,
+        'category' => 'consumable',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($manager);
+
+    $page = Livewire::test(MaterialStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance();
+
+    $records = invokeTableQuery($page)->get();
+    $stats = $page->getStats();
+
+    expect($records)->toHaveCount(1)
+        ->and((int) $records->first()->branch_id)->toBe($branchA->id)
+        ->and($stats)->toBe([
+            ['label' => 'Tổng vật tư', 'value' => '1'],
+            ['label' => 'Vật tư dưới định mức', 'value' => '1'],
+        ]);
 });
 
 it('scopes owed report rows and stats to accessible branches when no branch filter is selected', function (): void {

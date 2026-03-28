@@ -4,7 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\Branch;
 use App\Models\FactoryOrder;
-use App\Models\FactoryOrderItem;
+use App\Services\InventorySupplyReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,10 +28,11 @@ class FactoryStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->baseFactoryOrderQuery()
-            ->with(['patient', 'branch', 'doctor', 'supplier'])
-            ->withCount('items')
-            ->withSum('items as items_total_amount', 'total_price');
+        return $this->inventorySupplyReports()->factoryOrderQuery(
+            $this->resolvedVisibleBranchIds(),
+            $this->selectedStatus(),
+            $this->selectedSupplierId(),
+        );
     }
 
     protected function getTableColumns(): array
@@ -110,51 +111,40 @@ class FactoryStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = $this->baseFactoryOrderQuery();
-        $this->applyDateRange($baseQuery, 'created_at');
-
-        $totalOrders = (clone $baseQuery)->count();
-        $openOrders = (clone $baseQuery)
-            ->whereIn('status', [
-                FactoryOrder::STATUS_ORDERED,
-                FactoryOrder::STATUS_IN_PROGRESS,
-            ])
-            ->count();
-        $deliveredOrders = (clone $baseQuery)
-            ->where('status', FactoryOrder::STATUS_DELIVERED)
-            ->count();
-        $totalValue = (float) FactoryOrderItem::query()
-            ->whereIn('factory_order_id', (clone $baseQuery)->select('id'))
-            ->sum('total_price');
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->inventorySupplyReports()->factoryOrderSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+            $this->selectedStatus(),
+            $this->selectedSupplierId(),
+        );
 
         return [
-            ['label' => 'Tổng lệnh labo', 'value' => number_format($totalOrders)],
-            ['label' => 'Đang xử lý', 'value' => number_format($openOrders)],
-            ['label' => 'Đã giao', 'value' => number_format($deliveredOrders)],
-            ['label' => 'Tổng giá trị', 'value' => number_format($totalValue).' đ'],
+            ['label' => 'Tổng lệnh labo', 'value' => number_format($summary['total_orders'])],
+            ['label' => 'Đang xử lý', 'value' => number_format($summary['open_orders'])],
+            ['label' => 'Đã giao', 'value' => number_format($summary['delivered_orders'])],
+            ['label' => 'Tổng giá trị', 'value' => number_format($summary['total_value']).' đ'],
         ];
     }
 
-    protected function baseFactoryOrderQuery(): Builder
+    protected function selectedStatus(): ?string
     {
-        $branchId = $this->getFilterValue('branch_id');
         $status = $this->getFilterValue('status');
+
+        return filled($status) ? (string) $status : null;
+    }
+
+    protected function selectedSupplierId(): ?int
+    {
         $supplierId = $this->getFilterValue('supplier_id');
 
-        return FactoryOrder::query()
-            ->branchAccessible()
-            ->when(
-                filled($branchId),
-                fn (Builder $query): Builder => $query->where('branch_id', (int) $branchId),
-            )
-            ->when(
-                filled($status),
-                fn (Builder $query): Builder => $query->where('status', (string) $status),
-            )
-            ->when(
-                filled($supplierId),
-                fn (Builder $query): Builder => $query->where('supplier_id', (int) $supplierId),
-            );
+        return filled($supplierId) ? (int) $supplierId : null;
+    }
+
+    protected function inventorySupplyReports(): InventorySupplyReportReadModelService
+    {
+        return app(InventorySupplyReportReadModelService::class);
     }
 
     protected function getFilterValue(string $filterName): mixed

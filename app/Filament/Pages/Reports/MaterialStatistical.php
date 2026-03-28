@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Material;
+use App\Services\InventorySupplyReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,9 +26,8 @@ class MaterialStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->applyDirectBranchScope(
-            Material::query()->with('supplier'),
-        );
+        return $this->inventorySupplyReports()
+            ->materialInventoryQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -83,15 +82,21 @@ class MaterialStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = $this->applyDirectBranchScope(Material::query());
-        $this->applyDateRange($baseQuery, 'created_at');
-
-        $totalMaterials = (clone $baseQuery)->count();
-        $lowStock = (clone $baseQuery)->whereColumn('stock_qty', '<=', 'min_stock')->count();
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->inventorySupplyReports()->materialInventorySummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+        );
 
         return [
-            ['label' => 'Tổng vật tư', 'value' => number_format($totalMaterials)],
-            ['label' => 'Vật tư dưới định mức', 'value' => number_format($lowStock)],
+            ['label' => 'Tổng vật tư', 'value' => number_format($summary['total_materials'])],
+            ['label' => 'Vật tư dưới định mức', 'value' => number_format($summary['low_stock'])],
         ];
+    }
+
+    protected function inventorySupplyReports(): InventorySupplyReportReadModelService
+    {
+        return app(InventorySupplyReportReadModelService::class);
     }
 }
