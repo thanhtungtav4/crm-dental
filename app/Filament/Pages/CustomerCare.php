@@ -14,6 +14,7 @@ use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\Exports\ExportsCsv;
+use Carbon\CarbonInterface;
 use Filament\Actions\Action as HeaderAction;
 use Filament\Actions\Action as TableAction;
 use Filament\Forms\Components\DatePicker;
@@ -266,6 +267,7 @@ class CustomerCare extends Page implements HasTable
     protected function getExportColumns(): array
     {
         return match ($this->activeTab) {
+            'priority_queue' => $this->getPriorityQueueExportColumns(),
             'appointment_reminder', 'prescription_reminder', 'post_treatment_followup', 'birthday' => $this->getCareScheduleExportColumns(),
             default => $this->getCareScheduleExportColumns(),
         };
@@ -309,6 +311,24 @@ class CustomerCare extends Page implements HasTable
             ['label' => 'Kênh chăm sóc', 'value' => fn ($record) => $this->formatCareChannel($record->care_channel)],
             ['label' => 'Thời gian chăm sóc', 'value' => fn ($record) => $record->care_at ?? $record->created_at],
             ['label' => 'Nhân viên chăm sóc', 'value' => fn ($record) => $record->user?->name],
+            ['label' => 'Nội dung', 'value' => fn ($record) => $record->content],
+        ];
+    }
+
+    protected function getPriorityQueueExportColumns(): array
+    {
+        return [
+            ['label' => 'Mã hồ sơ', 'value' => fn ($record) => $record->patient?->patient_code],
+            ['label' => 'Họ tên', 'value' => fn ($record) => $record->patient?->full_name],
+            ['label' => 'Điện thoại', 'value' => fn ($record) => $record->patient?->phone],
+            ['label' => 'Chi nhánh', 'value' => fn ($record) => $record->branch?->name],
+            ['label' => 'Loại ưu tiên', 'value' => fn ($record) => $this->formatCareType($record->care_type)],
+            ['label' => 'Trạng thái', 'value' => fn ($record) => $this->formatCareStatus($record->care_status)],
+            ['label' => 'Ưu tiên xử lý', 'value' => fn ($record) => $this->formatPriorityQueueBucket($this->resolvePriorityQueueBucket($record))],
+            ['label' => 'Kênh', 'value' => fn ($record) => $this->formatCareChannel($record->care_channel)],
+            ['label' => 'Deadline', 'value' => fn ($record) => $record->care_at],
+            ['label' => 'SLA', 'value' => fn ($record) => $this->formatPriorityQueueSla($record)],
+            ['label' => 'Nhân viên', 'value' => fn ($record) => $record->user?->name],
             ['label' => 'Nội dung', 'value' => fn ($record) => $record->content],
         ];
     }
@@ -452,6 +472,12 @@ class CustomerCare extends Page implements HasTable
                 ->badge()
                 ->formatStateUsing(fn ($state) => $this->formatCareStatus($state))
                 ->color(fn ($state) => $this->getCareStatusColor($state)),
+            TextColumn::make('triage_bucket')
+                ->label('Ưu tiên xử lý')
+                ->state(fn ($record): string => $this->resolvePriorityQueueBucket($record))
+                ->badge()
+                ->formatStateUsing(fn (string $state): string => $this->formatPriorityQueueBucket($state))
+                ->color(fn (string $state): string => $this->getPriorityQueueBucketColor($state)),
             TextColumn::make('care_channel')
                 ->label('Kênh')
                 ->badge()
@@ -462,29 +488,9 @@ class CustomerCare extends Page implements HasTable
                 ->sortable(),
             TextColumn::make('overdue_by')
                 ->label('SLA')
-                ->getStateUsing(function ($record): string {
-                    if (! $record->care_at) {
-                        return 'Chưa đặt lịch';
-                    }
-
-                    if ($record->care_at->isFuture()) {
-                        return 'Còn '.$record->care_at->diffForHumans(now(), true);
-                    }
-
-                    return 'Quá hạn '.$record->care_at->diffForHumans(now(), true);
-                })
+                ->getStateUsing(fn ($record): string => $this->formatPriorityQueueSla($record))
                 ->badge()
-                ->color(function ($record): string {
-                    if (! $record->care_at) {
-                        return 'gray';
-                    }
-
-                    if ($record->care_at->isFuture()) {
-                        return 'success';
-                    }
-
-                    return 'danger';
-                }),
+                ->color(fn ($record): string => $this->getPriorityQueueSlaColor($record)),
             TextColumn::make('user.name')
                 ->label('Nhân viên')
                 ->default('Chưa phân công')
@@ -743,6 +749,14 @@ class CustomerCare extends Page implements HasTable
                     DatePicker::make('until')->label('Đến ngày'),
                 ])
                 ->query(fn (Builder $query, array $data) => $this->applyDateRangeFilter($query, $data, 'care_at')),
+            SelectFilter::make('triage_bucket')
+                ->label('Ưu tiên xử lý')
+                ->options($this->getPriorityQueueBucketOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    $bucket = $data['value'] ?? null;
+
+                    return $this->applyPriorityQueueBucketFilter($query, is_string($bucket) ? $bucket : null);
+                }),
             SelectFilter::make('care_type')
                 ->label('Loại ưu tiên')
                 ->options($this->priorityCareTypeOptions()),
@@ -903,6 +917,101 @@ class CustomerCare extends Page implements HasTable
     protected function getCareStatusColor(?string $state): string
     {
         return Note::careStatusColor($state);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function getPriorityQueueBucketOptions(): array
+    {
+        return [
+            'overdue' => 'Quá hạn',
+            'due_today' => 'Đến hạn hôm nay',
+            'upcoming' => 'Sắp tới',
+            'unscheduled' => 'Chưa đặt lịch',
+        ];
+    }
+
+    protected function resolvePriorityQueueBucket($record): string
+    {
+        if (! $record->care_at instanceof CarbonInterface) {
+            return 'unscheduled';
+        }
+
+        if ($record->care_at->isPast()) {
+            return 'overdue';
+        }
+
+        if ($record->care_at->isToday()) {
+            return 'due_today';
+        }
+
+        return 'upcoming';
+    }
+
+    protected function formatPriorityQueueBucket(?string $bucket): string
+    {
+        return Arr::get($this->getPriorityQueueBucketOptions(), $bucket, 'Chưa xác định');
+    }
+
+    protected function getPriorityQueueBucketColor(?string $bucket): string
+    {
+        return match ($bucket) {
+            'overdue' => 'danger',
+            'due_today' => 'warning',
+            'upcoming' => 'success',
+            'unscheduled' => 'gray',
+            default => 'gray',
+        };
+    }
+
+    protected function formatPriorityQueueSla($record): string
+    {
+        $careAt = $record->care_at;
+        $bucket = $this->resolvePriorityQueueBucket($record);
+
+        if (! $careAt instanceof CarbonInterface) {
+            return 'Chưa đặt lịch';
+        }
+
+        $referenceTime = now();
+
+        return match ($bucket) {
+            'overdue' => 'Quá hạn '.$careAt->diffForHumans($referenceTime, true),
+            'due_today' => 'Đến hạn trong '.$careAt->diffForHumans($referenceTime, true),
+            'upcoming' => 'Còn '.$careAt->diffForHumans($referenceTime, true),
+            default => 'Chưa đặt lịch',
+        };
+    }
+
+    protected function getPriorityQueueSlaColor($record): string
+    {
+        return $this->getPriorityQueueBucketColor($this->resolvePriorityQueueBucket($record));
+    }
+
+    protected function applyPriorityQueueBucketFilter(Builder $query, ?string $bucket): Builder
+    {
+        if (! in_array($bucket, array_keys($this->getPriorityQueueBucketOptions()), true)) {
+            return $query;
+        }
+
+        $referenceTime = now();
+        $endOfToday = $referenceTime->copy()->endOfDay();
+
+        return match ($bucket) {
+            'overdue' => $query
+                ->whereNotNull('care_at')
+                ->where('care_at', '<', $referenceTime),
+            'due_today' => $query
+                ->whereNotNull('care_at')
+                ->where('care_at', '>=', $referenceTime)
+                ->whereDate('care_at', $referenceTime->toDateString()),
+            'upcoming' => $query
+                ->whereNotNull('care_at')
+                ->where('care_at', '>', $endOfToday),
+            'unscheduled' => $query->whereNull('care_at'),
+            default => $query,
+        };
     }
 
     protected function formatAppointmentStatus(?string $state): string
