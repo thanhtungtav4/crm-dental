@@ -18,13 +18,16 @@ class BranchAccess
 
     public static function defaultBranchIdForCurrentUser(bool $activeOnly = true): ?int
     {
-        $authUser = static::currentUser();
+        return static::defaultBranchIdForUser(static::currentUser(), $activeOnly);
+    }
 
-        if (! $authUser instanceof User) {
+    public static function defaultBranchIdForUser(?User $user, bool $activeOnly = true): ?int
+    {
+        if (! $user instanceof User) {
             return null;
         }
 
-        if ($authUser->hasRole('Admin')) {
+        if ($user->hasRole('Admin')) {
             $query = Branch::query();
 
             if ($activeOnly) {
@@ -36,12 +39,12 @@ class BranchAccess
             return $branchId !== null ? (int) $branchId : null;
         }
 
-        $branchIds = static::accessibleBranchIds($authUser, $activeOnly);
+        $branchIds = static::accessibleBranchIds($user, $activeOnly);
         if ($branchIds === []) {
             return null;
         }
 
-        $preferredBranchId = $authUser->branch_id !== null ? (int) $authUser->branch_id : null;
+        $preferredBranchId = $user->branch_id !== null ? (int) $user->branch_id : null;
 
         if ($preferredBranchId !== null && in_array($preferredBranchId, $branchIds, true)) {
             return $preferredBranchId;
@@ -115,17 +118,20 @@ class BranchAccess
 
     public static function scopeBranchQueryForCurrentUser(Builder $query, bool $activeOnly = true): Builder
     {
-        $authUser = static::currentUser();
+        return static::scopeBranchQueryForUser($query, static::currentUser(), $activeOnly);
+    }
 
+    public static function scopeBranchQueryForUser(Builder $query, ?User $user, bool $activeOnly = true): Builder
+    {
         if ($activeOnly) {
             $query->where('active', true);
         }
 
-        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+        if (! $user instanceof User || $user->hasRole('Admin')) {
             return $query;
         }
 
-        $branchIds = static::accessibleBranchIds($authUser, $activeOnly);
+        $branchIds = static::accessibleBranchIds($user, $activeOnly);
         if ($branchIds === []) {
             return $query->whereRaw('1 = 0');
         }
@@ -135,18 +141,7 @@ class BranchAccess
 
     public static function scopeQueryByAccessibleBranches(Builder $query, string $column = 'branch_id', bool $activeOnly = true): Builder
     {
-        $authUser = static::currentUser();
-
-        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
-            return $query;
-        }
-
-        $branchIds = static::accessibleBranchIds($authUser, $activeOnly);
-        if ($branchIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn($column, $branchIds);
+        return static::scopeQueryByUserAccessibleBranches($query, static::currentUser(), $column, $activeOnly);
     }
 
     public static function assertCanAccessBranch(
@@ -154,9 +149,34 @@ class BranchAccess
         string $field = 'branch_id',
         ?string $message = null,
     ): void {
-        $authUser = static::currentUser();
+        static::assertUserCanAccessBranch(static::currentUser(), $branchId, $field, $message);
+    }
 
-        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+    public static function scopeQueryByUserAccessibleBranches(
+        Builder $query,
+        ?User $user,
+        string $column = 'branch_id',
+        bool $activeOnly = true,
+    ): Builder {
+        if (! $user instanceof User || $user->hasRole('Admin')) {
+            return $query;
+        }
+
+        $branchIds = static::accessibleBranchIds($user, $activeOnly);
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn($column, $branchIds);
+    }
+
+    public static function assertUserCanAccessBranch(
+        ?User $user,
+        ?int $branchId,
+        string $field = 'branch_id',
+        ?string $message = null,
+    ): void {
+        if (! $user instanceof User || $user->hasRole('Admin')) {
             return;
         }
 
@@ -166,7 +186,7 @@ class BranchAccess
             ]);
         }
 
-        if (! in_array($branchId, static::accessibleBranchIds($authUser, true), true)) {
+        if (! in_array($branchId, static::accessibleBranchIds($user, true), true)) {
             throw ValidationException::withMessages([
                 $field => $message ?? 'Bạn không có quyền thao tác dữ liệu ở chi nhánh này.',
             ]);
