@@ -2,8 +2,8 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Note;
 use App\Models\PatientRiskProfile;
+use App\Services\PatientInsightReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,11 +27,8 @@ class RiskScoringDashboard extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->applyRelatedBranchScope(
-            PatientRiskProfile::query()->with(['patient.branch']),
-            'patient',
-            'first_branch_id',
-        );
+        return $this->patientInsights()
+            ->riskProfileQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableColumns(): array
@@ -120,59 +117,23 @@ class RiskScoringDashboard extends BaseReportPage
 
     public function getStats(): array
     {
-        $query = $this->buildFilteredRiskQuery();
-        $total = (clone $query)->count();
-        $high = (clone $query)->where('risk_level', PatientRiskProfile::LEVEL_HIGH)->count();
-        $medium = (clone $query)->where('risk_level', PatientRiskProfile::LEVEL_MEDIUM)->count();
-        $low = (clone $query)->where('risk_level', PatientRiskProfile::LEVEL_LOW)->count();
-        $averageNoShow = round((float) (clone $query)->avg('no_show_risk_score'), 2);
-        $averageChurn = round((float) (clone $query)->avg('churn_risk_score'), 2);
-
-        $activeInterventionTickets = Note::query()
-            ->where('care_type', 'risk_high_follow_up')
-            ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()))
-            ->count();
-
-        $branchIds = $this->resolvedVisibleBranchIds();
-
-        if ($branchIds !== null) {
-            if ($branchIds === []) {
-                $activeInterventionTickets = 0;
-            } else {
-                $activeInterventionTickets = Note::query()
-                    ->where('care_type', 'risk_high_follow_up')
-                    ->whereIn('care_status', Note::statusesForQuery(Note::activeCareStatuses()))
-                    ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds))
-                    ->count();
-            }
-        }
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->patientInsights()->riskSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+            filled($this->getFilterValue('risk_level')) ? (string) $this->getFilterValue('risk_level') : null,
+        );
 
         return [
-            ['label' => 'Tổng profile', 'value' => number_format($total)],
-            ['label' => 'Risk cao', 'value' => number_format($high)],
-            ['label' => 'Risk trung bình', 'value' => number_format($medium)],
-            ['label' => 'Risk thấp', 'value' => number_format($low)],
-            ['label' => 'Avg no-show risk', 'value' => number_format($averageNoShow, 2)],
-            ['label' => 'Avg churn risk', 'value' => number_format($averageChurn, 2)],
-            ['label' => 'Ticket can thiệp đang mở', 'value' => number_format($activeInterventionTickets)],
+            ['label' => 'Tổng profile', 'value' => number_format($summary['total'])],
+            ['label' => 'Risk cao', 'value' => number_format($summary['high'])],
+            ['label' => 'Risk trung bình', 'value' => number_format($summary['medium'])],
+            ['label' => 'Risk thấp', 'value' => number_format($summary['low'])],
+            ['label' => 'Avg no-show risk', 'value' => number_format($summary['average_no_show'], 2)],
+            ['label' => 'Avg churn risk', 'value' => number_format($summary['average_churn'], 2)],
+            ['label' => 'Ticket can thiệp đang mở', 'value' => number_format($summary['active_intervention_tickets'])],
         ];
-    }
-
-    protected function buildFilteredRiskQuery(): Builder
-    {
-        $query = $this->applyRelatedBranchScope(
-            PatientRiskProfile::query(),
-            'patient',
-            'first_branch_id',
-        );
-        $this->applyDateRange($query, 'as_of_date');
-
-        $riskLevel = $this->getFilterValue('risk_level');
-        if (filled($riskLevel)) {
-            $query->where('risk_level', $riskLevel);
-        }
-
-        return $query;
     }
 
     protected function formatRiskLevel(?string $riskLevel): string
@@ -183,5 +144,10 @@ class RiskScoringDashboard extends BaseReportPage
             PatientRiskProfile::LEVEL_LOW => 'Thấp',
             default => 'Không xác định',
         };
+    }
+
+    protected function patientInsights(): PatientInsightReportReadModelService
+    {
+        return app(PatientInsightReportReadModelService::class);
     }
 }

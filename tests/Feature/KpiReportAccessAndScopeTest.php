@@ -179,6 +179,52 @@ it('scopes revenue statistical aggregates to accessible branches when no branch 
         ->and($stats[1]['value'])->toBe(number_format(3_000_000).' đ');
 });
 
+it('scopes patient statistical stats to accessible branches when no branch filter is selected', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $doctorA = User::factory()->create(['branch_id' => $branchA->id]);
+    $doctorA->assignRole('Doctor');
+
+    $customerA = Customer::factory()->create(['branch_id' => $branchA->id]);
+    Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+        'primary_doctor_id' => $doctorA->id,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $customerB = Customer::factory()->create(['branch_id' => $branchB->id]);
+    Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($manager);
+
+    $page = Livewire::test(PatientStatistical::class)
+        ->set('tableFilters.date_range.from', now()->toDateString())
+        ->set('tableFilters.date_range.until', now()->toDateString())
+        ->instance();
+
+    $records = invokeTableQuery($page)->get();
+    $stats = $page->getStats();
+
+    expect($records)->toHaveCount(1)
+        ->and((int) $records->first()->total_patients)->toBe(1)
+        ->and($stats)->toBe([
+            ['label' => 'Tổng khách hàng', 'value' => '1'],
+        ]);
+});
+
 it('scopes trick-group aggregates to accessible branches when no branch filter is selected', function (): void {
     $branchA = Branch::factory()->create();
     $branchB = Branch::factory()->create();

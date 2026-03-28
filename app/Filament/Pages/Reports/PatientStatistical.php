@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Patient;
+use App\Services\PatientInsightReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,14 +26,8 @@ class PatientStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        $query = Patient::query();
-
-        $this->applyDirectBranchScope($query, 'first_branch_id');
-
-        return $query
-            ->selectRaw('primary_doctor_id, count(*) as total_patients')
-            ->with('primaryDoctor')
-            ->groupBy('primary_doctor_id');
+        return $this->patientInsights()
+            ->patientBreakdownQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -69,14 +63,20 @@ class PatientStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = Patient::query();
-        $this->applyDirectBranchScope($baseQuery, 'first_branch_id');
-        $this->applyDateRange($baseQuery, 'created_at');
-
-        $totalPatients = (clone $baseQuery)->count();
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->patientInsights()->patientSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+        );
 
         return [
-            ['label' => 'Tổng khách hàng', 'value' => number_format($totalPatients)],
+            ['label' => 'Tổng khách hàng', 'value' => number_format($summary['total_patients'])],
         ];
+    }
+
+    protected function patientInsights(): PatientInsightReportReadModelService
+    {
+        return app(PatientInsightReportReadModelService::class);
     }
 }
