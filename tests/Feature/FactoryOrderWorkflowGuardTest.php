@@ -152,6 +152,7 @@ it('records normalized cancellation audit metadata for factory orders', function
         ->and(data_get($auditLog->metadata, 'status_to'))->toBe(FactoryOrder::STATUS_CANCELLED)
         ->and(data_get($auditLog->metadata, 'reason'))->toBe('Huy do benh nhan doi lich')
         ->and(data_get($auditLog->metadata, 'factory_order_id'))->toBe($order->id)
+        ->and(data_get($auditLog->metadata, 'order_no'))->toBe($order->order_no)
         ->and(data_get($auditLog->metadata, 'supplier_id'))->toBe($supplier->id);
 });
 

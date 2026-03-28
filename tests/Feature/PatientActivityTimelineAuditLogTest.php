@@ -2,8 +2,10 @@
 
 use App\Filament\Resources\Patients\Widgets\PatientActivityTimelineWidget;
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\FactoryOrder;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
@@ -65,6 +67,24 @@ it('includes appointment and care audit logs in patient activity timeline', func
         'care_status' => Note::CARE_STATUS_DONE,
     ]);
 
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_FACTORY_ORDER,
+        'entity_id' => 9001,
+        'action' => AuditLog::ACTION_COMPLETE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'factory_order_id' => 9001,
+            'order_no' => 'LABO-9001',
+            'status_to' => FactoryOrder::STATUS_DELIVERED,
+            'supplier_name' => 'Labo Widget',
+        ],
+        'occurred_at' => now()->addMinutes(10),
+    ]);
+
     $widget = app(PatientActivityTimelineWidget::class);
     $widget->record = $patient;
 
@@ -72,5 +92,5 @@ it('includes appointment and care audit logs in patient activity timeline', func
 
     expect($activities->where('type', 'audit'))->not->toBeEmpty()
         ->and($activities->pluck('title')->all())
-        ->toContain('Hẹn lại lịch', 'Hoàn thành chăm sóc');
+        ->toContain('Hẹn lại lịch', 'Hoàn thành chăm sóc', 'Hoàn thành labo');
 });
