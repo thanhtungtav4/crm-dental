@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class TreatmentProgressDay extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
 
     public const STATUS_PLANNED = 'planned';
 
@@ -50,6 +53,19 @@ class TreatmentProgressDay extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $day): void {
+            $day->status = static::normalizeStatus($day->status) ?? static::STATUS_PLANNED;
+
+            if ($day->exists && $day->isDirty('status') && ! static::$allowsManagedWorkflowMutation) {
+                throw ValidationException::withMessages([
+                    'status' => 'TREATMENT_PROGRESS_DAY_STATE_INVALID: Trang thai ngay tien trinh chi duoc thay doi qua TreatmentProgressSyncService.',
+                ]);
+            }
+        });
+    }
+
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
@@ -73,5 +89,29 @@ class TreatmentProgressDay extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TreatmentProgressItem::class, 'treatment_progress_day_id');
+    }
+
+    public static function normalizeStatus(?string $status): ?string
+    {
+        $normalizedStatus = strtolower(trim((string) $status));
+
+        return in_array($normalizedStatus, [
+            self::STATUS_PLANNED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+            self::STATUS_LOCKED,
+        ], true) ? $normalizedStatus : null;
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        static::$allowsManagedWorkflowMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+        }
     }
 }

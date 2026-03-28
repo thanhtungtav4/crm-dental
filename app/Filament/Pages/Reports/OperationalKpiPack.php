@@ -4,6 +4,8 @@ namespace App\Filament\Pages\Reports;
 
 use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
+use App\Services\OperationalKpiAlertReadModelService;
+use App\Services\OperationalKpiSnapshotReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,17 +29,15 @@ class OperationalKpiPack extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->applySnapshotBranchScope(
-            ReportSnapshot::query()
-                ->where('snapshot_key', 'operational_kpi_pack')
-                ->with('branch')
-                ->withCount([
-                    'alerts as active_alerts_count' => fn (Builder $query) => $query->whereIn('status', [
-                        OperationalKpiAlert::STATUS_NEW,
-                        OperationalKpiAlert::STATUS_ACK,
-                    ]),
+        return $this->operationalKpiSnapshots()
+            ->baseQuery($this->resolvedVisibleBranchIds())
+            ->with('branch')
+            ->withCount([
+                'alerts as active_alerts_count' => fn (Builder $query) => $query->whereIn('status', [
+                    OperationalKpiAlert::STATUS_NEW,
+                    OperationalKpiAlert::STATUS_ACK,
                 ]),
-        );
+            ]);
     }
 
     protected function getTableColumns(): array
@@ -147,10 +147,17 @@ class OperationalKpiPack extends BaseReportPage
 
     public function getStats(): array
     {
-        $snapshot = $this->buildFilteredSnapshotQuery()
-            ->latest('snapshot_date')
-            ->latest('generated_at')
-            ->first();
+        $visibleBranchIds = $this->resolvedVisibleBranchIds();
+        $dateRange = (array) ($this->getFilterValue('date_range') ?? []);
+        $snapshot = $this->operationalKpiSnapshots()->latestSnapshot(
+            branchIds: $visibleBranchIds,
+            filters: [
+                'from' => $dateRange['from'] ?? null,
+                'until' => $dateRange['until'] ?? null,
+                'status' => $this->getFilterValue('status'),
+                'sla_status' => $this->getFilterValue('sla_status'),
+            ],
+        );
 
         if (! $snapshot) {
             return [
@@ -163,12 +170,12 @@ class OperationalKpiPack extends BaseReportPage
         }
 
         $payload = (array) $snapshot->payload;
-        $branchBenchmark = $this->buildBranchBenchmarkSummary($snapshot);
+        $branchBenchmark = $this->operationalKpiSnapshots()->branchBenchmarkSummary(
+            snapshot: $snapshot,
+            branchIds: $visibleBranchIds,
+        );
         $topDoctorBenchmark = data_get($payload, 'doctor_benchmark.0');
-        $activeAlertCount = OperationalKpiAlert::query()
-            ->where('snapshot_id', $snapshot->id)
-            ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
-            ->count();
+        $activeAlertCount = $this->operationalKpiAlerts()->activeAlertCountForSnapshot($snapshot->id);
 
         $stats = [
             ['label' => 'Booking -> Visit', 'value' => $this->formatPercent($payload['booking_to_visit_rate'] ?? 0)],
@@ -212,10 +219,8 @@ class OperationalKpiPack extends BaseReportPage
 
     protected function buildFilteredSnapshotQuery(): Builder
     {
-        $query = ReportSnapshot::query()
-            ->where('snapshot_key', 'operational_kpi_pack');
-
-        $this->applySnapshotBranchScope($query);
+        $query = $this->operationalKpiSnapshots()
+            ->baseQuery($this->resolvedVisibleBranchIds());
         $this->applyDateRange($query, 'snapshot_date');
 
         $status = $this->getFilterValue('status');
@@ -229,6 +234,16 @@ class OperationalKpiPack extends BaseReportPage
         }
 
         return $query;
+    }
+
+    protected function operationalKpiSnapshots(): OperationalKpiSnapshotReadModelService
+    {
+        return app(OperationalKpiSnapshotReadModelService::class);
+    }
+
+    protected function operationalKpiAlerts(): OperationalKpiAlertReadModelService
+    {
+        return app(OperationalKpiAlertReadModelService::class);
     }
 
     protected function snapshotStatusLabel(?string $status): string
@@ -261,60 +276,10 @@ class OperationalKpiPack extends BaseReportPage
         return number_format((float) $value, 0, ',', '.').'đ';
     }
 
-    /**
-     * @return array{no_show_delta:float,acceptance_delta:float,chair_delta:float}|null
-     */
-    protected function buildBranchBenchmarkSummary(ReportSnapshot $snapshot): ?array
-    {
-        if (! $snapshot->branch_id) {
-            return null;
-        }
-
-        $peerSnapshots = $this->applySnapshotBranchScope(
-            ReportSnapshot::query()
-                ->where('snapshot_key', 'operational_kpi_pack')
-                ->whereDate('snapshot_date', $snapshot->snapshot_date)
-                ->whereNotNull('branch_id')
-        )->get(['id', 'payload']);
-
-        if ($peerSnapshots->count() < 2) {
-            return null;
-        }
-
-        $averageNoShow = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'no_show_rate', 0)), 2);
-        $averageAcceptance = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'treatment_acceptance_rate', 0)), 2);
-        $averageChair = round((float) $peerSnapshots->avg(fn (ReportSnapshot $record) => (float) data_get($record->payload, 'chair_utilization_rate', 0)), 2);
-
-        $currentNoShow = (float) data_get($snapshot->payload, 'no_show_rate', 0);
-        $currentAcceptance = (float) data_get($snapshot->payload, 'treatment_acceptance_rate', 0);
-        $currentChair = (float) data_get($snapshot->payload, 'chair_utilization_rate', 0);
-
-        return [
-            'no_show_delta' => round($currentNoShow - $averageNoShow, 2),
-            'acceptance_delta' => round($currentAcceptance - $averageAcceptance, 2),
-            'chair_delta' => round($currentChair - $averageChair, 2),
-        ];
-    }
-
     protected function formatSignedPercent(float $value): string
     {
         $prefix = $value > 0 ? '+' : '';
 
         return $prefix.number_format($value, 2).'%';
-    }
-
-    protected function applySnapshotBranchScope(Builder $query): Builder
-    {
-        $branchIds = $this->resolvedVisibleBranchIds();
-
-        if ($branchIds === null) {
-            return $query;
-        }
-
-        if ($branchIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn('branch_id', $branchIds);
     }
 }

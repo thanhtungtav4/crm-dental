@@ -5,10 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class VisitEpisode extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
 
     public const STATUS_SCHEDULED = 'scheduled';
 
@@ -23,6 +31,35 @@ class VisitEpisode extends Model
     public const STATUS_RESCHEDULED = 'rescheduled';
 
     public const DEFAULT_STATUS = self::STATUS_SCHEDULED;
+
+    protected const STATUS_TRANSITIONS = [
+        self::STATUS_SCHEDULED => [
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+            self::STATUS_NO_SHOW,
+            self::STATUS_CANCELLED,
+            self::STATUS_RESCHEDULED,
+        ],
+        self::STATUS_IN_PROGRESS => [
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+            self::STATUS_RESCHEDULED,
+        ],
+        self::STATUS_NO_SHOW => [
+            self::STATUS_SCHEDULED,
+            self::STATUS_RESCHEDULED,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_RESCHEDULED => [
+            self::STATUS_SCHEDULED,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_CANCELLED => [
+            self::STATUS_SCHEDULED,
+            self::STATUS_RESCHEDULED,
+        ],
+        self::STATUS_COMPLETED => [],
+    ];
 
     protected $fillable = [
         'appointment_id',
@@ -56,6 +93,30 @@ class VisitEpisode extends Model
         'chair_minutes' => 'integer',
         'overrun_minutes' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $visitEpisode): void {
+            $visitEpisode->status = static::normalizeStatus($visitEpisode->status) ?? static::DEFAULT_STATUS;
+
+            if ($visitEpisode->exists && $visitEpisode->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'VISIT_EPISODE_STATE_INVALID: Trang thai luot kham chi duoc thay doi qua VisitEpisodeService.',
+                    ]);
+                }
+
+                $fromStatus = static::normalizeStatus((string) ($visitEpisode->getOriginal('status') ?? static::DEFAULT_STATUS))
+                    ?? static::DEFAULT_STATUS;
+
+                if (! static::canTransition($fromStatus, $visitEpisode->status)) {
+                    throw ValidationException::withMessages([
+                        'status' => 'VISIT_EPISODE_STATE_INVALID: Khong the chuyen trang thai luot kham.',
+                    ]);
+                }
+            }
+        });
+    }
 
     public function appointment()
     {
@@ -100,5 +161,51 @@ class VisitEpisode extends Model
     public function clinicalMediaAssets()
     {
         return $this->hasMany(ClinicalMediaAsset::class, 'visit_episode_id');
+    }
+
+    public static function normalizeStatus(?string $status): ?string
+    {
+        $normalizedStatus = strtolower(trim((string) $status));
+
+        return in_array($normalizedStatus, [
+            self::STATUS_SCHEDULED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+            self::STATUS_NO_SHOW,
+            self::STATUS_CANCELLED,
+            self::STATUS_RESCHEDULED,
+        ], true) ? $normalizedStatus : null;
+    }
+
+    public static function canTransition(string $fromStatus, string $toStatus): bool
+    {
+        if ($fromStatus === $toStatus) {
+            return true;
+        }
+
+        return in_array($toStatus, static::STATUS_TRANSITIONS[$fromStatus] ?? [], true);
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 }

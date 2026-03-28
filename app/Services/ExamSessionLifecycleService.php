@@ -9,6 +9,8 @@ use App\Models\TreatmentProgressItem;
 
 class ExamSessionLifecycleService
 {
+    public function __construct(protected ExamSessionWorkflowService $examSessionWorkflowService) {}
+
     public function refresh(?int $examSessionId): void
     {
         if (! $examSessionId) {
@@ -42,8 +44,18 @@ class ExamSessionLifecycleService
         }
 
         if ($targetStatus === ExamSession::STATUS_LOCKED) {
-            $session->status = ExamSession::STATUS_LOCKED;
-            $session->saveQuietly();
+            $this->examSessionWorkflowService->transition(
+                examSession: $session,
+                targetStatus: ExamSession::STATUS_LOCKED,
+                attributes: [
+                    'updated_by' => $session->updated_by,
+                ],
+                context: [
+                    'trigger' => 'exam_session_lifecycle_refresh',
+                    'patient_id' => $session->patient_id,
+                    'exam_session_id' => (int) $session->getKey(),
+                ],
+            );
             $this->lockProgressDays($session->id);
 
             return;
@@ -53,8 +65,18 @@ class ExamSessionLifecycleService
             return;
         }
 
-        $session->status = $targetStatus;
-        $session->saveQuietly();
+        $this->examSessionWorkflowService->transition(
+            examSession: $session,
+            targetStatus: $targetStatus,
+            attributes: [
+                'updated_by' => $session->updated_by,
+            ],
+            context: [
+                'trigger' => 'exam_session_lifecycle_refresh',
+                'patient_id' => $session->patient_id,
+                'exam_session_id' => (int) $session->getKey(),
+            ],
+        );
     }
 
     protected function resolveTargetStatus(ExamSession $session): string
@@ -132,10 +154,14 @@ class ExamSessionLifecycleService
         TreatmentProgressDay::query()
             ->where('exam_session_id', $examSessionId)
             ->where('status', '!=', TreatmentProgressDay::STATUS_LOCKED)
-            ->update([
-                'status' => TreatmentProgressDay::STATUS_LOCKED,
-                'locked_at' => now(),
-                'updated_at' => now(),
-            ]);
+            ->get()
+            ->each(function (TreatmentProgressDay $day): void {
+                TreatmentProgressDay::runWithinManagedWorkflow(function () use ($day): void {
+                    $day->forceFill([
+                        'status' => TreatmentProgressDay::STATUS_LOCKED,
+                        'locked_at' => now(),
+                    ])->save();
+                });
+            });
     }
 }

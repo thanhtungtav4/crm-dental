@@ -144,21 +144,13 @@ class EmrSyncEventPublisher
             return $event;
         }
 
-        $event->forceFill([
+        $event->resetForReplay([
             'patient_id' => $patient->id,
             'branch_id' => $patient->first_branch_id,
             'event_type' => $eventType,
             'payload' => $payload,
             'payload_checksum' => $checksum,
-            'status' => EmrSyncEvent::STATUS_PENDING,
-            'attempts' => 0,
-            'next_retry_at' => now(),
-            'locked_at' => null,
-            'processed_at' => null,
-            'last_http_status' => null,
-            'last_error' => null,
-            'external_patient_id' => null,
-        ])->save();
+        ]);
 
         return $event->fresh() ?? $event;
     }

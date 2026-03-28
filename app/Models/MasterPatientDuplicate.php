@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\ActionGate;
+use App\Services\MasterPatientDuplicateWorkflowService;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use Carbon\CarbonInterface;
@@ -17,6 +17,13 @@ class MasterPatientDuplicate extends Model
 {
     use HasFactory;
 
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
+
     public const STATUS_OPEN = 'open';
 
     public const STATUS_RESOLVED = 'resolved';
@@ -24,6 +31,24 @@ class MasterPatientDuplicate extends Model
     public const STATUS_IGNORED = 'ignored';
 
     public const STALE_OPEN_CASE_DAYS = 3;
+
+    protected const STATUS_TRANSITIONS = [
+        self::STATUS_OPEN => [
+            self::STATUS_OPEN,
+            self::STATUS_RESOLVED,
+            self::STATUS_IGNORED,
+        ],
+        self::STATUS_RESOLVED => [
+            self::STATUS_RESOLVED,
+            self::STATUS_OPEN,
+            self::STATUS_IGNORED,
+        ],
+        self::STATUS_IGNORED => [
+            self::STATUS_IGNORED,
+            self::STATUS_OPEN,
+            self::STATUS_RESOLVED,
+        ],
+    ];
 
     protected $fillable = [
         'patient_id',
@@ -50,6 +75,36 @@ class MasterPatientDuplicate extends Model
             'reviewed_at' => 'datetime',
             'metadata' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $duplicate): void {
+            $duplicate->status = static::normalizeStatus($duplicate->status) ?? static::STATUS_OPEN;
+
+            if (! $duplicate->exists || ! $duplicate->isDirty('status')) {
+                return;
+            }
+
+            if (! static::$allowsManagedWorkflowMutation) {
+                throw ValidationException::withMessages([
+                    'status' => 'Trang thai duplicate case chi duoc thay doi qua MasterPatientDuplicateWorkflowService.',
+                ]);
+            }
+
+            $fromStatus = static::normalizeStatus((string) ($duplicate->getOriginal('status') ?: static::STATUS_OPEN))
+                ?? static::STATUS_OPEN;
+
+            if (! static::canTransition($fromStatus, $duplicate->status)) {
+                throw ValidationException::withMessages([
+                    'status' => sprintf(
+                        'MPI_DUPLICATE_STATE_INVALID: Không thể chuyển từ "%s" sang "%s".',
+                        static::statusLabel($fromStatus),
+                        static::statusLabel($duplicate->status),
+                    ),
+                ]);
+            }
+        });
     }
 
     public function patient(): BelongsTo
@@ -327,55 +382,19 @@ class MasterPatientDuplicate extends Model
 
     public function markResolved(?int $reviewedBy = null, ?string $note = null): void
     {
-        ActionGate::authorize(
-            ActionPermission::MPI_DEDUPE_REVIEW,
-            'Bạn không có quyền xử lý queue trùng bệnh nhân liên chi nhánh.',
-        );
-
-        $this->assertOpenForReview('resolved');
-
-        $previousStatus = $this->status;
-        $actorId = $reviewedBy ?? auth()->id();
-
-        $this->forceFill([
-            'status' => self::STATUS_RESOLVED,
-            'reviewed_by' => $actorId,
-            'reviewed_at' => now(),
-            'review_note' => $note,
-        ])->save();
-
-        $this->recordReviewAudit(
-            previousStatus: $previousStatus,
-            nextStatus: self::STATUS_RESOLVED,
-            actorId: $actorId,
+        app(MasterPatientDuplicateWorkflowService::class)->resolve(
+            duplicateCase: $this,
             note: $note,
+            actorId: $reviewedBy,
         );
     }
 
     public function markIgnored(?int $reviewedBy = null, ?string $note = null): void
     {
-        ActionGate::authorize(
-            ActionPermission::MPI_DEDUPE_REVIEW,
-            'Bạn không có quyền xử lý queue trùng bệnh nhân liên chi nhánh.',
-        );
-
-        $this->assertOpenForReview('ignored');
-
-        $actorId = $reviewedBy ?? auth()->id();
-        $previousStatus = $this->status;
-
-        $this->forceFill([
-            'status' => self::STATUS_IGNORED,
-            'reviewed_by' => $actorId,
-            'reviewed_at' => now(),
-            'review_note' => $note,
-        ])->save();
-
-        $this->recordReviewAudit(
-            previousStatus: $previousStatus,
-            nextStatus: self::STATUS_IGNORED,
-            actorId: $actorId,
+        app(MasterPatientDuplicateWorkflowService::class)->ignore(
+            duplicateCase: $this,
             note: $note,
+            actorId: $reviewedBy,
         );
     }
 
@@ -393,12 +412,14 @@ class MasterPatientDuplicate extends Model
 
     public static function statusLabel(?string $status): string
     {
-        return static::statusOptions()[$status ?? ''] ?? ($status ?: '-');
+        $normalizedStatus = static::normalizeStatus($status);
+
+        return static::statusOptions()[$normalizedStatus ?? ''] ?? ($status ?: '-');
     }
 
     public static function statusColor(?string $status): string
     {
-        return match ($status) {
+        return match (static::normalizeStatus($status)) {
             self::STATUS_OPEN => 'warning',
             self::STATUS_RESOLVED => 'success',
             self::STATUS_IGNORED => 'gray',
@@ -423,13 +444,52 @@ class MasterPatientDuplicate extends Model
         return static::identityTypeOptions()[$identityType ?? ''] ?? ($identityType ?: '-');
     }
 
-    protected function assertOpenForReview(string $targetStatus): void
+    public static function normalizeStatus(?string $status): ?string
     {
-        if ($this->status !== self::STATUS_OPEN) {
-            throw ValidationException::withMessages([
-                'status' => "Case MPI chỉ có thể chuyển từ open sang {$targetStatus}.",
-            ]);
+        if ($status === null) {
+            return null;
         }
+
+        $normalizedStatus = strtolower(trim($status));
+
+        return in_array($normalizedStatus, array_keys(static::statusOptions()), true)
+            ? $normalizedStatus
+            : null;
+    }
+
+    public static function canTransition(?string $fromStatus, ?string $toStatus): bool
+    {
+        $normalizedFromStatus = static::normalizeStatus($fromStatus);
+        $normalizedToStatus = static::normalizeStatus($toStatus);
+
+        if ($normalizedFromStatus === null || $normalizedToStatus === null) {
+            return false;
+        }
+
+        return in_array($normalizedToStatus, static::STATUS_TRANSITIONS[$normalizedFromStatus] ?? [], true);
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 
     /**
@@ -478,28 +538,5 @@ class MasterPatientDuplicate extends Model
         ])
             ->filter(static fn (mixed $value): bool => filled($value))
             ->implode(' | ');
-    }
-
-    protected function recordReviewAudit(string $previousStatus, string $nextStatus, ?int $actorId, ?string $note): void
-    {
-        AuditLog::record(
-            entityType: AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE,
-            entityId: $this->id,
-            action: AuditLog::ACTION_RESOLVE,
-            actorId: $actorId,
-            metadata: [
-                'patient_id' => $this->patient_id,
-                'branch_id' => $this->branch_id,
-                'status_from' => $previousStatus,
-                'status_to' => $nextStatus,
-                'identity_type' => $this->identity_type,
-                'identity_value' => $this->identity_value,
-                'matched_patient_ids' => $this->matchedPatientIds(),
-                'matched_branch_ids' => $this->matchedBranchIds(),
-                'review_note' => $note,
-            ],
-            branchId: is_numeric($this->branch_id) ? (int) $this->branch_id : null,
-            patientId: is_numeric($this->patient_id) ? (int) $this->patient_id : null,
-        );
     }
 }

@@ -3,6 +3,7 @@
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Branch;
+use App\Models\BranchTransferRequest;
 use App\Models\Customer;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
@@ -294,6 +295,53 @@ it('formats payment refund audit entries with a finance-friendly description', f
 
     expect($entries->pluck('title')->all())->toContain('Hoàn tiền')
         ->and($descriptions)->toContain('Hóa đơn INV-909 • 425.000đ • Hoan phan thu thua');
+});
+
+it('includes branch transfer audit entries in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create([
+        'name' => 'HCM-Q1',
+    ]);
+    $targetBranch = Branch::factory()->create([
+        'name' => 'HN-CG',
+    ]);
+    $actor = User::factory()->create([
+        'branch_id' => $targetBranch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_BRANCH_TRANSFER,
+        'entity_id' => 909,
+        'action' => AuditLog::ACTION_TRANSFER,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'from_branch_id' => $branch->id,
+            'from_branch_name' => $branch->name,
+            'to_branch_id' => $targetBranch->id,
+            'to_branch_name' => $targetBranch->name,
+            'status_to' => BranchTransferRequest::STATUS_APPLIED,
+            'reason' => 'Dieu phoi tiep nhan noi bo',
+            'trigger' => 'manual_apply',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 18:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Áp dụng chuyển chi nhánh')
+        ->and($descriptions)->toContain('HCM-Q1 -> HN-CG • Dieu phoi tiep nhan noi bo');
 });
 
 it('includes material issue note workflow entries in the patient operational timeline', function (): void {

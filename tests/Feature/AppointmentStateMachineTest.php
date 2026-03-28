@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
 use Illuminate\Validation\ValidationException;
 
 it('normalizes legacy status aliases including later/rebooked', function () {
@@ -31,9 +32,22 @@ it('blocks invalid appointment status transition with APPOINTMENT_STATE_INVALID'
         'status' => Appointment::STATUS_COMPLETED,
     ]);
 
+    expect(fn () => Appointment::runWithinManagedWorkflow(function () use ($appointment): void {
+        $appointment->update([
+            'status' => Appointment::STATUS_NO_SHOW,
+        ]);
+    }))->toThrow(ValidationException::class, 'APPOINTMENT_STATE_INVALID');
+});
+
+it('blocks direct appointment status mutations outside the scheduling service', function () {
+    $appointment = makeAppointmentRecord([
+        'date' => now()->subDay(),
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
     expect(fn () => $appointment->update([
-        'status' => Appointment::STATUS_NO_SHOW,
-    ]))->toThrow(ValidationException::class, 'APPOINTMENT_STATE_INVALID');
+        'status' => Appointment::STATUS_COMPLETED,
+    ]))->toThrow(ValidationException::class, 'AppointmentSchedulingService');
 });
 
 it('hides future-only outcome statuses from manual update helpers', function () {
@@ -53,41 +67,54 @@ it('hides future-only outcome statuses from manual update helpers', function () 
 
 it('requires reason when transitioning to cancelled or rescheduled', function () {
     $appointment = makeAppointmentRecord([
+        'date' => now()->subDay(),
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
-    expect(fn () => $appointment->update([
-        'status' => Appointment::STATUS_CANCELLED,
-    ]))->toThrow(ValidationException::class, 'lý do hủy');
+    expect(fn () => app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_CANCELLED,
+    ))->toThrow(ValidationException::class, 'lý do hủy');
 
-    $appointment->update([
-        'status' => Appointment::STATUS_CANCELLED,
-        'cancellation_reason' => 'Bệnh nhân bận đột xuất',
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_CANCELLED,
+        ['reason' => 'Bệnh nhân bận đột xuất'],
+    );
 
     expect($appointment->fresh()->status)->toBe(Appointment::STATUS_CANCELLED);
 
     $followUp = makeAppointmentRecord([
+        'date' => now()->subDay(),
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
-    expect(fn () => $followUp->update([
-        'status' => Appointment::STATUS_RESCHEDULED,
-    ]))->toThrow(ValidationException::class, 'lý do hẹn lại');
+    expect(fn () => app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $followUp,
+        startAt: $followUp->date?->copy()->addHour() ?? now()->addDay()->addHour(),
+        reason: '   ',
+    ))->toThrow(ValidationException::class, 'lý do đổi lịch');
 
-    $followUp->update([
-        'status' => Appointment::STATUS_RESCHEDULED,
-        'reschedule_reason' => 'Bệnh nhân dời lịch theo yêu cầu',
-    ]);
+    app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $followUp,
+        startAt: $followUp->date?->copy()->addHour() ?? now()->addDay()->addHour(),
+        reason: 'Bệnh nhân dời lịch theo yêu cầu',
+    );
 
     expect($followUp->fresh()->status)->toBe(Appointment::STATUS_RESCHEDULED);
 });
 
 it('creates appointment reminder ticket for rescheduled and cancels when status recovers', function () {
     $appointment = makeAppointmentRecord([
-        'status' => Appointment::STATUS_RESCHEDULED,
-        'reschedule_reason' => 'Dời lịch vì công tác',
+        'date' => now()->subDay(),
+        'status' => Appointment::STATUS_SCHEDULED,
     ]);
+
+    app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $appointment,
+        startAt: $appointment->date?->copy()->addHour() ?? now()->addHour(),
+        reason: 'Dời lịch vì công tác',
+    );
 
     $ticket = Note::query()
         ->where('source_type', Appointment::class)
@@ -99,9 +126,10 @@ it('creates appointment reminder ticket for rescheduled and cancels when status 
         ->and($ticket->care_status)->toBe(\App\Models\Note::CARE_STATUS_NOT_STARTED)
         ->and($ticket->content)->toContain('Dời lịch vì công tác');
 
-    $appointment->update([
-        'status' => Appointment::STATUS_CONFIRMED,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment->fresh(),
+        Appointment::STATUS_CONFIRMED,
+    );
 
     expect($ticket->fresh()->care_status)->toBe(\App\Models\Note::CARE_STATUS_FAILED);
 });

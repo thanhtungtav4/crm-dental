@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\AuditLog;
 use App\Models\Consent;
 use App\Support\WorkflowAuditMetadata;
+use Illuminate\Support\Arr;
 
 class ConsentObserver
 {
@@ -29,6 +30,12 @@ class ConsentObserver
             return;
         }
 
+        $managedContext = Consent::currentManagedTransitionContext();
+        $managedActorId = data_get($managedContext, 'actor_id');
+        $reason = is_string(data_get($managedContext, 'reason'))
+            ? (string) data_get($managedContext, 'reason')
+            : null;
+
         $action = match ($consent->status) {
             Consent::STATUS_SIGNED => AuditLog::ACTION_APPROVE,
             Consent::STATUS_REVOKED => AuditLog::ACTION_CANCEL,
@@ -40,13 +47,17 @@ class ConsentObserver
             entityType: AuditLog::ENTITY_CONSENT,
             entityId: $consent->id,
             action: $action,
-            actorId: auth()->id() ?? $consent->signed_by,
+            actorId: is_numeric($managedActorId) ? (int) $managedActorId : (auth()->id() ?? $consent->signed_by),
             branchId: $consent->resolveBranchId(),
             patientId: $consent->patient_id,
             metadata: WorkflowAuditMetadata::transition(
                 fromStatus: (string) ($consent->getOriginal('status') ?: Consent::STATUS_PENDING),
                 toStatus: $consent->status,
-                metadata: $this->buildMetadata($consent),
+                reason: $reason,
+                metadata: array_merge(
+                    $this->buildMetadata($consent),
+                    Arr::except($managedContext, ['actor_id', 'reason']),
+                ),
             ),
         );
     }

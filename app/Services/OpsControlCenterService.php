@@ -23,17 +23,12 @@ use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Models\InstallmentPlan;
 use App\Models\Invoice;
-use App\Models\OperationalKpiAlert;
 use App\Models\Payment;
-use App\Models\ReportSnapshot;
 use App\Models\User;
 use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
-use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
-use App\Models\ZnsCampaign;
-use App\Models\ZnsCampaignDelivery;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -51,8 +46,13 @@ class OpsControlCenterService
     public function __construct(
         protected AutomationActorResolver $automationActorResolver,
         protected BackupArtifactManifestService $manifestService,
+        protected GovernanceAuditReadModelService $governanceAuditReadModelService,
         protected IntegrationSecretRotationService $integrationSecretRotationService,
         protected HotReportAggregateReadinessService $hotReportAggregateReadinessService,
+        protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
+        protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
+        protected OperationalKpiSnapshotReadModelService $operationalKpiSnapshotReadModelService,
+        protected ZnsOperationalReadModelService $znsOperationalReadModelService,
     ) {}
 
     /**
@@ -579,49 +579,7 @@ class OpsControlCenterService
      */
     protected function znsOperationsSummary(): array
     {
-        $summaryCards = [
-            [
-                'label' => 'Automation pending',
-                'value' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_PENDING)->count(),
-                'tone' => 'info',
-            ],
-            [
-                'label' => 'Automation retry due',
-                'value' => ZnsAutomationEvent::query()
-                    ->where('status', ZnsAutomationEvent::STATUS_FAILED)
-                    ->whereNotNull('next_retry_at')
-                    ->where('next_retry_at', '<=', now())
-                    ->count(),
-                'tone' => 'warning',
-            ],
-            [
-                'label' => 'Automation dead-letter',
-                'value' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_DEAD)->count(),
-                'tone' => 'danger',
-            ],
-            [
-                'label' => 'Delivery retry due',
-                'value' => ZnsCampaignDelivery::query()
-                    ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                    ->whereNotNull('next_retry_at')
-                    ->where('next_retry_at', '<=', now())
-                    ->count(),
-                'tone' => 'warning',
-            ],
-            [
-                'label' => 'Delivery terminal failed',
-                'value' => ZnsCampaignDelivery::query()
-                    ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                    ->whereNull('next_retry_at')
-                    ->count(),
-                'tone' => 'danger',
-            ],
-            [
-                'label' => 'Campaign failed',
-                'value' => ZnsCampaign::query()->where('status', ZnsCampaign::STATUS_FAILED)->count(),
-                'tone' => 'warning',
-            ],
-        ];
+        $summaryCards = $this->znsOperationalReadModelService->summaryCards();
 
         $retentionDays = ClinicRuntimeSettings::znsOperationalRetentionDays();
         $retentionCandidates = [
@@ -634,13 +592,13 @@ class OpsControlCenterService
             $this->integrationRetentionCandidate(
                 label: 'ZNS automation events',
                 retentionDays: $retentionDays,
-                total: $this->znsAutomationRetentionCandidates(),
+                total: $this->znsOperationalReadModelService->automationRetentionCandidateCount($retentionDays),
                 description: 'Event SENT/DEAD đã quá hạn retention.',
             ),
             $this->integrationRetentionCandidate(
                 label: 'ZNS deliveries',
                 retentionDays: $retentionDays,
-                total: $this->znsDeliveryRetentionCandidates(),
+                total: $this->znsOperationalReadModelService->deliveryRetentionCandidateCount($retentionDays),
                 description: 'Delivery sent/skipped hoặc failed terminal đủ điều kiện prune.',
             ),
         ];
@@ -681,38 +639,14 @@ class OpsControlCenterService
     {
         $branchIds = $this->operatorBranchIds();
         $snapshotDate = $this->latestOperationalKpiSnapshotDate($branchIds);
-        $snapshots = ReportSnapshot::query()
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->whereDate('snapshot_date', $snapshotDate)
-            ->when(
-                $branchIds !== [],
-                fn (Builder $query): Builder => $query->whereIn('branch_scope_id', $branchIds),
-                fn (Builder $query): Builder => $query->whereRaw('1 = 0'),
-            )
-            ->get(['id', 'branch_scope_id', 'sla_status', 'generated_at']);
+        $snapshots = $this->operationalKpiSnapshotReadModelService
+            ->snapshotsForDate($snapshotDate, $branchIds, ['id', 'branch_scope_id', 'sla_status', 'generated_at']);
 
-        $snapshotCounts = [
-            'on_time' => $snapshots->where('sla_status', ReportSnapshot::SLA_ON_TIME)->count(),
-            'late' => $snapshots->where('sla_status', ReportSnapshot::SLA_LATE)->count(),
-            'stale' => $snapshots->where('sla_status', ReportSnapshot::SLA_STALE)->count(),
-            'missing' => max(0, count($branchIds) - $snapshots->pluck('branch_scope_id')->unique()->count()),
-        ];
+        $snapshotCounts = $this->operationalKpiSnapshotReadModelService
+            ->snapshotCounts($snapshots, $branchIds);
 
-        $openAlerts = OperationalKpiAlert::query()
-            ->with(['owner:id,email', 'branch:id,name'])
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->whereDate('snapshot_date', $snapshotDate)
-            ->whereIn('branch_id', $branchIds)
-            ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
-            ->latest('id')
-            ->get();
-
-        $resolvedAlerts = OperationalKpiAlert::query()
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->whereDate('snapshot_date', $snapshotDate)
-            ->whereIn('branch_id', $branchIds)
-            ->where('status', OperationalKpiAlert::STATUS_RESOLVED)
-            ->count();
+        $alertSummary = $this->operationalKpiAlertReadModelService
+            ->opsSummaryForDate($snapshotDate, $branchIds);
 
         $aggregateReadiness = [
             [
@@ -727,10 +661,10 @@ class OpsControlCenterService
 
         $tone = $snapshotCounts['missing'] > 0 || $snapshotCounts['stale'] > 0
             ? 'danger'
-            : (($openAlerts->isNotEmpty() || collect($aggregateReadiness)->contains(fn (array $item): bool => ! $item['ready'])) ? 'warning' : 'success');
+            : (($alertSummary['open_count'] > 0 || collect($aggregateReadiness)->contains(fn (array $item): bool => ! $item['ready'])) ? 'warning' : 'success');
         $status = $snapshotCounts['missing'] > 0
             ? 'Snapshot gaps detected'
-            : (($snapshotCounts['stale'] > 0 || $openAlerts->isNotEmpty()) ? 'Needs triage' : 'Healthy');
+            : (($snapshotCounts['stale'] > 0 || $alertSummary['open_count'] > 0) ? 'Needs triage' : 'Healthy');
 
         return [
             'tone' => $tone,
@@ -743,25 +677,16 @@ class OpsControlCenterService
                 ],
                 [
                     'label' => 'Open alerts',
-                    'value' => $openAlerts->count(),
+                    'value' => $alertSummary['open_count'],
                 ],
                 [
                     'label' => 'Resolved alerts',
-                    'value' => $resolvedAlerts,
+                    'value' => $alertSummary['resolved_count'],
                 ],
             ],
             'snapshot_counts' => $snapshotCounts,
             'aggregate_readiness' => $aggregateReadiness,
-            'open_alerts' => $openAlerts
-                ->take(6)
-                ->map(fn (OperationalKpiAlert $alert): array => [
-                    'title' => $alert->title,
-                    'status' => $alert->status,
-                    'severity' => $alert->severity,
-                    'branch' => $alert->branch?->name ?: '-',
-                    'owner' => $alert->owner?->email ?: 'Unassigned',
-                ])
-                ->all(),
+            'open_alerts' => $alertSummary['open_alerts'],
             'links' => [
                 [
                     'label' => 'KPI vận hành',
@@ -1014,18 +939,8 @@ class OpsControlCenterService
         }
 
         if ($authUser instanceof User && $canViewAudit) {
-            $recentAudits = AuditLog::query()
-                ->with('actor')
-                ->visibleTo($authUser)
-                ->whereIn('entity_type', [
-                    AuditLog::ENTITY_SECURITY,
-                    AuditLog::ENTITY_AUTOMATION,
-                    AuditLog::ENTITY_BRANCH_TRANSFER,
-                    AuditLog::ENTITY_INVOICE,
-                ])
-                ->latest('id')
-                ->limit(5)
-                ->get()
+            $recentAudits = $this->governanceAuditReadModelService
+                ->recentAudits($authUser, 5)
                 ->map(function (AuditLog $auditLog): array {
                     return [
                         'entity' => $auditLog->entity_type,
@@ -1129,36 +1044,15 @@ class OpsControlCenterService
         $metrics = [
             'dead_backlog_total' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)->count()
                 + EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_DEAD)->count()
-                + ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_DEAD)->count(),
+                + $this->znsOperationalReadModelService->automationDeadCount(),
             'retryable_failed_backlog_total' => GoogleCalendarSyncEvent::query()->where('status', GoogleCalendarSyncEvent::STATUS_FAILED)->count()
                 + EmrSyncEvent::query()->where('status', EmrSyncEvent::STATUS_FAILED)->count()
-                + ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_FAILED)->count(),
-            'open_kpi_alerts' => OperationalKpiAlert::query()
-                ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
-                ->count(),
-            'snapshot_sla_violations' => ReportSnapshot::query()
-                ->where('snapshot_key', 'operational_kpi_pack')
-                ->whereDate('snapshot_date', $snapshotDate)
-                ->whereIn('sla_status', [
-                    ReportSnapshot::SLA_LATE,
-                    ReportSnapshot::SLA_STALE,
-                    ReportSnapshot::SLA_MISSING,
-                ])
-                ->count(),
-            'recent_automation_failures' => AuditLog::query()
-                ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
-                ->where('action', AuditLog::ACTION_FAIL)
-                ->where('created_at', '>=', $windowStartedAt)
-                ->where(function (Builder $query): void {
-                    foreach ($this->trackedCommands() as $command) {
-                        $query->orWhere('metadata->command', $command);
-                    }
-
-                    foreach ($this->trackedChannels() as $channel) {
-                        $query->orWhere('metadata->channel', $channel);
-                    }
-                })
-                ->count(),
+                + $this->znsOperationalReadModelService->automationFailedCount(),
+            'open_kpi_alerts' => $this->operationalKpiAlertReadModelService->openAlertCount(),
+            'snapshot_sla_violations' => $this->operationalKpiSnapshotReadModelService
+                ->slaViolationCountForDate($snapshotDate),
+            'recent_automation_failures' => $this->operationalAutomationAuditReadModelService
+                ->recentFailureCount($windowStartedAt),
         ];
 
         $requiredRunbookCategories = [
@@ -1232,21 +1126,8 @@ class OpsControlCenterService
      */
     protected function recentOpsRuns(): array
     {
-        return AuditLog::query()
-            ->with('actor')
-            ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
-            ->where(function (Builder $query): void {
-                foreach ($this->trackedCommands() as $command) {
-                    $query->orWhere('metadata->command', $command);
-                }
-
-                foreach ($this->trackedChannels() as $channel) {
-                    $query->orWhere('metadata->channel', $channel);
-                }
-            })
-            ->latest('id')
-            ->limit(12)
-            ->get()
+        return $this->operationalAutomationAuditReadModelService
+            ->recentRuns(12)
             ->map(function (AuditLog $auditLog): array {
                 $command = (string) data_get($auditLog->metadata, 'command', data_get($auditLog->metadata, 'channel', 'ops'));
                 $status = (string) data_get($auditLog->metadata, 'status', $auditLog->action);
@@ -1392,57 +1273,6 @@ class OpsControlCenterService
         return $logs + $events;
     }
 
-    protected function znsAutomationRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::znsOperationalRetentionDays());
-
-        return ZnsAutomationEvent::query()
-            ->whereIn('status', [
-                ZnsAutomationEvent::STATUS_SENT,
-                ZnsAutomationEvent::STATUS_DEAD,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-    }
-
-    protected function znsDeliveryRetentionCandidates(): int
-    {
-        $cutoff = now()->subDays(ClinicRuntimeSettings::znsOperationalRetentionDays());
-
-        return ZnsCampaignDelivery::query()
-            ->whereNull('processing_token')
-            ->where(function (Builder $builder): void {
-                $builder
-                    ->whereIn('status', [
-                        ZnsCampaignDelivery::STATUS_SENT,
-                        ZnsCampaignDelivery::STATUS_SKIPPED,
-                    ])
-                    ->orWhere(function (Builder $failedQuery): void {
-                        $failedQuery
-                            ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                            ->whereNull('next_retry_at');
-                    });
-            })
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('sent_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('sent_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            })
-            ->count();
-    }
-
     protected function currentUser(): ?User
     {
         $authUser = auth()->user();
@@ -1478,18 +1308,7 @@ class OpsControlCenterService
      */
     protected function latestOperationalKpiSnapshotDate(array $branchIds): string
     {
-        if ($branchIds === []) {
-            return now()->subDay()->toDateString();
-        }
-
-        $snapshotDate = ReportSnapshot::query()
-            ->where('snapshot_key', 'operational_kpi_pack')
-            ->whereIn('branch_scope_id', $branchIds)
-            ->max('snapshot_date');
-
-        return $snapshotDate
-            ? (string) $snapshotDate
-            : now()->subDay()->toDateString();
+        return $this->operationalKpiSnapshotReadModelService->latestSnapshotDate($branchIds);
     }
 
     protected function formatMoney(mixed $amount): string
@@ -1762,47 +1581,5 @@ class OpsControlCenterService
         }
 
         return (string) $value;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    protected function trackedCommands(): array
-    {
-        return [
-            'security:check-automation-actor',
-            'ops:create-backup-artifact',
-            'ops:check-backup-health',
-            'ops:run-restore-drill',
-            'ops:run-release-gates',
-            'ops:run-production-readiness',
-            'ops:verify-production-readiness-report',
-            'ops:check-alert-runbook-map',
-            'ops:check-observability-health',
-            'reports:explain-ops-hotpaths',
-            'integrations:revoke-rotated-secrets',
-            'integrations:prune-operational-data',
-            'reports:snapshot-operational-kpis',
-            'reports:check-snapshot-sla',
-            'reports:compare-snapshots',
-            'reports:snapshot-hot-aggregates',
-            'zns:sync-automation-events',
-            'zns:prune-operational-data',
-            'zns:run-campaigns',
-        ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    protected function trackedChannels(): array
-    {
-        return [
-            'automation_actor_health',
-            'backup_artifact',
-            'release_gates',
-            'production_readiness',
-            'observability_health',
-        ];
     }
 }

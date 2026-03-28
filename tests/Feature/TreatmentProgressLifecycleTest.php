@@ -10,6 +10,7 @@ use App\Models\TreatmentProgressItem;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 it('syncs treatment session into treatment progress day and item then marks exam session completed', function (): void {
     $doctor = User::factory()->create();
@@ -107,4 +108,42 @@ it('locks exam session and progress day when prescription is created for that se
     expect($examSession->status)->toBe(ExamSession::STATUS_LOCKED)
         ->and($progressDay->status)->toBe(TreatmentProgressDay::STATUS_LOCKED)
         ->and($progressDay->locked_at)->not->toBeNull();
+});
+
+it('blocks direct treatment progress status mutations outside the sync service', function (): void {
+    $patient = Patient::factory()->create();
+
+    $examSession = ExamSession::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'session_date' => '2026-03-10',
+        'status' => ExamSession::STATUS_IN_PROGRESS,
+    ]);
+
+    $progressDay = TreatmentProgressDay::query()->create([
+        'patient_id' => $patient->id,
+        'exam_session_id' => $examSession->id,
+        'branch_id' => $patient->first_branch_id,
+        'progress_date' => '2026-03-10',
+        'status' => TreatmentProgressDay::STATUS_PLANNED,
+    ]);
+
+    $progressItem = TreatmentProgressItem::query()->create([
+        'treatment_progress_day_id' => $progressDay->id,
+        'patient_id' => $patient->id,
+        'exam_session_id' => $examSession->id,
+        'procedure_name' => 'Theo doi tien trinh',
+        'quantity' => 1,
+        'unit_price' => 0,
+        'total_amount' => 0,
+        'status' => TreatmentProgressItem::STATUS_PLANNED,
+    ]);
+
+    expect(fn () => $progressDay->forceFill([
+        'status' => TreatmentProgressDay::STATUS_COMPLETED,
+    ])->save())->toThrow(ValidationException::class, 'TREATMENT_PROGRESS_DAY_STATE_INVALID');
+
+    expect(fn () => $progressItem->forceFill([
+        'status' => TreatmentProgressItem::STATUS_COMPLETED,
+    ])->save())->toThrow(ValidationException::class, 'TREATMENT_PROGRESS_ITEM_STATE_INVALID');
 });

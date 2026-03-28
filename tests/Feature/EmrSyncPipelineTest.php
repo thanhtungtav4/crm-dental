@@ -147,6 +147,7 @@ it('keeps deterministic idempotency key for repeated emr publish attempts and re
         ->and(EmrSyncEvent::query()->count())->toBe(1)
         ->and($event?->status)->toBe(EmrSyncEvent::STATUS_PENDING);
 
+    $event?->markProcessing();
     $event?->markSynced('EMR-PAT-0001', 200);
 
     $replayedEvent = app(EmrSyncEventPublisher::class)
@@ -167,13 +168,15 @@ it('reclaims stale processing emr events and retries them successfully', functio
 
     expect($event)->not->toBeNull();
 
-    $event?->forceFill([
-        'status' => EmrSyncEvent::STATUS_PROCESSING,
-        'attempts' => 1,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(20),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    EmrSyncEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event?->forceFill([
+            'status' => EmrSyncEvent::STATUS_PROCESSING,
+            'attempts' => 1,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(20),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::fake([
         'https://emr.example.test/api/emr/patients/sync' => Http::response([
@@ -203,14 +206,16 @@ it('moves stale processing emr events to dead when max attempts already reached'
 
     expect($event)->not->toBeNull();
 
-    $event?->forceFill([
-        'status' => EmrSyncEvent::STATUS_PROCESSING,
-        'attempts' => 2,
-        'max_attempts' => 2,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(10),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    EmrSyncEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event?->forceFill([
+            'status' => EmrSyncEvent::STATUS_PROCESSING,
+            'attempts' => 2,
+            'max_attempts' => 2,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(10),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::preventStrayRequests();
 

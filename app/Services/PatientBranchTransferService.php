@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\BranchTransferRequest;
 use App\Models\Patient;
@@ -91,28 +90,23 @@ class PatientBranchTransferService
             $patient->updated_by = $actorId ?? auth()->id();
             $patient->save();
 
-            $request->status = BranchTransferRequest::STATUS_APPLIED;
-            $request->decided_by = $actorId ?? auth()->id();
-            $request->decided_at = now();
-            $request->applied_at = now();
-            $request->metadata = array_merge($request->metadata ?? [], [
+            BranchTransferRequest::runWithinManagedWorkflow(function () use ($request, $actorId): void {
+                $request->status = BranchTransferRequest::STATUS_APPLIED;
+                $request->decided_by = $actorId ?? auth()->id();
+                $request->decided_at = now();
+                $request->applied_at = now();
+                $request->metadata = array_merge($request->metadata ?? [], [
+                    'old_branch_id' => $request->from_branch_id,
+                    'new_branch_id' => $request->to_branch_id,
+                ]);
+                $request->save();
+            }, [
+                'actor_id' => $this->resolveActorId($actorId),
+                'reason' => $request->reason,
+                'trigger' => 'manual_apply',
                 'old_branch_id' => $request->from_branch_id,
                 'new_branch_id' => $request->to_branch_id,
             ]);
-            $request->save();
-
-            AuditLog::record(
-                entityType: AuditLog::ENTITY_BRANCH_TRANSFER,
-                entityId: $request->id,
-                action: AuditLog::ACTION_TRANSFER,
-                actorId: $actorId ?? auth()->id(),
-                metadata: [
-                    'patient_id' => $patient->id,
-                    'from_branch_id' => $request->from_branch_id,
-                    'to_branch_id' => $request->to_branch_id,
-                    'reason' => $request->reason,
-                ],
-            );
 
             return $request->fresh();
         }, attempts: self::TRANSACTION_ATTEMPTS);
@@ -150,11 +144,19 @@ class PatientBranchTransferService
 
             $this->ensurePendingRequest($request);
 
-            $request->status = BranchTransferRequest::STATUS_REJECTED;
-            $request->decided_by = $actorId ?? auth()->id();
-            $request->decided_at = now();
-            $request->note = trim(implode(' | ', array_filter([$request->note, $note])));
-            $request->save();
+            $resolvedNote = trim(implode(' | ', array_filter([$request->note, $note])));
+
+            BranchTransferRequest::runWithinManagedWorkflow(function () use ($request, $actorId, $resolvedNote): void {
+                $request->status = BranchTransferRequest::STATUS_REJECTED;
+                $request->decided_by = $actorId ?? auth()->id();
+                $request->decided_at = now();
+                $request->note = $resolvedNote;
+                $request->save();
+            }, [
+                'actor_id' => $this->resolveActorId($actorId),
+                'reason' => $resolvedNote !== '' ? $resolvedNote : $request->reason,
+                'trigger' => 'manual_reject',
+            ]);
 
             return $request->fresh();
         }, attempts: self::TRANSACTION_ATTEMPTS);
@@ -215,6 +217,13 @@ class PatientBranchTransferService
         $authUser = auth()->user();
 
         return $authUser instanceof User ? $authUser : null;
+    }
+
+    protected function resolveActorId(?int $actorId = null): ?int
+    {
+        $candidate = $actorId ?? auth()->id();
+
+        return is_numeric($candidate) ? (int) $candidate : null;
     }
 
     protected function ensurePendingRequest(BranchTransferRequest $transferRequest): void

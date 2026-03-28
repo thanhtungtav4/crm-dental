@@ -12,6 +12,13 @@ class Note extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
+
     public const TYPE_GENERAL = 'general';
 
     public const CARE_STATUS_NOT_STARTED = 'not_started';
@@ -123,6 +130,12 @@ class Note extends Model
 
             if (! $note->exists || ! $note->isDirty('care_status')) {
                 return;
+            }
+
+            if (! static::$allowsManagedWorkflowMutation) {
+                throw ValidationException::withMessages([
+                    'care_status' => 'Trang thai care ticket chi duoc thay doi qua CareTicketWorkflowService.',
+                ]);
             }
 
             $fromStatus = static::normalizeCareStatus((string) $note->getOriginal('care_status')) ?? static::DEFAULT_CARE_STATUS;
@@ -312,6 +325,29 @@ class Note extends Model
         $sourceType = trim((string) ($this->source_type ?? ''));
 
         return $sourceType !== '' && str_starts_with($sourceType, 'App\\Models\\');
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 
     protected static function inferBranchId(self $note): ?int

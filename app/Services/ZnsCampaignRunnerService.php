@@ -394,10 +394,7 @@ class ZnsCampaignRunnerService
 
             $token = (string) Str::uuid();
 
-            $delivery->processing_token = $token;
-            $delivery->locked_at = now();
-            $delivery->attempt_count = (int) $delivery->attempt_count + 1;
-            $delivery->save();
+            $delivery->claimForProcessing($token);
 
             return [
                 'delivery_id' => (int) $delivery->id,
@@ -477,29 +474,45 @@ class ZnsCampaignRunnerService
                     ->orWhere('locked_at', '<=', $lockedBefore);
             });
 
-        $terminal = (clone $staleQuery)
-            ->where('attempt_count', '>=', $maxDeliveryAttempts)
-            ->update([
-                'status' => ZnsCampaignDelivery::STATUS_FAILED,
-                'next_retry_at' => null,
-                'processing_token' => null,
-                'locked_at' => null,
-                'error_message' => 'Stale processing lock reclaimed after max attempts reached.',
-                'updated_at' => $now,
-            ]);
+        $deliveryIds = (clone $staleQuery)->pluck('id');
+        $reclaimed = 0;
 
-        $retryable = (clone $staleQuery)
-            ->where('attempt_count', '<', $maxDeliveryAttempts)
-            ->update([
-                'status' => ZnsCampaignDelivery::STATUS_FAILED,
-                'next_retry_at' => $now,
-                'processing_token' => null,
-                'locked_at' => null,
-                'error_message' => 'Stale processing lock reclaimed for retry.',
-                'updated_at' => $now,
-            ]);
+        foreach ($deliveryIds as $deliveryId) {
+            $wasReclaimed = DB::transaction(function () use ($deliveryId, $lockedBefore, $maxDeliveryAttempts, $now): bool {
+                $delivery = ZnsCampaignDelivery::query()
+                    ->lockForUpdate()
+                    ->find($deliveryId);
 
-        return $terminal + $retryable;
+                if (! $delivery instanceof ZnsCampaignDelivery) {
+                    return false;
+                }
+
+                if ($delivery->processing_token === null) {
+                    return false;
+                }
+
+                if ($delivery->locked_at !== null && $delivery->locked_at->gt($lockedBefore)) {
+                    return false;
+                }
+
+                $delivery->markFailure(
+                    message: (int) $delivery->attempt_count >= $maxDeliveryAttempts
+                        ? 'Stale processing lock reclaimed after max attempts reached.'
+                        : 'Stale processing lock reclaimed for retry.',
+                    providerStatusCode: $delivery->provider_status_code,
+                    providerResponse: is_array($delivery->provider_response) ? $delivery->provider_response : null,
+                    nextRetryAt: (int) $delivery->attempt_count >= $maxDeliveryAttempts ? null : $now,
+                );
+
+                return true;
+            }, 3);
+
+            if ($wasReclaimed) {
+                $reclaimed++;
+            }
+        }
+
+        return $reclaimed;
     }
 
     protected function isDeliveryLockExpired(ZnsCampaignDelivery $delivery): bool
@@ -678,27 +691,29 @@ class ZnsCampaignRunnerService
                 return false;
             }
 
-            $delivery->status = $status;
-            $delivery->provider_message_id = $status === ZnsCampaignDelivery::STATUS_SENT
-                ? ($sendResult['provider_message_id'] ?? null)
-                : null;
-            $delivery->provider_status_code = $sendResult['provider_status_code'] ?? null;
-            $delivery->provider_response = $this->payloadSanitizer->sanitizeProviderResponse(
+            $providerResponse = $this->payloadSanitizer->sanitizeProviderResponse(
                 is_array($sendResult['response'] ?? null) ? $sendResult['response'] : null,
             );
-            $delivery->error_message = $status === ZnsCampaignDelivery::STATUS_SENT
+            $providerRequestSummary = $providerPayload === null
                 ? null
-                : (string) ($sendResult['error'] ?? 'ZNS provider request failed.');
-            $delivery->next_retry_at = $nextRetryAt;
-            $delivery->sent_at = $status === ZnsCampaignDelivery::STATUS_SENT ? now() : $delivery->sent_at;
-            $delivery->payload = $providerPayload === null
-                ? $delivery->payload
-                : array_merge(is_array($delivery->payload) ? $delivery->payload : [], [
-                    'provider_request_summary' => $this->payloadSanitizer->sanitizeProviderRequest($providerPayload),
-                ]);
-            $delivery->processing_token = null;
-            $delivery->locked_at = null;
-            $delivery->save();
+                : $this->payloadSanitizer->sanitizeProviderRequest($providerPayload);
+
+            if ($status === ZnsCampaignDelivery::STATUS_SENT) {
+                $delivery->markSent(
+                    providerMessageId: $sendResult['provider_message_id'] ?? null,
+                    providerStatusCode: $sendResult['provider_status_code'] ?? null,
+                    providerResponse: $providerResponse,
+                    providerRequestSummary: $providerRequestSummary,
+                );
+            } else {
+                $delivery->markFailure(
+                    message: (string) ($sendResult['error'] ?? 'ZNS provider request failed.'),
+                    providerStatusCode: $sendResult['provider_status_code'] ?? null,
+                    providerResponse: $providerResponse,
+                    nextRetryAt: $nextRetryAt,
+                    providerRequestSummary: $providerRequestSummary,
+                );
+            }
 
             return true;
         }, 3);

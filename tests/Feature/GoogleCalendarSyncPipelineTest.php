@@ -223,6 +223,7 @@ it('keeps deterministic idempotency key for repeated google publish attempts and
         ->and(GoogleCalendarSyncEvent::query()->count())->toBe(1)
         ->and($event?->status)->toBe(GoogleCalendarSyncEvent::STATUS_PENDING);
 
+    $event?->markProcessing();
     $event?->markSynced('gcal-event-open-001', 200);
 
     $replayedEvent = app(GoogleCalendarSyncEventPublisher::class)
@@ -247,13 +248,15 @@ it('reclaims stale processing google events and retries them successfully', func
 
     expect($event)->not->toBeNull();
 
-    $event?->forceFill([
-        'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
-        'attempts' => 1,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(30),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    GoogleCalendarSyncEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event?->forceFill([
+            'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
+            'attempts' => 1,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(30),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::preventStrayRequests();
     Http::fake([
@@ -293,14 +296,16 @@ it('moves stale processing google events to dead when max attempts already reach
 
     expect($event)->not->toBeNull();
 
-    $event?->forceFill([
-        'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
-        'attempts' => 3,
-        'max_attempts' => 3,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(10),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    GoogleCalendarSyncEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event?->forceFill([
+            'status' => GoogleCalendarSyncEvent::STATUS_PROCESSING,
+            'attempts' => 3,
+            'max_attempts' => 3,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(10),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::preventStrayRequests();
 

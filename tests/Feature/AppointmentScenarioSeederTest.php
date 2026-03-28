@@ -46,18 +46,22 @@ it('creates appointment scenarios for overbooking approval and future temporal g
         ->and($overbooked->overbooking_reason)->toContain('VIP');
 
     expect(function () use ($futureGuardAppointment): void {
-        $futureGuardAppointment->forceFill([
-            'status' => Appointment::STATUS_COMPLETED,
-        ])->save();
+        Appointment::runWithinManagedWorkflow(function () use ($futureGuardAppointment): void {
+            $futureGuardAppointment->forceFill([
+                'status' => Appointment::STATUS_COMPLETED,
+            ])->save();
+        });
     })->toThrow(
         ValidationException::class,
         'Không thể cập nhật trạng thái hoàn thành hoặc không đến cho lịch hẹn chưa diễn ra.',
     );
 
     expect(function () use ($futureGuardAppointment): void {
-        $futureGuardAppointment->fresh()->forceFill([
-            'status' => Appointment::STATUS_NO_SHOW,
-        ])->save();
+        Appointment::runWithinManagedWorkflow(function () use ($futureGuardAppointment): void {
+            $futureGuardAppointment->fresh()->forceFill([
+                'status' => Appointment::STATUS_NO_SHOW,
+            ])->save();
+        });
     })->toThrow(
         ValidationException::class,
         'Không thể cập nhật trạng thái hoàn thành hoặc không đến cho lịch hẹn chưa diễn ra.',

@@ -5,7 +5,9 @@ use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\CareTicketWorkflowService;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
 
 it('normalizes legacy care statuses and keeps query aliases compatible', function () {
     $scheduledCare = makeCareNoteRecord([
@@ -25,35 +27,41 @@ it('normalizes legacy care statuses and keeps query aliases compatible', functio
         ->and($aliases)->toContain('PLANNED');
 });
 
-it('blocks invalid care ticket status transition with CARE_TICKET_STATE_INVALID', function () {
+it('blocks raw care ticket status changes outside CareTicketWorkflowService', function () {
     $careTicket = makeCareNoteRecord([
         'care_status' => Note::CARE_STATUS_DONE,
     ]);
 
+    $this->actingAs($careTicket->user);
+
     expect(fn () => $careTicket->update([
         'care_status' => Note::CARE_STATUS_NOT_STARTED,
-    ]))->toThrow(ValidationException::class, 'CARE_TICKET_STATE_INVALID');
+    ]))->toThrow(ValidationException::class, 'CareTicketWorkflowService');
 });
 
-it('allows valid care ticket transitions and locks after done', function () {
+it('allows valid care ticket transitions through workflow service and locks after done', function () {
     $careTicket = makeCareNoteRecord([
         'care_status' => Note::CARE_STATUS_NOT_STARTED,
     ]);
 
-    $careTicket->update([
+    $this->actingAs($careTicket->user);
+
+    $workflow = app(CareTicketWorkflowService::class);
+
+    $workflow->updateManualTicket($careTicket, [
         'care_status' => Note::CARE_STATUS_IN_PROGRESS,
     ]);
 
-    $careTicket->update([
+    $workflow->updateManualTicket($careTicket->fresh(), [
         'care_status' => Note::CARE_STATUS_DONE,
     ]);
 
     expect($careTicket->fresh()->care_status)->toBe(Note::CARE_STATUS_DONE)
-        ->and(Note::careStatusLabel($careTicket->care_status))->toBe('Hoàn thành');
+        ->and(Note::careStatusLabel($careTicket->fresh()->care_status))->toBe('Hoàn thành');
 
-    expect(fn () => $careTicket->update([
+    expect(fn () => $workflow->updateManualTicket($careTicket->fresh(), [
         'care_status' => Note::CARE_STATUS_NEED_FOLLOWUP,
-    ]))->toThrow(ValidationException::class, 'CARE_TICKET_STATE_INVALID');
+    ]))->toThrow(ValidationException::class, 'Ban ghi da hoan thanh');
 });
 
 function makeCareNoteRecord(array $overrides = []): Note
@@ -63,6 +71,9 @@ function makeCareNoteRecord(array $overrides = []): Note
     $staff = User::factory()->create([
         'branch_id' => $branch->id,
     ]);
+    $staff->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $staff->givePermissionTo('Update:Note');
 
     $customer = Customer::factory()->create([
         'branch_id' => $branch->id,

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ReportSnapshot;
 use App\Services\ReportAutomationBranchScopeResolver;
+use App\Services\ReportSnapshotReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -17,8 +18,10 @@ class CheckSnapshotSla extends Command
 
     protected $description = 'Đánh giá SLA cho report snapshots (on_time/late/stale/missing).';
 
-    public function __construct(protected ReportAutomationBranchScopeResolver $scopeResolver)
-    {
+    public function __construct(
+        protected ReportAutomationBranchScopeResolver $scopeResolver,
+        protected ReportSnapshotReadModelService $reportSnapshots,
+    ) {
         parent::__construct();
     }
 
@@ -104,12 +107,7 @@ class CheckSnapshotSla extends Command
         bool $dryRun,
         Carbon $staleCutoff,
     ): array {
-        $query = ReportSnapshot::query()
-            ->where('snapshot_key', $snapshotKey)
-            ->whereDate('snapshot_date', $snapshotDate)
-            ->when($branchId !== null, fn ($innerQuery) => $innerQuery->where('branch_id', $branchId));
-
-        $snapshots = $query->get();
+        $snapshots = $this->reportSnapshots->snapshotsForDateAcrossBranches($snapshotKey, $snapshotDate, $branchId);
 
         $onTime = 0;
         $late = 0;

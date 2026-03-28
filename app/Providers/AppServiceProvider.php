@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\BranchTransferRequest;
 use App\Models\ClinicalNote;
 use App\Models\ClinicalOrder;
 use App\Models\ClinicalResult;
 use App\Models\ClinicSetting;
 use App\Models\Consent;
 use App\Models\InsuranceClaim;
+use App\Models\MasterPatientDuplicate;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
@@ -18,11 +20,13 @@ use App\Models\Prescription;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Observers\AppointmentObserver;
+use App\Observers\BranchTransferRequestObserver;
 use App\Observers\ClinicalNoteVersionObserver;
 use App\Observers\ClinicalOrderObserver;
 use App\Observers\ClinicalResultObserver;
 use App\Observers\ConsentObserver;
 use App\Observers\InsuranceClaimObserver;
+use App\Observers\MasterPatientDuplicateObserver;
 use App\Observers\NoteObserver;
 use App\Observers\PatientMedicalRecordObserver;
 use App\Observers\PatientObserver;
@@ -119,6 +123,8 @@ class AppServiceProvider extends ServiceProvider
         TreatmentSession::observe(TreatmentSessionAuditObserver::class);
         Consent::observe(ConsentObserver::class);
         InsuranceClaim::observe(InsuranceClaimObserver::class);
+        BranchTransferRequest::observe(BranchTransferRequestObserver::class);
+        MasterPatientDuplicate::observe(MasterPatientDuplicateObserver::class);
     }
 
     private function configureFilamentActionNotifications(): void

@@ -10,9 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ZnsAutomationEvent extends Model
 {
+    protected static bool $allowsManagedWorkflowMutation = false;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_PROCESSING = 'processing';
@@ -30,6 +34,14 @@ class ZnsAutomationEvent extends Model
     public const EVENT_BIRTHDAY_GREETING = 'birthday_greeting';
 
     public const STALE_PROCESSING_TTL_MINUTES = 15;
+
+    protected const STATUS_TRANSITIONS = [
+        self::STATUS_PENDING => [self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_DEAD],
+        self::STATUS_PROCESSING => [self::STATUS_PROCESSING, self::STATUS_SENT, self::STATUS_FAILED, self::STATUS_DEAD],
+        self::STATUS_SENT => [self::STATUS_SENT, self::STATUS_PENDING],
+        self::STATUS_FAILED => [self::STATUS_FAILED, self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_DEAD],
+        self::STATUS_DEAD => [self::STATUS_DEAD, self::STATUS_PENDING],
+    ];
 
     protected $fillable = [
         'event_key',
@@ -85,9 +97,28 @@ class ZnsAutomationEvent extends Model
     protected static function booted(): void
     {
         static::saving(function (self $event): void {
+            $event->status = strtolower(trim((string) ($event->status ?: self::STATUS_PENDING)));
             $event->phone_search_hash = self::phoneSearchHash(
                 $event->normalized_phone ?: $event->phone,
             );
+
+            if (! $event->exists || ! $event->isDirty('status')) {
+                return;
+            }
+
+            if (! static::$allowsManagedWorkflowMutation) {
+                throw ValidationException::withMessages([
+                    'status' => 'Trang thai su kien ZNS chi duoc thay doi qua workflow noi bo cua ZnsAutomationEvent.',
+                ]);
+            }
+
+            $fromStatus = strtolower(trim((string) ($event->getOriginal('status') ?: self::STATUS_PENDING)));
+
+            if (! static::canTransition($fromStatus, $event->status)) {
+                throw ValidationException::withMessages([
+                    'status' => 'ZNS_AUTOMATION_EVENT_STATE_INVALID: Không thể chuyển trạng thái sự kiện ZNS.',
+                ]);
+            }
         });
     }
 
@@ -134,13 +165,15 @@ class ZnsAutomationEvent extends Model
 
     public function markProcessing(string $processingToken): void
     {
-        $this->forceFill([
-            'status' => self::STATUS_PROCESSING,
-            'attempts' => (int) $this->attempts + 1,
-            'locked_at' => now(),
-            'processing_token' => $processingToken,
-            'last_error' => null,
-        ])->save();
+        static::runWithinManagedWorkflow(function () use ($processingToken): void {
+            $this->forceFill([
+                'status' => self::STATUS_PROCESSING,
+                'attempts' => (int) $this->attempts + 1,
+                'locked_at' => now(),
+                'processing_token' => $processingToken,
+                'last_error' => null,
+            ])->save();
+        });
     }
 
     /**
@@ -152,18 +185,20 @@ class ZnsAutomationEvent extends Model
         ?int $httpStatus,
         ?array $providerResponse,
     ): void {
-        $this->forceFill([
-            'status' => self::STATUS_SENT,
-            'processed_at' => now(),
-            'next_retry_at' => null,
-            'locked_at' => null,
-            'processing_token' => null,
-            'last_http_status' => $httpStatus,
-            'last_error' => null,
-            'provider_message_id' => $providerMessageId,
-            'provider_status_code' => $providerStatusCode,
-            'provider_response' => $providerResponse,
-        ])->save();
+        static::runWithinManagedWorkflow(function () use ($providerMessageId, $providerStatusCode, $httpStatus, $providerResponse): void {
+            $this->forceFill([
+                'status' => self::STATUS_SENT,
+                'processed_at' => now(),
+                'next_retry_at' => null,
+                'locked_at' => null,
+                'processing_token' => null,
+                'last_http_status' => $httpStatus,
+                'last_error' => null,
+                'provider_message_id' => $providerMessageId,
+                'provider_status_code' => $providerStatusCode,
+                'provider_response' => $providerResponse,
+            ])->save();
+        });
     }
 
     /**
@@ -178,51 +213,122 @@ class ZnsAutomationEvent extends Model
     ): void {
         $shouldDeadLetter = ! $retryable || (int) $this->attempts >= (int) $this->max_attempts;
 
-        $this->forceFill([
-            'status' => $shouldDeadLetter ? self::STATUS_DEAD : self::STATUS_FAILED,
-            'next_retry_at' => $shouldDeadLetter ? null : $this->resolveNextRetryAt((int) $this->attempts),
-            'locked_at' => null,
-            'processing_token' => null,
-            'last_http_status' => $httpStatus,
-            'last_error' => mb_substr($message, 0, 1000),
-            'provider_status_code' => $providerStatusCode,
-            'provider_response' => $providerResponse,
-        ])->save();
+        static::runWithinManagedWorkflow(function () use ($shouldDeadLetter, $httpStatus, $message, $providerStatusCode, $providerResponse): void {
+            $this->forceFill([
+                'status' => $shouldDeadLetter ? self::STATUS_DEAD : self::STATUS_FAILED,
+                'next_retry_at' => $shouldDeadLetter ? null : $this->resolveNextRetryAt((int) $this->attempts),
+                'locked_at' => null,
+                'processing_token' => null,
+                'last_http_status' => $httpStatus,
+                'last_error' => mb_substr($message, 0, 1000),
+                'provider_status_code' => $providerStatusCode,
+                'provider_response' => $providerResponse,
+            ])->save();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function resetForReplay(array $attributes): void
+    {
+        static::runWithinManagedWorkflow(function () use ($attributes): void {
+            $this->forceFill(array_merge($attributes, [
+                'status' => self::STATUS_PENDING,
+                'attempts' => 0,
+                'next_retry_at' => now(),
+                'locked_at' => null,
+                'processing_token' => null,
+                'processed_at' => null,
+                'last_http_status' => null,
+                'last_error' => null,
+                'provider_message_id' => null,
+                'provider_status_code' => null,
+                'provider_response' => null,
+            ]))->save();
+        });
+    }
+
+    public function markSuperseded(string $message): void
+    {
+        static::runWithinManagedWorkflow(function () use ($message): void {
+            $this->forceFill([
+                'status' => self::STATUS_DEAD,
+                'next_retry_at' => null,
+                'locked_at' => null,
+                'processing_token' => null,
+                'processed_at' => now(),
+                'last_error' => $message,
+            ])->save();
+        });
     }
 
     public static function reclaimStaleProcessing(int $ttlMinutes = self::STALE_PROCESSING_TTL_MINUTES): int
     {
         $ttlMinutes = max(1, $ttlMinutes);
         $lockedBefore = now()->subMinutes($ttlMinutes);
-        $now = now();
-        $staleQuery = static::query()
+        $eventIds = static::query()
             ->where('status', self::STATUS_PROCESSING)
             ->whereNotNull('locked_at')
-            ->where('locked_at', '<=', $lockedBefore);
+            ->where('locked_at', '<=', $lockedBefore)
+            ->pluck('id');
+        $reclaimed = 0;
 
-        $movedToDead = (clone $staleQuery)
-            ->whereColumn('attempts', '>=', 'max_attempts')
-            ->update([
-                'status' => self::STATUS_DEAD,
-                'next_retry_at' => null,
-                'locked_at' => null,
-                'processing_token' => null,
-                'last_error' => 'Stale processing lock reclaimed after max attempts reached.',
-                'updated_at' => $now,
-            ]);
+        foreach ($eventIds as $eventId) {
+            $wasReclaimed = DB::transaction(function () use ($eventId, $lockedBefore): bool {
+                $event = static::query()
+                    ->lockForUpdate()
+                    ->find($eventId);
 
-        $movedToFailed = (clone $staleQuery)
-            ->whereColumn('attempts', '<', 'max_attempts')
-            ->update([
-                'status' => self::STATUS_FAILED,
-                'next_retry_at' => $now,
-                'locked_at' => null,
-                'processing_token' => null,
-                'last_error' => 'Stale processing lock reclaimed for retry.',
-                'updated_at' => $now,
-            ]);
+                if (
+                    ! $event instanceof self
+                    || $event->status !== self::STATUS_PROCESSING
+                    || ! $event->locked_at instanceof Carbon
+                    || $event->locked_at->gt($lockedBefore)
+                ) {
+                    return false;
+                }
 
-        return $movedToDead + $movedToFailed;
+                static::runWithinManagedWorkflow(function () use ($event): void {
+                    $event->forceFill([
+                        'status' => (int) $event->attempts >= (int) $event->max_attempts
+                            ? self::STATUS_DEAD
+                            : self::STATUS_FAILED,
+                        'next_retry_at' => (int) $event->attempts >= (int) $event->max_attempts ? null : now(),
+                        'locked_at' => null,
+                        'processing_token' => null,
+                        'last_error' => (int) $event->attempts >= (int) $event->max_attempts
+                            ? 'Stale processing lock reclaimed after max attempts reached.'
+                            : 'Stale processing lock reclaimed for retry.',
+                    ])->save();
+                });
+
+                return true;
+            }, 3);
+
+            if ($wasReclaimed) {
+                $reclaimed++;
+            }
+        }
+
+        return $reclaimed;
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        static::$allowsManagedWorkflowMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+        }
+    }
+
+    public static function canTransition(string $fromStatus, string $toStatus): bool
+    {
+        return in_array($toStatus, static::STATUS_TRANSITIONS[$fromStatus] ?? [], true);
     }
 
     protected function resolveNextRetryAt(int $attempt): Carbon

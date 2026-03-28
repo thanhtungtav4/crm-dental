@@ -7,6 +7,7 @@ use App\Models\PlanItem;
 use App\Models\RecallRule;
 use App\Models\Service;
 use App\Models\TreatmentPlan;
+use App\Services\AppointmentSchedulingService;
 
 it('generates recall tickets from completed plan items and closes stale recall tickets', function () {
     $plan = TreatmentPlan::factory()->create([
@@ -120,9 +121,10 @@ it('creates and resolves no-show recovery tickets', function () {
             ->where('care_type', 'no_show_recovery')
             ->count())->toBe(1);
 
-    $appointment->update([
-        'status' => Appointment::STATUS_SCHEDULED,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_SCHEDULED,
+    );
 
     $this->artisan('appointments:run-no-show-recovery', [
         '--date' => now()->toDateString(),

@@ -4,6 +4,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\ClinicSetting;
 use App\Models\GoogleCalendarSyncEvent;
+use App\Models\OperationalKpiAlert;
 use App\Models\ReportSnapshot;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -187,6 +188,37 @@ it('defaults observability snapshot date to yesterday for sla budget checks', fu
     } finally {
         Carbon::setTestNow();
     }
+});
+
+it('counts only open kpi alerts in the observability budget', function (): void {
+    seedObservabilityBudgets(
+        deadLetterBudget: 0,
+        retryableFailureBudget: 0,
+        openKpiAlertBudget: 1,
+        snapshotSlaBudget: 10,
+        recentAutomationFailureBudget: 100,
+    );
+
+    OperationalKpiAlert::factory()->create([
+        'status' => OperationalKpiAlert::STATUS_NEW,
+    ]);
+
+    OperationalKpiAlert::factory()->create([
+        'status' => OperationalKpiAlert::STATUS_ACK,
+    ]);
+
+    OperationalKpiAlert::factory()->create([
+        'status' => OperationalKpiAlert::STATUS_RESOLVED,
+    ]);
+
+    $this->artisan('ops:check-observability-health', [
+        '--strict' => true,
+        '--window-hours' => 1,
+    ])
+        ->expectsOutputToContain('OBS_OPEN_KPI_ALERTS: 2')
+        ->expectsOutputToContain('open_kpi_alerts')
+        ->expectsOutputToContain('OBS_HEALTH_STATUS: unhealthy')
+        ->assertFailed();
 });
 
 function seedObservabilityBudgets(

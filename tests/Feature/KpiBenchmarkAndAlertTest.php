@@ -42,17 +42,11 @@ it('builds doctor benchmark and triggers kpi alerts with owner and new status', 
         'status' => Appointment::STATUS_NO_SHOW,
     ]);
 
-    VisitEpisode::query()->updateOrCreate(
-        ['appointment_id' => $appointments->first()->id],
-        [
-            'patient_id' => $patient->id,
-            'doctor_id' => $doctor->id,
-            'branch_id' => $branch->id,
-            'scheduled_at' => $snapshotDate->copy()->addMinutes(45),
-            'planned_duration_minutes' => 120,
-            'chair_minutes' => 30,
-            'status' => VisitEpisode::STATUS_COMPLETED,
-        ]
+    seedCompletedVisitEpisodeForKpi(
+        appointment: $appointments->first(),
+        scheduledAt: $snapshotDate->copy()->addMinutes(45),
+        plannedDurationMinutes: 120,
+        chairMinutes: 30,
     );
 
     $this->actingAs($manager);
@@ -111,17 +105,11 @@ it('auto resolves kpi alerts when metrics are back in threshold', function () {
         'status' => Appointment::STATUS_NO_SHOW,
     ]);
 
-    VisitEpisode::query()->updateOrCreate(
-        ['appointment_id' => $appointments->first()->id],
-        [
-            'patient_id' => $patient->id,
-            'doctor_id' => $doctor->id,
-            'branch_id' => $branch->id,
-            'scheduled_at' => $snapshotDate->copy()->addMinutes(30),
-            'planned_duration_minutes' => 100,
-            'chair_minutes' => 20,
-            'status' => VisitEpisode::STATUS_COMPLETED,
-        ]
+    seedCompletedVisitEpisodeForKpi(
+        appointment: $appointments->first(),
+        scheduledAt: $snapshotDate->copy()->addMinutes(30),
+        plannedDurationMinutes: 100,
+        chairMinutes: 20,
     );
 
     $this->actingAs($manager);
@@ -258,17 +246,11 @@ it('auto resolves chair and acceptance alerts when the snapshot sample becomes i
         'status' => Appointment::STATUS_CONFIRMED,
     ]);
 
-    VisitEpisode::query()->updateOrCreate(
-        ['appointment_id' => $appointment->id],
-        [
-            'patient_id' => $patient->id,
-            'doctor_id' => $doctor->id,
-            'branch_id' => $branch->id,
-            'scheduled_at' => $snapshotDate->copy()->addMinutes(30),
-            'planned_duration_minutes' => 120,
-            'chair_minutes' => 0,
-            'status' => VisitEpisode::STATUS_COMPLETED,
-        ],
+    seedCompletedVisitEpisodeForKpi(
+        appointment: $appointment,
+        scheduledAt: $snapshotDate->copy()->addMinutes(30),
+        plannedDurationMinutes: 120,
+        chairMinutes: 0,
     );
 
     $plan = TreatmentPlan::factory()->create([
@@ -344,3 +326,37 @@ it('auto resolves chair and acceptance alerts when the snapshot sample becomes i
         ->where('status', OperationalKpiAlert::STATUS_RESOLVED)
         ->count())->toBe(2);
 });
+
+function seedCompletedVisitEpisodeForKpi(
+    Appointment $appointment,
+    \Carbon\CarbonInterface $scheduledAt,
+    int $plannedDurationMinutes,
+    int $chairMinutes,
+): void {
+    $existingEpisode = VisitEpisode::withTrashed()
+        ->where('appointment_id', $appointment->id)
+        ->first();
+
+    if ($existingEpisode) {
+        $existingEpisode->forceDelete();
+    }
+
+    $episode = new VisitEpisode([
+        'appointment_id' => $appointment->id,
+    ]);
+
+    $episode->patient_id = $appointment->patient_id;
+    $episode->doctor_id = $appointment->doctor_id;
+    $episode->branch_id = $appointment->branch_id;
+    $episode->scheduled_at = $scheduledAt;
+    $episode->planned_duration_minutes = $plannedDurationMinutes;
+    $episode->chair_minutes = $chairMinutes;
+    $episode->status = VisitEpisode::STATUS_COMPLETED;
+
+    VisitEpisode::runWithinManagedWorkflow(function () use ($episode): void {
+        $episode->save();
+    }, [
+        'trigger' => 'test_seed',
+        'appointment_id' => $appointment->id,
+    ]);
+}

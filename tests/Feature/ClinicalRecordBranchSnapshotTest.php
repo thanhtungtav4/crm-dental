@@ -10,6 +10,7 @@ use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Models\User;
 use App\Policies\NotePolicy;
+use App\Services\ConsentLifecycleService;
 
 it('keeps note branch authorization stable after patient transfer', function () {
     $branchA = Branch::factory()->create();
@@ -104,10 +105,11 @@ it('keeps consent branch snapshot and audit metadata stable after patient transf
         'status' => Consent::STATUS_PENDING,
     ]);
 
-    $consent->update([
-        'status' => Consent::STATUS_SIGNED,
-        'signed_by' => $manager->id,
-    ]);
+    app(ConsentLifecycleService::class)->sign(
+        consent: $consent,
+        signedBy: $manager->id,
+        signatureContext: ['source' => 'branch_snapshot_test'],
+    );
 
     $admin = User::factory()->create();
     $admin->assignRole('Admin');

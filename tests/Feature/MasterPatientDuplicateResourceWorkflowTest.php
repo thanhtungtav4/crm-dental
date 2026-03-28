@@ -10,6 +10,7 @@ use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientMerge;
 use App\Models\Patient;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 function makePatientForBranch(Branch $branch, string $fullName, string $phone, ?string $email = null): Patient
@@ -175,6 +176,21 @@ it('allows a manager with full branch coverage to merge and ignore MPI duplicate
             ->where('action', AuditLog::ACTION_RESOLVE)
             ->where('metadata->status_to', MasterPatientDuplicate::STATUS_IGNORED)
             ->exists())->toBeTrue();
+});
+
+it('blocks direct duplicate case status mutations outside the workflow service', function (): void {
+    $duplicateCase = MasterPatientDuplicate::factory()->create([
+        'status' => MasterPatientDuplicate::STATUS_OPEN,
+    ]);
+
+    expect(fn () => $duplicateCase->update([
+        'status' => MasterPatientDuplicate::STATUS_IGNORED,
+    ]))->toThrow(
+        ValidationException::class,
+        'Trang thai duplicate case chi duoc thay doi qua MasterPatientDuplicateWorkflowService.',
+    );
+
+    expect($duplicateCase->fresh()->status)->toBe(MasterPatientDuplicate::STATUS_OPEN);
 });
 
 it('allows an authorized manager to rollback the latest applied merge from the duplicate queue', function (): void {

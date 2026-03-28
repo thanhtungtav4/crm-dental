@@ -6,7 +6,9 @@ use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\User;
 use App\Models\VisitEpisode;
+use App\Services\AppointmentSchedulingService;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 it('creates one visit episode when appointment is created', function () {
     $appointment = makeAppointmentForVisitEpisode([
@@ -35,20 +37,23 @@ it('captures waiting, chair and overrun durations when appointment is completed'
     ]);
 
     Carbon::setTestNow(Carbon::parse('2026-03-01 08:50:00'));
-    $appointment->update([
-        'status' => Appointment::STATUS_CONFIRMED,
-        'confirmed_at' => now(),
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_CONFIRMED,
+        ['confirmed_at' => now()],
+    );
 
     Carbon::setTestNow(Carbon::parse('2026-03-01 09:00:00'));
-    $appointment->update([
-        'status' => Appointment::STATUS_IN_PROGRESS,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment->fresh(),
+        Appointment::STATUS_IN_PROGRESS,
+    );
 
     Carbon::setTestNow(Carbon::parse('2026-03-01 09:40:00'));
-    $appointment->update([
-        'status' => Appointment::STATUS_COMPLETED,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment->fresh(),
+        Appointment::STATUS_COMPLETED,
+    );
 
     $episode = $appointment->fresh()->visitEpisode;
 
@@ -71,9 +76,10 @@ it('keeps episode open metrics empty when appointment is marked no_show', functi
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
-    $appointment->update([
-        'status' => Appointment::STATUS_NO_SHOW,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_NO_SHOW,
+    );
 
     $episode = $appointment->fresh()->visitEpisode;
 
@@ -83,6 +89,20 @@ it('keeps episode open metrics empty when appointment is marked no_show', functi
         ->and($episode->chair_minutes)->toBeNull()
         ->and($episode->overrun_minutes)->toBeNull()
         ->and($episode->check_out_at)->toBeNull();
+});
+
+it('blocks direct visit episode status mutations outside the visit episode service', function () {
+    $appointment = makeAppointmentForVisitEpisode([
+        'status' => Appointment::STATUS_SCHEDULED,
+    ]);
+
+    $episode = $appointment->fresh()->visitEpisode;
+
+    expect($episode)->not->toBeNull();
+
+    expect(fn () => $episode?->forceFill([
+        'status' => VisitEpisode::STATUS_COMPLETED,
+    ])->save())->toThrow(ValidationException::class, 'VISIT_EPISODE_STATE_INVALID');
 });
 
 function makeAppointmentForVisitEpisode(array $overrides = []): Appointment

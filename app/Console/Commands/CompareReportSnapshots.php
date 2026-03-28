@@ -3,17 +3,22 @@
 namespace App\Console\Commands;
 
 use App\Models\ReportSnapshot;
+use App\Services\ReportSnapshotReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 
 class CompareReportSnapshots extends Command
 {
     protected $signature = 'reports:compare-snapshots {left_snapshot_id? : Snapshot baseline id} {right_snapshot_id? : Snapshot hiện tại id} {--key=operational_kpi_pack : Snapshot key khi không truyền snapshot id} {--date= : Ngày snapshot hiện tại (Y-m-d)} {--branch_id= : Branch id} {--json : In kết quả dạng JSON}';
 
     protected $description = 'So sánh snapshot trước/sau để audit drift và thay đổi KPI.';
+
+    public function __construct(protected ReportSnapshotReadModelService $reportSnapshots)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -77,16 +82,16 @@ class CompareReportSnapshots extends Command
 
         if ($leftId !== null && $rightId !== null) {
             return [
-                ReportSnapshot::query()->find((int) $leftId),
-                ReportSnapshot::query()->find((int) $rightId),
+                $this->reportSnapshots->findById((int) $leftId),
+                $this->reportSnapshots->findById((int) $rightId),
             ];
         }
 
         if ($leftId !== null) {
-            $current = ReportSnapshot::query()->find((int) $leftId);
+            $current = $this->reportSnapshots->findById((int) $leftId);
 
             return [
-                $this->findPreviousSnapshot($current),
+                $this->reportSnapshots->previousSuccessfulSnapshot($current),
                 $current,
             ];
         }
@@ -99,49 +104,13 @@ class CompareReportSnapshots extends Command
             ? (int) $this->option('branch_id')
             : null;
 
-        $current = $this->snapshotQuery($snapshotKey, $branchId)
-            ->whereDate('snapshot_date', $snapshotDate)
-            ->where('status', ReportSnapshot::STATUS_SUCCESS)
-            ->orderByDesc('generated_at')
-            ->orderByDesc('id')
-            ->first();
+        $current = $this->reportSnapshots
+            ->latestSuccessfulSnapshotForDate($snapshotKey, $snapshotDate, $branchId);
 
         return [
-            $this->findPreviousSnapshot($current),
+            $this->reportSnapshots->previousSuccessfulSnapshot($current),
             $current,
         ];
-    }
-
-    protected function findPreviousSnapshot(?ReportSnapshot $current): ?ReportSnapshot
-    {
-        if (! $current) {
-            return null;
-        }
-
-        return $this->snapshotQuery($current->snapshot_key, $current->branch_id)
-            ->where('status', ReportSnapshot::STATUS_SUCCESS)
-            ->where(function (Builder $query) use ($current): void {
-                $query->whereDate('snapshot_date', '<', $current->snapshot_date?->toDateString())
-                    ->orWhere(function (Builder $innerQuery) use ($current): void {
-                        $innerQuery->whereDate('snapshot_date', $current->snapshot_date?->toDateString())
-                            ->where('id', '<', $current->id);
-                    });
-            })
-            ->orderByDesc('snapshot_date')
-            ->orderByDesc('generated_at')
-            ->orderByDesc('id')
-            ->first();
-    }
-
-    protected function snapshotQuery(string $snapshotKey, ?int $branchId): Builder
-    {
-        return ReportSnapshot::query()
-            ->where('snapshot_key', $snapshotKey)
-            ->when(
-                $branchId === null,
-                fn (Builder $query): Builder => $query->whereNull('branch_id'),
-                fn (Builder $query): Builder => $query->where('branch_id', $branchId),
-            );
     }
 
     /**

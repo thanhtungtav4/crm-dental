@@ -17,7 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class MasterPatientMergeService
 {
-    public function __construct(protected MasterPatientIndexService $mpiService) {}
+    public function __construct(
+        protected MasterPatientIndexService $mpiService,
+        protected MasterPatientDuplicateWorkflowService $duplicateWorkflowService,
+    ) {}
 
     /**
      * @var array<int, string>
@@ -712,18 +715,22 @@ class MasterPatientMergeService
                     $autoReviewNote .= '; reason: '.trim((string) $reason);
                 }
 
-                $case->forceFill([
-                    'patient_id' => $canonicalPatientId,
-                    'branch_id' => $canonicalBranchId,
-                    'matched_patient_ids' => $matchedPatientIds,
-                    'matched_branch_ids' => $matchedBranchIds,
-                    'status' => $nextStatus,
-                    'review_note' => collect([$existingReviewNote, $autoReviewNote])
-                        ->filter(fn (string $line) => trim($line) !== '')
-                        ->implode("\n"),
-                    'reviewed_by' => $reviewedBy,
-                    'reviewed_at' => now(),
-                ])->save();
+                $this->duplicateWorkflowService->syncStatus(
+                    duplicateCase: $case,
+                    toStatus: $nextStatus,
+                    attributes: [
+                        'patient_id' => $canonicalPatientId,
+                        'branch_id' => $canonicalBranchId,
+                        'matched_patient_ids' => $matchedPatientIds,
+                        'matched_branch_ids' => $matchedBranchIds,
+                        'review_note' => collect([$existingReviewNote, $autoReviewNote])
+                            ->filter(fn (string $line): bool => trim($line) !== '')
+                            ->implode("\n"),
+                    ],
+                    actorId: $reviewedBy,
+                    reason: $autoReviewNote,
+                    trigger: $isPrimaryCase ? 'merge_resolve_primary_case' : 'merge_resolve_secondary_case',
+                );
 
                 $resolvedCaseIds[] = $case->id;
             }
@@ -838,16 +845,21 @@ class MasterPatientMergeService
                 ? (string) $snapshot['status']
                 : MasterPatientDuplicate::STATUS_OPEN;
 
-            $case->forceFill([
-                'patient_id' => $this->normalizeNullableInt($snapshot['patient_id'] ?? null),
-                'branch_id' => $this->normalizeNullableInt($snapshot['branch_id'] ?? null),
-                'matched_patient_ids' => $this->normalizeIdArray($snapshot['matched_patient_ids'] ?? []),
-                'matched_branch_ids' => $this->normalizeIdArray($snapshot['matched_branch_ids'] ?? []),
-                'status' => $status,
-                'review_note' => $snapshot['review_note'] ?? null,
-                'reviewed_by' => $this->normalizeNullableInt($snapshot['reviewed_by'] ?? null),
-                'reviewed_at' => filled($snapshot['reviewed_at'] ?? null) ? (string) $snapshot['reviewed_at'] : null,
-            ])->save();
+            $this->duplicateWorkflowService->syncStatus(
+                duplicateCase: $case,
+                toStatus: $status,
+                attributes: [
+                    'patient_id' => $this->normalizeNullableInt($snapshot['patient_id'] ?? null),
+                    'branch_id' => $this->normalizeNullableInt($snapshot['branch_id'] ?? null),
+                    'matched_patient_ids' => $this->normalizeIdArray($snapshot['matched_patient_ids'] ?? []),
+                    'matched_branch_ids' => $this->normalizeIdArray($snapshot['matched_branch_ids'] ?? []),
+                    'review_note' => $snapshot['review_note'] ?? null,
+                    'reviewed_by' => $this->normalizeNullableInt($snapshot['reviewed_by'] ?? null),
+                    'reviewed_at' => filled($snapshot['reviewed_at'] ?? null) ? (string) $snapshot['reviewed_at'] : null,
+                ],
+                reason: 'merge_snapshot_restore',
+                trigger: 'merge_snapshot_restore',
+            );
         }
     }
 
@@ -888,22 +900,27 @@ class MasterPatientMergeService
             $isPrimaryCase = (int) $case->id === $primaryCaseId;
             $fallbackNote = 'Rollback fallback without duplicate snapshot.';
 
-            $case->forceFill([
-                'patient_id' => $merged->id,
-                'branch_id' => $merged->first_branch_id,
-                'matched_patient_ids' => $rollbackMatchedPatientIds,
-                'matched_branch_ids' => $rollbackMatchedBranchIds,
-                'status' => $isPrimaryCase
+            $this->duplicateWorkflowService->syncStatus(
+                duplicateCase: $case,
+                toStatus: $isPrimaryCase
                     ? MasterPatientDuplicate::STATUS_OPEN
                     : MasterPatientDuplicate::STATUS_IGNORED,
-                'review_note' => $isPrimaryCase
-                    ? null
-                    : collect([(string) $case->review_note, $fallbackNote])
-                        ->filter(fn (string $line) => trim($line) !== '')
-                        ->implode("\n"),
-                'reviewed_by' => null,
-                'reviewed_at' => null,
-            ])->save();
+                attributes: [
+                    'patient_id' => $merged->id,
+                    'branch_id' => $merged->first_branch_id,
+                    'matched_patient_ids' => $rollbackMatchedPatientIds,
+                    'matched_branch_ids' => $rollbackMatchedBranchIds,
+                    'review_note' => $isPrimaryCase
+                        ? null
+                        : collect([(string) $case->review_note, $fallbackNote])
+                            ->filter(fn (string $line): bool => trim($line) !== '')
+                            ->implode("\n"),
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                ],
+                reason: $fallbackNote,
+                trigger: 'merge_snapshot_restore_fallback',
+            );
         }
     }
 

@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\Appointment;
-use App\Models\AuditLog;
-use App\Support\WorkflowAuditMetadata;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,7 +28,6 @@ class AppointmentSchedulingService
             $lockedAppointment = $this->lockAppointment($appointment);
             $normalizedStartAt = $this->extractNormalizedStartAt($data);
             $originalStartAt = $lockedAppointment->date?->copy();
-            $fromStatus = Appointment::normalizeStatus($lockedAppointment->status) ?? Appointment::DEFAULT_STATUS;
             $isSlotChanged = $normalizedStartAt !== null
                 && ($originalStartAt?->format('Y-m-d H:i:s') !== $normalizedStartAt->format('Y-m-d H:i:s'));
 
@@ -50,19 +47,21 @@ class AppointmentSchedulingService
                 $data['status'] = Appointment::STATUS_RESCHEDULED;
             }
 
-            $lockedAppointment->fill($data);
-            $lockedAppointment->save();
-
             if ($isSlotChanged && $normalizedStartAt !== null) {
-                $this->recordRescheduleAudit(
+                $this->saveWithinManagedWorkflow(
                     appointment: $lockedAppointment,
-                    originalStartAt: $originalStartAt,
-                    newStartAt: $normalizedStartAt,
-                    fromStatus: $fromStatus,
-                    reason: $reason,
-                    force: false,
-                    source: 'form',
+                    payload: $data,
+                    context: $this->rescheduleAuditContext(
+                        originalStartAt: $originalStartAt,
+                        newStartAt: $normalizedStartAt,
+                        reason: $reason,
+                        force: false,
+                        source: 'form',
+                    ),
                 );
+            } else {
+                $lockedAppointment->fill($data);
+                $lockedAppointment->save();
             }
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
@@ -79,7 +78,6 @@ class AppointmentSchedulingService
             $lockedAppointment = $this->lockAppointment($appointment);
             $normalizedStartAt = $this->normalizeDateTime($startAt);
             $reason = trim((string) $reason);
-            $fromStatus = Appointment::normalizeStatus($lockedAppointment->status) ?? Appointment::DEFAULT_STATUS;
 
             if ($reason === '') {
                 throw ValidationException::withMessages([
@@ -108,16 +106,16 @@ class AppointmentSchedulingService
                 $payload['overbooking_override_at'] = now();
             }
 
-            $lockedAppointment->fill($payload);
-            $lockedAppointment->save();
-            $this->recordRescheduleAudit(
+            $this->saveWithinManagedWorkflow(
                 appointment: $lockedAppointment,
-                originalStartAt: $originalStartAt,
-                newStartAt: $normalizedStartAt,
-                fromStatus: $fromStatus,
-                reason: $reason,
-                force: $force,
-                source: 'calendar',
+                payload: $payload,
+                context: $this->rescheduleAuditContext(
+                    originalStartAt: $originalStartAt,
+                    newStartAt: $normalizedStartAt,
+                    reason: $reason,
+                    force: $force,
+                    source: 'calendar',
+                ),
             );
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
@@ -160,8 +158,11 @@ class AppointmentSchedulingService
                 );
             }
 
-            $lockedAppointment->fill($payload);
-            $lockedAppointment->save();
+            $this->saveWithinManagedWorkflow(
+                appointment: $lockedAppointment,
+                payload: $payload,
+                context: $this->statusTransitionAuditContext($normalizedStatus, $context),
+            );
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
         }, 5);
@@ -244,47 +245,89 @@ class AppointmentSchedulingService
         return $existing === '' ? $line : $existing.PHP_EOL.$line;
     }
 
-    protected function recordRescheduleAudit(
-        Appointment $appointment,
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $context
+     */
+    protected function rescheduleAuditContext(
         ?CarbonInterface $originalStartAt,
         CarbonInterface $newStartAt,
-        string $fromStatus,
         string $reason,
         bool $force,
         string $source,
+    ): array {
+        return array_filter([
+            'actor_id' => $this->resolveActorId(),
+            'reason' => $reason,
+            'trigger' => 'manual_reschedule',
+            'audit_action' => \App\Models\AuditLog::ACTION_RESCHEDULE,
+            'from_at' => $originalStartAt?->format('Y-m-d H:i:s'),
+            'to_at' => $newStartAt->format('Y-m-d H:i:s'),
+            'force' => $force,
+            'source' => $source,
+        ], static fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $context
+     */
+    protected function saveWithinManagedWorkflow(
+        Appointment $appointment,
+        array $payload,
+        array $context = [],
     ): void {
-        if (($originalStartAt?->format('Y-m-d H:i:s')) === $newStartAt->format('Y-m-d H:i:s')) {
-            return;
-        }
+        Appointment::runWithinManagedWorkflow(function () use ($appointment, $payload): void {
+            $appointment->fill($payload);
+            $appointment->save();
+        }, $context);
+    }
 
-        $actorId = auth()->id();
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    protected function statusTransitionAuditContext(string $status, array $context = []): array
+    {
+        $reason = trim((string) ($context['reason'] ?? ''));
+        $trigger = data_get($context, 'trigger');
 
-        if (! $actorId) {
-            return;
-        }
+        return array_filter([
+            'actor_id' => $this->resolveActorId($context),
+            'reason' => $reason !== '' ? $reason : null,
+            'trigger' => is_string($trigger) && trim($trigger) !== ''
+                ? trim($trigger)
+                : $this->defaultTriggerForStatus($status),
+            'audit_action' => match ($status) {
+                Appointment::STATUS_CANCELLED => \App\Models\AuditLog::ACTION_CANCEL,
+                Appointment::STATUS_RESCHEDULED => \App\Models\AuditLog::ACTION_RESCHEDULE,
+                Appointment::STATUS_NO_SHOW => \App\Models\AuditLog::ACTION_NO_SHOW,
+                Appointment::STATUS_COMPLETED => \App\Models\AuditLog::ACTION_COMPLETE,
+                default => null,
+            },
+        ], static fn (mixed $value): bool => $value !== null);
+    }
 
-        AuditLog::record(
-            entityType: AuditLog::ENTITY_APPOINTMENT,
-            entityId: (int) $appointment->id,
-            action: AuditLog::ACTION_RESCHEDULE,
-            actorId: $actorId,
-            branchId: $appointment->branch_id ? (int) $appointment->branch_id : null,
-            patientId: $appointment->patient_id ? (int) $appointment->patient_id : null,
-            metadata: WorkflowAuditMetadata::transition(
-                fromStatus: $fromStatus,
-                toStatus: Appointment::STATUS_RESCHEDULED,
-                reason: $reason,
-                metadata: [
-                    'patient_id' => $appointment->patient_id,
-                    'customer_id' => $appointment->customer_id,
-                    'doctor_id' => $appointment->doctor_id,
-                    'branch_id' => $appointment->branch_id,
-                    'from_at' => $originalStartAt?->format('Y-m-d H:i:s'),
-                    'to_at' => $newStartAt->format('Y-m-d H:i:s'),
-                    'force' => $force,
-                    'source' => $source,
-                ],
-            ),
-        );
+    protected function defaultTriggerForStatus(string $status): string
+    {
+        return match ($status) {
+            Appointment::STATUS_CONFIRMED => 'manual_confirm',
+            Appointment::STATUS_IN_PROGRESS => 'manual_start',
+            Appointment::STATUS_COMPLETED => 'manual_complete',
+            Appointment::STATUS_NO_SHOW => 'manual_no_show',
+            Appointment::STATUS_CANCELLED => 'manual_cancel',
+            Appointment::STATUS_RESCHEDULED => 'manual_reschedule',
+            default => 'manual_transition',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    protected function resolveActorId(array $context = []): ?int
+    {
+        $candidate = $context['actor_id'] ?? auth()->id() ?? $context['confirmed_by'] ?? null;
+
+        return is_numeric($candidate) ? (int) $candidate : null;
     }
 }

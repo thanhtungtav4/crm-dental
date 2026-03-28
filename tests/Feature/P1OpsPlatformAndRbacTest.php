@@ -22,6 +22,7 @@ use App\Models\ServiceCategory;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\ConsentLifecycleService;
 use Illuminate\Validation\ValidationException;
 
 it('creates operational KPI snapshot with lineage payload', function () {
@@ -596,10 +597,11 @@ it('records expanded audit logs for consent insurance claim and treatment sessio
         'status' => Consent::STATUS_PENDING,
     ]);
 
-    $consent->update([
-        'status' => Consent::STATUS_SIGNED,
-        'signed_by' => $manager->id,
-    ]);
+    app(ConsentLifecycleService::class)->sign(
+        consent: $consent,
+        signedBy: $manager->id,
+        signatureContext: ['source' => 'ops_platform_rbac_test'],
+    );
 
     $invoice = Invoice::factory()->create([
         'patient_id' => $patient->id,

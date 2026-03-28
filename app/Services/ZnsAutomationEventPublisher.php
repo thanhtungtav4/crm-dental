@@ -153,7 +153,7 @@ class ZnsAutomationEventPublisher
             return 0;
         }
 
-        return ZnsAutomationEvent::query()
+        $events = ZnsAutomationEvent::query()
             ->where('appointment_id', $appointmentId)
             ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
             ->whereIn('status', [
@@ -161,15 +161,11 @@ class ZnsAutomationEventPublisher
                 ZnsAutomationEvent::STATUS_FAILED,
                 ZnsAutomationEvent::STATUS_PROCESSING,
             ])
-            ->update([
-                'status' => ZnsAutomationEvent::STATUS_DEAD,
-                'next_retry_at' => null,
-                'locked_at' => null,
-                'processing_token' => null,
-                'processed_at' => now(),
-                'last_error' => $reason,
-                'updated_at' => now(),
-            ]);
+            ->get();
+
+        $events->each(fn (ZnsAutomationEvent $event): mixed => $event->markSuperseded($reason));
+
+        return $events->count();
     }
 
     /**
@@ -441,7 +437,7 @@ class ZnsAutomationEventPublisher
             return $event;
         }
 
-        $event->forceFill([
+        $event->resetForReplay([
             'template_key' => $templateKey,
             'template_id_snapshot' => $templateId,
             'appointment_id' => $appointmentId,
@@ -452,18 +448,8 @@ class ZnsAutomationEventPublisher
             'normalized_phone' => $normalizedPhone,
             'payload' => $payload,
             'payload_checksum' => $payloadChecksum,
-            'status' => ZnsAutomationEvent::STATUS_PENDING,
-            'attempts' => 0,
             'next_retry_at' => $nextRetryAt,
-            'locked_at' => null,
-            'processing_token' => null,
-            'processed_at' => null,
-            'last_http_status' => null,
-            'last_error' => null,
-            'provider_message_id' => null,
-            'provider_status_code' => null,
-            'provider_response' => null,
-        ])->save();
+        ]);
 
         return $event->fresh() ?? $event;
     }
@@ -479,15 +465,8 @@ class ZnsAutomationEventPublisher
                 ZnsAutomationEvent::STATUS_FAILED,
                 ZnsAutomationEvent::STATUS_PROCESSING,
             ])
-            ->update([
-                'status' => ZnsAutomationEvent::STATUS_DEAD,
-                'next_retry_at' => null,
-                'locked_at' => null,
-                'processing_token' => null,
-                'processed_at' => now(),
-                'last_error' => 'Superseded by newer appointment reminder payload.',
-                'updated_at' => now(),
-            ]);
+            ->get()
+            ->each(fn (ZnsAutomationEvent $event): mixed => $event->markSuperseded('Superseded by newer appointment reminder payload.'));
     }
 
     protected function isUniqueConstraintViolation(QueryException $exception): bool

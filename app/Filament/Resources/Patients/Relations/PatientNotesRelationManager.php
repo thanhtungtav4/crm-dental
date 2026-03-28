@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Patients\Relations;
 
 use App\Models\Note;
 use App\Models\User;
+use App\Services\CareTicketWorkflowService;
 use App\Services\PatientAssignmentAuthorizer;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -167,7 +168,10 @@ class PatientNotesRelationManager extends RelationManager
                     ->fillForm(fn (Note $record): array => $this->getRecordFormState($record))
                     ->form($this->getUpdateCareFormSchema())
                     ->action(function (Note $record, array $data): void {
-                        $record->update($this->buildUpdatePayload($record, $data));
+                        app(CareTicketWorkflowService::class)->updateManualTicket(
+                            note: $record,
+                            attributes: $this->buildUpdatePayload($record, $data),
+                        );
                     }),
                 Action::make('deleteCare')
                     ->label('Xóa')

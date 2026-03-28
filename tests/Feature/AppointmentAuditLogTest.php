@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
 
 it('records audit log when appointment is rescheduled', function () {
     $appointment = makeAppointmentForAudit();
@@ -15,10 +16,11 @@ it('records audit log when appointment is rescheduled', function () {
 
     $this->actingAs($user);
 
-    $appointment->update([
-        'status' => Appointment::STATUS_RESCHEDULED,
-        'reschedule_reason' => 'Bệnh nhân xin dời lịch',
-    ]);
+    app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $appointment,
+        startAt: $appointment->date?->copy()->addMinutes(30) ?? now()->addDay()->addMinutes(30),
+        reason: 'Bệnh nhân xin dời lịch',
+    );
 
     $log = AuditLog::query()
         ->where('entity_type', AuditLog::ENTITY_APPOINTMENT)

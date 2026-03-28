@@ -4,6 +4,7 @@ use App\Models\Appointment;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
 use App\Services\SyncAppointmentLifecycleSideEffects;
 use Illuminate\Support\Facades\Queue;
 
@@ -47,9 +48,10 @@ it('dispatches conversion-aware orchestration when a lead appointment is complet
 
     Queue::fake();
 
-    $appointment->update([
-        'status' => Appointment::STATUS_COMPLETED,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment,
+        Appointment::STATUS_COMPLETED,
+    );
 
     Queue::assertPushed(SyncAppointmentLifecycleSideEffects::class, function (SyncAppointmentLifecycleSideEffects $job) use ($appointment): bool {
         return $job->appointmentId === $appointment->id

@@ -47,7 +47,9 @@ it('signs consent with signature context and locks content changes afterwards', 
         ->and($auditLog->actor_id)->toBe($signer->id)
         ->and($auditLog->patient_id)->toBe($patient->id)
         ->and(data_get($auditLog, 'metadata.status_from'))->toBe(Consent::STATUS_PENDING)
-        ->and(data_get($auditLog, 'metadata.status_to'))->toBe(Consent::STATUS_SIGNED);
+        ->and(data_get($auditLog, 'metadata.status_to'))->toBe(Consent::STATUS_SIGNED)
+        ->and(data_get($auditLog, 'metadata.trigger'))->toBe('manual_sign')
+        ->and(data_get($auditLog, 'metadata.signature_source'))->toBe('staff_confirmed');
 
     expect(fn () => $signed->update([
         'note' => 'Co gang sua lai noi dung sau khi da ky.',
@@ -82,9 +84,10 @@ it('allows only valid consent transitions through lifecycle service', function (
         ->and($auditLog->actor_id)->toBe($signer->id)
         ->and($auditLog->patient_id)->toBe($patient->id)
         ->and(data_get($auditLog, 'metadata.status_from'))->toBe(Consent::STATUS_SIGNED)
-        ->and(data_get($auditLog, 'metadata.status_to'))->toBe(Consent::STATUS_REVOKED);
+        ->and(data_get($auditLog, 'metadata.status_to'))->toBe(Consent::STATUS_REVOKED)
+        ->and(data_get($auditLog, 'metadata.trigger'))->toBe('manual_revoke');
 
     expect(fn () => $revoked->update([
         'status' => Consent::STATUS_PENDING,
-    ]))->toThrow(ValidationException::class, 'CONSENT_STATE_INVALID');
+    ]))->toThrow(ValidationException::class, 'ConsentLifecycleService');
 });

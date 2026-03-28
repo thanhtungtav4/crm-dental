@@ -5,13 +5,13 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\EmrSyncEvent;
 use App\Models\GoogleCalendarSyncEvent;
-use App\Models\OperationalKpiAlert;
-use App\Models\ReportSnapshot;
 use App\Models\ZnsAutomationEvent;
+use App\Services\OperationalAutomationAuditReadModelService;
+use App\Services\OperationalKpiAlertReadModelService;
+use App\Services\OperationalKpiSnapshotReadModelService;
 use App\Services\OpsCommandAuthorizer;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class CheckObservabilityHealth extends Command
@@ -24,8 +24,12 @@ class CheckObservabilityHealth extends Command
 
     protected $description = 'Kiểm tra observability cross-module (SLO/error budget/runbook) cho release gate production.';
 
-    public function __construct(protected OpsCommandAuthorizer $authorizer)
-    {
+    public function __construct(
+        protected OpsCommandAuthorizer $authorizer,
+        protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
+        protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
+        protected OperationalKpiSnapshotReadModelService $operationalKpiSnapshotReadModelService,
+    ) {
         parent::__construct();
     }
 
@@ -56,32 +60,11 @@ class CheckObservabilityHealth extends Command
         $metrics = [
             'dead_backlog_total' => array_sum($deadBacklog),
             'retryable_failed_backlog_total' => array_sum($failedBacklog),
-            'open_kpi_alerts' => OperationalKpiAlert::query()
-                ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
-                ->count(),
-            'snapshot_sla_violations' => ReportSnapshot::query()
-                ->where('snapshot_key', 'operational_kpi_pack')
-                ->whereDate('snapshot_date', $snapshotDate)
-                ->whereIn('sla_status', [
-                    ReportSnapshot::SLA_LATE,
-                    ReportSnapshot::SLA_STALE,
-                    ReportSnapshot::SLA_MISSING,
-                ])
-                ->count(),
-            'recent_automation_failures' => AuditLog::query()
-                ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
-                ->where('action', AuditLog::ACTION_FAIL)
-                ->where('created_at', '>=', $windowStartedAt)
-                ->where(function (Builder $query): void {
-                    foreach ($this->trackedAutomationFailureCommands() as $command) {
-                        $query->orWhere('metadata->command', $command);
-                    }
-
-                    foreach ($this->trackedAutomationFailureChannels() as $channel) {
-                        $query->orWhere('metadata->channel', $channel);
-                    }
-                })
-                ->count(),
+            'open_kpi_alerts' => $this->operationalKpiAlertReadModelService->openAlertCount(),
+            'snapshot_sla_violations' => $this->operationalKpiSnapshotReadModelService
+                ->slaViolationCountForDate($snapshotDate),
+            'recent_automation_failures' => $this->operationalAutomationAuditReadModelService
+                ->recentFailureCount($windowStartedAt),
         ];
 
         $requiredRunbookCategories = [
@@ -183,8 +166,8 @@ class CheckObservabilityHealth extends Command
                     'metrics' => $metrics,
                     'budgets' => $budgets,
                     'breaches' => $breaches,
-                    'tracked_failure_commands' => $this->trackedAutomationFailureCommands(),
-                    'tracked_failure_channels' => $this->trackedAutomationFailureChannels(),
+                    'tracked_failure_commands' => $this->operationalAutomationAuditReadModelService->trackedCommands(),
+                    'tracked_failure_channels' => $this->operationalAutomationAuditReadModelService->trackedChannels(),
                     'missing_runbook_categories' => $missingRunbookCategories,
                     'runbook_category' => 'cross_module_observability',
                     'runbook' => (string) data_get($runbookMap, 'cross_module_observability.runbook', ''),
@@ -222,36 +205,5 @@ class CheckObservabilityHealth extends Command
         }
 
         return Carbon::parse($rawDate)->toDateString();
-    }
-
-    /**
-     * @return list<string>
-     */
-    protected function trackedAutomationFailureCommands(): array
-    {
-        return [
-            'ops:create-backup-artifact',
-            'ops:check-backup-health',
-            'ops:run-restore-drill',
-            'ops:run-release-gates',
-            'ops:run-production-readiness',
-            'ops:verify-production-readiness-report',
-            'reports:explain-ops-hotpaths',
-            'ops:check-alert-runbook-map',
-            'ops:check-observability-health',
-        ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    protected function trackedAutomationFailureChannels(): array
-    {
-        return [
-            'backup_artifact',
-            'release_gates',
-            'production_readiness',
-            'observability_health',
-        ];
     }
 }

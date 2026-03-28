@@ -12,6 +12,7 @@ use App\Services\WebLeadInternalEmailNotificationService;
 use Illuminate\Mail\Mailer;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 function configureInternalEmailFeatureWebLeadApi(
     bool $enabled,
@@ -224,4 +225,47 @@ it('marks a queued delivery as dead for invalid runtime mailer configuration', f
     expect($result['status'])->toBe(WebLeadEmailDelivery::STATUS_DEAD)
         ->and($delivery->fresh()->status)->toBe(WebLeadEmailDelivery::STATUS_DEAD)
         ->and($delivery->fresh()->last_error_message)->toContain('SMTP host');
+});
+
+it('blocks raw status mutation outside the web lead email workflow contract', function (): void {
+    $delivery = WebLeadEmailDelivery::factory()->create();
+
+    expect(function () use ($delivery): void {
+        $delivery->update([
+            'status' => WebLeadEmailDelivery::STATUS_SENT,
+        ]);
+    })->toThrow(ValidationException::class);
+});
+
+it('requeues a terminal delivery through the managed resend workflow', function (): void {
+    Queue::fake();
+
+    configureInternalEmailFeatureWebLeadRuntime();
+
+    $delivery = WebLeadEmailDelivery::factory()->create([
+        'status' => WebLeadEmailDelivery::STATUS_DEAD,
+        'attempt_count' => 3,
+        'manual_resend_count' => 0,
+        'processing_token' => 'stale-token',
+        'locked_at' => now()->subMinutes(30),
+        'next_retry_at' => now()->subMinutes(5),
+        'sent_at' => now()->subMinutes(15),
+        'transport_message_id' => 'smtp-old-message',
+        'last_error_message' => 'Previous SMTP failure',
+    ]);
+
+    $requeuedDelivery = app(WebLeadInternalEmailNotificationService::class)->resend($delivery);
+
+    expect($requeuedDelivery)->not->toBeNull()
+        ->and($requeuedDelivery->status)->toBe(WebLeadEmailDelivery::STATUS_QUEUED)
+        ->and((int) $requeuedDelivery->attempt_count)->toBe(3)
+        ->and((int) $requeuedDelivery->manual_resend_count)->toBe(1)
+        ->and($requeuedDelivery->processing_token)->toBeNull()
+        ->and($requeuedDelivery->locked_at)->toBeNull()
+        ->and($requeuedDelivery->next_retry_at)->toBeNull()
+        ->and($requeuedDelivery->sent_at)->toBeNull()
+        ->and($requeuedDelivery->transport_message_id)->toBeNull()
+        ->and($requeuedDelivery->last_error_message)->toBeNull();
+
+    Queue::assertPushed(SendWebLeadInternalEmailDelivery::class, 1);
 });

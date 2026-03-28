@@ -133,13 +133,15 @@ it('reclaims stale processing zns automation events and retries successfully', f
         ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
         ->firstOrFail();
 
-    $event->forceFill([
-        'status' => ZnsAutomationEvent::STATUS_PROCESSING,
-        'attempts' => 1,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(20),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    ZnsAutomationEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event->forceFill([
+            'status' => ZnsAutomationEvent::STATUS_PROCESSING,
+            'attempts' => 1,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(20),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::fake([
         'https://business.openapi.zalo.me/*' => Http::response([
@@ -178,14 +180,16 @@ it('moves stale processing zns automation events to dead when max attempts alrea
         ->where('event_type', ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER)
         ->firstOrFail();
 
-    $event->forceFill([
-        'status' => ZnsAutomationEvent::STATUS_PROCESSING,
-        'attempts' => 2,
-        'max_attempts' => 2,
-        'locked_at' => now()->subMinutes(30),
-        'next_retry_at' => now()->addMinutes(10),
-        'last_error' => 'simulated worker crash',
-    ])->save();
+    ZnsAutomationEvent::runWithinManagedWorkflow(function () use ($event): void {
+        $event->forceFill([
+            'status' => ZnsAutomationEvent::STATUS_PROCESSING,
+            'attempts' => 2,
+            'max_attempts' => 2,
+            'locked_at' => now()->subMinutes(30),
+            'next_retry_at' => now()->addMinutes(10),
+            'last_error' => 'simulated worker crash',
+        ])->save();
+    });
 
     Http::preventStrayRequests();
 
@@ -282,6 +286,7 @@ it('publishes birthday greeting event from birthday automation and deduplicates 
         ->where('event_type', ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING)
         ->firstOrFail();
 
+    $event->markProcessing('birthday-sync-001');
     $event->markSent(
         providerMessageId: 'birthday-msg-001',
         providerStatusCode: 'sent',

@@ -212,7 +212,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 ## [RRB-009] Shared workflow action and audit-reason contract
 
 - Status: `In progress`
-- Module: `APPT`, `TRT`, `FIN`, `SUP`, `ZNS`, `CARE`, `OPS`
+- Module: `PAT`, `APPT`, `TRT`, `FIN`, `SUP`, `INT`, `ZNS`, `CARE`, `OPS`
 - Description:
   - Chuan hoa pattern workflow service, guided actions, confirm modal, va audit reason metadata tren cac module co state machine.
 - Impact:
@@ -230,15 +230,25 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - Tien do hien tai:
     - da chuan hoa `WorkflowAuditMetadata` tren `APPT`, `TRT`, `FIN`, `SUP`, `ZNS`
     - da bo sung audit trail / structured transition metadata cho `FactoryOrder`
-    - da keo observer-based workflow audit cua `Appointment`, `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
+    - da dua `Appointment` vao managed workflow context trong `AppointmentSchedulingService`, model guard raw status update, va observer audit hop nhat cho `reschedule` / `cancel` / `no_show` / `complete`
+    - da dua `VisitEpisode` vao canonical `VisitEpisodeService`, model guard raw status update, va chot smoke flow appointment-to-encounter theo workflow contract
+    - da dua `BranchTransferRequest` vao managed workflow context trong `PatientBranchTransferService`, model guard raw status update, va observer audit cho `request` / `apply` / `reject`
+    - da keo observer-based workflow audit cua `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
     - da dua `PopupAnnouncement` vao workflow service canonical, guided actions, va audit-reason metadata tren nhanh backlog
     - da dua `PlanItem` mutation lane vao workflow service canonical, guided actions, va audit transition metadata tren nhanh backlog
     - da dua `ReceiptExpense` mutation lane vao workflow service canonical, model guard, guided actions, va structured audit metadata tren nhanh backlog
     - da dua `MaterialIssueNote` mutation lane vao workflow service canonical, model guard, guided actions, va transition audit metadata tren nhanh backlog
     - da dua `InsuranceClaim` vao workflow service canonical, managed transition context, va audit metadata `reason` / `trigger` / `payment_id`
     - da dua `ClinicalOrder` / `ClinicalResult` vao workflow service canonical, managed transition context, va EMR audit metadata `reason` / `trigger`
+    - da dua `CareTicket/Note` vao workflow service canonical cho manual vs canonical status transitions, model guard raw status update, va managed audit metadata `reason` / `trigger`
+    - da dua `Consent` vao managed workflow context trong lifecycle service, model guard raw status update, va audit metadata `trigger` / `signature_source`
+    - da dua `ExamSession / TreatmentProgress` vao workflow service canonical cho clinical-note sync, treatment-progress prime, lifecycle refresh, va managed mutation cho `TreatmentProgressDay / TreatmentProgressItem`; model guard raw status update, va loai bo `saveQuietly()` doi `status` rai rac
     - da chuan hoa them `Payment` refund / reversal audit metadata theo pattern `reason` / `trigger` / canonical identifiers
-    - `CARE` va `OPS` chua can lane refactor rieng trong wave nay
+    - da dua `MasterPatientDuplicate / MasterPatientMerge` vao workflow contract voi model guard raw status update, canonical workflow service cho `ignore`, `merge-resolution`, `rollback restore`, va duong `auto-ignore` tu `MasterPatientIndexService`
+    - da dua `WebLeadEmailDelivery` vao managed workflow contract voi model guard raw status update, canonical resend / claim / sent / fail mutation methods, va giu service mail noi bo di qua canonical path
+    - da dua `ZnsCampaignDelivery` vao managed workflow contract voi model guard raw status update, canonical sent / fail mutation methods, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`
+    - da dua cac lane outbox noi bo `ZnsAutomationEvent`, `GoogleCalendarSyncEvent`, `EmrSyncEvent` vao transition contract, canonical replay methods, va loai bo stale-processing mass-update bypass
+    - `OPS` chua can lane refactor rieng trong wave nay
 - Tests needed:
   - workflow transition contract tests
   - browser checks cho dangerous/destructive actions
@@ -248,7 +258,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 ## [RRB-010] Unified audit timeline and read-model conventions
 
 - Status: `In progress`
-- Module: `GOV`, `CLIN`, `FIN`, `INT`, `OPS`, `ZNS`
+- Module: `PAT`, `GOV`, `CLIN`, `FIN`, `INT`, `OPS`, `ZNS`
 - Description:
   - Tiep tuc hop nhat cach doc audit timeline, operational event, va provenance read-model de de trace incident va nghiep vu.
 - Impact:
@@ -266,11 +276,22 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tao `PatientOperationalTimelineService`
     - da tach patient activity timeline khoi widget query thuan raw
     - da dua `FactoryOrder`, `InsuranceClaim`, `TreatmentSession` vao patient operational timeline read-model
+    - da dua `BranchTransferRequest` vao patient operational timeline read-model
     - da dua them `PlanItem` vao patient operational timeline read-model
     - da dua them `ReceiptExpense` vao patient operational timeline read-model
     - da dua them `MaterialIssueNote` vao patient operational timeline read-model
+    - da giu `CareTicket` tren audit contract moi ma khong lam vo patient activity / operational timeline surfaces
     - da lam ro them mo ta finance timeline cho `Payment` refund / reversal
     - cac audit metadata moi da du structured hon de phuc vu read-model phase sau
+    - da tao `OperationalKpiSnapshotReadModelService` de gom read/query convention cho `OperationalKpiPack` va `OpsControlCenter` quanh latest snapshot date, SLA counts, filtered latest snapshot, va branch benchmark summary
+    - da tao `OperationalKpiAlertReadModelService` de gom open/resolved alert counts va open-alert summary cho `OperationalKpiPack` va `OpsControlCenter`, giam query logic KPI alert dang bi rai rac
+    - da mo rong `OperationalKpiSnapshotReadModelService` va `OperationalKpiAlertReadModelService` sang `ops:check-observability-health` de alert count va snapshot SLA violation count dung chung read-model contract giua page/service/command
+    - da keo `OperationalKpiAlertService` dung chung reader contract cho active-alert counting sau snapshot evaluation, tranh viec write-side va read-side tu dien giai KPI alert theo hai cach khac nhau
+    - da tao `OperationalAutomationAuditReadModelService` de hop nhat tracked command/channel catalog, recent failure count, va recent ops runs giua `OpsControlCenterService` va `CheckObservabilityHealth`
+    - da tao `ReportSnapshotReadModelService` de hop nhat generic snapshot lookup cho `CheckSnapshotSla` va `CompareReportSnapshots`, trong khi van giu semantics tach rieng giua `global snapshot` va `across branches`
+    - da tao `PatientActivityTimelineReadModelService` de hop nhat relation-backed patient activity entries voi `PatientOperationalTimelineService` va `ClinicalAuditTimelineService`, dong thoi dua `PatientActivityTimelineWidget` ve read-only rendering thay vi tu query va map du lieu truc tiep
+    - da tao `GovernanceAuditReadModelService` de gom recent governance-relevant audit query va branch-visible filtering cho `OpsControlCenterService`, loai bo them mot raw audit query khoi cockpit service
+    - da tao `ZnsOperationalReadModelService` de gom summary-card counts, dead/retry backlog, va retention candidate rules cho `OpsControlCenterService` cung `CheckObservabilityHealth`, thay cho viec page/command tu query status ZNS theo tung chot rieng le
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces

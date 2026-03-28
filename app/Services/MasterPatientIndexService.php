@@ -8,10 +8,13 @@ use App\Models\MasterPatientMerge;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\PatientIdentityNormalizer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class MasterPatientIndexService
 {
+    public function __construct(protected MasterPatientDuplicateWorkflowService $duplicateWorkflowService) {}
+
     public function syncForPatient(Patient $patient, bool $persist = true): int
     {
         $activeMerge = $this->activeMergeForPatient($patient->id);
@@ -22,18 +25,16 @@ class MasterPatientIndexService
                     ->where('patient_id', $patient->id)
                     ->delete();
 
-                MasterPatientDuplicate::query()
-                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
-                    ->where(function ($query) use ($patient): void {
-                        $query->where('patient_id', $patient->id)
-                            ->orWhereJsonContains('matched_patient_ids', $patient->id);
-                    })
-                    ->update([
-                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
-                        'review_note' => 'Auto-ignore do patient đã được merge vào hồ sơ chính #'.$activeMerge->canonical_patient_id,
-                        'reviewed_by' => auth()->id(),
-                        'reviewed_at' => now(),
-                    ]);
+                $this->ignoreOpenDuplicateCases(
+                    MasterPatientDuplicate::query()
+                        ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                        ->where(function ($query) use ($patient): void {
+                            $query->where('patient_id', $patient->id)
+                                ->orWhereJsonContains('matched_patient_ids', $patient->id);
+                        }),
+                    note: 'Auto-ignore do patient đã được merge vào hồ sơ chính #'.$activeMerge->canonical_patient_id,
+                    trigger: 'active_merge_sync',
+                );
             }
 
             return 0;
@@ -79,18 +80,16 @@ class MasterPatientIndexService
             ->where('patient_id', $patientId)
             ->delete();
 
-        MasterPatientDuplicate::query()
-            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
-            ->where(function ($query) use ($patientId): void {
-                $query->where('patient_id', $patientId)
-                    ->orWhereJsonContains('matched_patient_ids', $patientId);
-            })
-            ->update([
-                'status' => MasterPatientDuplicate::STATUS_IGNORED,
-                'review_note' => 'Auto-ignore do bệnh nhân đã bị gỡ khỏi MPI.',
-                'reviewed_by' => auth()->id(),
-                'reviewed_at' => now(),
-            ]);
+        $this->ignoreOpenDuplicateCases(
+            MasterPatientDuplicate::query()
+                ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                ->where(function ($query) use ($patientId): void {
+                    $query->where('patient_id', $patientId)
+                        ->orWhereJsonContains('matched_patient_ids', $patientId);
+                }),
+            note: 'Auto-ignore do bệnh nhân đã bị gỡ khỏi MPI.',
+            trigger: 'patient_removed',
+        );
     }
 
     public function hasCrossBranchDuplicate(Patient $patient): bool
@@ -231,19 +230,17 @@ class MasterPatientIndexService
 
         $trackedIdentityHashes = collect($identities)->pluck('identity_hash')->all();
 
-        MasterPatientDuplicate::query()
-            ->where('patient_id', $patient->id)
-            ->where('status', MasterPatientDuplicate::STATUS_OPEN)
-            ->when(
-                $trackedIdentityHashes !== [],
-                fn ($query) => $query->whereNotIn('identity_hash', $trackedIdentityHashes)
-            )
-            ->update([
-                'status' => MasterPatientDuplicate::STATUS_IGNORED,
-                'review_note' => 'Auto-ignore do định danh không còn khớp.',
-                'reviewed_by' => auth()->id(),
-                'reviewed_at' => now(),
-            ]);
+        $this->ignoreOpenDuplicateCases(
+            MasterPatientDuplicate::query()
+                ->where('patient_id', $patient->id)
+                ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+                ->when(
+                    $trackedIdentityHashes !== [],
+                    fn ($query) => $query->whereNotIn('identity_hash', $trackedIdentityHashes)
+                ),
+            note: 'Auto-ignore do định danh không còn khớp.',
+            trigger: 'identity_hash_pruned',
+        );
 
         foreach ($identities as $identity) {
             if ((float) $identity['confidence_score'] < $minimumConfidence) {
@@ -257,16 +254,14 @@ class MasterPatientIndexService
                 ->get(['patient_id', 'branch_id', 'confidence_score']);
 
             if ($matchedIdentities->isEmpty()) {
-                MasterPatientDuplicate::query()
-                    ->where('identity_type', $identity['identity_type'])
-                    ->where('identity_hash', $identity['identity_hash'])
-                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
-                    ->update([
-                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
-                        'review_note' => 'Auto-ignore do không còn trùng liên chi nhánh.',
-                        'reviewed_by' => auth()->id(),
-                        'reviewed_at' => now(),
-                    ]);
+                $this->ignoreOpenDuplicateCases(
+                    MasterPatientDuplicate::query()
+                        ->where('identity_type', $identity['identity_type'])
+                        ->where('identity_hash', $identity['identity_hash'])
+                        ->where('status', MasterPatientDuplicate::STATUS_OPEN),
+                    note: 'Auto-ignore do không còn trùng liên chi nhánh.',
+                    trigger: 'cross_branch_duplicate_cleared',
+                );
 
                 continue;
             }
@@ -286,16 +281,14 @@ class MasterPatientIndexService
                 ->all();
 
             if (count($matchedBranchIds) <= 1) {
-                MasterPatientDuplicate::query()
-                    ->where('identity_type', $identity['identity_type'])
-                    ->where('identity_hash', $identity['identity_hash'])
-                    ->where('status', MasterPatientDuplicate::STATUS_OPEN)
-                    ->update([
-                        'status' => MasterPatientDuplicate::STATUS_IGNORED,
-                        'review_note' => 'Auto-ignore do chỉ trùng trong cùng một chi nhánh.',
-                        'reviewed_by' => auth()->id(),
-                        'reviewed_at' => now(),
-                    ]);
+                $this->ignoreOpenDuplicateCases(
+                    MasterPatientDuplicate::query()
+                        ->where('identity_type', $identity['identity_type'])
+                        ->where('identity_hash', $identity['identity_hash'])
+                        ->where('status', MasterPatientDuplicate::STATUS_OPEN),
+                    note: 'Auto-ignore do chỉ trùng trong cùng một chi nhánh.',
+                    trigger: 'same_branch_duplicate_cleared',
+                );
 
                 continue;
             }
@@ -328,5 +321,16 @@ class MasterPatientIndexService
                 ],
             );
         }
+    }
+
+    protected function ignoreOpenDuplicateCases(Builder $query, string $note, string $trigger): void
+    {
+        $query->get()->each(function (MasterPatientDuplicate $duplicateCase) use ($note, $trigger): void {
+            $this->duplicateWorkflowService->autoIgnore(
+                duplicateCase: $duplicateCase,
+                note: $note,
+                trigger: $trigger,
+            );
+        });
     }
 }

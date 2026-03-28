@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\NullableEncrypted;
 use App\Services\ExamSessionLifecycleService;
 use App\Services\ExamSessionProvisioningService;
+use App\Services\ExamSessionWorkflowService;
 use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -277,15 +278,19 @@ class ClinicalNote extends Model
         }
 
         if ($session->status === ExamSession::STATUS_DRAFT) {
-            $session->fill([
-                'status' => $clinicalNote->resolveExamSessionStatus(),
-                'created_by' => $session->created_by ?: ($clinicalNote->created_by ? (int) $clinicalNote->created_by : auth()->id()),
-                'updated_by' => $clinicalNote->updated_by ? (int) $clinicalNote->updated_by : auth()->id(),
-            ]);
-
-            if ($session->isDirty()) {
-                $session->save();
-            }
+            $session = app(ExamSessionWorkflowService::class)->synchronizeSnapshot(
+                examSession: $session,
+                attributes: [
+                    'created_by' => $session->created_by ?: ($clinicalNote->created_by ? (int) $clinicalNote->created_by : auth()->id()),
+                    'updated_by' => $clinicalNote->updated_by ? (int) $clinicalNote->updated_by : auth()->id(),
+                ],
+                targetStatus: $clinicalNote->resolveExamSessionStatus(),
+                context: [
+                    'trigger' => 'clinical_note_provision',
+                    'clinical_note_id' => $clinicalNote->id,
+                    'patient_id' => (int) $clinicalNote->patient_id,
+                ],
+            );
         }
 
         return $session->id ? (int) $session->id : null;
@@ -345,16 +350,16 @@ class ClinicalNote extends Model
             'updated_by' => $this->updated_by ? (int) $this->updated_by : auth()->id(),
         ];
 
-        if (! in_array($currentStatus, [ExamSession::STATUS_LOCKED], true)
-            && ExamSession::canTransition($currentStatus, $targetStatus)) {
-            $payload['status'] = $targetStatus;
-        }
-
-        $session->fill($payload);
-
-        if ($session->isDirty()) {
-            $session->save();
-        }
+        $session = app(ExamSessionWorkflowService::class)->synchronizeSnapshot(
+            examSession: $session,
+            attributes: $payload,
+            targetStatus: $targetStatus,
+            context: [
+                'trigger' => 'clinical_note_sync',
+                'clinical_note_id' => $this->id,
+                'patient_id' => (int) $this->patient_id,
+            ],
+        );
 
         app(ExamSessionLifecycleService::class)->refresh((int) $session->id);
     }

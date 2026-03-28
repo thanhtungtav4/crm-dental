@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ExamSessionWorkflowService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,13 @@ use Illuminate\Validation\ValidationException;
 class ExamSession extends Model
 {
     use HasFactory;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
 
     public const STATUS_DRAFT = 'draft';
 
@@ -64,6 +72,12 @@ class ExamSession extends Model
             }
 
             if ($session->exists && $session->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'EXAM_SESSION_STATE_INVALID: Trang thai phien kham chi duoc thay doi qua ExamSessionWorkflowService.',
+                    ]);
+                }
+
                 $fromStatus = strtolower(trim((string) ($session->getOriginal('status') ?: self::STATUS_DRAFT)));
                 $toStatus = $session->status;
 
@@ -112,8 +126,30 @@ class ExamSession extends Model
 
     public function transitionTo(string $status): void
     {
-        $this->status = strtolower(trim($status));
-        $this->save();
+        app(ExamSessionWorkflowService::class)->transition($this, $status);
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 
     public function patient(): BelongsTo

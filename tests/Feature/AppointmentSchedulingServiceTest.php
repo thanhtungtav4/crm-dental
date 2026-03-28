@@ -177,6 +177,7 @@ it('requires a reason and records audit metadata when rescheduling appointments'
         ->and(data_get($auditLog?->metadata, 'from_at'))->toContain('15:00:00')
         ->and(data_get($auditLog?->metadata, 'to_at'))->toContain('15:30:00')
         ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Khach xin doi sang cuoi gio chieu')
+        ->and(data_get($auditLog?->metadata, 'trigger'))->toBe('manual_reschedule')
         ->and(data_get($auditLog?->metadata, 'source'))->toBe('calendar');
 });
 
@@ -220,8 +221,53 @@ it('requires a reason and records form audit metadata when updating appointment 
         ->and($updated->status)->toBe(Appointment::STATUS_RESCHEDULED)
         ->and(data_get($auditLog?->metadata, 'status_from'))->toBe(Appointment::STATUS_CONFIRMED)
         ->and(data_get($auditLog?->metadata, 'status_to'))->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'trigger'))->toBe('manual_reschedule')
         ->and(data_get($auditLog?->metadata, 'source'))->toBe('form')
         ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Benh nhan xin doi sang ca muon hon');
+});
+
+it('records reschedule audit when moving a slot that is already marked rescheduled', function () {
+    [$branch, $doctor, $customer, $patient] = makeAppointmentSchedulingContext();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $appointment = Appointment::query()->create([
+        'customer_id' => $customer->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'date' => now()->subHour()->setTime(10, 0),
+        'duration_minutes' => 30,
+        'status' => Appointment::STATUS_RESCHEDULED,
+        'reschedule_reason' => 'Da doi lich lan truoc',
+    ]);
+
+    $this->actingAs($manager);
+
+    $updated = app(AppointmentSchedulingService::class)->update($appointment, [
+        'date' => now()->subHour()->setTime(10, 30),
+        'reschedule_reason' => 'Benh nhan doi them 30 phut',
+    ]);
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_APPOINTMENT)
+        ->where('entity_id', $appointment->id)
+        ->where('action', AuditLog::ACTION_RESCHEDULE)
+        ->latest('id')
+        ->first();
+
+    expect($updated->date?->format('H:i'))->toBe('10:30')
+        ->and($updated->status)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and($auditLog)->not->toBeNull()
+        ->and(data_get($auditLog?->metadata, 'status_from'))->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'status_to'))->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'from_at'))->toContain('10:00:00')
+        ->and(data_get($auditLog?->metadata, 'to_at'))->toContain('10:30:00')
+        ->and(data_get($auditLog?->metadata, 'source'))->toBe('form')
+        ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Benh nhan doi them 30 phut');
 });
 
 it('transitions appointment status through the scheduling service with guided payloads', function () {

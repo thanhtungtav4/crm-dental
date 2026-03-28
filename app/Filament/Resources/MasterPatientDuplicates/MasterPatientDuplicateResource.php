@@ -8,6 +8,7 @@ use App\Filament\Resources\MasterPatientDuplicates\Schemas\MasterPatientDuplicat
 use App\Filament\Resources\MasterPatientDuplicates\Tables\MasterPatientDuplicatesTable;
 use App\Models\MasterPatientDuplicate;
 use App\Models\User;
+use App\Services\MasterPatientDuplicateWorkflowService;
 use App\Services\MasterPatientMergeService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -223,9 +224,10 @@ class MasterPatientDuplicateResource extends Resource
                     ->maxLength(1000),
             ])
             ->action(function (MasterPatientDuplicate $record, array $data): void {
-                $record->markIgnored(
-                    reviewedBy: auth()->id(),
+                app(MasterPatientDuplicateWorkflowService::class)->ignore(
+                    duplicateCase: $record,
                     note: trim((string) ($data['note'] ?? '')),
+                    actorId: auth()->id(),
                 );
 
                 Notification::make()

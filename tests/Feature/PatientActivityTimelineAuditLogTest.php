@@ -9,6 +9,9 @@ use App\Models\FactoryOrder;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
+use App\Services\CareTicketWorkflowService;
+use Spatie\Permission\Models\Permission;
 
 it('includes appointment and care audit logs in patient activity timeline', function () {
     $branch = Branch::factory()->create();
@@ -55,15 +58,19 @@ it('includes appointment and care audit logs in patient activity timeline', func
     $actor = User::factory()->create([
         'branch_id' => $branch->id,
     ]);
+    $actor->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $actor->givePermissionTo('Update:Note');
 
     $this->actingAs($actor);
 
-    $appointment->update([
-        'status' => Appointment::STATUS_RESCHEDULED,
-        'reschedule_reason' => 'Dời lịch theo yêu cầu',
-    ]);
+    app(AppointmentSchedulingService::class)->reschedule(
+        appointment: $appointment,
+        startAt: $appointment->date?->copy()->addHour() ?? now()->addHour(),
+        reason: 'Dời lịch theo yêu cầu',
+    );
 
-    $note->update([
+    app(CareTicketWorkflowService::class)->updateManualTicket($note, [
         'care_status' => Note::CARE_STATUS_DONE,
     ]);
 

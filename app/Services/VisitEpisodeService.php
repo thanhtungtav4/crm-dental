@@ -32,7 +32,11 @@ class VisitEpisodeService
         }
 
         $this->recalculateDurations($episode);
-        $episode->save();
+        $this->saveEpisode($episode, [
+            'trigger' => 'appointment_sync',
+            'appointment_id' => (int) $appointment->getKey(),
+            'patient_id' => $appointment->patient_id,
+        ]);
     }
 
     public function markAppointmentDeleted(Appointment $appointment): void
@@ -54,7 +58,11 @@ class VisitEpisodeService
         }
 
         $this->recalculateDurations($episode);
-        $episode->save();
+        $this->saveEpisode($episode, [
+            'trigger' => 'appointment_deleted',
+            'appointment_id' => (int) $appointment->getKey(),
+            'patient_id' => $appointment->patient_id,
+        ]);
     }
 
     protected function applyStatusMilestones(VisitEpisode $episode, string $appointmentStatus, Appointment $appointment): void
@@ -123,5 +131,25 @@ class VisitEpisodeService
             Appointment::STATUS_RESCHEDULED => VisitEpisode::STATUS_RESCHEDULED,
             default => VisitEpisode::STATUS_SCHEDULED,
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    protected function saveEpisode(VisitEpisode $episode, array $context = []): void
+    {
+        if (! $episode->isDirty()) {
+            return;
+        }
+
+        if ($episode->isDirty('status')) {
+            VisitEpisode::runWithinManagedWorkflow(function () use ($episode): void {
+                $episode->save();
+            }, $context);
+
+            return;
+        }
+
+        $episode->save();
     }
 }

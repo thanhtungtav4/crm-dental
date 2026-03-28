@@ -13,6 +13,13 @@ class Consent extends Model
 {
     use HasFactory;
 
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_SIGNED = 'signed';
@@ -66,6 +73,12 @@ class Consent extends Model
             $consent->status = strtolower(trim((string) ($consent->status ?: self::STATUS_PENDING)));
 
             if ($consent->exists && $consent->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'CONSENT_STATE_INVALID: Trang thai consent chi duoc thay doi qua ConsentLifecycleService.',
+                    ]);
+                }
+
                 $fromStatus = strtolower(trim((string) ($consent->getOriginal('status') ?: self::STATUS_PENDING)));
 
                 if (! self::canTransition($fromStatus, $consent->status)) {
@@ -206,5 +219,28 @@ class Consent extends Model
         }
 
         return false;
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 }

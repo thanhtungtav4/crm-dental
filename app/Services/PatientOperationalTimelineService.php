@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AuditLog;
+use App\Models\BranchTransferRequest;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
 use App\Models\MaterialIssueNote;
@@ -93,6 +94,14 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_COMPLETE,
                             AuditLog::ACTION_CANCEL,
                         ]);
+                })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_BRANCH_TRANSFER)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_CREATE,
+                            AuditLog::ACTION_TRANSFER,
+                            AuditLog::ACTION_FAIL,
+                            AuditLog::ACTION_CANCEL,
+                        ]);
                 });
             })
             ->latest('occurred_at')
@@ -117,6 +126,7 @@ class PatientOperationalTimelineService
             AuditLog::ENTITY_INSURANCE_CLAIM => $this->mapInsuranceClaimEntry($log),
             AuditLog::ENTITY_PLAN_ITEM => $this->mapPlanItemEntry($log),
             AuditLog::ENTITY_TREATMENT_SESSION => $this->mapTreatmentSessionEntry($log),
+            AuditLog::ENTITY_BRANCH_TRANSFER => $this->mapBranchTransferEntry($log),
             default => null,
         };
     }
@@ -560,6 +570,49 @@ class PatientOperationalTimelineService
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapBranchTransferEntry(AuditLog $log): array
+    {
+        $statusTo = (string) data_get($log->metadata, 'status_to', '');
+        $title = match ($log->action) {
+            AuditLog::ACTION_CREATE => 'Tạo yêu cầu chuyển chi nhánh',
+            AuditLog::ACTION_TRANSFER => 'Áp dụng chuyển chi nhánh',
+            AuditLog::ACTION_FAIL => 'Từ chối chuyển chi nhánh',
+            AuditLog::ACTION_CANCEL => 'Hủy yêu cầu chuyển chi nhánh',
+            default => 'Cập nhật chuyển chi nhánh',
+        };
+
+        $descriptionParts = array_filter([
+            $this->branchTransferRouteLabel($log),
+            filled(data_get($log->metadata, 'reason')) ? (string) data_get($log->metadata, 'reason') : null,
+        ]);
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => match ($log->action) {
+                AuditLog::ACTION_TRANSFER => 'heroicon-o-arrow-right-circle',
+                AuditLog::ACTION_FAIL, AuditLog::ACTION_CANCEL => 'heroicon-o-no-symbol',
+                default => 'heroicon-o-arrows-right-left',
+            },
+            'color' => match ($log->action) {
+                AuditLog::ACTION_TRANSFER => 'success',
+                AuditLog::ACTION_FAIL, AuditLog::ACTION_CANCEL => 'danger',
+                default => 'info',
+            },
+            'title' => $title,
+            'description' => implode(' • ', $descriptionParts),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => BranchTransferRequest::statusLabel($statusTo),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
     protected function formatTimestamp(string $value): string
     {
         try {
@@ -604,5 +657,19 @@ class PatientOperationalTimelineService
             'cancelled' => 'Đã hủy',
             default => 'Buổi điều trị',
         };
+    }
+
+    protected function branchTransferRouteLabel(AuditLog $log): string
+    {
+        $fromBranch = data_get($log->metadata, 'from_branch_name')
+            ?: (data_get($log->metadata, 'from_branch_id') ? 'CN #'.data_get($log->metadata, 'from_branch_id') : null);
+        $toBranch = data_get($log->metadata, 'to_branch_name')
+            ?: (data_get($log->metadata, 'to_branch_id') ? 'CN #'.data_get($log->metadata, 'to_branch_id') : null);
+
+        if ($fromBranch && $toBranch) {
+            return $fromBranch.' -> '.$toBranch;
+        }
+
+        return 'Điều phối liên chi nhánh';
     }
 }

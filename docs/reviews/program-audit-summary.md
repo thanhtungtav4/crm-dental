@@ -22,7 +22,7 @@
 - Trung tam rui ro da chuyen tu `rollout safety` sang `shared contracts`, `workflow convergence`, va `structural convergence`.
 - Chuong trinh hien tai nen di tiep theo batch nho, uu tien rollout/smoke test truoc, refactor sau.
 - `RRB-007` va `RRB-008` da duoc dong qua shared identity/search contract va actor/branch scope contract.
-- `RRB-009` va `RRB-010` dang duoc trien khai theo batch nho tren branch lam viec; cac batch moi nhat da dua `PopupAnnouncement`, `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, `InsuranceClaim`, `ClinicalOrder`, `ClinicalResult`, va finance payment audit metadata vao workflow + audit contract, chua push runtime len `main`.
+- `RRB-009` va `RRB-010` dang duoc trien khai theo batch nho tren branch lam viec; cac batch moi nhat da dua `Appointment`, `VisitEpisode`, `BranchTransferRequest`, `MasterPatientDuplicate / MasterPatientMerge`, `PopupAnnouncement`, `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, `InsuranceClaim`, `ClinicalOrder`, `ClinicalResult`, `CareTicket/Note`, `Consent`, `ExamSession / TreatmentProgress`, `WebLeadEmailDelivery`, `ZnsCampaignDelivery`, cac lane outbox `ZnsAutomationEvent / GoogleCalendarSyncEvent / EmrSyncEvent`, `OperationalKpiSnapshotReadModelService`, `OperationalKpiAlertReadModelService`, `OperationalAutomationAuditReadModelService`, `ReportSnapshotReadModelService`, `PatientActivityTimelineReadModelService`, `GovernanceAuditReadModelService`, `ZnsOperationalReadModelService`, va finance payment audit metadata vao workflow + audit contract; trong do `ExamSession / TreatmentProgress` da vao managed mutation path den cap `TreatmentProgressDay / TreatmentProgressItem`, `MasterPatientDuplicate` da co canonical workflow service cho ignore / merge-resolution / rollback-restore / auto-ignore tu MPI index, `BranchTransferRequest` da co them reader surface tren patient operational timeline, `WebLeadEmailDelivery` va `ZnsCampaignDelivery` da chuyen sang managed delivery mutation path, `PatientActivityTimelineWidget` da duoc doi sang render read-model hop nhat thay vi tu query du lieu truc tiep, `OpsControlCenterService` da tiep tuc mat raw governance audit query va raw ZNS state-count query de chuyen sang reader rieng, va `OperationalKpiPack` / `OpsControlCenter` / `ops:check-observability-health` / `OperationalKpiAlertService` / `CheckSnapshotSla` / `CompareReportSnapshots` da bat dau dung chung reader convention cho KPI snapshot, KPI alert summary, control-plane automation audit, active-alert counting, snapshot SLA violation counts, va ZNS backlog/retention counts, chua push runtime len `main`.
 
 ## Program Verdict
 
@@ -207,7 +207,7 @@
 
 ## Quick Wins
 
-1. RRB-009 va RRB-010: workflow + audit convergence.
+1. RRB-009 va RRB-010: workflow + audit convergence, voi lane `PAT/MPI` va outbox/event noi bo da vao contract, con lai chu yeu la cac lane delivery/read-model bo sung va phan doc timeline hop nhat.
 2. Mo rong read-model timeline ngoai patient activity neu nghiep vu can.
 3. Chot lane observer/service con lai truoc khi vao structural refactor lon.
 

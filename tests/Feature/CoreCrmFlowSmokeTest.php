@@ -11,6 +11,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Models\VisitEpisode;
+use App\Services\AppointmentSchedulingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -40,15 +41,21 @@ it('runs the core CRM lifecycle without breaking cross-module flows', function (
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
-    $firstAppointment->update([
-        'status' => Appointment::STATUS_CONFIRMED,
-    ]);
-    $firstAppointment->update([
-        'status' => Appointment::STATUS_IN_PROGRESS,
-    ]);
-    $firstAppointment->update([
-        'status' => Appointment::STATUS_COMPLETED,
-    ]);
+    $appointmentSchedulingService = app(AppointmentSchedulingService::class);
+
+    $appointmentSchedulingService->transitionStatus(
+        $firstAppointment,
+        Appointment::STATUS_CONFIRMED,
+        ['confirmed_at' => now()],
+    );
+    $appointmentSchedulingService->transitionStatus(
+        $firstAppointment->fresh(),
+        Appointment::STATUS_IN_PROGRESS,
+    );
+    $appointmentSchedulingService->transitionStatus(
+        $firstAppointment->fresh(),
+        Appointment::STATUS_COMPLETED,
+    );
 
     $firstAppointment->refresh();
     $lead->refresh();
@@ -150,10 +157,12 @@ it('runs the core CRM lifecycle without breaking cross-module flows', function (
         'status' => Appointment::STATUS_SCHEDULED,
     ]);
 
-    $rescheduledAppointment->update([
-        'status' => Appointment::STATUS_RESCHEDULED,
-        'reschedule_reason' => 'Bệnh nhân dời lịch tái khám',
-    ]);
+    $appointmentSchedulingService->reschedule(
+        $rescheduledAppointment,
+        $rescheduledAppointment->date ?? now()->addDays(2),
+        false,
+        'Bệnh nhân dời lịch tái khám',
+    );
 
     $appointmentReminderTicket = Note::query()
         ->where('source_type', Appointment::class)

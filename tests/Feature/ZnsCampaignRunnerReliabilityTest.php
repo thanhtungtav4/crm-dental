@@ -418,6 +418,25 @@ it('marks campaign as failed when template validation fails before delivery proc
         ->and(ZnsCampaignDelivery::query()->where('zns_campaign_id', $campaign?->id)->count())->toBe(0);
 });
 
+it('blocks raw zns campaign delivery status mutation outside the managed workflow contract', function (): void {
+    $delivery = ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => ZnsCampaign::query()->create([
+            'name' => 'Raw mutation guard campaign',
+            'status' => ZnsCampaign::STATUS_DRAFT,
+        ])->id,
+        'phone' => '0901234567',
+        'normalized_phone' => '84901234567',
+        'idempotency_key' => hash('sha256', 'raw-zns-delivery-guard'),
+        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+    ]);
+
+    expect(function () use ($delivery): void {
+        $delivery->update([
+            'status' => ZnsCampaignDelivery::STATUS_SENT,
+        ]);
+    })->toThrow(ValidationException::class);
+});
+
 function configureZnsCampaignRuntime(): void
 {
     ClinicSetting::setValue('zns.enabled', true, [

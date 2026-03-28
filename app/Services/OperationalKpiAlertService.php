@@ -8,7 +8,10 @@ use App\Support\ClinicRuntimeSettings;
 
 class OperationalKpiAlertService
 {
-    public function __construct(protected KpiAlertOwnerResolver $ownerResolver) {}
+    public function __construct(
+        protected KpiAlertOwnerResolver $ownerResolver,
+        protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
+    ) {}
 
     /**
      * @return array{triggered:int,auto_resolved:int,active_alerts:int}
@@ -125,10 +128,8 @@ class OperationalKpiAlertService
         return [
             'triggered' => $triggeredCount,
             'auto_resolved' => $autoResolvedCount,
-            'active_alerts' => OperationalKpiAlert::query()
-                ->where('snapshot_id', $snapshot->id)
-                ->whereIn('status', [OperationalKpiAlert::STATUS_NEW, OperationalKpiAlert::STATUS_ACK])
-                ->count(),
+            'active_alerts' => $this->operationalKpiAlertReadModelService
+                ->activeAlertCountForSnapshot($snapshot->id),
         ];
     }
 

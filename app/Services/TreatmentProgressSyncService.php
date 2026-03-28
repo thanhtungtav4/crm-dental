@@ -15,6 +15,7 @@ class TreatmentProgressSyncService
     public function __construct(
         protected ExamSessionLifecycleService $examSessionLifecycleService,
         protected ExamSessionProvisioningService $examSessionProvisioningService,
+        protected ExamSessionWorkflowService $examSessionWorkflowService,
     ) {}
 
     public function syncFromTreatmentSession(TreatmentSession $session): ?TreatmentProgressItem
@@ -41,7 +42,7 @@ class TreatmentProgressSyncService
             $progressDate = $progressAt->toDateString();
             $status = $this->normalizeItemStatus((string) ($lockedSession->status ?? 'scheduled'));
             $examSession = $this->resolveExamSession($lockedSession, (int) $patientId, $progressDate);
-            $this->primeExamSessionStatus($examSession, $status);
+            $this->primeExamSessionStatus($examSession, $status, $lockedSession);
 
             if (! $lockedSession->exam_session_id || (int) $lockedSession->exam_session_id !== (int) $examSession->id) {
                 $lockedSession->exam_session_id = $examSession->id;
@@ -71,7 +72,7 @@ class TreatmentProgressSyncService
                     'branch_id' => $lockedSession->treatmentPlan?->branch_id ? (int) $lockedSession->treatmentPlan->branch_id : null,
                     'updated_by' => $lockedSession->updated_by,
                 ]);
-                $day->save();
+                $this->saveProgressDay($day);
             }
 
             $item = TreatmentProgressItem::query()
@@ -112,7 +113,7 @@ class TreatmentProgressSyncService
                 'notes' => $lockedSession->notes,
                 'updated_by' => $lockedSession->updated_by,
             ]);
-            $item->save();
+            $this->saveProgressItem($item);
 
             $day->refresh();
             $this->refreshProgressDayStatus($day);
@@ -175,7 +176,7 @@ class TreatmentProgressSyncService
             $day->status = TreatmentProgressDay::STATUS_PLANNED;
             $day->started_at = null;
             $day->completed_at = null;
-            $day->save();
+            $this->saveProgressDay($day);
 
             return;
         }
@@ -198,7 +199,7 @@ class TreatmentProgressSyncService
             $day->completed_at = null;
         }
 
-        $day->save();
+        $this->saveProgressDay($day);
     }
 
     protected function resolveProgressDateTime(TreatmentSession $session): Carbon
@@ -248,8 +249,11 @@ class TreatmentProgressSyncService
         };
     }
 
-    protected function primeExamSessionStatus(ExamSession $examSession, string $itemStatus): void
-    {
+    protected function primeExamSessionStatus(
+        ExamSession $examSession,
+        string $itemStatus,
+        TreatmentSession $treatmentSession,
+    ): void {
         $targetStatus = match ($itemStatus) {
             TreatmentProgressItem::STATUS_COMPLETED, TreatmentProgressItem::STATUS_IN_PROGRESS => ExamSession::STATUS_IN_PROGRESS,
             TreatmentProgressItem::STATUS_PLANNED => ExamSession::STATUS_PLANNED,
@@ -264,8 +268,18 @@ class TreatmentProgressSyncService
             return;
         }
 
-        $examSession->status = $targetStatus;
-        $examSession->saveQuietly();
+        $this->examSessionWorkflowService->transition(
+            examSession: $examSession,
+            targetStatus: $targetStatus,
+            attributes: [
+                'updated_by' => $treatmentSession->updated_by ?: $treatmentSession->created_by,
+            ],
+            context: [
+                'trigger' => 'treatment_progress_sync',
+                'treatment_session_id' => (int) $treatmentSession->getKey(),
+                'patient_id' => $treatmentSession->treatmentPlan?->patient_id,
+            ],
+        );
     }
 
     protected function resolveVisitEpisodeId(int $patientId, ?int $branchId, string $progressDate): ?int
@@ -284,5 +298,39 @@ class TreatmentProgressSyncService
             ->value('id');
 
         return $episodeId !== null ? (int) $episodeId : null;
+    }
+
+    protected function saveProgressDay(TreatmentProgressDay $day): void
+    {
+        if (! $day->isDirty()) {
+            return;
+        }
+
+        if ($day->isDirty('status')) {
+            TreatmentProgressDay::runWithinManagedWorkflow(function () use ($day): void {
+                $day->save();
+            });
+
+            return;
+        }
+
+        $day->save();
+    }
+
+    protected function saveProgressItem(TreatmentProgressItem $item): void
+    {
+        if (! $item->isDirty()) {
+            return;
+        }
+
+        if ($item->isDirty('status')) {
+            TreatmentProgressItem::runWithinManagedWorkflow(function () use ($item): void {
+                $item->save();
+            });
+
+            return;
+        }
+
+        $item->save();
     }
 }

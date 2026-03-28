@@ -17,6 +17,13 @@ class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected static array $managedTransitionContext = [];
+
     public const STATUS_SCHEDULED = 'scheduled';
 
     public const STATUS_CONFIRMED = 'confirmed';
@@ -212,6 +219,12 @@ class Appointment extends Model
             $appointment->status = $normalizedStatus;
 
             if ($appointment->exists && $appointment->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'APPOINTMENT_STATE_INVALID: Trạng thái lịch hẹn chỉ được thay đổi qua AppointmentSchedulingService.',
+                    ]);
+                }
+
                 $fromStatus = static::normalizeStatus((string) $appointment->getOriginal('status')) ?? static::DEFAULT_STATUS;
 
                 if (! static::canTransition($fromStatus, $normalizedStatus)) {
@@ -773,5 +786,28 @@ class Appointment extends Model
             're_exam' => 'Tái khám',
             default => 'Không xác định',
         };
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        $previousContext = static::$managedTransitionContext;
+        static::$allowsManagedWorkflowMutation = true;
+        static::$managedTransitionContext = $context;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+            static::$managedTransitionContext = $previousContext;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function currentManagedTransitionContext(): array
+    {
+        return static::$managedTransitionContext;
     }
 }

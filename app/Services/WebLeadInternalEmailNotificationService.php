@@ -112,18 +112,11 @@ class WebLeadInternalEmailNotificationService
                 ]);
             }
 
-            $lockedDelivery->forceFill([
-                'status' => WebLeadEmailDelivery::STATUS_QUEUED,
-                'processing_token' => null,
-                'locked_at' => null,
-                'next_retry_at' => null,
-                'transport_message_id' => null,
-                'last_error_message' => null,
-                'sent_at' => null,
+            $lockedDelivery->resetForReplay([
                 'payload' => $this->payloadSnapshot($ingestion, $customer),
                 'mailer_snapshot' => $this->mailerSnapshot(),
                 'manual_resend_count' => (int) $lockedDelivery->manual_resend_count + 1,
-            ])->save();
+            ]);
 
             $this->dispatchDelivery($lockedDelivery);
 
@@ -172,15 +165,7 @@ class WebLeadInternalEmailNotificationService
                 ? $sentMessage->getMessageId()
                 : null;
 
-            $claimedDelivery->forceFill([
-                'status' => WebLeadEmailDelivery::STATUS_SENT,
-                'processing_token' => null,
-                'locked_at' => null,
-                'next_retry_at' => null,
-                'sent_at' => now(),
-                'transport_message_id' => $transportMessageId,
-                'last_error_message' => null,
-            ])->save();
+            $claimedDelivery->markSent($transportMessageId);
 
             AuditLog::record(
                 entityType: 'web_lead_email_delivery',
@@ -299,13 +284,7 @@ class WebLeadInternalEmailNotificationService
                 return null;
             }
 
-            $delivery->forceFill([
-                'status' => WebLeadEmailDelivery::STATUS_PROCESSING,
-                'processing_token' => (string) Str::uuid(),
-                'locked_at' => now(),
-                'attempt_count' => (int) $delivery->attempt_count + 1,
-                'last_attempt_at' => now(),
-            ])->save();
+            $delivery->markProcessing((string) Str::uuid());
 
             return $delivery;
         }, 3);
@@ -321,13 +300,11 @@ class WebLeadInternalEmailNotificationService
         $delaySeconds = ClinicRuntimeSettings::webLeadInternalEmailRetryDelayMinutes() * 60;
         $terminal = ! $isRetryable || (int) $delivery->attempt_count >= $maxAttempts;
 
-        $delivery->forceFill([
-            'status' => $terminal ? WebLeadEmailDelivery::STATUS_DEAD : WebLeadEmailDelivery::STATUS_RETRYABLE,
-            'processing_token' => null,
-            'locked_at' => null,
-            'next_retry_at' => $terminal ? null : now()->addSeconds($delaySeconds),
-            'last_error_message' => Str::limit($throwable->getMessage(), 2000, ''),
-        ])->save();
+        $delivery->markFailure(
+            message: Str::limit($throwable->getMessage(), 2000, ''),
+            terminal: $terminal,
+            delaySeconds: $delaySeconds,
+        );
 
         AuditLog::record(
             entityType: 'web_lead_email_delivery',

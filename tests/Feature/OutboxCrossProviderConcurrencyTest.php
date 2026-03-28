@@ -56,6 +56,8 @@ it('keeps deterministic idempotency under concurrent google and emr publish atte
         ->and(GoogleCalendarSyncEvent::query()->where('appointment_id', $appointmentId)->count())->toBe(1)
         ->and(EmrSyncEvent::query()->where('patient_id', $patientId)->where('event_type', 'manual.sync')->count())->toBe(1);
 
+    $googleEvent?->markProcessing();
+    $emrEvent?->markProcessing();
     $googleEvent?->markSynced('gcal-event-concurrency-001', 200);
     $emrEvent?->markSynced('emr-patient-concurrency-001', 200);
 

@@ -7,6 +7,7 @@ use App\Models\ExamSession;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 it('provisions exam session when a clinical note is created', function (): void {
@@ -69,6 +70,23 @@ it('reuses the same exam session when clinical notes are created twice on the sa
     expect($firstNote->exam_session_id)->not->toBeNull()
         ->and((int) $secondNote->exam_session_id)->toBe((int) $firstNote->exam_session_id)
         ->and(ExamSession::query()->where('patient_id', $patient->id)->count())->toBe(1);
+});
+
+it('blocks direct exam session status mutations outside the workflow service', function (): void {
+    $patient = Patient::factory()->create();
+    $doctor = User::factory()->create();
+
+    $session = ExamSession::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'doctor_id' => $doctor->id,
+        'session_date' => '2026-03-08',
+        'status' => ExamSession::STATUS_DRAFT,
+    ]);
+
+    expect(fn () => $session->forceFill([
+        'status' => ExamSession::STATUS_LOCKED,
+    ])->save())->toThrow(ValidationException::class, 'EXAM_SESSION_STATE_INVALID');
 });
 
 it('blocks deleting an exam session when clinical order exists', function (): void {

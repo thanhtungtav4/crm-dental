@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\MasterPatientDuplicate;
 use App\Models\MasterPatientIdentity;
 use App\Models\Patient;
+use App\Models\User;
 use App\Services\MasterPatientIndexService;
 use App\Support\PatientIdentityNormalizer;
 
@@ -68,4 +70,48 @@ it('does not open mpi cross-branch cases for duplicates inside the same branch',
     expect($service->hasCrossBranchDuplicate($patientA->fresh()))->toBeFalse()
         ->and($service->hasCrossBranchDuplicate($patientB->fresh()))->toBeFalse()
         ->and(MasterPatientDuplicate::query()->where('status', MasterPatientDuplicate::STATUS_OPEN)->count())->toBe(0);
+});
+
+it('auto-ignores open mpi cases through the workflow contract when tracked identities no longer match', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $patientA = Patient::factory()->create([
+        'first_branch_id' => $branchA->id,
+        'phone' => '0901888999',
+    ]);
+
+    $patientB = Patient::factory()->create([
+        'first_branch_id' => $branchB->id,
+        'phone' => '0901888999',
+    ]);
+
+    $service = app(MasterPatientIndexService::class);
+
+    $service->syncForPatient($patientA, true);
+    $service->syncForPatient($patientB, true);
+
+    $duplicateCase = MasterPatientDuplicate::query()
+        ->where('status', MasterPatientDuplicate::STATUS_OPEN)
+        ->firstOrFail();
+
+    $patientB->forceFill([
+        'phone' => '0901777666',
+    ])->save();
+
+    $service->syncForPatient($patientB->fresh(), true);
+
+    expect($duplicateCase->fresh()->status)->toBe(MasterPatientDuplicate::STATUS_IGNORED)
+        ->and((string) $duplicateCase->fresh()->review_note)->toContain('định danh không còn khớp')
+        ->and(AuditLog::query()
+            ->where('entity_type', AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE)
+            ->where('entity_id', $duplicateCase->id)
+            ->where('action', AuditLog::ACTION_RESOLVE)
+            ->where('metadata->trigger', 'identity_hash_pruned')
+            ->where('metadata->status_to', MasterPatientDuplicate::STATUS_IGNORED)
+            ->exists())->toBeTrue();
 });

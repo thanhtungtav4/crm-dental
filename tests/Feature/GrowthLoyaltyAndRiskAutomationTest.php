@@ -11,7 +11,9 @@ use App\Models\PatientLoyaltyTransaction;
 use App\Models\PatientRiskProfile;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\CareTicketWorkflowService;
 use App\Services\PatientLoyaltyService;
+use Spatie\Permission\Models\Permission;
 
 it('runs loyalty program and applies revenue + referral rewards idempotently', function () {
     ClinicSetting::setValue('loyalty.points_per_ten_thousand_vnd', 2, [
@@ -155,10 +157,25 @@ it('creates reactivation tickets and awards bonus after successful reactivation'
             ->where('care_type', 'reactivation_follow_up')
             ->count())->toBe(1);
 
-    $ticket->update([
-        'care_status' => Note::CARE_STATUS_DONE,
-        'care_at' => now()->subDay(),
+    $manager = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
     ]);
+    $manager->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $manager->givePermissionTo('Update:Note');
+
+    $this->actingAs($manager);
+
+    $ticket->forceFill([
+        'care_at' => now()->subDay(),
+    ])->saveQuietly();
+
+    app(CareTicketWorkflowService::class)->transitionTicket(
+        note: $ticket,
+        toStatus: Note::CARE_STATUS_DONE,
+        reason: 'Da lien he va kich hoat lai benh nhan',
+        trigger: 'reactivation_success_test',
+    );
 
     Appointment::factory()->create([
         'patient_id' => $patient->id,
@@ -339,12 +356,25 @@ it('scores patient risk and manages high risk intervention tickets', function ()
         'paid_at' => now(),
     ]);
 
+    $manager = User::factory()->create([
+        'branch_id' => $patient->first_branch_id,
+    ]);
+    $manager->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $manager->givePermissionTo('Update:Note');
+
+    $this->actingAs($manager);
+
     Note::query()
         ->where('patient_id', $patient->id)
         ->where('care_type', 'general_care')
-        ->update([
-            'care_status' => Note::CARE_STATUS_DONE,
-        ]);
+        ->get()
+        ->each(fn (Note $note) => app(CareTicketWorkflowService::class)->updateManualTicket(
+            note: $note,
+            attributes: ['care_status' => Note::CARE_STATUS_DONE],
+            reason: 'Da hoan tat cham soc thu cong',
+            trigger: 'risk_reassessment_test',
+        ));
 
     $this->artisan('patients:score-risk', [
         '--date' => now()->toDateString(),

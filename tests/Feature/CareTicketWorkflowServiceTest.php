@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
 use App\Services\CareTicketWorkflowService;
+use Spatie\Permission\Models\Permission;
 
 it('upserts care tickets idempotently by canonical ticket key', function () {
     $workflow = app(CareTicketWorkflowService::class);
@@ -73,9 +75,13 @@ it('preserves done care tickets when workflow re-syncs the same source', functio
         'content' => 'Nhắc lịch hẹn',
     ], Appointment::class, $appointment->id);
 
-    $ticket->update([
-        'care_status' => Note::CARE_STATUS_DONE,
-    ]);
+    $this->actingAs($patient->ownerStaff);
+
+    $workflow->transitionTicket(
+        note: $ticket,
+        toStatus: Note::CARE_STATUS_DONE,
+        trigger: 'appointment_ticket_complete_test',
+    );
 
     $updatedTicket = $workflow->upsertSourceTicket([
         'patient_id' => $patient->id,
@@ -93,6 +99,48 @@ it('preserves done care tickets when workflow re-syncs the same source', functio
     expect($updatedTicket->id)->toBe($ticket->id)
         ->and($updatedTicket->care_status)->toBe(Note::CARE_STATUS_DONE)
         ->and($updatedTicket->content)->toBe('Nhắc lịch hẹn da doi');
+});
+
+it('records audit context when manually updating a care ticket through workflow service', function () {
+    $workflow = app(CareTicketWorkflowService::class);
+    $patient = makeCareWorkflowPatient();
+
+    $ticket = Note::query()->create([
+        'patient_id' => $patient->id,
+        'customer_id' => $patient->customer_id,
+        'user_id' => $patient->owner_staff_id,
+        'type' => Note::TYPE_GENERAL,
+        'care_type' => 'general_care',
+        'care_channel' => 'call',
+        'care_status' => Note::CARE_STATUS_NOT_STARTED,
+        'care_mode' => 'scheduled',
+        'care_at' => now()->addHour(),
+        'content' => 'Theo dõi chăm sóc',
+    ]);
+
+    $this->actingAs($patient->ownerStaff);
+
+    $workflow->updateManualTicket(
+        note: $ticket,
+        attributes: [
+            'care_status' => Note::CARE_STATUS_DONE,
+            'content' => 'Đã gọi lại và chốt lịch.',
+        ],
+        reason: 'Khach hang da xac nhan lich moi',
+    );
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_CARE_TICKET)
+        ->where('entity_id', $ticket->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->latest('id')
+        ->first();
+
+    expect($auditLog)->not->toBeNull()
+        ->and($auditLog->actor_id)->toBe($patient->owner_staff_id)
+        ->and($auditLog->metadata['trigger'] ?? null)->toBe('patient_notes_edit')
+        ->and($auditLog->metadata['reason'] ?? null)->toBe('Khach hang da xac nhan lich moi')
+        ->and($auditLog->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE);
 });
 
 it('supports recurring yearly ticket scopes without duplicating the same year', function () {
@@ -153,8 +201,13 @@ it('supports recurring yearly ticket scopes without duplicating the same year', 
 
 function makeCareWorkflowPatient(): Patient
 {
-    $owner = User::factory()->create();
     $customer = Customer::factory()->create();
+    $owner = User::factory()->create([
+        'branch_id' => $customer->branch_id,
+    ]);
+    $owner->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $owner->givePermissionTo('Update:Note');
 
     return Patient::factory()->create([
         'customer_id' => $customer->id,

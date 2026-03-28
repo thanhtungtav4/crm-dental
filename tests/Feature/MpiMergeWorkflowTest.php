@@ -116,7 +116,14 @@ it('merges duplicate patients into canonical record and keeps mapping history', 
         ->and((string) $mergedPatient->fresh()?->note)->toContain('[MERGED_TO:');
 
     expect($duplicateCase->fresh()?->status)->toBe(MasterPatientDuplicate::STATUS_RESOLVED)
-        ->and($duplicateCase->fresh()?->patient_id)->toBe($canonicalPatient->id);
+        ->and($duplicateCase->fresh()?->patient_id)->toBe($canonicalPatient->id)
+        ->and(AuditLog::query()
+            ->where('entity_type', AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE)
+            ->where('entity_id', $duplicateCase->id)
+            ->where('action', AuditLog::ACTION_RESOLVE)
+            ->where('metadata->status_to', MasterPatientDuplicate::STATUS_RESOLVED)
+            ->where('metadata->trigger', 'merge_resolve_primary_case')
+            ->exists())->toBeTrue();
 
     expect(AuditLog::query()
         ->where('entity_type', AuditLog::ENTITY_MASTER_PATIENT_MERGE)
@@ -212,7 +219,14 @@ it('rolls back patient merge and restores previous patient references', function
     ])->assertSuccessful();
 
     expect($appointment->fresh()?->patient_id)->toBe($mergedPatient->id)
-        ->and($duplicateCase->fresh()?->status)->toBe(MasterPatientDuplicate::STATUS_OPEN);
+        ->and($duplicateCase->fresh()?->status)->toBe(MasterPatientDuplicate::STATUS_OPEN)
+        ->and(AuditLog::query()
+            ->where('entity_type', AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE)
+            ->where('entity_id', $duplicateCase->id)
+            ->where('action', AuditLog::ACTION_ROLLBACK)
+            ->where('metadata->status_to', MasterPatientDuplicate::STATUS_OPEN)
+            ->where('metadata->trigger', 'merge_snapshot_restore')
+            ->exists())->toBeTrue();
 
     expect($canonicalPatient->fresh()?->email)->toBeNull()
         ->and($mergedPatient->fresh()?->status)->toBe('active');

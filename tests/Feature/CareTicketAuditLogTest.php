@@ -6,18 +6,23 @@ use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\CareTicketWorkflowService;
+use Spatie\Permission\Models\Permission;
 
 it('records audit log when care ticket is completed', function () {
     $note = makeCareTicketForAudit();
     $user = User::factory()->create([
         'branch_id' => $note->patient?->first_branch_id,
     ]);
+    $user->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $user->givePermissionTo('Update:Note');
 
     $this->actingAs($user);
 
-    $note->update([
+    app(CareTicketWorkflowService::class)->updateManualTicket($note, [
         'care_status' => Note::CARE_STATUS_DONE,
-    ]);
+    ], reason: 'Đã xử lý xong qua điện thoại');
 
     $log = AuditLog::query()
         ->where('entity_type', AuditLog::ENTITY_CARE_TICKET)
@@ -30,7 +35,9 @@ it('records audit log when care ticket is completed', function () {
         ->and($log->patient_id)->toBe($note->patient_id)
         ->and($log->branch_id)->toBe($note->resolveBranchId())
         ->and($log->metadata['patient_id'] ?? null)->toBe($note->patient_id)
-        ->and($log->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE);
+        ->and($log->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE)
+        ->and($log->metadata['trigger'] ?? null)->toBe('patient_notes_edit')
+        ->and($log->metadata['reason'] ?? null)->toBe('Đã xử lý xong qua điện thoại');
 });
 
 function makeCareTicketForAudit(array $overrides = []): Note
@@ -40,6 +47,9 @@ function makeCareTicketForAudit(array $overrides = []): Note
     $staff = User::factory()->create([
         'branch_id' => $branch->id,
     ]);
+    $staff->assignRole('Manager');
+    Permission::findOrCreate('Update:Note', 'web');
+    $staff->givePermissionTo('Update:Note');
 
     $customer = Customer::factory()->create([
         'branch_id' => $branch->id,

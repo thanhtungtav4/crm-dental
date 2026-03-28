@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\BranchTransferRequest;
 use App\Models\Customer;
@@ -40,6 +41,11 @@ it('prevents duplicate pending transfer requests for the same patient and target
     );
 
     expect($firstRequest->status)->toBe(BranchTransferRequest::STATUS_PENDING);
+    expect(AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_BRANCH_TRANSFER)
+        ->where('entity_id', $firstRequest->id)
+        ->where('action', AuditLog::ACTION_CREATE)
+        ->exists())->toBeTrue();
 
     expect(fn () => app(PatientBranchTransferService::class)->requestTransfer(
         patient: $patient->fresh(),
@@ -139,8 +145,51 @@ it('blocks applying transfer requests that have already been rejected', function
         ->and((int) $rejectedRequest->decided_by)->toBe($manager->id)
         ->and((string) $rejectedRequest->note)->toContain('Tu choi do branch khong con cho');
 
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_BRANCH_TRANSFER)
+        ->where('entity_id', $rejectedRequest->id)
+        ->where('action', AuditLog::ACTION_FAIL)
+        ->latest('id')
+        ->first();
+
+    expect($auditLog)->not->toBeNull()
+        ->and(data_get($auditLog?->metadata, 'status_from'))->toBe(BranchTransferRequest::STATUS_PENDING)
+        ->and(data_get($auditLog?->metadata, 'status_to'))->toBe(BranchTransferRequest::STATUS_REJECTED)
+        ->and(data_get($auditLog?->metadata, 'trigger'))->toBe('manual_reject');
+
     expect(fn () => app(PatientBranchTransferService::class)->applyTransferRequest(
         transferRequest: $rejectedRequest,
         actorId: $manager->id,
     ))->toThrow(ValidationException::class, 'không còn ở trạng thái chờ xử lý');
+});
+
+it('blocks direct branch transfer status mutations outside the transfer service', function () {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branchA->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'email' => $customer->email,
+    ]);
+
+    $request = BranchTransferRequest::query()->create([
+        'patient_id' => $patient->id,
+        'from_branch_id' => $branchA->id,
+        'to_branch_id' => $branchB->id,
+        'status' => BranchTransferRequest::STATUS_PENDING,
+        'requested_by' => null,
+        'requested_at' => now(),
+        'reason' => 'Raw change should fail',
+    ]);
+
+    expect(fn () => $request->update([
+        'status' => BranchTransferRequest::STATUS_APPLIED,
+    ]))->toThrow(ValidationException::class, 'PatientBranchTransferService');
 });

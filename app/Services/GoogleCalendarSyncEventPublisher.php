@@ -146,21 +146,13 @@ class GoogleCalendarSyncEventPublisher
             return $event;
         }
 
-        $event->forceFill([
+        $event->resetForReplay([
             'appointment_id' => $appointment->id,
             'branch_id' => $appointment->branch_id,
             'event_type' => $eventType,
             'payload' => $payload,
             'payload_checksum' => $checksum,
-            'status' => GoogleCalendarSyncEvent::STATUS_PENDING,
-            'attempts' => 0,
-            'next_retry_at' => now(),
-            'locked_at' => null,
-            'processed_at' => null,
-            'last_http_status' => null,
-            'last_error' => null,
-            'external_event_id' => null,
-        ])->save();
+        ]);
 
         return $event->fresh() ?? $event;
     }
