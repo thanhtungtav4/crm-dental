@@ -5,6 +5,7 @@ use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\FactoryOrder;
+use App\Models\InsuranceClaim;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
@@ -109,4 +110,62 @@ it('builds operational timeline entries for a patient from finance, appointment,
             'Lịch hẹn 11/03/2026 08:30 • Đã hẹn lại • Doi lich do benh nhan ban',
             'Hóa đơn INV-001 • 1.250.000đ',
         ]);
+});
+
+it('includes insurance claim and treatment session audit entries in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_INSURANCE_CLAIM,
+        'entity_id' => 505,
+        'action' => AuditLog::ACTION_APPROVE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'claim_number' => 'CLM-505',
+            'status_to' => InsuranceClaim::STATUS_APPROVED,
+            'amount_approved' => '320000.00',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 13:00:00'),
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_TREATMENT_SESSION,
+        'entity_id' => 606,
+        'action' => AuditLog::ACTION_COMPLETE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'plan_item_id' => 88,
+            'status_to' => 'done',
+            'performed_at' => '2026-03-10 12:45:00',
+            'reason' => 'Bo sung anh hau thu thuat sau',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 14:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Bảo hiểm đã duyệt', 'Hoàn thành buổi điều trị')
+        ->and($descriptions)->toContain('CLM-505 • Đã duyệt • 320.000đ')
+        ->and($descriptions)->toContain('Hạng mục #88 • Hoàn thành • Thực hiện 10/03/2026 12:45 • Bo sung anh hau thu thuat sau');
 });
