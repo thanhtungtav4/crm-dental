@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\AuditLog;
 use App\Models\Consent;
+use App\Support\WorkflowAuditMetadata;
 
 class ConsentObserver
 {
@@ -14,7 +15,11 @@ class ConsentObserver
             entityId: $consent->id,
             action: AuditLog::ACTION_CREATE,
             actorId: auth()->id() ?? $consent->signed_by,
-            metadata: $this->buildMetadata($consent, null),
+            branchId: $consent->resolveBranchId(),
+            patientId: $consent->patient_id,
+            metadata: array_merge($this->buildMetadata($consent), [
+                'status_to' => $consent->status,
+            ]),
         );
     }
 
@@ -36,11 +41,17 @@ class ConsentObserver
             entityId: $consent->id,
             action: $action,
             actorId: auth()->id() ?? $consent->signed_by,
-            metadata: $this->buildMetadata($consent, (string) $consent->getOriginal('status')),
+            branchId: $consent->resolveBranchId(),
+            patientId: $consent->patient_id,
+            metadata: WorkflowAuditMetadata::transition(
+                fromStatus: (string) ($consent->getOriginal('status') ?: Consent::STATUS_PENDING),
+                toStatus: $consent->status,
+                metadata: $this->buildMetadata($consent),
+            ),
         );
     }
 
-    protected function buildMetadata(Consent $consent, ?string $fromStatus): array
+    protected function buildMetadata(Consent $consent): array
     {
         return [
             'patient_id' => $consent->patient_id,
@@ -49,8 +60,6 @@ class ConsentObserver
             'plan_item_id' => $consent->plan_item_id,
             'consent_type' => $consent->consent_type,
             'consent_version' => $consent->consent_version,
-            'status_from' => $fromStatus,
-            'status_to' => $consent->status,
             'signed_by' => $consent->signed_by,
             'signed_at' => $consent->signed_at?->toDateTimeString(),
             'revoked_at' => $consent->revoked_at?->toDateTimeString(),
