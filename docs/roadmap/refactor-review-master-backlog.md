@@ -293,6 +293,10 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tao `GovernanceAuditReadModelService` de gom recent governance-relevant audit query va branch-visible filtering cho `OpsControlCenterService`, loai bo them mot raw audit query khoi cockpit service
     - da tao `ZnsOperationalReadModelService` de gom summary-card counts, dead/retry backlog, va retention candidate rules cho `OpsControlCenterService`, `CheckObservabilityHealth`, va `zns:prune-operational-data`, bao gom ca `automation log retention`, thay cho viec page/command tu query status ZNS theo tung chot rieng le
     - da tao `IntegrationOperationalReadModelService` de gom web-lead retention candidates, lead-mail retry/dead backlog, webhook retention, EMR retention, va Google Calendar retention counts cho `OpsControlCenterService`, `ops:check-observability-health`, va `integrations:prune-operational-data`, thay cho viec cockpit/command tu query tung model integration rieng le
+    - da mo rong them `IntegrationOperationalReadModelService` va `ZnsOperationalReadModelService` sang cac lenh `sync-emr`, `sync-google-calendar`, `sync-zns` cho dead-letter backlog count scoped, giam them query raw khoi sync commands
+    - da dua them grace-state reader cho integration secrets vao `IntegrationOperationalReadModelService`, va `OpsControlCenterService` / `IntegrationSettings` da bat dau doc active-expired grace rotations qua reader thay vi tro truc tiep vao write-side rotation service
+    - da mo rong `ZnsOperationalReadModelService` them branch-scoped summary cards, va page `ZaloZns` da bat dau dung reader nay cho automation/delivery/campaign failure summary thay vi tu dem query raw tren page
+    - da tao `IntegrationSettingsAuditReadModelService` de gom recent setting-log query, va page `IntegrationSettings` da doc recent audit trail qua reader nay thay vi tu query raw `ClinicSettingLog`
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces

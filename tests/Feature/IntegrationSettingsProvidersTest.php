@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\IntegrationSettings;
 use App\Models\ClinicSetting;
+use App\Models\ClinicSettingLog;
 use App\Models\User;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Facades\File;
@@ -317,6 +318,44 @@ it('exposes only supported google calendar sync mode options in integration sett
         ->and(ClinicRuntimeSettings::googleCalendarSyncModeOptions())->toBe([
             'one_way_to_google' => 'Một chiều: CRM -> Google (đã hỗ trợ)',
         ]);
+});
+
+it('reads recent integration setting logs through the shared audit reader', function (): void {
+    $admin = actingAsIntegrationSettingsProvidersAdmin();
+
+    $olderLog = ClinicSettingLog::query()->create([
+        'setting_group' => 'web_lead',
+        'setting_key' => 'web_lead.api_token',
+        'setting_label' => 'Web Lead API Token',
+        'old_value' => 'old-token',
+        'new_value' => 'new-token',
+        'change_reason' => 'Older log',
+        'context' => ['source' => 'test'],
+        'is_secret' => true,
+        'changed_by' => $admin->id,
+        'changed_at' => now()->subMinutes(10),
+    ]);
+
+    $newerLog = ClinicSettingLog::query()->create([
+        'setting_group' => 'zalo',
+        'setting_key' => 'zalo.webhook_token',
+        'setting_label' => 'Zalo Webhook Token',
+        'old_value' => 'old-zalo-token',
+        'new_value' => 'new-zalo-token',
+        'change_reason' => 'Newest log',
+        'context' => ['source' => 'test'],
+        'is_secret' => true,
+        'changed_by' => $admin->id,
+        'changed_at' => now(),
+    ]);
+
+    $page = app(IntegrationSettings::class);
+    $recentLogs = $page->getRecentLogs();
+
+    expect($recentLogs)->toHaveCount(2)
+        ->and($recentLogs->first()?->is($newerLog))->toBeTrue()
+        ->and($recentLogs->last()?->is($olderLog))->toBeTrue()
+        ->and($recentLogs->first()?->relationLoaded('changedBy'))->toBeTrue();
 });
 
 function actingAsIntegrationSettingsProvidersAdmin(): User

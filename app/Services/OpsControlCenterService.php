@@ -40,7 +40,6 @@ class OpsControlCenterService
         protected BackupArtifactManifestService $manifestService,
         protected GovernanceAuditReadModelService $governanceAuditReadModelService,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
-        protected IntegrationSecretRotationService $integrationSecretRotationService,
         protected HotReportAggregateReadinessService $hotReportAggregateReadinessService,
         protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
         protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
@@ -452,7 +451,7 @@ class OpsControlCenterService
      */
     protected function integrationOperationsSummary(): array
     {
-        $activeGraceRotations = $this->integrationSecretRotationService
+        $activeGraceRotations = $this->integrationOperationalReadModelService
             ->activeGraceRotations()
             ->map(fn (array $rotation): array => [
                 'display_name' => (string) ($rotation['display_name'] ?? 'Integration secret'),
@@ -461,7 +460,7 @@ class OpsControlCenterService
             ])
             ->all();
 
-        $expiredGraceRotations = $this->integrationSecretRotationService
+        $expiredGraceRotations = $this->integrationOperationalReadModelService
             ->expiredGraceRotations()
             ->map(fn (array $rotation): array => [
                 'display_name' => (string) ($rotation['display_name'] ?? 'Integration secret'),

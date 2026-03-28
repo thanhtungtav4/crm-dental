@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
+use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
 use App\Support\BranchAccess;
 use Filament\Actions\Action;
@@ -70,33 +71,20 @@ class ZaloZns extends Page implements HasTable
      */
     public function getOperationalSummaryProperty(): array
     {
+        $branchIds = BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false);
+        $summaryCards = collect(app(ZnsOperationalReadModelService::class)->summaryCards($branchIds))
+            ->keyBy('label');
+
         return [
-            'automation_pending' => (clone $this->baseAutomationQuery())
-                ->where('status', ZnsAutomationEvent::STATUS_PENDING)
-                ->count(),
-            'automation_retry_due' => (clone $this->baseAutomationQuery())
-                ->where('status', ZnsAutomationEvent::STATUS_FAILED)
-                ->whereNotNull('next_retry_at')
-                ->where('next_retry_at', '<=', now())
-                ->count(),
-            'automation_dead' => (clone $this->baseAutomationQuery())
-                ->where('status', ZnsAutomationEvent::STATUS_DEAD)
-                ->count(),
-            'deliveries_retry_due' => (clone $this->baseDeliveryQuery())
-                ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                ->whereNotNull('next_retry_at')
-                ->where('next_retry_at', '<=', now())
-                ->count(),
-            'deliveries_terminal_failed' => (clone $this->baseDeliveryQuery())
-                ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                ->whereNull('next_retry_at')
-                ->count(),
+            'automation_pending' => (int) ($summaryCards->get('Automation pending')['value'] ?? 0),
+            'automation_retry_due' => (int) ($summaryCards->get('Automation retry due')['value'] ?? 0),
+            'automation_dead' => (int) ($summaryCards->get('Automation dead-letter')['value'] ?? 0),
+            'deliveries_retry_due' => (int) ($summaryCards->get('Delivery retry due')['value'] ?? 0),
+            'deliveries_terminal_failed' => (int) ($summaryCards->get('Delivery terminal failed')['value'] ?? 0),
             'campaigns_running' => (clone $this->baseCampaignQuery())
                 ->where('status', ZnsCampaign::STATUS_RUNNING)
                 ->count(),
-            'campaigns_failed' => (clone $this->baseCampaignQuery())
-                ->where('status', ZnsCampaign::STATUS_FAILED)
-                ->count(),
+            'campaigns_failed' => (int) ($summaryCards->get('Campaign failed')['value'] ?? 0),
         ];
     }
 

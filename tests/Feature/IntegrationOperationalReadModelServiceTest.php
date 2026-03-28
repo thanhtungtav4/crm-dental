@@ -13,6 +13,8 @@ use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use App\Services\IntegrationOperationalReadModelService;
+use App\Services\IntegrationSecretRotationService;
+use Carbon\Carbon;
 
 it('computes web lead retention and mail backlog counts from shared integration reader', function (): void {
     [$branch] = seedIntegrationOperationalReadModelEntities();
@@ -233,6 +235,127 @@ it('computes webhook, emr, and google retention counts from shared integration r
         ->and($service->googleCalendarRetentionCandidateCount(30))->toBe(3)
         ->and($service->googleCalendarDeadBacklogCount())->toBe(1)
         ->and($service->googleCalendarFailedBacklogCount())->toBe(1);
+});
+
+it('supports scoped dead-letter counts for emr and google sync lanes', function (): void {
+    [$branch, $patient, $appointment] = seedIntegrationOperationalReadModelEntities();
+
+    $otherPatient = Patient::factory()->create([
+        'customer_id' => Customer::factory()->create(['branch_id' => $branch->id])->id,
+        'first_branch_id' => $branch->id,
+    ]);
+    $otherAppointment = Appointment::factory()->create([
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addDays(2),
+    ]);
+
+    EmrSyncEvent::query()->create([
+        'event_key' => 'emr-dead-scoped-a',
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'event_type' => 'manual.sync',
+        'payload' => ['patient_id' => $patient->id],
+        'payload_checksum' => hash('sha256', 'emr-dead-scoped-a'),
+        'status' => EmrSyncEvent::STATUS_DEAD,
+        'processed_at' => null,
+    ]);
+
+    EmrSyncEvent::query()->create([
+        'event_key' => 'emr-dead-scoped-b',
+        'patient_id' => $otherPatient->id,
+        'branch_id' => $branch->id,
+        'event_type' => 'manual.sync',
+        'payload' => ['patient_id' => $otherPatient->id],
+        'payload_checksum' => hash('sha256', 'emr-dead-scoped-b'),
+        'status' => EmrSyncEvent::STATUS_DEAD,
+        'processed_at' => null,
+    ]);
+
+    GoogleCalendarSyncEvent::query()->create([
+        'event_key' => 'google-dead-scoped-a',
+        'appointment_id' => $appointment->id,
+        'branch_id' => $branch->id,
+        'event_type' => GoogleCalendarSyncEvent::EVENT_UPSERT,
+        'payload' => ['appointment_id' => $appointment->id],
+        'payload_checksum' => hash('sha256', 'google-dead-scoped-a'),
+        'status' => GoogleCalendarSyncEvent::STATUS_DEAD,
+        'processed_at' => null,
+    ]);
+
+    GoogleCalendarSyncEvent::query()->create([
+        'event_key' => 'google-dead-scoped-b',
+        'appointment_id' => $otherAppointment->id,
+        'branch_id' => $branch->id,
+        'event_type' => GoogleCalendarSyncEvent::EVENT_UPSERT,
+        'payload' => ['appointment_id' => $otherAppointment->id],
+        'payload_checksum' => hash('sha256', 'google-dead-scoped-b'),
+        'status' => GoogleCalendarSyncEvent::STATUS_DEAD,
+        'processed_at' => null,
+    ]);
+
+    $service = app(IntegrationOperationalReadModelService::class);
+
+    expect($service->emrDeadBacklogCount($patient->id))->toBe(1)
+        ->and($service->emrDeadBacklogCount($otherPatient->id))->toBe(1)
+        ->and($service->googleCalendarDeadBacklogCount($appointment->id))->toBe(1)
+        ->and($service->googleCalendarDeadBacklogCount($otherAppointment->id))->toBe(1);
+});
+
+it('reads active and expired grace rotations from the shared integration reader', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-03-28 09:00:00'));
+    try {
+        ClinicSetting::setValue('web_lead.api_token', 'web-lead-old-token', [
+            'group' => 'web_lead',
+            'value_type' => 'text',
+            'is_secret' => true,
+        ]);
+        ClinicSetting::setValue('emr.api_key', 'emr-old-token', [
+            'group' => 'emr',
+            'value_type' => 'text',
+            'is_secret' => true,
+        ]);
+        ClinicSetting::setValue('web_lead.api_token_grace_minutes', 60, [
+            'group' => 'web_lead',
+            'value_type' => 'integer',
+        ]);
+        ClinicSetting::setValue('emr.api_key_grace_minutes', 10, [
+            'group' => 'emr',
+            'value_type' => 'integer',
+        ]);
+
+        $rotationService = app(IntegrationSecretRotationService::class);
+
+        $rotationService->rotate(
+            settingKey: 'web_lead.api_token',
+            newSecret: 'web-lead-new-token',
+            reason: 'Shared reader active grace test.',
+        );
+        $rotationService->rotate(
+            settingKey: 'emr.api_key',
+            newSecret: 'emr-new-token',
+            reason: 'Shared reader expired grace test.',
+        );
+
+        ClinicSetting::setValue('emr.api_key_grace_expires_at', now()->subMinutes(5)->toISOString(), [
+            'group' => 'emr',
+            'value_type' => 'text',
+        ]);
+
+        $service = app(IntegrationOperationalReadModelService::class);
+        $activeRotations = $service->activeGraceRotations();
+        $expiredRotations = $service->expiredGraceRotations();
+
+        expect($activeRotations)->toHaveCount(1)
+            ->and($expiredRotations)->toHaveCount(1)
+            ->and($activeRotations->firstWhere('key', 'web_lead.api_token'))->not->toBeNull()
+            ->and($expiredRotations->firstWhere('key', 'emr.api_key'))->not->toBeNull()
+            ->and((int) $activeRotations->firstWhere('key', 'web_lead.api_token')['remaining_minutes'])->toBeGreaterThan(0)
+            ->and((int) $expiredRotations->firstWhere('key', 'emr.api_key')['expired_minutes'])->toBeGreaterThan(0);
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 function seedIntegrationOperationalReadModelEntities(): array

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
+use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
 use App\Services\ZnsProviderClient;
 use App\Support\ActionGate;
@@ -27,6 +28,7 @@ class SyncZnsAutomationEvents extends Command
     public function __construct(
         protected ZnsProviderClient $znsProviderClient,
         protected ZnsPayloadSanitizer $payloadSanitizer,
+        protected ZnsOperationalReadModelService $znsOperationalReadModelService,
     ) {
         parent::__construct();
     }
@@ -150,10 +152,9 @@ class SyncZnsAutomationEvents extends Command
 
     protected function countDeadLetters(string $eventType): int
     {
-        return ZnsAutomationEvent::query()
-            ->when($eventType !== '', fn ($query) => $query->where('event_type', $eventType))
-            ->where('status', ZnsAutomationEvent::STATUS_DEAD)
-            ->count();
+        return $this->znsOperationalReadModelService->automationDeadCount(
+            $eventType !== '' ? $eventType : null,
+        );
     }
 
     /**

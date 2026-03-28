@@ -13,92 +13,93 @@ class ZnsOperationalReadModelService
     /**
      * @return array<int, array{label:string,value:int,tone:string}>
      */
-    public function summaryCards(): array
+    public function summaryCards(?array $branchIds = null): array
     {
         return [
             [
                 'label' => 'Automation pending',
-                'value' => $this->automationPendingCount(),
+                'value' => $this->automationPendingCount($branchIds),
                 'tone' => 'info',
             ],
             [
                 'label' => 'Automation retry due',
-                'value' => $this->automationRetryDueCount(),
+                'value' => $this->automationRetryDueCount($branchIds),
                 'tone' => 'warning',
             ],
             [
                 'label' => 'Automation dead-letter',
-                'value' => $this->automationDeadCount(),
+                'value' => $this->automationDeadCount(branchIds: $branchIds),
                 'tone' => 'danger',
             ],
             [
                 'label' => 'Delivery retry due',
-                'value' => $this->deliveryRetryDueCount(),
+                'value' => $this->deliveryRetryDueCount($branchIds),
                 'tone' => 'warning',
             ],
             [
                 'label' => 'Delivery terminal failed',
-                'value' => $this->deliveryTerminalFailedCount(),
+                'value' => $this->deliveryTerminalFailedCount($branchIds),
                 'tone' => 'danger',
             ],
             [
                 'label' => 'Campaign failed',
-                'value' => $this->failedCampaignCount(),
+                'value' => $this->failedCampaignCount($branchIds),
                 'tone' => 'warning',
             ],
         ];
     }
 
-    public function automationPendingCount(): int
+    public function automationPendingCount(?array $branchIds = null): int
     {
-        return ZnsAutomationEvent::query()
+        return $this->automationEventQuery($branchIds)
             ->where('status', ZnsAutomationEvent::STATUS_PENDING)
             ->count();
     }
 
-    public function automationRetryDueCount(): int
+    public function automationRetryDueCount(?array $branchIds = null): int
     {
-        return ZnsAutomationEvent::query()
+        return $this->automationEventQuery($branchIds)
             ->where('status', ZnsAutomationEvent::STATUS_FAILED)
             ->whereNotNull('next_retry_at')
             ->where('next_retry_at', '<=', now())
             ->count();
     }
 
-    public function automationDeadCount(): int
+    public function automationDeadCount(?string $eventType = null, ?array $branchIds = null): int
     {
-        return ZnsAutomationEvent::query()
+        return $this->automationEventQuery($branchIds)
+            ->when(filled($eventType), fn (Builder $query) => $query->where('event_type', $eventType))
             ->where('status', ZnsAutomationEvent::STATUS_DEAD)
             ->count();
     }
 
-    public function automationFailedCount(): int
+    public function automationFailedCount(?array $branchIds = null): int
     {
-        return ZnsAutomationEvent::query()
+        return $this->automationEventQuery($branchIds)
             ->where('status', ZnsAutomationEvent::STATUS_FAILED)
             ->count();
     }
 
-    public function deliveryRetryDueCount(): int
+    public function deliveryRetryDueCount(?array $branchIds = null): int
     {
-        return ZnsCampaignDelivery::query()
+        return $this->deliveryQuery($branchIds)
             ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
             ->whereNotNull('next_retry_at')
             ->where('next_retry_at', '<=', now())
             ->count();
     }
 
-    public function deliveryTerminalFailedCount(): int
+    public function deliveryTerminalFailedCount(?array $branchIds = null): int
     {
-        return ZnsCampaignDelivery::query()
+        return $this->deliveryQuery($branchIds)
             ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
             ->whereNull('next_retry_at')
             ->count();
     }
 
-    public function failedCampaignCount(): int
+    public function failedCampaignCount(?array $branchIds = null): int
     {
-        return ZnsCampaign::query()
+        return $this->campaignQuery($branchIds)
             ->where('status', ZnsCampaign::STATUS_FAILED)
             ->count();
     }
@@ -125,7 +126,7 @@ class ZnsOperationalReadModelService
     {
         $cutoff = now()->subDays($retentionDays);
 
-        return ZnsAutomationEvent::query()
+        return $this->automationEventQuery()
             ->whereIn('status', [
                 ZnsAutomationEvent::STATUS_SENT,
                 ZnsAutomationEvent::STATUS_DEAD,
@@ -151,7 +152,7 @@ class ZnsOperationalReadModelService
     {
         $cutoff = now()->subDays($retentionDays);
 
-        return ZnsCampaignDelivery::query()
+        return $this->deliveryQuery()
             ->whereNull('processing_token')
             ->where(function (Builder $builder): void {
                 $builder
@@ -174,5 +175,40 @@ class ZnsOperationalReadModelService
                             ->where('updated_at', '<', $cutoff);
                     });
             });
+    }
+
+    protected function automationEventQuery(?array $branchIds = null): Builder
+    {
+        return $this->scopeBranches(ZnsAutomationEvent::query(), $branchIds);
+    }
+
+    protected function deliveryQuery(?array $branchIds = null): Builder
+    {
+        return $this->scopeBranches(ZnsCampaignDelivery::query(), $branchIds);
+    }
+
+    protected function campaignQuery(?array $branchIds = null): Builder
+    {
+        return $this->scopeBranches(ZnsCampaign::query(), $branchIds);
+    }
+
+    protected function scopeBranches(Builder $query, ?array $branchIds = null): Builder
+    {
+        if ($branchIds === null) {
+            return $query;
+        }
+
+        $normalizedBranchIds = collect($branchIds)
+            ->map(static fn (mixed $branchId): int => (int) $branchId)
+            ->filter(static fn (int $branchId): bool => $branchId > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($normalizedBranchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('branch_id', $normalizedBranchIds);
     }
 }

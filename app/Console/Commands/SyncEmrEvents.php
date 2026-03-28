@@ -10,6 +10,7 @@ use App\Models\EmrSyncLog;
 use App\Services\EmrAuditLogger;
 use App\Services\EmrIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -30,6 +31,7 @@ class SyncEmrEvents extends Command
         protected EmrIntegrationService $emrIntegrationService,
         protected EmrAuditLogger $emrAuditLogger,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
+        protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
     ) {
         parent::__construct();
     }
@@ -145,10 +147,7 @@ class SyncEmrEvents extends Command
 
     protected function countDeadLetters(?int $patientId): int
     {
-        return EmrSyncEvent::query()
-            ->when($patientId !== null, fn ($query) => $query->where('patient_id', $patientId))
-            ->where('status', EmrSyncEvent::STATUS_DEAD)
-            ->count();
+        return $this->integrationOperationalReadModelService->emrDeadBacklogCount($patientId);
     }
 
     /**

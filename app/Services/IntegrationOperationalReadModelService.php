@@ -10,9 +10,14 @@ use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class IntegrationOperationalReadModelService
 {
+    public function __construct(
+        protected IntegrationSecretRotationService $integrationSecretRotationService,
+    ) {}
+
     public function webLeadIngestionRetentionCandidateCount(int $retentionDays): int
     {
         return $this->webLeadIngestionRetentionQuery($retentionDays)
@@ -53,9 +58,10 @@ class IntegrationOperationalReadModelService
         return $logs + $events;
     }
 
-    public function emrDeadBacklogCount(): int
+    public function emrDeadBacklogCount(?int $patientId = null): int
     {
         return EmrSyncEvent::query()
+            ->when($patientId !== null, fn (Builder $query) => $query->where('patient_id', $patientId))
             ->where('status', EmrSyncEvent::STATUS_DEAD)
             ->count();
     }
@@ -75,9 +81,10 @@ class IntegrationOperationalReadModelService
         return $logs + $events;
     }
 
-    public function googleCalendarDeadBacklogCount(): int
+    public function googleCalendarDeadBacklogCount(?int $appointmentId = null): int
     {
         return GoogleCalendarSyncEvent::query()
+            ->when($appointmentId !== null, fn (Builder $query) => $query->where('appointment_id', $appointmentId))
             ->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)
             ->count();
     }
@@ -87,6 +94,35 @@ class IntegrationOperationalReadModelService
         return GoogleCalendarSyncEvent::query()
             ->where('status', GoogleCalendarSyncEvent::STATUS_FAILED)
             ->count();
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     key: string,
+     *     display_name: string,
+     *     grace_expires_at: string,
+     *     rotated_at: ?string,
+     *     rotated_by: ?int,
+     *     rotation_reason: ?string,
+     *     remaining_minutes: int
+     * }>
+     */
+    public function activeGraceRotations(): Collection
+    {
+        return $this->integrationSecretRotationService->activeGraceRotations();
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     key: string,
+     *     display_name: string,
+     *     grace_expires_at: string,
+     *     expired_minutes: int
+     * }>
+     */
+    public function expiredGraceRotations(): Collection
+    {
+        return $this->integrationSecretRotationService->expiredGraceRotations();
     }
 
     public function webLeadIngestionRetentionQuery(int $retentionDays): Builder

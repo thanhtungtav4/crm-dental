@@ -251,3 +251,122 @@ it('computes zns retention candidates from terminal automation and delivery stat
         ->and($service->automationLogRetentionCandidateCount(5))->toBe(1)
         ->and($service->deliveryRetentionCandidateCount(5))->toBe(3);
 });
+
+it('supports scoped dead-letter counts by zns event type', function (): void {
+    $branch = Branch::factory()->create();
+
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-dead-lead',
+        'event_type' => ZnsAutomationEvent::EVENT_LEAD_WELCOME,
+        'template_key' => 'lead_welcome',
+        'template_id_snapshot' => 'tpl-dead-lead',
+        'branch_id' => $branch->id,
+        'phone' => '0903000001',
+        'normalized_phone' => '84903000001',
+        'payload' => ['recipient_name' => 'Dead Lead'],
+        'payload_checksum' => hash('sha256', 'evt-dead-lead'),
+        'status' => ZnsAutomationEvent::STATUS_DEAD,
+        'max_attempts' => 3,
+    ]);
+
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-dead-birthday',
+        'event_type' => ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING,
+        'template_key' => 'birthday',
+        'template_id_snapshot' => 'tpl-dead-birthday',
+        'branch_id' => $branch->id,
+        'phone' => '0903000002',
+        'normalized_phone' => '84903000002',
+        'payload' => ['recipient_name' => 'Dead Birthday'],
+        'payload_checksum' => hash('sha256', 'evt-dead-birthday'),
+        'status' => ZnsAutomationEvent::STATUS_DEAD,
+        'max_attempts' => 3,
+    ]);
+
+    expect(app(ZnsOperationalReadModelService::class)->automationDeadCount())->toBe(2)
+        ->and(app(ZnsOperationalReadModelService::class)->automationDeadCount(ZnsAutomationEvent::EVENT_LEAD_WELCOME))->toBe(1)
+        ->and(app(ZnsOperationalReadModelService::class)->automationDeadCount(ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING))->toBe(1);
+});
+
+it('supports branch-scoped zns backlog summary cards', function (): void {
+    $branch = Branch::factory()->create();
+    $otherBranch = Branch::factory()->create();
+
+    $campaign = ZnsCampaign::query()->create([
+        'branch_id' => $branch->id,
+        'name' => 'Campaign scoped primary',
+        'audience_source' => 'manual',
+        'template_key' => 'birthday',
+        'template_id' => 'TPL-SCOPE-01',
+        'status' => ZnsCampaign::STATUS_FAILED,
+    ]);
+    $otherCampaign = ZnsCampaign::query()->create([
+        'branch_id' => $otherBranch->id,
+        'name' => 'Campaign scoped other',
+        'audience_source' => 'manual',
+        'template_key' => 'birthday',
+        'template_id' => 'TPL-SCOPE-02',
+        'status' => ZnsCampaign::STATUS_FAILED,
+    ]);
+
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-scope-pending-primary',
+        'event_type' => ZnsAutomationEvent::EVENT_LEAD_WELCOME,
+        'template_key' => 'lead_welcome',
+        'template_id_snapshot' => 'tpl-scope-pending-primary',
+        'branch_id' => $branch->id,
+        'phone' => '0903000101',
+        'normalized_phone' => '84903000101',
+        'payload' => ['recipient_name' => 'Primary pending'],
+        'payload_checksum' => hash('sha256', 'evt-scope-pending-primary'),
+        'status' => ZnsAutomationEvent::STATUS_PENDING,
+        'max_attempts' => 3,
+    ]);
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-scope-pending-other',
+        'event_type' => ZnsAutomationEvent::EVENT_LEAD_WELCOME,
+        'template_key' => 'lead_welcome',
+        'template_id_snapshot' => 'tpl-scope-pending-other',
+        'branch_id' => $otherBranch->id,
+        'phone' => '0903000102',
+        'normalized_phone' => '84903000102',
+        'payload' => ['recipient_name' => 'Other pending'],
+        'payload_checksum' => hash('sha256', 'evt-scope-pending-other'),
+        'status' => ZnsAutomationEvent::STATUS_PENDING,
+        'max_attempts' => 3,
+    ]);
+
+    ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => $campaign->id,
+        'branch_id' => $branch->id,
+        'idempotency_key' => 'delivery-scope-primary',
+        'phone' => '0903000201',
+        'normalized_phone' => '84903000201',
+        'payload' => ['recipient_name' => 'Primary retry delivery'],
+        'template_key_snapshot' => 'campaign_scope_primary',
+        'template_id_snapshot' => 'tpl-campaign-scope-primary',
+        'status' => ZnsCampaignDelivery::STATUS_FAILED,
+        'next_retry_at' => now()->subMinute(),
+        'attempt_count' => 1,
+    ]);
+    ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => $otherCampaign->id,
+        'branch_id' => $otherBranch->id,
+        'idempotency_key' => 'delivery-scope-other',
+        'phone' => '0903000202',
+        'normalized_phone' => '84903000202',
+        'payload' => ['recipient_name' => 'Other retry delivery'],
+        'template_key_snapshot' => 'campaign_scope_other',
+        'template_id_snapshot' => 'tpl-campaign-scope-other',
+        'status' => ZnsCampaignDelivery::STATUS_FAILED,
+        'next_retry_at' => now()->subMinute(),
+        'attempt_count' => 1,
+    ]);
+
+    $summaryCards = collect(app(ZnsOperationalReadModelService::class)->summaryCards([$branch->id]))
+        ->keyBy('label');
+
+    expect($summaryCards->get('Automation pending')['value'])->toBe(1)
+        ->and($summaryCards->get('Delivery retry due')['value'])->toBe(1)
+        ->and($summaryCards->get('Campaign failed')['value'])->toBe(1);
+});

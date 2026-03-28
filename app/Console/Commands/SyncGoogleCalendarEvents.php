@@ -8,6 +8,7 @@ use App\Models\GoogleCalendarSyncEvent;
 use App\Models\GoogleCalendarSyncLog;
 use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -28,6 +29,7 @@ class SyncGoogleCalendarEvents extends Command
     public function __construct(
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
+        protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
     ) {
         parent::__construct();
     }
@@ -151,10 +153,7 @@ class SyncGoogleCalendarEvents extends Command
 
     protected function countDeadLetters(?int $appointmentId): int
     {
-        return GoogleCalendarSyncEvent::query()
-            ->when($appointmentId !== null, fn ($query) => $query->where('appointment_id', $appointmentId))
-            ->where('status', GoogleCalendarSyncEvent::STATUS_DEAD)
-            ->count();
+        return $this->integrationOperationalReadModelService->googleCalendarDeadBacklogCount($appointmentId);
     }
 
     /**

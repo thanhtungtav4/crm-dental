@@ -7,7 +7,9 @@ use App\Models\ClinicSettingLog;
 use App\Models\User;
 use App\Services\EmrIntegrationService;
 use App\Services\GoogleCalendarIntegrationService;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Services\IntegrationSecretRotationService;
+use App\Services\IntegrationSettingsAuditReadModelService;
 use App\Services\ZaloIntegrationService;
 use App\Support\ClinicRuntimeSettings;
 use BackedEnum;
@@ -1215,11 +1217,7 @@ class IntegrationSettings extends Page
             return collect();
         }
 
-        return ClinicSettingLog::query()
-            ->with('changedBy:id,name')
-            ->latest('changed_at')
-            ->limit(20)
-            ->get();
+        return app(IntegrationSettingsAuditReadModelService::class)->recentLogs();
     }
 
     public function getActiveSecretRotations(): Collection
@@ -1228,7 +1226,7 @@ class IntegrationSettings extends Page
             return collect();
         }
 
-        return app(IntegrationSecretRotationService::class)->activeGraceRotations();
+        return app(IntegrationOperationalReadModelService::class)->activeGraceRotations();
     }
 
     protected function normalizeValueForCompare(mixed $value, string $type): mixed
