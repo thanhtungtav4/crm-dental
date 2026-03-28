@@ -203,10 +203,12 @@ class FactoryOrderWorkflowService
             patientId: is_numeric($order->patient_id) ? (int) $order->patient_id : null,
             metadata: array_merge($metadata, [
                 'factory_order_id' => (int) $order->getKey(),
+                'order_no' => $order->order_no,
                 'patient_id' => $order->patient_id,
                 'branch_id' => $order->branch_id,
                 'doctor_id' => $order->doctor_id,
                 'supplier_id' => $order->supplier_id,
+                'supplier_name' => $order->vendor_name,
             ]),
         );
     }
