@@ -57,6 +57,9 @@ it('renders all q1 delivery scenarios for q1 manager persona', function (): void
         ->assertSee('Labo & gia công')
         ->assertSee('QA Treatment Workflow Plan')
         ->assertSee('QA Clinical Consent')
+        ->assertSee('Loại consent')
+        ->assertSee('Rủi ro cao')
+        ->assertSee('Hoàn tất ký consent và rà lại hồ sơ khám trước khi thực hiện thủ thuật.')
         ->assertSee('QA Inventory Low Stock Composite')
         ->assertSee('FO-QA-SUP-001');
 });

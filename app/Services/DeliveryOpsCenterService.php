@@ -247,8 +247,10 @@ class DeliveryOpsCenterService
                     'badge' => 'Consent chờ ký',
                     'tone' => 'warning',
                     'meta' => [
+                        ['label' => 'Loại consent', 'value' => $this->formatConsentType($consent->consent_type)],
                         ['label' => 'Phiên bản', 'value' => (string) ($consent->consent_version ?: '-')],
                         ['label' => 'Chi nhánh', 'value' => (string) ($consent->branch?->name ?? 'Không xác định')],
+                        ['label' => 'Tiếp theo', 'value' => 'Hoàn tất ký consent và rà lại hồ sơ khám trước khi thực hiện thủ thuật.'],
                         ['label' => 'Cập nhật', 'value' => $this->formatDateTime($consent->updated_at)],
                     ],
                 ];
@@ -613,6 +615,17 @@ class DeliveryOpsCenterService
             FactoryOrder::STATUS_DELIVERED => 'success',
             FactoryOrder::STATUS_CANCELLED => 'danger',
             default => 'gray',
+        };
+    }
+
+    protected function formatConsentType(?string $type): string
+    {
+        return match ($type) {
+            'high_risk' => 'Rủi ro cao',
+            'imaging' => 'Chẩn đoán hình ảnh',
+            'treatment' => 'Điều trị',
+            null, '' => 'Điều trị',
+            default => (string) str($type)->replace('_', ' ')->title(),
         };
     }
 
