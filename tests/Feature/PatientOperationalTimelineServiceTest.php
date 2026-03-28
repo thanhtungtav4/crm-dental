@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
+use App\Models\MaterialIssueNote;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PlanItem;
@@ -293,4 +294,45 @@ it('formats payment refund audit entries with a finance-friendly description', f
 
     expect($entries->pluck('title')->all())->toContain('Hoàn tiền')
         ->and($descriptions)->toContain('Hóa đơn INV-909 • 425.000đ • Hoan phan thu thua');
+});
+
+it('includes material issue note workflow entries in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_MATERIAL_ISSUE_NOTE,
+        'entity_id' => 1001,
+        'action' => AuditLog::ACTION_COMPLETE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'material_issue_note_id' => 1001,
+            'note_no' => 'MI-20260328-0001',
+            'status_to' => MaterialIssueNote::STATUS_POSTED,
+            'item_count' => 2,
+            'reason' => 'Xuat cho dieu tri implant',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 18:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Xuất vật tư')
+        ->and($descriptions)->toContain('Phiếu MI-20260328-0001 • 2 vật tư • Xuat cho dieu tri implant');
 });

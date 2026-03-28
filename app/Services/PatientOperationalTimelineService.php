@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
+use App\Models\MaterialIssueNote;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PlanItem;
@@ -46,6 +47,12 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_COMPLETE,
                             AuditLog::ACTION_CANCEL,
                             AuditLog::ACTION_UPDATE,
+                        ]);
+                })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_MATERIAL_ISSUE_NOTE)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_COMPLETE,
+                            AuditLog::ACTION_CANCEL,
                         ]);
                 })->orWhere(function (Builder $query): void {
                     $query->whereIn('entity_type', [AuditLog::ENTITY_APPOINTMENT, AuditLog::ENTITY_CARE_TICKET])
@@ -103,6 +110,7 @@ class PatientOperationalTimelineService
     {
         return match ($log->entity_type) {
             AuditLog::ENTITY_PAYMENT, AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_RECEIPT_EXPENSE => $this->mapFinancialEntry($log),
+            AuditLog::ENTITY_MATERIAL_ISSUE_NOTE => $this->mapMaterialIssueNoteEntry($log),
             AuditLog::ENTITY_APPOINTMENT => $this->mapAppointmentEntry($log),
             AuditLog::ENTITY_CARE_TICKET => $this->mapCareTicketEntry($log),
             AuditLog::ENTITY_FACTORY_ORDER => $this->mapFactoryOrderEntry($log),
@@ -501,6 +509,52 @@ class PatientOperationalTimelineService
                 'Nguồn audit' => 'AuditLog',
                 'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
                 'Trạng thái' => filled($statusTo) ? PlanItem::statusLabel($statusTo) : 'Không xác định',
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapMaterialIssueNoteEntry(AuditLog $log): array
+    {
+        $title = match ($log->action) {
+            AuditLog::ACTION_COMPLETE => 'Xuất vật tư',
+            AuditLog::ACTION_CANCEL => 'Hủy phiếu xuất kho',
+            default => 'Cập nhật phiếu xuất kho',
+        };
+
+        $itemCount = data_get($log->metadata, 'item_count');
+        $descriptionParts = array_filter([
+            data_get($log->metadata, 'note_no') ? 'Phiếu '.data_get($log->metadata, 'note_no') : 'Phiếu xuất kho',
+            is_numeric($itemCount) ? ((int) $itemCount).' vật tư' : null,
+            filled(data_get($log->metadata, 'reason')) ? (string) data_get($log->metadata, 'reason') : null,
+        ]);
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'heroicon-o-archive-box-arrow-down',
+                AuditLog::ACTION_CANCEL => 'heroicon-o-no-symbol',
+                default => 'heroicon-o-archive-box',
+            },
+            'color' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'success',
+                AuditLog::ACTION_CANCEL => 'danger',
+                default => 'info',
+            },
+            'title' => $title,
+            'description' => implode(' • ', $descriptionParts),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => match (data_get($log->metadata, 'status_to')) {
+                    MaterialIssueNote::STATUS_POSTED => 'Đã xuất kho',
+                    MaterialIssueNote::STATUS_CANCELLED => 'Đã hủy',
+                    default => 'Phiếu xuất kho',
+                },
             ],
             'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
         ];

@@ -28,3 +28,12 @@ it('includes receipt expense entity in audit log table filters and badges', func
         ->toContain('AuditLog::ENTITY_RECEIPT_EXPENSE')
         ->toContain("'Receipt Expense'");
 });
+
+it('includes material issue note entity in audit log table filters and badges', function (): void {
+    $path = app_path('Filament/Resources/AuditLogs/Tables/AuditLogsTable.php');
+    $content = File::get($path);
+
+    expect($content)
+        ->toContain('AuditLog::ENTITY_MATERIAL_ISSUE_NOTE')
+        ->toContain("'Material Issue Note'");
+});

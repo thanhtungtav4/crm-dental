@@ -51,7 +51,10 @@ class MaterialIssueNoteForm
                     ->label('Trạng thái')
                     ->options(MaterialIssueNote::statusOptions())
                     ->default(MaterialIssueNote::STATUS_DRAFT)
-                    ->required(),
+                    ->required()
+                    ->disabled()
+                    ->dehydrated()
+                    ->helperText('Phiếu mới luôn tạo ở trạng thái Nháp. Dùng action Xuất kho / Hủy phiếu để đổi trạng thái và giữ audit workflow nhất quán.'),
 
                 DateTimePicker::make('issued_at')
                     ->label('Ngày xuất')

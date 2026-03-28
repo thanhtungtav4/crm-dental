@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MaterialIssueNotes\Pages;
 
 use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
+use App\Services\MaterialIssueNoteWorkflowService;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateMaterialIssueNote extends CreateRecord
@@ -16,6 +17,6 @@ class CreateMaterialIssueNote extends CreateRecord
             $data['patient_id'] = $patientId;
         }
 
-        return $data;
+        return app(MaterialIssueNoteWorkflowService::class)->prepareCreatePayload($data);
     }
 }

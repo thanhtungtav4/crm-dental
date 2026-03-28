@@ -22,7 +22,7 @@
 - Trung tam rui ro da chuyen tu `rollout safety` sang `shared contracts`, `workflow convergence`, va `structural convergence`.
 - Chuong trinh hien tai nen di tiep theo batch nho, uu tien rollout/smoke test truoc, refactor sau.
 - `RRB-007` va `RRB-008` da duoc dong qua shared identity/search contract va actor/branch scope contract.
-- `RRB-009` va `RRB-010` dang duoc trien khai theo batch nho tren branch lam viec; cac batch moi nhat da dua `PopupAnnouncement`, `PlanItem`, `ReceiptExpense`, va finance payment audit metadata vao workflow + audit contract, chua push runtime len `main`.
+- `RRB-009` va `RRB-010` dang duoc trien khai theo batch nho tren branch lam viec; cac batch moi nhat da dua `PopupAnnouncement`, `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, va finance payment audit metadata vao workflow + audit contract, chua push runtime len `main`.
 
 ## Program Verdict
 

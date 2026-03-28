@@ -115,6 +115,7 @@ it('rejects branch mismatches and invalid batch material pairings in the mutatio
 it('routes treatment usage issue note and batch helpers through inventory mutation service', function (): void {
     $treatmentUsageService = File::get(app_path('Services/TreatmentMaterialUsageService.php'));
     $materialIssueNote = File::get(app_path('Models/MaterialIssueNote.php'));
+    $materialIssueNoteWorkflowService = File::get(app_path('Services/MaterialIssueNoteWorkflowService.php'));
     $materialBatch = File::get(app_path('Models/MaterialBatch.php'));
 
     expect($treatmentUsageService)
@@ -123,6 +124,10 @@ it('routes treatment usage issue note and batch helpers through inventory mutati
         ->toContain('->restoreBatch(');
 
     expect($materialIssueNote)
+        ->toContain('MaterialIssueNoteWorkflowService::class')
+        ->toContain('runWithinManagedWorkflow');
+
+    expect($materialIssueNoteWorkflowService)
         ->toContain('InventoryMutationService::class')
         ->toContain('->consumeBatch(');
 

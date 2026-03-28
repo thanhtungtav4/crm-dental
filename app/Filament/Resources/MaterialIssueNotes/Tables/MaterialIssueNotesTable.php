@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\MaterialIssueNotes\Tables;
 
 use App\Models\MaterialIssueNote;
+use App\Services\MaterialIssueNoteWorkflowService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -59,10 +61,18 @@ class MaterialIssueNotesTable
                     ->label('Xuất kho')
                     ->icon('heroicon-o-arrow-up-on-square')
                     ->color('success')
-                    ->requiresConfirmation()
                     ->visible(fn (MaterialIssueNote $record): bool => $record->status === MaterialIssueNote::STATUS_DRAFT)
-                    ->action(function (MaterialIssueNote $record): void {
-                        $warnings = $record->post(auth()->id());
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú xuất kho')
+                            ->rows(3),
+                    ])
+                    ->action(function (MaterialIssueNote $record, array $data): void {
+                        $warnings = app(MaterialIssueNoteWorkflowService::class)->post(
+                            $record,
+                            $data['reason'] ?? null,
+                            auth()->id(),
+                        );
 
                         Notification::make()
                             ->title('Đã xuất kho thành công')
@@ -76,6 +86,25 @@ class MaterialIssueNotesTable
                                 ->body(implode(', ', $warnings))
                                 ->send();
                         }
+                    }),
+                Action::make('cancel')
+                    ->label('Hủy phiếu')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->visible(fn (MaterialIssueNote $record): bool => $record->status === MaterialIssueNote::STATUS_DRAFT)
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do hủy')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->successNotificationTitle('Đã hủy phiếu xuất')
+                    ->action(function (MaterialIssueNote $record, array $data): void {
+                        app(MaterialIssueNoteWorkflowService::class)->cancel(
+                            $record,
+                            $data['reason'] ?? null,
+                            auth()->id(),
+                        );
                     }),
             ])
             ->toolbarActions([

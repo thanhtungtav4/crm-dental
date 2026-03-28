@@ -2,19 +2,20 @@
 
 namespace App\Models;
 
-use App\Services\InventoryMutationService;
+use App\Services\MaterialIssueNoteWorkflowService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MaterialIssueNote extends Model
 {
     use SoftDeletes;
+
+    protected static bool $allowsManagedWorkflowMutation = false;
 
     public const STATUS_DRAFT = 'draft';
 
@@ -73,10 +74,22 @@ class MaterialIssueNote extends Model
         });
 
         static::saving(function (self $note): void {
-            if (blank($note->branch_id) && $note->patient_id) {
-                $note->branch_id = Patient::query()
+            $patientBranchId = null;
+
+            if (is_numeric($note->patient_id)) {
+                $patientBranchId = Patient::query()
                     ->whereKey((int) $note->patient_id)
                     ->value('first_branch_id');
+
+                BranchAccess::assertCanAccessBranch(
+                    branchId: is_numeric($patientBranchId) ? (int) $patientBranchId : null,
+                    field: 'patient_id',
+                    message: 'Bạn không có quyền gắn bệnh nhân ngoài phạm vi chi nhánh được phân quyền.',
+                );
+            }
+
+            if (blank($note->branch_id) && $note->patient_id) {
+                $note->branch_id = $patientBranchId;
             }
 
             if (is_numeric($note->branch_id)) {
@@ -88,31 +101,46 @@ class MaterialIssueNote extends Model
             }
 
             if ($note->exists && $note->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Trang thai phieu xuat chi duoc thay doi qua MaterialIssueNoteWorkflowService.',
+                    ]);
+                }
+
                 $fromStatus = (string) ($note->getOriginal('status') ?? static::STATUS_DRAFT);
                 $toStatus = (string) $note->status;
 
                 if (! static::canTransitionStatus($fromStatus, $toStatus)) {
                     throw ValidationException::withMessages([
-                        'status' => sprintf('Không thể chuyển trạng thái phiếu xuất từ "%s" sang "%s".', $fromStatus, $toStatus),
+                        'status' => sprintf(
+                            'Không thể chuyển trạng thái phiếu xuất từ "%s" sang "%s".',
+                            static::statusLabel($fromStatus),
+                            static::statusLabel($toStatus),
+                        ),
                     ]);
                 }
             }
 
             if (
                 $note->exists
-                && (string) ($note->getOriginal('status') ?? static::STATUS_DRAFT) === static::STATUS_POSTED
+                && in_array((string) ($note->getOriginal('status') ?? static::STATUS_DRAFT), [
+                    static::STATUS_POSTED,
+                    static::STATUS_CANCELLED,
+                ], true)
                 && $note->isDirty()
             ) {
                 throw ValidationException::withMessages([
-                    'status' => 'Phiếu đã xuất kho không thể chỉnh sửa.',
+                    'status' => 'Phiếu đã chốt không thể chỉnh sửa.',
                 ]);
             }
         });
 
         static::deleting(function (self $note): void {
-            if ($note->status === static::STATUS_POSTED) {
+            if ($note->status !== static::STATUS_DRAFT) {
                 throw ValidationException::withMessages([
-                    'status' => 'Phiếu đã xuất kho không thể xóa.',
+                    'status' => $note->status === static::STATUS_POSTED
+                        ? 'Phiếu đã xuất kho không thể xóa.'
+                        : 'Chỉ phiếu nháp mới có thể xóa.',
                 ]);
             }
         });
@@ -155,86 +183,22 @@ class MaterialIssueNote extends Model
         ];
     }
 
+    public static function statusLabel(?string $status): string
+    {
+        return static::statusOptions()[$status ?? static::STATUS_DRAFT] ?? 'Nháp';
+    }
+
     /**
      * @return array<int, string>
      */
-    public function post(?int $actorId = null): array
+    public function post(?int $actorId = null, ?string $workflowReason = null): array
     {
-        $lowStockWarnings = [];
+        return app(MaterialIssueNoteWorkflowService::class)->post($this, $workflowReason, $actorId);
+    }
 
-        DB::transaction(function () use (&$lowStockWarnings, $actorId): void {
-            $lockedNote = static::query()
-                ->whereKey($this->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($lockedNote->status === static::STATUS_POSTED) {
-                return;
-            }
-
-            if ($lockedNote->status !== static::STATUS_DRAFT) {
-                throw ValidationException::withMessages([
-                    'status' => 'Chỉ phiếu nháp mới được xuất kho.',
-                ]);
-            }
-
-            $items = $lockedNote->items()
-                ->lockForUpdate()
-                ->get();
-
-            if ($items->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'items' => 'Phiếu xuất chưa có vật tư.',
-                ]);
-            }
-
-            foreach ($items as $item) {
-                $noteBranchId = is_numeric($lockedNote->branch_id) ? (int) $lockedNote->branch_id : null;
-                $quantity = (int) $item->quantity;
-
-                $mutation = app(InventoryMutationService::class)->consumeBatch(
-                    materialId: (int) $item->material_id,
-                    batchId: (int) $item->material_batch_id,
-                    quantity: $quantity,
-                    expectedBranchId: $noteBranchId,
-                    branchMismatchMessage: 'Vat tu khong thuoc chi nhanh cua phieu xuat.',
-                );
-
-                $material = $mutation['material'];
-                $materialBatch = $mutation['batch'];
-
-                if ($material->isLowStock()) {
-                    $lowStockWarnings[] = sprintf(
-                        '%s (tồn: %d, min: %d)',
-                        (string) $material->name,
-                        (int) ($material->stock_qty ?? 0),
-                        (int) ($material->min_stock ?? 0),
-                    );
-                }
-
-                InventoryTransaction::query()->create([
-                    'material_id' => $material->id,
-                    'material_batch_id' => $materialBatch->id,
-                    'branch_id' => $lockedNote->branch_id,
-                    'material_issue_note_id' => $lockedNote->id,
-                    'type' => 'out',
-                    'quantity' => $quantity,
-                    'unit_cost' => (float) $item->unit_cost,
-                    'note' => 'Xuất theo phiếu: '.$lockedNote->note_no,
-                    'created_by' => $actorId ?? auth()->id(),
-                ]);
-            }
-
-            $lockedNote->forceFill([
-                'status' => static::STATUS_POSTED,
-                'posted_at' => now(),
-                'posted_by' => $actorId ?? auth()->id(),
-            ])->save();
-        }, 3);
-
-        $this->refresh();
-
-        return array_values(array_unique($lowStockWarnings));
+    public function cancel(?string $workflowReason = null, ?int $actorId = null): self
+    {
+        return app(MaterialIssueNoteWorkflowService::class)->cancel($this, $workflowReason, $actorId);
     }
 
     public static function generateNoteNo(): string
@@ -281,5 +245,17 @@ class MaterialIssueNote extends Model
             static::STATUS_TRANSITIONS[$fromStatus] ?? [],
             true,
         );
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        static::$allowsManagedWorkflowMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+        }
     }
 }
