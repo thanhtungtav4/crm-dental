@@ -3,18 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\EmrSyncEvent;
-use App\Models\EmrSyncLog;
-use App\Models\GoogleCalendarSyncEvent;
-use App\Models\GoogleCalendarSyncLog;
-use App\Models\WebLeadEmailDelivery;
-use App\Models\WebLeadIngestion;
-use App\Models\ZaloWebhookEvent;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 
 class PruneIntegrationOperationalDataCommand extends Command
 {
@@ -24,6 +17,11 @@ class PruneIntegrationOperationalDataCommand extends Command
         {--strict : Tra exit code loi neu command gap exception}';
 
     protected $description = 'Dọn dữ liệu vận hành integration quá hạn retention để giảm footprint PII/PHI.';
+
+    public function __construct(protected IntegrationOperationalReadModelService $integrationOperationalReadModelService)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -132,21 +130,7 @@ class PruneIntegrationOperationalDataCommand extends Command
     protected function pruneWebLeadIngestions(int $retentionDays, bool $dryRun): array
     {
         $cutoff = now()->subDays($retentionDays);
-        $query = WebLeadIngestion::query()
-            ->whereIn('status', [
-                WebLeadIngestion::STATUS_CREATED,
-                WebLeadIngestion::STATUS_MERGED,
-                WebLeadIngestion::STATUS_FAILED,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            });
+        $query = $this->integrationOperationalReadModelService->webLeadIngestionRetentionQuery($retentionDays);
 
         $total = (clone $query)->count();
 
@@ -169,13 +153,7 @@ class PruneIntegrationOperationalDataCommand extends Command
     protected function pruneWebLeadEmailDeliveries(int $retentionDays, bool $dryRun): array
     {
         $cutoff = now()->subDays($retentionDays);
-        $query = WebLeadEmailDelivery::query()
-            ->whereIn('status', [
-                WebLeadEmailDelivery::STATUS_SENT,
-                WebLeadEmailDelivery::STATUS_DEAD,
-                WebLeadEmailDelivery::STATUS_SKIPPED,
-            ])
-            ->where('updated_at', '<', $cutoff);
+        $query = $this->integrationOperationalReadModelService->webLeadTerminalEmailRetentionQuery($retentionDays);
 
         $summary = [
             'retention_days' => $retentionDays,
@@ -196,16 +174,7 @@ class PruneIntegrationOperationalDataCommand extends Command
     protected function pruneZaloWebhookEvents(int $retentionDays, bool $dryRun): array
     {
         $cutoff = now()->subDays($retentionDays);
-        $query = ZaloWebhookEvent::query()
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('received_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('received_at')
-                            ->where('created_at', '<', $cutoff);
-                    });
-            });
+        $query = $this->integrationOperationalReadModelService->zaloWebhookRetentionQuery($retentionDays);
 
         $total = (clone $query)->count();
 
@@ -228,23 +197,8 @@ class PruneIntegrationOperationalDataCommand extends Command
     protected function pruneEmrSyncData(int $retentionDays, bool $dryRun): array
     {
         $cutoff = now()->subDays($retentionDays);
-        $logQuery = EmrSyncLog::query()
-            ->where('attempted_at', '<', $cutoff);
-
-        $eventQuery = EmrSyncEvent::query()
-            ->whereIn('status', [
-                EmrSyncEvent::STATUS_SYNCED,
-                EmrSyncEvent::STATUS_DEAD,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            });
+        $logQuery = $this->integrationOperationalReadModelService->emrLogRetentionQuery($retentionDays);
+        $eventQuery = $this->integrationOperationalReadModelService->emrEventRetentionQuery($retentionDays);
 
         $summary = [
             'retention_days' => $retentionDays,
@@ -267,23 +221,8 @@ class PruneIntegrationOperationalDataCommand extends Command
     protected function pruneGoogleCalendarSyncData(int $retentionDays, bool $dryRun): array
     {
         $cutoff = now()->subDays($retentionDays);
-        $logQuery = GoogleCalendarSyncLog::query()
-            ->where('attempted_at', '<', $cutoff);
-
-        $eventQuery = GoogleCalendarSyncEvent::query()
-            ->whereIn('status', [
-                GoogleCalendarSyncEvent::STATUS_SYNCED,
-                GoogleCalendarSyncEvent::STATUS_DEAD,
-            ])
-            ->where(function (Builder $builder) use ($cutoff): void {
-                $builder
-                    ->where('processed_at', '<', $cutoff)
-                    ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                        $fallbackQuery
-                            ->whereNull('processed_at')
-                            ->where('updated_at', '<', $cutoff);
-                    });
-            });
+        $logQuery = $this->integrationOperationalReadModelService->googleCalendarLogRetentionQuery($retentionDays);
+        $eventQuery = $this->integrationOperationalReadModelService->googleCalendarEventRetentionQuery($retentionDays);
 
         $summary = [
             'retention_days' => $retentionDays,

@@ -3,14 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\ZnsAutomationEvent;
-use App\Models\ZnsAutomationLog;
-use App\Models\ZnsCampaignDelivery;
+use App\Services\ZnsOperationalReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 
 class PruneZnsOperationalData extends Command
 {
@@ -20,6 +17,11 @@ class PruneZnsOperationalData extends Command
         {--strict : Trả exit code lỗi nếu có lỗi khi dọn dữ liệu}';
 
     protected $description = 'Dọn dữ liệu vận hành ZNS quá hạn retention để giảm PII footprint.';
+
+    public function __construct(protected ZnsOperationalReadModelService $znsOperationalReadModelService)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -41,47 +43,9 @@ class PruneZnsOperationalData extends Command
         $cutoff = now()->subDays($retentionDays);
 
         try {
-            $logQuery = ZnsAutomationLog::query()
-                ->where('attempted_at', '<', $cutoff);
-
-            $eventQuery = ZnsAutomationEvent::query()
-                ->whereIn('status', [
-                    ZnsAutomationEvent::STATUS_SENT,
-                    ZnsAutomationEvent::STATUS_DEAD,
-                ])
-                ->where(function (Builder $query) use ($cutoff): void {
-                    $query
-                        ->where('processed_at', '<', $cutoff)
-                        ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                            $fallbackQuery
-                                ->whereNull('processed_at')
-                                ->where('updated_at', '<', $cutoff);
-                        });
-                });
-
-            $deliveryQuery = ZnsCampaignDelivery::query()
-                ->whereNull('processing_token')
-                ->where(function (Builder $query): void {
-                    $query
-                        ->whereIn('status', [
-                            ZnsCampaignDelivery::STATUS_SENT,
-                            ZnsCampaignDelivery::STATUS_SKIPPED,
-                        ])
-                        ->orWhere(function (Builder $failedQuery): void {
-                            $failedQuery
-                                ->where('status', ZnsCampaignDelivery::STATUS_FAILED)
-                                ->whereNull('next_retry_at');
-                        });
-                })
-                ->where(function (Builder $query) use ($cutoff): void {
-                    $query
-                        ->where('sent_at', '<', $cutoff)
-                        ->orWhere(function (Builder $fallbackQuery) use ($cutoff): void {
-                            $fallbackQuery
-                                ->whereNull('sent_at')
-                                ->where('updated_at', '<', $cutoff);
-                        });
-                });
+            $logQuery = $this->znsOperationalReadModelService->automationLogRetentionQuery($retentionDays);
+            $eventQuery = $this->znsOperationalReadModelService->automationRetentionQuery($retentionDays);
+            $deliveryQuery = $this->znsOperationalReadModelService->deliveryRetentionQuery($retentionDays);
 
             $summary = [
                 'retention_days' => $retentionDays,

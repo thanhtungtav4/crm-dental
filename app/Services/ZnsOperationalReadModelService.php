@@ -105,6 +105,24 @@ class ZnsOperationalReadModelService
 
     public function automationRetentionCandidateCount(int $retentionDays): int
     {
+        return $this->automationRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function automationLogRetentionCandidateCount(int $retentionDays): int
+    {
+        return $this->automationLogRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function deliveryRetentionCandidateCount(int $retentionDays): int
+    {
+        return $this->deliveryRetentionQuery($retentionDays)
+            ->count();
+    }
+
+    public function automationRetentionQuery(int $retentionDays): Builder
+    {
         $cutoff = now()->subDays($retentionDays);
 
         return ZnsAutomationEvent::query()
@@ -120,18 +138,16 @@ class ZnsOperationalReadModelService
                             ->whereNull('processed_at')
                             ->where('updated_at', '<', $cutoff);
                     });
-            })
-            ->count();
+            });
     }
 
-    public function automationLogRetentionCandidateCount(int $retentionDays): int
+    public function automationLogRetentionQuery(int $retentionDays): Builder
     {
         return ZnsAutomationLog::query()
-            ->where('attempted_at', '<', now()->subDays($retentionDays))
-            ->count();
+            ->where('attempted_at', '<', now()->subDays($retentionDays));
     }
 
-    public function deliveryRetentionCandidateCount(int $retentionDays): int
+    public function deliveryRetentionQuery(int $retentionDays): Builder
     {
         $cutoff = now()->subDays($retentionDays);
 
@@ -157,7 +173,6 @@ class ZnsOperationalReadModelService
                             ->whereNull('sent_at')
                             ->where('updated_at', '<', $cutoff);
                     });
-            })
-            ->count();
+            });
     }
 }
