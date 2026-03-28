@@ -255,10 +255,20 @@ it('transitions appointment status through the scheduling service with guided pa
         ['reason' => 'Benh nhan xin huy lich'],
     );
 
+    $cancelAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_APPOINTMENT)
+        ->where('entity_id', $appointment->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
     expect($confirmed->status)->toBe(Appointment::STATUS_CONFIRMED)
         ->and($confirmed->confirmed_at)->not->toBeNull()
         ->and($cancelled->status)->toBe(Appointment::STATUS_CANCELLED)
-        ->and($cancelled->cancellation_reason)->toBe('Benh nhan xin huy lich');
+        ->and($cancelled->cancellation_reason)->toBe('Benh nhan xin huy lich')
+        ->and(data_get($cancelAudit, 'metadata.status_from'))->toBe(Appointment::STATUS_CONFIRMED)
+        ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(Appointment::STATUS_CANCELLED)
+        ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('Benh nhan xin huy lich');
 });
 
 it('blocks future appointments from being marked completed or no_show', function () {

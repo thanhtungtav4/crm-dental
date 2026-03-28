@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Services\SyncAppointmentLifecycleSideEffects;
+use App\Support\WorkflowAuditMetadata;
 
 class AppointmentObserver
 {
@@ -90,18 +91,24 @@ class AppointmentObserver
             entityId: $appointment->id,
             action: $action,
             actorId: $actorId,
-            metadata: [
-                'patient_id' => $appointment->patient_id,
-                'customer_id' => $appointment->customer_id,
-                'status_from' => Appointment::normalizeStatus((string) $appointment->getOriginal('status'))
+            branchId: is_numeric($appointment->branch_id) ? (int) $appointment->branch_id : null,
+            patientId: is_numeric($appointment->patient_id) ? (int) $appointment->patient_id : null,
+            metadata: WorkflowAuditMetadata::transition(
+                fromStatus: Appointment::normalizeStatus((string) $appointment->getOriginal('status'))
                     ?? Appointment::DEFAULT_STATUS,
-                'status_to' => $appointment->status,
-                'appointment_at' => $appointment->date?->toDateTimeString(),
-                'doctor_id' => $appointment->doctor_id,
-                'branch_id' => $appointment->branch_id,
-                'cancellation_reason' => $appointment->cancellation_reason,
-                'reschedule_reason' => $appointment->reschedule_reason,
-            ]
+                toStatus: Appointment::normalizeStatus((string) $appointment->status)
+                    ?? Appointment::DEFAULT_STATUS,
+                reason: $appointment->cancellation_reason ?: $appointment->reschedule_reason,
+                metadata: [
+                    'patient_id' => $appointment->patient_id,
+                    'customer_id' => $appointment->customer_id,
+                    'appointment_at' => $appointment->date?->toDateTimeString(),
+                    'doctor_id' => $appointment->doctor_id,
+                    'branch_id' => $appointment->branch_id,
+                    'cancellation_reason' => $appointment->cancellation_reason,
+                    'reschedule_reason' => $appointment->reschedule_reason,
+                ],
+            ),
         );
     }
 

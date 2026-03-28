@@ -32,7 +32,8 @@ it('records audit log when appointment is rescheduled', function () {
         ->and($log->branch_id)->toBe($appointment->branch_id)
         ->and($log->metadata['patient_id'] ?? null)->toBe($appointment->patient_id)
         ->and($log->metadata['status_from'] ?? null)->toBe(Appointment::STATUS_SCHEDULED)
-        ->and($log->metadata['status_to'] ?? null)->toBe(Appointment::STATUS_RESCHEDULED);
+        ->and($log->metadata['status_to'] ?? null)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and($log->metadata['reason'] ?? null)->toBe('Bệnh nhân xin dời lịch');
 });
 
 function makeAppointmentForAudit(array $overrides = []): Appointment
