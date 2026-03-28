@@ -2,6 +2,7 @@
 
 use App\Models\Appointment;
 use App\Models\Branch;
+use App\Models\ClinicalMediaAsset;
 use App\Models\ClinicSetting;
 use App\Models\Customer;
 use App\Models\EmrSyncEvent;
@@ -239,6 +240,60 @@ it('computes webhook, emr, and google retention counts from shared integration r
         ->and($service->googleCalendarRetentionCandidateCount(30))->toBe(3)
         ->and($service->googleCalendarDeadBacklogCount())->toBe(1)
         ->and($service->googleCalendarFailedBacklogCount())->toBe(1);
+});
+
+it('computes clinical media retention counts from the shared integration reader', function (): void {
+    [$branch, $patient] = seedIntegrationOperationalReadModelEntities();
+
+    ClinicalMediaAsset::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'captured_at' => now()->subDays(45),
+        'modality' => ClinicalMediaAsset::MODALITY_PHOTO,
+        'phase' => 'pre',
+        'mime_type' => 'image/jpeg',
+        'checksum_sha256' => hash('sha256', 'temp-old'),
+        'storage_disk' => 'public',
+        'storage_path' => 'clinical-media/temp-old.jpg',
+        'retention_class' => ClinicalMediaAsset::RETENTION_TEMPORARY,
+        'legal_hold' => false,
+        'status' => ClinicalMediaAsset::STATUS_ACTIVE,
+    ]);
+
+    ClinicalMediaAsset::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'captured_at' => now()->subDays(45),
+        'modality' => ClinicalMediaAsset::MODALITY_PHOTO,
+        'phase' => 'pre',
+        'mime_type' => 'image/jpeg',
+        'checksum_sha256' => hash('sha256', 'operational-old'),
+        'storage_disk' => 'public',
+        'storage_path' => 'clinical-media/operational-old.jpg',
+        'retention_class' => ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
+        'legal_hold' => false,
+        'status' => ClinicalMediaAsset::STATUS_ACTIVE,
+    ]);
+
+    ClinicalMediaAsset::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'captured_at' => now()->subDays(45),
+        'modality' => ClinicalMediaAsset::MODALITY_PHOTO,
+        'phase' => 'pre',
+        'mime_type' => 'image/jpeg',
+        'checksum_sha256' => hash('sha256', 'legal-hold'),
+        'storage_disk' => 'public',
+        'storage_path' => 'clinical-media/legal-hold.jpg',
+        'retention_class' => ClinicalMediaAsset::RETENTION_TEMPORARY,
+        'legal_hold' => true,
+        'status' => ClinicalMediaAsset::STATUS_ACTIVE,
+    ]);
+
+    $service = app(IntegrationOperationalReadModelService::class);
+
+    expect($service->clinicalMediaRetentionCandidateCount(ClinicalMediaAsset::RETENTION_TEMPORARY, 30))->toBe(1)
+        ->and($service->clinicalMediaRetentionCandidateCount(ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL, 30))->toBe(1);
 });
 
 it('supports scoped dead-letter counts for emr and google sync lanes', function (): void {

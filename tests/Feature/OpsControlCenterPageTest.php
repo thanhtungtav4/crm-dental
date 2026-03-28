@@ -100,6 +100,8 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
         ->assertSee('Lead mail dead')
         ->assertSee('Popup announcement logs')
         ->assertSee('Patient photos')
+        ->assertSee('Clinical media temporary')
+        ->assertSee('Clinical media operational')
         ->assertSee('Delivery mail web lead')
         ->assertSee('Revenue aggregate')
         ->assertSee('ZNS automation events')

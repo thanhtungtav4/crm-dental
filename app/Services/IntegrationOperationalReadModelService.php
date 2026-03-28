@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClinicalMediaAsset;
 use App\Models\EmrSyncEvent;
 use App\Models\EmrSyncLog;
 use App\Models\GoogleCalendarSyncEvent;
@@ -77,6 +78,12 @@ class IntegrationOperationalReadModelService
         $events = $this->emrEventRetentionQuery($retentionDays)->count();
 
         return $logs + $events;
+    }
+
+    public function clinicalMediaRetentionCandidateCount(string $retentionClass, int $retentionDays): int
+    {
+        return $this->clinicalMediaRetentionQuery($retentionClass, $retentionDays)
+            ->count();
     }
 
     public function emrDeadBacklogCount(?int $patientId = null): int
@@ -284,6 +291,16 @@ class IntegrationOperationalReadModelService
                             ->where('updated_at', '<', $cutoff);
                     });
             });
+    }
+
+    public function clinicalMediaRetentionQuery(string $retentionClass, int $retentionDays): Builder
+    {
+        return ClinicalMediaAsset::query()
+            ->whereNull('deleted_at')
+            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
+            ->where('legal_hold', false)
+            ->where('retention_class', strtolower(trim($retentionClass)))
+            ->where('captured_at', '<=', now()->subDays($retentionDays));
     }
 
     public function googleCalendarLogRetentionQuery(int $retentionDays): Builder

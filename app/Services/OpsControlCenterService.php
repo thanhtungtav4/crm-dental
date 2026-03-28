@@ -506,6 +506,28 @@ class OpsControlCenterService
                 description: 'EMR log + event đã đồng bộ xong và đủ điều kiện prune.',
             ),
             $this->integrationRetentionCandidate(
+                label: 'Clinical media temporary',
+                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY),
+                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
+                    ? $this->integrationOperationalReadModelService->clinicalMediaRetentionCandidateCount(
+                        \App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY,
+                        ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY)
+                    )
+                    : 0,
+                description: 'Clinical media retention class temporary đã đủ điều kiện prune.',
+            ),
+            $this->integrationRetentionCandidate(
+                label: 'Clinical media operational',
+                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL),
+                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
+                    ? $this->integrationOperationalReadModelService->clinicalMediaRetentionCandidateCount(
+                        \App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
+                        ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL)
+                    )
+                    : 0,
+                description: 'Clinical media retention class clinical_operational đã đủ điều kiện prune.',
+            ),
+            $this->integrationRetentionCandidate(
                 label: 'Google Calendar outbox',
                 retentionDays: ClinicRuntimeSettings::googleCalendarOperationalRetentionDays(),
                 total: $this->integrationOperationalReadModelService->googleCalendarRetentionCandidateCount(

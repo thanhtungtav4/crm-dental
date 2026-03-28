@@ -153,9 +153,11 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-010` da bo sung `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de recent OPS runs va tracked command catalog khop voi scheduler wrapper catalog.
   - `RRB-010` da mo rong them `OpsControlCenterService` de hien thi `Popup announcement logs` va `Patient photos` tu cung `IntegrationOperationalReadModelService`, giu prune backlog tren OPS dong bo voi command layer.
   - `RRB-010` da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc ca `metadata->target_command`, de cac command duoc chay qua `ops:run-scheduled-command` khong bi vo hinh trong recent OPS runs.
+  - `RRB-010` da mo rong them `IntegrationOperationalReadModelService` va `OpsControlCenterService` sang lane `EMR clinical media`, de retention backlog theo `temporary` / `clinical_operational` khop giua `emr:prune-clinical-media`, OPS, va control-plane summary.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
   - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
   - `RRB-013` da tiep tuc lane `payload retention / pruning`: `popups:prune` va `photos:prune` da dung chung retention candidate reader voi control-plane, tranh viec command layer va OPS/Integration surfaces dien giai retention theo nhieu cach.
+  - `RRB-013` da mo rong them lane `payload retention / pruning` sang `EMR clinical media`, de `emr:prune-clinical-media` khong con giu candidate query rieng tach khoi control-plane retention reader.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.

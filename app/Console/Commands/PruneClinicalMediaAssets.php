@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ClinicalMediaAsset;
 use App\Models\ClinicalMediaVersion;
+use App\Services\IntegrationOperationalReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -23,7 +24,7 @@ class PruneClinicalMediaAssets extends Command
 
     protected $description = 'Dọn clinical media theo retention class-aware (không xóa legal hold/clinical_legal).';
 
-    public function handle(): int
+    public function handle(IntegrationOperationalReadModelService $integrationOperationalReadModelService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -69,12 +70,7 @@ class PruneClinicalMediaAssets extends Command
             }
 
             $cutoff = now()->subDays($days);
-            $query = ClinicalMediaAsset::query()
-                ->whereNull('deleted_at')
-                ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
-                ->where('legal_hold', false)
-                ->where('retention_class', $retentionClass)
-                ->where('captured_at', '<=', $cutoff);
+            $query = $integrationOperationalReadModelService->clinicalMediaRetentionQuery($retentionClass, $days);
 
             $candidateCount = (int) (clone $query)->count();
             $summary['candidates'] += $candidateCount;

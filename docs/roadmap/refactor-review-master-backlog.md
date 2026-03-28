@@ -303,6 +303,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
     - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
+    - da mo rong `IntegrationOperationalReadModelService` sang lane `EMR clinical media`, de `emr:prune-clinical-media` va `OpsControlCenterService` dung chung candidate query cho retention class `temporary` / `clinical_operational`
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces
@@ -387,6 +388,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong them publisher-side runtime guard cho `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher`, de control-plane khong tiep tuc sinh backlog outbox/event moi khi provider dang enabled nhung chua day du credential/runtime settings
     - da mo rong tiep lane `secret rotation / revoke` bang `expiredGraceRotationSummary()` trong `IntegrationOperationalReadModelService`, de `integrations:revoke-rotated-secrets` preview expired keys qua cung reader voi OPS va Integration Settings, thay vi command tu ngầm doc trang thai grace tu write-side service
     - da mo rong tiep lane `payload retention / pruning` bang cach dua `popups:prune` va `photos:prune` qua `IntegrationOperationalReadModelService`, de command layer khong con tu sao chep retention candidate rules cua popup logs va patient photos
+    - da mo rong tiep lane `payload retention / pruning` sang `EMR clinical media`, de `emr:prune-clinical-media` va OPS cung doc mot retention contract cho `temporary` / `clinical_operational`
 - Tests needed:
   - integration contract tests
   - lock/retry/runbook smoke tests
