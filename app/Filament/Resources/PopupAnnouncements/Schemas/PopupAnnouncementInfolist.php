@@ -58,6 +58,8 @@ class PopupAnnouncementInfolist
                         TextEntry::make('message')
                             ->label('Nội dung')
                             ->formatStateUsing(fn (mixed $state): string => trim((string) $state))
+                            ->html()
+                            ->prose()
                             ->columnSpanFull(),
                     ]),
             ]);

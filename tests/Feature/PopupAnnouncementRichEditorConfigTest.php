@@ -20,5 +20,9 @@ it('renders popup message using rich content renderer', function (): void {
     expect($viewFile)
         ->toContain('RichContentRenderer::make')
         ->toContain("->fileAttachmentsDisk('public')")
-        ->toContain("->fileAttachmentsVisibility('public')");
+        ->toContain("->fileAttachmentsVisibility('public')")
+        ->toContain('role="dialog"')
+        ->toContain('aria-modal="true"')
+        ->toContain('overscroll-contain')
+        ->toContain('text-pretty');
 });

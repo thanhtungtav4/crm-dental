@@ -42,6 +42,8 @@ it('shows pending popup once and allows dismiss when ack is not required', funct
     Livewire::test(PopupAnnouncementCenter::class)
         ->assertSet('activeDeliveryId', $delivery->id)
         ->assertSee('Popup không bắt buộc ack')
+        ->assertSee('Bạn có thể đóng popup khi đã nắm thông tin quan trọng này.')
+        ->assertSee('Đóng thông báo')
         ->call('dismiss')
         ->assertSet('activeDeliveryId', null);
 
@@ -84,6 +86,7 @@ it('requires explicit acknowledge when popup is marked as require_ack', function
     Livewire::test(PopupAnnouncementCenter::class)
         ->assertSet('activeDeliveryId', $delivery->id)
         ->assertSee('Tôi đã đọc')
+        ->assertSee('Cần xác nhận đã đọc trước khi tiếp tục thao tác.')
         ->call('dismiss')
         ->assertSet('activeDeliveryId', $delivery->id)
         ->call('acknowledge')
