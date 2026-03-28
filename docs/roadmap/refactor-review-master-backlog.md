@@ -231,6 +231,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da chuan hoa `WorkflowAuditMetadata` tren `APPT`, `TRT`, `FIN`, `SUP`, `ZNS`
     - da bo sung audit trail / structured transition metadata cho `FactoryOrder`
     - da keo observer-based workflow audit cua `Appointment`, `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
+    - da dua `PopupAnnouncement` vao workflow service canonical, guided actions, va audit-reason metadata tren nhanh backlog
+    - da dua `PlanItem` mutation lane vao workflow service canonical, guided actions, va audit transition metadata tren nhanh backlog
     - `CARE` va `OPS` chua can lane refactor rieng trong wave nay
 - Tests needed:
   - workflow transition contract tests
@@ -259,6 +261,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tao `PatientOperationalTimelineService`
     - da tach patient activity timeline khoi widget query thuan raw
     - da dua `FactoryOrder`, `InsuranceClaim`, `TreatmentSession` vao patient operational timeline read-model
+    - da dua them `PlanItem` vao patient operational timeline read-model
     - cac audit metadata moi da du structured hon de phuc vu read-model phase sau
 - Tests needed:
   - timeline reader tests

@@ -192,6 +192,9 @@ class PlanItemForm
                                 PlanItem::STATUS_CANCELLED => 'Đã hủy',
                             ])
                             ->required()
+                            ->disabled(fn (?PlanItem $record): bool => $record !== null)
+                            ->dehydrated(fn (?PlanItem $record): bool => $record === null)
+                            ->helperText('Sau khi tạo, dùng các action Bắt đầu / Hoàn thành / Hủy để đổi trạng thái và giữ audit workflow nhất quán.')
                             ->native(false),
 
                         Select::make('priority')

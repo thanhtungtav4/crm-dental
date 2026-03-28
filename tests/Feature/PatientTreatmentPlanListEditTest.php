@@ -3,6 +3,7 @@
 use App\Filament\Resources\PlanItems\Pages\EditPlanItem;
 use App\Filament\Resources\TreatmentPlans\Pages\EditTreatmentPlan;
 use App\Filament\Resources\TreatmentSessions\Pages\EditTreatmentSession;
+use App\Services\PlanItemWorkflowService;
 use Illuminate\Support\Facades\File;
 
 it('keeps patient context when opening plan item edit from treatment plan list', function (): void {
@@ -33,6 +34,7 @@ it('exposes detailed fields in plan item edit form for treatment workflow', func
         ->and($form)->toContain("TextInput::make('vat_amount')")
         ->and($form)->toContain("TextInput::make('final_amount')")
         ->and($form)->toContain("Select::make('status')")
+        ->and($form)->toContain('Bắt đầu / Hoàn thành / Hủy')
         ->and($form)->toContain('scopeAccessibleTreatmentPlanQuery')
         ->and($form)->toContain('scopeAccessibleTreatmentPlans')
         ->and($form)->toContain('scopeTreatmentPlanQueryByContext')
@@ -45,6 +47,11 @@ it('redirects plan item edit page back to return url after save', function (): v
 
     expect($page)->toContain('protected function getRedirectUrl(): string')
         ->and($page)->toContain("Action::make('open_patient_exam_treatment')")
+        ->and($page)->toContain("Action::make('start_treatment')")
+        ->and($page)->toContain("Action::make('complete_visit')")
+        ->and($page)->toContain("Action::make('complete_treatment')")
+        ->and($page)->toContain("Action::make('cancel_treatment')")
+        ->and($page)->toContain(PlanItemWorkflowService::class)
         ->and($page)->toContain('DeleteAction::make()')
         ->and($page)->toContain('TreatmentDeletionGuardService')
         ->and($page)->not->toContain('RestoreAction::make()')

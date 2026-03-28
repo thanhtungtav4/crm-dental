@@ -4,10 +4,13 @@ namespace App\Filament\Resources\PlanItems\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\PlanItems\PlanItemResource;
+use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
+use App\Services\PlanItemWorkflowService;
 use App\Services\TreatmentDeletionGuardService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -20,6 +23,11 @@ class EditPlanItem extends EditRecord
     public ?string $returnUrl = null;
 
     public ?int $patientIdContext = null;
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return app(PlanItemWorkflowService::class)->prepareEditablePayload($this->getRecord(), $data);
+    }
 
     public function mount(int|string $record): void
     {
@@ -44,6 +52,87 @@ class EditPlanItem extends EditRecord
                 ->color('gray')
                 ->url(fn (): ?string => $this->resolvePatientExamTreatmentUrl())
                 ->visible(fn (): bool => filled($this->resolvePatientExamTreatmentUrl())),
+            Action::make('start_treatment')
+                ->label('Bắt đầu')
+                ->icon('heroicon-o-play')
+                ->color('warning')
+                ->visible(fn (): bool => $this->record->canStartTreatment()
+                    && $this->record->status === PlanItem::STATUS_PENDING)
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Ghi chú vận hành')
+                        ->rows(3),
+                ])
+                ->successNotificationTitle('Đã bắt đầu hạng mục điều trị')
+                ->action(function (array $data): void {
+                    app(PlanItemWorkflowService::class)->startTreatment(
+                        planItem: $this->getRecord(),
+                        reason: $data['reason'] ?? null,
+                    );
+
+                    $this->refreshFormData(['status', 'started_at', 'progress_percentage', 'completed_visits']);
+                }),
+            Action::make('complete_visit')
+                ->label('Hoàn thành 1 lần')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->canStartTreatment()
+                    && $this->record->completed_visits < $this->record->required_visits
+                    && ! in_array($this->record->status, [PlanItem::STATUS_COMPLETED, PlanItem::STATUS_CANCELLED], true))
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Ghi chú tiến độ')
+                        ->rows(3),
+                ])
+                ->successNotificationTitle('Đã hoàn thành một lần điều trị')
+                ->action(function (array $data): void {
+                    app(PlanItemWorkflowService::class)->completeVisit(
+                        planItem: $this->getRecord(),
+                        reason: $data['reason'] ?? null,
+                    );
+
+                    $this->refreshFormData(['status', 'started_at', 'completed_at', 'progress_percentage', 'completed_visits']);
+                }),
+            Action::make('complete_treatment')
+                ->label('Hoàn thành')
+                ->icon('heroicon-o-check-badge')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->canStartTreatment()
+                    && ! in_array($this->record->status, [PlanItem::STATUS_COMPLETED, PlanItem::STATUS_CANCELLED], true))
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Ghi chú hoàn thành')
+                        ->rows(3),
+                ])
+                ->successNotificationTitle('Đã hoàn thành hạng mục điều trị')
+                ->action(function (array $data): void {
+                    app(PlanItemWorkflowService::class)->completeTreatment(
+                        planItem: $this->getRecord(),
+                        reason: $data['reason'] ?? null,
+                    );
+
+                    $this->refreshFormData(['status', 'started_at', 'completed_at', 'progress_percentage', 'completed_visits']);
+                }),
+            Action::make('cancel_treatment')
+                ->label('Hủy')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->visible(fn (): bool => in_array($this->record->status, [PlanItem::STATUS_PENDING, PlanItem::STATUS_IN_PROGRESS], true))
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Lý do hủy')
+                        ->rows(3)
+                        ->required(),
+                ])
+                ->successNotificationTitle('Đã hủy hạng mục điều trị')
+                ->action(function (array $data): void {
+                    app(PlanItemWorkflowService::class)->cancel(
+                        planItem: $this->getRecord(),
+                        reason: $data['reason'] ?? null,
+                    );
+
+                    $this->refreshFormData(['status', 'completed_at']);
+                }),
             DeleteAction::make()
                 ->visible(fn (): bool => app(TreatmentDeletionGuardService::class)->canDeletePlanItem($this->getRecord()))
                 ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),

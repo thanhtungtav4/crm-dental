@@ -8,6 +8,7 @@ use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Models\PlanItem;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -64,6 +65,13 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_CANCEL,
                         ]);
                 })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_PLAN_ITEM)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_UPDATE,
+                            AuditLog::ACTION_COMPLETE,
+                            AuditLog::ACTION_CANCEL,
+                        ]);
+                })->orWhere(function (Builder $query): void {
                     $query->where('entity_type', AuditLog::ENTITY_TREATMENT_SESSION)
                         ->whereIn('action', [
                             AuditLog::ACTION_UPDATE,
@@ -91,6 +99,7 @@ class PatientOperationalTimelineService
             AuditLog::ENTITY_CARE_TICKET => $this->mapCareTicketEntry($log),
             AuditLog::ENTITY_FACTORY_ORDER => $this->mapFactoryOrderEntry($log),
             AuditLog::ENTITY_INSURANCE_CLAIM => $this->mapInsuranceClaimEntry($log),
+            AuditLog::ENTITY_PLAN_ITEM => $this->mapPlanItemEntry($log),
             AuditLog::ENTITY_TREATMENT_SESSION => $this->mapTreatmentSessionEntry($log),
             default => null,
         };
@@ -387,6 +396,53 @@ class PatientOperationalTimelineService
                 'Nguồn audit' => 'AuditLog',
                 'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
                 'Trạng thái' => $this->treatmentSessionStatusLabel($statusTo),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapPlanItemEntry(AuditLog $log): array
+    {
+        $statusTo = (string) data_get($log->metadata, 'status_to', '');
+        $title = match ($log->action) {
+            AuditLog::ACTION_COMPLETE => 'Hoàn thành hạng mục điều trị',
+            AuditLog::ACTION_CANCEL => 'Hủy hạng mục điều trị',
+            default => $statusTo === PlanItem::STATUS_IN_PROGRESS
+                ? 'Bắt đầu hạng mục điều trị'
+                : 'Cập nhật hạng mục điều trị',
+        };
+
+        $descriptionParts = array_filter([
+            (string) data_get($log->metadata, 'plan_item_name', ''),
+            filled($statusTo) ? PlanItem::statusLabel($statusTo) : null,
+            data_get($log->metadata, 'completed_visits_to') !== null && data_get($log->metadata, 'required_visits')
+                ? 'Lần khám '.data_get($log->metadata, 'completed_visits_to').'/'.data_get($log->metadata, 'required_visits')
+                : null,
+            filled(data_get($log->metadata, 'reason')) ? (string) data_get($log->metadata, 'reason') : null,
+        ]);
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'heroicon-o-check-badge',
+                AuditLog::ACTION_CANCEL => 'heroicon-o-no-symbol',
+                default => 'heroicon-o-play',
+            },
+            'color' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'success',
+                AuditLog::ACTION_CANCEL => 'danger',
+                default => 'warning',
+            },
+            'title' => $title,
+            'description' => implode(' • ', $descriptionParts),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => filled($statusTo) ? PlanItem::statusLabel($statusTo) : 'Không xác định',
             ],
             'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
         ];

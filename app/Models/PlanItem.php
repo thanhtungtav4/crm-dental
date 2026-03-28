@@ -338,7 +338,14 @@ class PlanItem extends Model
      */
     public function getStatusLabel(): string
     {
-        return static::STATUS_OPTIONS[$this->status] ?? $this->status;
+        return static::statusLabel($this->status);
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        $normalized = static::normalizeStatus($status) ?? static::DEFAULT_STATUS;
+
+        return static::STATUS_OPTIONS[$normalized] ?? (string) $status;
     }
 
     /**

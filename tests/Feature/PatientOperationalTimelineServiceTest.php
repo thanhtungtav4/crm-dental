@@ -8,6 +8,7 @@ use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Models\PlanItem;
 use App\Models\User;
 use App\Services\PatientOperationalTimelineService;
 use Carbon\Carbon;
@@ -168,4 +169,46 @@ it('includes insurance claim and treatment session audit entries in the patient 
     expect($entries->pluck('title')->all())->toContain('Bảo hiểm đã duyệt', 'Hoàn thành buổi điều trị')
         ->and($descriptions)->toContain('CLM-505 • Đã duyệt • 320.000đ')
         ->and($descriptions)->toContain('Hạng mục #88 • Hoàn thành • Thực hiện 10/03/2026 12:45 • Bo sung anh hau thu thuat sau');
+});
+
+it('includes plan item workflow audit entries in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_PLAN_ITEM,
+        'entity_id' => 707,
+        'action' => AuditLog::ACTION_UPDATE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'plan_item_id' => 707,
+            'plan_item_name' => 'Implant 26',
+            'status_to' => PlanItem::STATUS_IN_PROGRESS,
+            'required_visits' => 2,
+            'completed_visits_to' => 1,
+            'reason' => 'Bat dau lam tru implant',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 15:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Bắt đầu hạng mục điều trị')
+        ->and($descriptions)->toContain('Implant 26 • Đang thực hiện • Lần khám 1/2 • Bat dau lam tru implant');
 });

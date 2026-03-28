@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TreatmentPlans\RelationManagers;
 
 use App\Models\PlanItem;
+use App\Services\PlanItemWorkflowService;
 use App\Services\TreatmentDeletionGuardService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -139,6 +140,9 @@ class PlanItemsRelationManager extends RelationManager
                             ])
                             ->default(PlanItem::STATUS_PENDING)
                             ->required()
+                            ->disabled(fn (?PlanItem $record): bool => $record !== null)
+                            ->dehydrated(fn (?PlanItem $record): bool => $record === null)
+                            ->helperText('Sau khi tạo, dùng các action bên dưới để đổi trạng thái và giữ audit workflow nhất quán.')
                             ->live()
                             ->columnSpan(1),
                         Select::make('priority')
@@ -407,9 +411,16 @@ class PlanItemsRelationManager extends RelationManager
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->successNotificationTitle('Đã hoàn thành một lần điều trị')
-                    ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->completeVisit();
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú tiến độ')
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        app(PlanItemWorkflowService::class)->completeVisit(
+                            planItem: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     })
                     ->visible(fn ($record) => $record->canStartTreatment()
                         && $record->completed_visits < $record->required_visits
@@ -420,13 +431,16 @@ class PlanItemsRelationManager extends RelationManager
                     ->icon('heroicon-o-play')
                     ->color('warning')
                     ->successNotificationTitle('Đã bắt đầu hạng mục điều trị')
-                    ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => PlanItem::STATUS_IN_PROGRESS,
-                            'started_at' => now(),
-                        ]);
-                        $record->updateProgress();
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú vận hành')
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        app(PlanItemWorkflowService::class)->startTreatment(
+                            planItem: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     })
                     ->visible(fn ($record) => $record->canStartTreatment()
                         && $record->status === PlanItem::STATUS_PENDING),
@@ -435,19 +449,41 @@ class PlanItemsRelationManager extends RelationManager
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->successNotificationTitle('Đã hoàn thành hạng mục điều trị')
-                    ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => PlanItem::STATUS_COMPLETED,
-                            'progress_percentage' => 100,
-                            'completed_visits' => $record->required_visits,
-                            'completed_at' => now(),
-                        ]);
-                        $record->updateProgress();
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú hoàn thành')
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        app(PlanItemWorkflowService::class)->completeTreatment(
+                            planItem: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     })
                     ->visible(fn ($record) => $record->canStartTreatment()
                         && $record->status !== PlanItem::STATUS_COMPLETED
                         && $record->status !== PlanItem::STATUS_CANCELLED),
+                Action::make('cancel_treatment')
+                    ->label('Hủy')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->successNotificationTitle('Đã hủy hạng mục điều trị')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do hủy')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function ($record, array $data) {
+                        app(PlanItemWorkflowService::class)->cancel(
+                            planItem: $record,
+                            reason: $data['reason'] ?? null,
+                        );
+                    })
+                    ->visible(fn ($record) => in_array($record->status, [
+                        PlanItem::STATUS_PENDING,
+                        PlanItem::STATUS_IN_PROGRESS,
+                    ], true)),
                 EditAction::make()
                     ->label('Sửa')
                     ->successNotificationTitle('Đã cập nhật hạng mục điều trị')
@@ -473,19 +509,25 @@ class PlanItemsRelationManager extends RelationManager
                         ->icon('heroicon-o-play')
                         ->color('warning')
                         ->successNotificationTitle('Đã cập nhật hạng mục sang đang thực hiện')
-                        ->requiresConfirmation()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Ghi chú vận hành')
+                                ->rows(3),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
                             $skipped = 0;
 
                             foreach ($records as $record) {
-                                if (! $record->canStartTreatment()) {
+                                if (! $record->canStartTreatment() || $record->status !== PlanItem::STATUS_PENDING) {
                                     $skipped++;
 
                                     continue;
                                 }
 
-                                $record->update(['status' => PlanItem::STATUS_IN_PROGRESS]);
-                                $record->updateProgress();
+                                app(PlanItemWorkflowService::class)->startTreatment(
+                                    planItem: $record,
+                                    reason: $data['reason'] ?? null,
+                                );
                             }
 
                             if ($skipped > 0) {
@@ -501,24 +543,28 @@ class PlanItemsRelationManager extends RelationManager
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->successNotificationTitle('Đã cập nhật hạng mục sang hoàn thành')
-                        ->requiresConfirmation()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Ghi chú hoàn thành')
+                                ->rows(3),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
                             $skipped = 0;
 
                             foreach ($records as $record) {
-                                if (! $record->canStartTreatment()) {
+                                if (! $record->canStartTreatment() || in_array($record->status, [
+                                    PlanItem::STATUS_COMPLETED,
+                                    PlanItem::STATUS_CANCELLED,
+                                ], true)) {
                                     $skipped++;
 
                                     continue;
                                 }
 
-                                $record->update([
-                                    'status' => PlanItem::STATUS_COMPLETED,
-                                    'progress_percentage' => 100,
-                                    'completed_visits' => $record->required_visits,
-                                    'completed_at' => now(),
-                                ]);
-                                $record->updateProgress();
+                                app(PlanItemWorkflowService::class)->completeTreatment(
+                                    planItem: $record,
+                                    reason: $data['reason'] ?? null,
+                                );
                             }
 
                             if ($skipped > 0) {
@@ -534,11 +580,36 @@ class PlanItemsRelationManager extends RelationManager
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->successNotificationTitle('Đã hủy các hạng mục đã chọn')
-                        ->requiresConfirmation()
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Lý do hủy')
+                                ->rows(3)
+                                ->required(),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                            $skipped = 0;
+
                             foreach ($records as $record) {
-                                $record->update(['status' => PlanItem::STATUS_CANCELLED]);
-                                $record->updateProgress();
+                                if (! in_array($record->status, [
+                                    PlanItem::STATUS_PENDING,
+                                    PlanItem::STATUS_IN_PROGRESS,
+                                ], true)) {
+                                    $skipped++;
+
+                                    continue;
+                                }
+
+                                app(PlanItemWorkflowService::class)->cancel(
+                                    planItem: $record,
+                                    reason: $data['reason'] ?? null,
+                                );
+                            }
+
+                            if ($skipped > 0) {
+                                Notification::make()
+                                    ->title("Đã bỏ qua {$skipped} hạng mục không còn ở trạng thái có thể hủy")
+                                    ->warning()
+                                    ->send();
                             }
                         })
                         ->deselectRecordsAfterCompletion(),

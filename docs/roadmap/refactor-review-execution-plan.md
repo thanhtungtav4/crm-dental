@@ -115,7 +115,9 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - browser checks cho dangerous actions
 - Progress update:
   - `RRB-009` da cover lane uu tien cho `APPT`, `TRT`, `FIN`, `SUP`, `ZNS` va cac observer audit lien quan.
-  - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`.
+  - `RRB-009` dang mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
+  - `RRB-009` da mo rong them sang `PlanItem` voi workflow service canonical cho start / complete / cancel / complete-visit lanes.
+  - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`, va da cover them `PlanItem`.
   - Chua mo wave rieng cho `CARE` / `OPS` beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.
