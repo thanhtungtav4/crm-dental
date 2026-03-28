@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\FactoryOrder;
+use App\Models\InsuranceClaim;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Support\ClinicRuntimeSettings;
@@ -54,6 +55,21 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_COMPLETE,
                             AuditLog::ACTION_CANCEL,
                         ]);
+                })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_INSURANCE_CLAIM)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_APPROVE,
+                            AuditLog::ACTION_FAIL,
+                            AuditLog::ACTION_COMPLETE,
+                            AuditLog::ACTION_CANCEL,
+                        ]);
+                })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_TREATMENT_SESSION)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_UPDATE,
+                            AuditLog::ACTION_COMPLETE,
+                            AuditLog::ACTION_CANCEL,
+                        ]);
                 });
             })
             ->latest('occurred_at')
@@ -74,6 +90,8 @@ class PatientOperationalTimelineService
             AuditLog::ENTITY_APPOINTMENT => $this->mapAppointmentEntry($log),
             AuditLog::ENTITY_CARE_TICKET => $this->mapCareTicketEntry($log),
             AuditLog::ENTITY_FACTORY_ORDER => $this->mapFactoryOrderEntry($log),
+            AuditLog::ENTITY_INSURANCE_CLAIM => $this->mapInsuranceClaimEntry($log),
+            AuditLog::ENTITY_TREATMENT_SESSION => $this->mapTreatmentSessionEntry($log),
             default => null,
         };
     }
@@ -281,6 +299,99 @@ class PatientOperationalTimelineService
         return $description;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapInsuranceClaimEntry(AuditLog $log): array
+    {
+        $statusTo = (string) data_get($log->metadata, 'status_to', '');
+        $title = match ($log->action) {
+            AuditLog::ACTION_APPROVE => 'Bảo hiểm đã duyệt',
+            AuditLog::ACTION_FAIL => 'Bảo hiểm từ chối',
+            AuditLog::ACTION_COMPLETE => 'Bảo hiểm đã thanh toán',
+            AuditLog::ACTION_CANCEL => 'Hủy hồ sơ bảo hiểm',
+            default => 'Cập nhật hồ sơ bảo hiểm',
+        };
+
+        $descriptionParts = array_filter([
+            data_get($log->metadata, 'claim_number') ?: 'Claim #'.$log->entity_id,
+            $this->insuranceClaimStatusLabel($statusTo),
+            $this->insuranceClaimAmountLabel($log),
+            data_get($log->metadata, 'denial_reason_code'),
+        ]);
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => match ($log->action) {
+                AuditLog::ACTION_APPROVE, AuditLog::ACTION_COMPLETE => 'heroicon-o-check-badge',
+                AuditLog::ACTION_FAIL, AuditLog::ACTION_CANCEL => 'heroicon-o-no-symbol',
+                default => 'heroicon-o-shield-check',
+            },
+            'color' => match ($log->action) {
+                AuditLog::ACTION_APPROVE, AuditLog::ACTION_COMPLETE => 'success',
+                AuditLog::ACTION_FAIL, AuditLog::ACTION_CANCEL => 'danger',
+                default => 'info',
+            },
+            'title' => $title,
+            'description' => implode(' • ', $descriptionParts),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => $this->insuranceClaimStatusLabel($statusTo),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapTreatmentSessionEntry(AuditLog $log): array
+    {
+        $statusTo = (string) data_get($log->metadata, 'status_to', '');
+        $title = match ($log->action) {
+            AuditLog::ACTION_COMPLETE => 'Hoàn thành buổi điều trị',
+            AuditLog::ACTION_CANCEL => 'Hủy buổi điều trị',
+            default => 'Cập nhật buổi điều trị',
+        };
+
+        $descriptionParts = array_filter([
+            data_get($log->metadata, 'plan_item_id') ? 'Hạng mục #'.data_get($log->metadata, 'plan_item_id') : null,
+            $this->treatmentSessionStatusLabel($statusTo),
+            filled(data_get($log->metadata, 'performed_at'))
+                ? 'Thực hiện '.$this->formatTimestamp((string) data_get($log->metadata, 'performed_at'))
+                : null,
+        ]);
+
+        if (filled(data_get($log->metadata, 'reason'))) {
+            $descriptionParts[] = (string) data_get($log->metadata, 'reason');
+        }
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'heroicon-o-check-badge',
+                AuditLog::ACTION_CANCEL => 'heroicon-o-no-symbol',
+                default => 'heroicon-o-wrench-screwdriver',
+            },
+            'color' => match ($log->action) {
+                AuditLog::ACTION_COMPLETE => 'success',
+                AuditLog::ACTION_CANCEL => 'danger',
+                default => 'info',
+            },
+            'title' => $title,
+            'description' => implode(' • ', $descriptionParts),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => $this->treatmentSessionStatusLabel($statusTo),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
     protected function formatTimestamp(string $value): string
     {
         try {
@@ -288,5 +399,42 @@ class PatientOperationalTimelineService
         } catch (\Throwable) {
             return $value;
         }
+    }
+
+    protected function insuranceClaimStatusLabel(string $status): string
+    {
+        return match ($status) {
+            InsuranceClaim::STATUS_DRAFT => 'Nháp',
+            InsuranceClaim::STATUS_SUBMITTED => 'Đã gửi',
+            InsuranceClaim::STATUS_APPROVED => 'Đã duyệt',
+            InsuranceClaim::STATUS_DENIED => 'Từ chối',
+            InsuranceClaim::STATUS_RESUBMITTED => 'Gửi lại',
+            InsuranceClaim::STATUS_PAID => 'Đã thanh toán',
+            InsuranceClaim::STATUS_CANCELLED => 'Đã hủy',
+            default => 'Hồ sơ bảo hiểm',
+        };
+    }
+
+    protected function insuranceClaimAmountLabel(AuditLog $log): ?string
+    {
+        $amount = data_get($log->metadata, 'amount_approved')
+            ?? data_get($log->metadata, 'amount_claimed');
+
+        if (! is_numeric($amount)) {
+            return null;
+        }
+
+        return number_format((float) $amount, 0, ',', '.').'đ';
+    }
+
+    protected function treatmentSessionStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'scheduled' => 'Đã lên lịch',
+            'in_progress' => 'Đang thực hiện',
+            'done', 'completed' => 'Hoàn thành',
+            'cancelled' => 'Đã hủy',
+            default => 'Buổi điều trị',
+        };
     }
 }
