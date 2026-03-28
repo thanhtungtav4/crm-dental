@@ -47,6 +47,8 @@ class AuditLog extends Model
 
     public const ENTITY_TREATMENT_SESSION = 'treatment_session';
 
+    public const ENTITY_FACTORY_ORDER = 'factory_order';
+
     public const ENTITY_MASTER_DATA_SYNC = 'master_data_sync';
 
     public const ENTITY_MASTER_PATIENT_INDEX = 'master_patient_index';
