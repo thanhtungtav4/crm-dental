@@ -118,3 +118,38 @@ it('tracks popup and photo automation commands in the shared automation reader',
         ->toContain('popups:prune')
         ->toContain('photos:prune');
 });
+
+it('recognizes tracked scheduled target commands from wrapper audit metadata', function (): void {
+    $actor = User::factory()->create([
+        'email' => 'ops-scheduler@example.test',
+    ]);
+
+    $tracked = AuditLog::record(
+        entityType: AuditLog::ENTITY_AUTOMATION,
+        entityId: 0,
+        action: AuditLog::ACTION_RUN,
+        actorId: $actor->id,
+        metadata: [
+            'command' => 'ops:run-scheduled-command',
+            'target_command' => 'popups:prune',
+            'status' => 'pass',
+        ],
+    );
+
+    AuditLog::record(
+        entityType: AuditLog::ENTITY_AUTOMATION,
+        entityId: 0,
+        action: AuditLog::ACTION_RUN,
+        actorId: $actor->id,
+        metadata: [
+            'command' => 'ops:run-scheduled-command',
+            'target_command' => 'marketing:send-digest',
+            'status' => 'pass',
+        ],
+    );
+
+    $runs = app(OperationalAutomationAuditReadModelService::class)->recentRuns(10);
+
+    expect($runs)->toHaveCount(1)
+        ->and($runs->first()->is($tracked))->toBeTrue();
+});

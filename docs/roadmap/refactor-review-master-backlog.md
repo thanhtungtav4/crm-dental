@@ -302,6 +302,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong `IntegrationOperationalReadModelService` sang lane `popups:prune` va `photos:prune`, de popup log retention va patient photo retention candidate query duoc dung lai boi command thay vi moi lenh tu query rieng
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
+    - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
 - Tests needed:
   - timeline reader tests
   - authorization tests cho audit/read-model surfaces

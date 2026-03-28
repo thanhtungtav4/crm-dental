@@ -60,7 +60,11 @@ class OperationalAutomationAuditReadModelService
             ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
             ->where(function (Builder $query): void {
                 foreach ($this->trackedCommands() as $command) {
-                    $query->orWhere('metadata->command', $command);
+                    $query->orWhere(function (Builder $nested) use ($command): void {
+                        $nested
+                            ->where('metadata->command', $command)
+                            ->orWhere('metadata->target_command', $command);
+                    });
                 }
 
                 foreach ($this->trackedChannels() as $channel) {
