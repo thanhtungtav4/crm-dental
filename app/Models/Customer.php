@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Casts\NullableEncrypted;
 use App\Services\PatientConversionService;
 use App\Support\BranchAccess;
+use App\Support\IdentitySearchHash;
 use App\Support\PatientIdentityNormalizer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -71,12 +73,34 @@ class Customer extends Model
 
     public static function phoneSearchHash(?string $phone): ?string
     {
-        return PatientIdentityNormalizer::customerPhoneSearchHash($phone);
+        return IdentitySearchHash::phone('customer', $phone);
     }
 
     public static function emailSearchHash(?string $email): ?string
     {
-        return PatientIdentityNormalizer::customerEmailSearchHash($email);
+        return IdentitySearchHash::email('customer', $email);
+    }
+
+    public function scopeWherePhoneMatches(Builder $query, ?string $phone): Builder
+    {
+        $phoneHash = static::phoneSearchHash($phone);
+
+        if ($phoneHash === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('phone_search_hash', $phoneHash);
+    }
+
+    public function scopeWhereEmailMatches(Builder $query, ?string $email): Builder
+    {
+        $emailHash = static::emailSearchHash($email);
+
+        if ($emailHash === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('email_search_hash', $emailHash);
     }
 
     public static function normalizePhoneForSearch(?string $phone): ?string

@@ -51,13 +51,7 @@ class CustomersTable
                 TextColumn::make('phone')
                     ->label('Điện thoại')
                     ->searchable(query: function ($query, string $search) {
-                        $phoneHash = Customer::phoneSearchHash($search);
-
-                        if ($phoneHash === null) {
-                            return $query->whereRaw('1 = 0');
-                        }
-
-                        return $query->where('phone_search_hash', $phoneHash);
+                        return $query->wherePhoneMatches($search);
                     }),
                 TextColumn::make('email')
                     ->label('Email')

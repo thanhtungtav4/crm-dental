@@ -185,13 +185,10 @@ class PatientAssignmentAuthorizer
     protected function assertUniqueCustomerContacts(array $data, ?Customer $record = null): void
     {
         if (! empty($data['email'])) {
-            $emailHash = Customer::emailSearchHash((string) $data['email']);
-            $exists = $emailHash !== null
-                ? Customer::withTrashed()
-                    ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
-                    ->where('email_search_hash', $emailHash)
-                    ->exists()
-                : false;
+            $exists = Customer::withTrashed()
+                ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
+                ->whereEmailMatches((string) $data['email'])
+                ->exists();
 
             if ($exists) {
                 throw ValidationException::withMessages([
@@ -201,13 +198,10 @@ class PatientAssignmentAuthorizer
         }
 
         if (! empty($data['phone'])) {
-            $phoneHash = Customer::phoneSearchHash((string) $data['phone']);
-            $exists = $phoneHash !== null
-                ? Customer::withTrashed()
-                    ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
-                    ->where('phone_search_hash', $phoneHash)
-                    ->exists()
-                : false;
+            $exists = Customer::withTrashed()
+                ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
+                ->wherePhoneMatches((string) $data['phone'])
+                ->exists();
 
             if ($exists) {
                 throw ValidationException::withMessages([
@@ -223,13 +217,10 @@ class PatientAssignmentAuthorizer
     protected function assertUniquePatientContacts(array $data, ?Patient $record = null): void
     {
         if (! empty($data['email'])) {
-            $emailHash = Patient::emailSearchHash((string) $data['email']);
-            $exists = $emailHash !== null
-                ? Patient::withTrashed()
-                    ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
-                    ->where('email_search_hash', $emailHash)
-                    ->exists()
-                : false;
+            $exists = Patient::withTrashed()
+                ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
+                ->whereEmailMatches((string) $data['email'])
+                ->exists();
 
             if ($exists) {
                 throw ValidationException::withMessages([
@@ -239,22 +230,14 @@ class PatientAssignmentAuthorizer
         }
 
         if (! empty($data['phone'])) {
-            $phoneHash = Patient::phoneSearchHash((string) $data['phone']);
             $branchId = isset($data['first_branch_id']) && filled($data['first_branch_id'])
                 ? (int) $data['first_branch_id']
                 : null;
 
-            $exists = $phoneHash !== null
-                ? Patient::withTrashed()
-                    ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
-                    ->where('phone_search_hash', $phoneHash)
-                    ->when(
-                        $branchId,
-                        fn (Builder $query): Builder => $query->where('first_branch_id', $branchId),
-                        fn (Builder $query): Builder => $query->whereNull('first_branch_id'),
-                    )
-                    ->exists()
-                : false;
+            $exists = Patient::withTrashed()
+                ->when($record?->id, fn (Builder $query): Builder => $query->whereKeyNot((int) $record->id))
+                ->wherePhoneMatchesInBranch((string) $data['phone'], $branchId)
+                ->exists();
 
             if ($exists) {
                 throw ValidationException::withMessages([

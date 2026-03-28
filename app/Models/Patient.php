@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Casts\NullableEncrypted;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\IdentitySearchHash;
 use App\Support\PatientCodeGenerator;
 use App\Support\PatientIdentityNormalizer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -315,12 +317,45 @@ class Patient extends Model
 
     public static function phoneSearchHash(?string $phone): ?string
     {
-        return PatientIdentityNormalizer::patientPhoneSearchHash($phone);
+        return IdentitySearchHash::phone('patient', $phone);
     }
 
     public static function emailSearchHash(?string $email): ?string
     {
-        return PatientIdentityNormalizer::patientEmailSearchHash($email);
+        return IdentitySearchHash::email('patient', $email);
+    }
+
+    public function scopeWherePhoneMatches(Builder $query, ?string $phone): Builder
+    {
+        $phoneHash = static::phoneSearchHash($phone);
+
+        if ($phoneHash === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('phone_search_hash', $phoneHash);
+    }
+
+    public function scopeWherePhoneMatchesInBranch(Builder $query, ?string $phone, ?int $branchId): Builder
+    {
+        return $query
+            ->wherePhoneMatches($phone)
+            ->when(
+                $branchId,
+                fn (Builder $branchQuery): Builder => $branchQuery->where('first_branch_id', $branchId),
+                fn (Builder $branchQuery): Builder => $branchQuery->whereNull('first_branch_id'),
+            );
+    }
+
+    public function scopeWhereEmailMatches(Builder $query, ?string $email): Builder
+    {
+        $emailHash = static::emailSearchHash($email);
+
+        if ($emailHash === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('email_search_hash', $emailHash);
     }
 
     public static function normalizePhoneForSearch(?string $phone): ?string

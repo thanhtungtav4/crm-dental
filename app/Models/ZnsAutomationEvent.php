@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Casts\NullableEncryptedArray;
 use App\Casts\NullableEncryptedWithPlaintextFallback;
-use App\Support\PatientIdentityNormalizer;
+use App\Support\IdentitySearchHash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -93,11 +93,7 @@ class ZnsAutomationEvent extends Model
 
     public static function phoneSearchHash(?string $phone): ?string
     {
-        $normalized = PatientIdentityNormalizer::normalizePhone($phone);
-
-        return $normalized === null
-            ? null
-            : hash('sha256', 'zns-phone|'.$normalized);
+        return IdentitySearchHash::phone('zns', $phone);
     }
 
     public function appointment(): BelongsTo

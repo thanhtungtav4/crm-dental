@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Customer;
-use App\Models\Patient;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -49,39 +48,20 @@ class AppointmentSearchService
 
     public function applyAppointmentParticipantSearch(Builder $query, string $search): Builder
     {
-        $customerPhoneHash = Customer::phoneSearchHash($search);
-        $customerEmailHash = Customer::emailSearchHash($search);
-        $patientPhoneHash = Patient::phoneSearchHash($search);
-        $patientEmailHash = Patient::emailSearchHash($search);
-
-        return $query->where(function (Builder $appointmentQuery) use (
-            $search,
-            $customerPhoneHash,
-            $customerEmailHash,
-            $patientPhoneHash,
-            $patientEmailHash,
-        ): void {
+        return $query->where(function (Builder $appointmentQuery) use ($search): void {
             $appointmentQuery
-                ->whereHas('customer', function (Builder $customerQuery) use ($search, $customerPhoneHash, $customerEmailHash): void {
+                ->whereHas('customer', function (Builder $customerQuery) use ($search): void {
                     $this->applyCustomerSearch(
                         query: $customerQuery,
                         search: $search,
-                        phoneHash: $customerPhoneHash,
-                        emailHash: $customerEmailHash,
                     );
                 })
-                ->orWhereHas('patient', function (Builder $patientQuery) use ($search, $patientPhoneHash, $patientEmailHash): void {
+                ->orWhereHas('patient', function (Builder $patientQuery) use ($search): void {
                     $patientQuery
                         ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('patient_code', 'like', "%{$search}%");
-
-                    if ($patientPhoneHash !== null) {
-                        $patientQuery->orWhere('phone_search_hash', $patientPhoneHash);
-                    }
-
-                    if ($patientEmailHash !== null) {
-                        $patientQuery->orWhere('email_search_hash', $patientEmailHash);
-                    }
+                        ->orWhere('patient_code', 'like', "%{$search}%")
+                        ->orWhere(fn (Builder $phoneQuery): Builder => $phoneQuery->wherePhoneMatches($search))
+                        ->orWhere(fn (Builder $emailQuery): Builder => $emailQuery->whereEmailMatches($search));
                 });
         });
     }
@@ -89,22 +69,12 @@ class AppointmentSearchService
     protected function applyCustomerSearch(
         Builder $query,
         string $search,
-        ?string $phoneHash = null,
-        ?string $emailHash = null,
     ): Builder {
-        $phoneHash ??= Customer::phoneSearchHash($search);
-        $emailHash ??= Customer::emailSearchHash($search);
-
-        return $query->where(function (Builder $customerQuery) use ($search, $phoneHash, $emailHash): void {
-            $customerQuery->where('full_name', 'like', "%{$search}%");
-
-            if ($phoneHash !== null) {
-                $customerQuery->orWhere('phone_search_hash', $phoneHash);
-            }
-
-            if ($emailHash !== null) {
-                $customerQuery->orWhere('email_search_hash', $emailHash);
-            }
+        return $query->where(function (Builder $customerQuery) use ($search): void {
+            $customerQuery
+                ->where('full_name', 'like', "%{$search}%")
+                ->orWhere(fn (Builder $phoneQuery): Builder => $phoneQuery->wherePhoneMatches($search))
+                ->orWhere(fn (Builder $emailQuery): Builder => $emailQuery->whereEmailMatches($search));
         });
     }
 

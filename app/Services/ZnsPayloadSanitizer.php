@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Support\PatientIdentityNormalizer;
+use App\Support\IdentitySearchHash;
 
 class ZnsPayloadSanitizer
 {
@@ -63,16 +63,12 @@ class ZnsPayloadSanitizer
 
     public static function phoneSearchHash(mixed $phone): ?string
     {
-        $normalized = PatientIdentityNormalizer::normalizePhone(is_scalar($phone) ? (string) $phone : null);
-
-        return $normalized === null
-            ? null
-            : hash('sha256', 'zns-phone|'.$normalized);
+        return IdentitySearchHash::phone('zns', is_scalar($phone) ? (string) $phone : null);
     }
 
     public function maskPhone(mixed $phone): ?string
     {
-        $normalized = PatientIdentityNormalizer::normalizePhone(is_scalar($phone) ? (string) $phone : null);
+        $normalized = IdentitySearchHash::normalizePhone(is_scalar($phone) ? (string) $phone : null);
 
         if ($normalized === null || $normalized === '') {
             return null;

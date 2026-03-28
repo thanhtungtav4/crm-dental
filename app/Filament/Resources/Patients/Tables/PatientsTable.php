@@ -47,13 +47,7 @@ class PatientsTable
                 TextColumn::make('phone')
                     ->label('Điện thoại')
                     ->searchable(query: function ($query, string $search) {
-                        $phoneHash = Patient::phoneSearchHash($search);
-
-                        if ($phoneHash === null) {
-                            return $query->whereRaw('1 = 0');
-                        }
-
-                        return $query->where('phone_search_hash', $phoneHash);
+                        return $query->wherePhoneMatches($search);
                     }),
                 TextColumn::make('phone_secondary')
                     ->label('Điện thoại 2')
