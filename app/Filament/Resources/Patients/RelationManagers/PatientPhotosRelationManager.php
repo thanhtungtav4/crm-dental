@@ -176,6 +176,7 @@ class PatientPhotosRelationManager extends RelationManager
                 ->multiple()
                 ->directory('patient-photos/normal')
                 ->pasteable()
+                ->helperText('Tải trực tiếp từ máy hoặc dán ảnh nhanh. Nếu mạng chập chờn, nên lưu theo từng nhóm ảnh để tránh phải tải lại toàn bộ.')
                 ->required()
                 ->columnSpanFull(),
         ];
@@ -191,6 +192,7 @@ class PatientPhotosRelationManager extends RelationManager
                 ->multiple()
                 ->directory('patient-photos/xray')
                 ->pasteable()
+                ->helperText('Ưu tiên tải từng phim X-quang theo nhóm nhỏ. Nếu file lớn bị gián đoạn, lưu trước các ảnh đã xong rồi tiếp tục bổ sung.')
                 ->required()
                 ->columnSpanFull(),
         ];
@@ -206,6 +208,7 @@ class PatientPhotosRelationManager extends RelationManager
                 ->multiple()
                 ->directory('patient-photos/ext')
                 ->pasteable()
+                ->helperText('Có thể tải nhiều ảnh một lần. Nên đặt tiêu đề hoặc mô tả ngắn để dễ rà soát lại sau điều trị.')
                 ->required()
                 ->columnSpanFull(),
         ];
@@ -221,6 +224,7 @@ class PatientPhotosRelationManager extends RelationManager
                 ->multiple()
                 ->directory('patient-photos/int')
                 ->pasteable()
+                ->helperText('Có thể tải nhiều ảnh một lần. Với bộ ảnh lớn, nên chia theo nhóm để giảm rủi ro tải lại khi mất kết nối.')
                 ->required()
                 ->columnSpanFull(),
         ];
@@ -259,6 +263,12 @@ class PatientPhotosRelationManager extends RelationManager
                     default => 'patient-photos/normal',
                 })
                 ->pasteable()
+                ->helperText(match ($record->type) {
+                    'xray' => 'Ưu tiên tải từng phim X-quang theo nhóm nhỏ. Nếu file lớn bị gián đoạn, lưu trước các ảnh đã xong rồi tiếp tục bổ sung.',
+                    'ext' => 'Có thể tải nhiều ảnh một lần. Nên đặt tiêu đề hoặc mô tả ngắn để dễ rà soát lại sau điều trị.',
+                    'int' => 'Có thể tải nhiều ảnh một lần. Với bộ ảnh lớn, nên chia theo nhóm để giảm rủi ro tải lại khi mất kết nối.',
+                    default => 'Tải trực tiếp từ máy hoặc dán ảnh nhanh. Nếu mạng chập chờn, nên lưu theo từng nhóm ảnh để tránh phải tải lại toàn bộ.',
+                })
                 ->columnSpanFull(),
         ];
     }
