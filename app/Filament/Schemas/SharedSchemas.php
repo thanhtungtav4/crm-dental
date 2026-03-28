@@ -34,14 +34,9 @@ class SharedSchemas
                             return;
                         }
 
-                        $phoneHash = Customer::phoneSearchHash($value);
-                        if ($phoneHash === null) {
-                            return;
-                        }
-
                         $exists = Customer::query()
                             ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
-                            ->where('phone_search_hash', $phoneHash)
+                            ->wherePhoneMatches($value)
                             ->exists();
 
                         if ($exists) {

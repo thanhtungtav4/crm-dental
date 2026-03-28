@@ -161,20 +161,13 @@ class PatientForm
                             return;
                         }
 
-                        $phoneHash = Patient::phoneSearchHash($value);
-                        if ($phoneHash === null) {
-                            return;
-                        }
-
                         $branchId = $get('first_branch_id');
 
                         $exists = Patient::withTrashed()
                             ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
-                            ->where('phone_search_hash', $phoneHash)
-                            ->when(
-                                $branchId,
-                                fn (EloquentBuilder $query): EloquentBuilder => $query->where('first_branch_id', $branchId),
-                                fn (EloquentBuilder $query): EloquentBuilder => $query->whereNull('first_branch_id')
+                            ->wherePhoneMatchesInBranch(
+                                $value,
+                                filled($branchId) ? (int) $branchId : null,
                             )
                             ->exists();
 
@@ -203,14 +196,9 @@ class PatientForm
                             return;
                         }
 
-                        $emailHash = Patient::emailSearchHash($value);
-                        if ($emailHash === null) {
-                            return;
-                        }
-
                         $exists = Patient::withTrashed()
                             ->when($record?->id, fn (EloquentBuilder $query): EloquentBuilder => $query->whereKeyNot((int) $record->id))
-                            ->where('email_search_hash', $emailHash)
+                            ->whereEmailMatches($value)
                             ->exists();
 
                         if ($exists) {

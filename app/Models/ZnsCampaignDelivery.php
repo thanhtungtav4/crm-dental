@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Casts\NullableEncryptedArray;
 use App\Casts\NullableEncryptedWithPlaintextFallback;
 use App\Services\ZnsPayloadSanitizer;
-use App\Support\PatientIdentityNormalizer;
+use App\Support\IdentitySearchHash;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -75,11 +75,7 @@ class ZnsCampaignDelivery extends Model
 
     public static function phoneSearchHash(?string $phone): ?string
     {
-        $normalized = PatientIdentityNormalizer::normalizePhone($phone);
-
-        return $normalized === null
-            ? null
-            : hash('sha256', 'zns-phone|'.$normalized);
+        return IdentitySearchHash::phone('zns', $phone);
     }
 
     public function maskedPhone(): ?string

@@ -1272,13 +1272,7 @@ class CustomerCare extends Page implements HasTable
 
     protected function applyPatientPhoneSearch(Builder $query, string $search): Builder
     {
-        $phoneHash = Patient::phoneSearchHash($search);
-
-        if ($phoneHash === null) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereHas('patient', fn (Builder $patientQuery): Builder => $patientQuery->where('phone_search_hash', $phoneHash));
+        return $query->whereHas('patient', fn (Builder $patientQuery): Builder => $patientQuery->wherePhoneMatches($search));
     }
 
     /**
