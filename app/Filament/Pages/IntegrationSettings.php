@@ -5,9 +5,8 @@ namespace App\Filament\Pages;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Models\User;
-use App\Services\EmrIntegrationService;
-use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationOperationalReadModelService;
+use App\Services\IntegrationProviderActionService;
 use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\IntegrationSecretRotationService;
 use App\Services\IntegrationSettingsAuditReadModelService;
@@ -919,110 +918,68 @@ class IntegrationSettings extends Page
     {
         $this->authorizeManageSecrets();
 
-        $result = app(EmrIntegrationService::class)->authenticate();
+        $report = app(IntegrationProviderActionService::class)->emrConnectionReport();
+        $notification = Notification::make()
+            ->title($report['title'])
+            ->body($report['body']);
 
-        if (($result['success'] ?? false) === true) {
-            Notification::make()
-                ->title('Kết nối EMR thành công')
-                ->body((string) ($result['message'] ?? 'Authenticate thành công.'))
-                ->success()
-                ->send();
-
-            return;
-        }
-
-        Notification::make()
-            ->title('Kết nối EMR thất bại')
-            ->body((string) ($result['message'] ?? 'Không thể kết nối tới EMR.'))
-            ->danger()
-            ->send();
+        ($report['success'] ? $notification->success() : $notification->danger())->send();
     }
 
     public function testZaloReadiness(): void
     {
-        $report = app(IntegrationProviderHealthReadModelService::class)->provider('zalo_oa');
-
-        $body = collect([
-            'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
-            ...array_map(static fn (string $item): string => '• '.$item, $report['issues'] ?? []),
-            ...array_map(static fn (string $item): string => '→ '.$item, $report['recommendations'] ?? []),
-            'Webhook URL: '.($report['webhook_url'] ?? ''),
-        ])->filter()->implode("\n");
-
+        $report = app(IntegrationProviderActionService::class)->readinessReport('zalo_oa');
         $notification = Notification::make()
-            ->title(($report['score'] ?? 0) >= 80 ? 'Zalo OA sẵn sàng tốt' : 'Zalo OA cần bổ sung cấu hình')
-            ->body($body);
+            ->title($report['title'])
+            ->body($report['body']);
 
-        (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
+        ($report['success'] ? $notification->success() : $notification->warning())->send();
     }
 
     public function testZnsReadiness(): void
     {
-        $report = app(IntegrationProviderHealthReadModelService::class)->provider('zns');
-
-        $body = collect([
-            'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
-            ...array_map(static fn (string $item): string => '• '.$item, $report['issues'] ?? []),
-            ...array_map(static fn (string $item): string => '→ '.$item, $report['recommendations'] ?? []),
-        ])->filter()->implode("\n");
-
+        $report = app(IntegrationProviderActionService::class)->readinessReport('zns');
         $notification = Notification::make()
-            ->title(($report['score'] ?? 0) >= 80 ? 'ZNS sẵn sàng tốt' : 'ZNS cần bổ sung cấu hình')
-            ->body($body);
+            ->title($report['title'])
+            ->body($report['body']);
 
-        (($report['score'] ?? 0) >= 80 ? $notification->success() : $notification->warning())->send();
+        ($report['success'] ? $notification->success() : $notification->warning())->send();
     }
 
     public function testGoogleCalendarConnection(): void
     {
         $this->authorizeManageSecrets();
 
-        $result = app(GoogleCalendarIntegrationService::class)->testConnection();
+        $report = app(IntegrationProviderActionService::class)->googleCalendarConnectionReport();
 
-        if (($result['success'] ?? false) === true) {
-            $message = collect([
-                (string) ($result['message'] ?? 'Kết nối thành công.'),
-                filled($result['calendar_id'] ?? null) ? 'Calendar ID: '.(string) $result['calendar_id'] : null,
-                filled($result['account_email'] ?? null) ? 'Google Account: '.(string) $result['account_email'] : null,
-            ])->filter()->implode("\n");
-
-            if (filled($result['account_email'] ?? null)) {
-                $this->settings['google_calendar_account_email'] = (string) $result['account_email'];
-            }
-
-            Notification::make()
-                ->title('Kết nối Google Calendar thành công')
-                ->body($message)
-                ->success()
-                ->send();
-
-            return;
+        if ($report['account_email'] !== null) {
+            $this->settings['google_calendar_account_email'] = $report['account_email'];
         }
 
-        Notification::make()
-            ->title('Kết nối Google Calendar thất bại')
-            ->body((string) ($result['message'] ?? 'Không thể kết nối Google Calendar.'))
-            ->danger()
-            ->send();
+        $notification = Notification::make()
+            ->title($report['title'])
+            ->body($report['body']);
+
+        ($report['success'] ? $notification->success() : $notification->danger())->send();
     }
 
     public function openEmrConfigUrl(): void
     {
         $this->authorizeManageSecrets();
 
-        $result = app(EmrIntegrationService::class)->resolveConfigUrl();
+        $report = app(IntegrationProviderActionService::class)->emrConfigUrlReport();
 
-        if (($result['success'] ?? false) !== true || ! filled($result['url'] ?? null)) {
+        if (! $report['success'] || ! filled($report['url'])) {
             Notification::make()
                 ->title('Không thể mở trang cấu hình EMR')
-                ->body((string) ($result['message'] ?? 'EMR chưa trả về URL cấu hình hợp lệ.'))
+                ->body($report['message'])
                 ->warning()
                 ->send();
 
             return;
         }
 
-        $this->redirect((string) $result['url'], navigate: false);
+        $this->redirect((string) $report['url'], navigate: false);
     }
 
     public function generateWebLeadApiToken(): void
