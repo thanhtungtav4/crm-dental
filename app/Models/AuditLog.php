@@ -35,6 +35,8 @@ class AuditLog extends Model
 
     public const ENTITY_APPOINTMENT = 'appointment';
 
+    public const ENTITY_POPUP_ANNOUNCEMENT = 'popup_announcement';
+
     public const ENTITY_CARE_TICKET = 'care_ticket';
 
     public const ENTITY_PLAN_ITEM = 'plan_item';

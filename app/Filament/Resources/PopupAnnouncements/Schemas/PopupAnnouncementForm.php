@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
 
 class PopupAnnouncementForm
@@ -52,7 +53,8 @@ class PopupAnnouncementForm
                                     ->options(PopupAnnouncement::statusOptions())
                                     ->default(PopupAnnouncement::STATUS_DRAFT)
                                     ->required()
-                                    ->helperText('Nháp = chỉ lưu. Đã lên lịch = tự phát khi tới giờ. Đang phát = gửi ngay cho đúng đối tượng.'),
+                                    ->disabled(fn (?Model $record): bool => $record !== null)
+                                    ->helperText('Khi popup đã được tạo, đổi trạng thái bằng các action Phát ngay / Hủy để giữ audit workflow nhất quán.'),
 
                                 Forms\Components\Select::make('priority')
                                     ->label('Mức ưu tiên')

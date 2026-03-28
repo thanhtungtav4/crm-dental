@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\File;
 it('uses slide overs for popup announcement create edit and view actions', function (): void {
     $listPage = File::get(app_path('Filament/Resources/PopupAnnouncements/Pages/ListPopupAnnouncements.php'));
     $table = File::get(app_path('Filament/Resources/PopupAnnouncements/Tables/PopupAnnouncementsTable.php'));
+    $editPage = File::get(app_path('Filament/Resources/PopupAnnouncements/Pages/EditPopupAnnouncement.php'));
 
     expect($listPage)
         ->toContain('CreateAction::make()')
@@ -19,6 +20,12 @@ it('uses slide overs for popup announcement create edit and view actions', funct
         ->toContain("->modalWidth('6xl')")
         ->toContain('->modalHeading(\'Phát popup ngay bây giờ?\')')
         ->toContain('->modalHeading(\'Hủy popup này?\')');
+
+    expect($editPage)
+        ->toContain('mutateFormDataBeforeSave')
+        ->toContain('PopupAnnouncementWorkflowService::class')
+        ->toContain("Action::make('publishNow')")
+        ->toContain("Action::make('cancel')");
 });
 
 it('organizes popup announcement form into operator friendly sections', function (): void {
@@ -32,6 +39,7 @@ it('organizes popup announcement form into operator friendly sections', function
         ->toContain("Section::make('Quy tắc hiển thị')")
         ->toContain('->columns(3)')
         ->toContain('->columns(2)')
+        ->toContain('->disabled(fn (?Model $record): bool => $record !== null)')
         ->toContain("->helperText('Bật khi người nhận phải bấm “Tôi đã đọc” trước khi đóng popup.')");
 
     expect($infolist)

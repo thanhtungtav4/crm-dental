@@ -5,12 +5,18 @@ namespace App\Filament\Resources\PopupAnnouncements\Pages;
 use App\Filament\Resources\PopupAnnouncements\PopupAnnouncementResource;
 use App\Models\PopupAnnouncement;
 use App\Services\PopupAnnouncementDispatchService;
+use App\Services\PopupAnnouncementWorkflowService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePopupAnnouncement extends CreateRecord
 {
     protected static string $resource = PopupAnnouncementResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return app(PopupAnnouncementWorkflowService::class)->prepareCreatePayload($data);
+    }
 
     protected function afterCreate(): void
     {

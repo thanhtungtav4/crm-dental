@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\PopupAnnouncement;
@@ -53,6 +54,21 @@ it('dispatches popup announcements to users by role and accessible branch withou
         ->and(PopupAnnouncementDelivery::query()->where('user_id', $recipientB->id)->exists())->toBeFalse()
         ->and(PopupAnnouncementDelivery::query()->where('user_id', $doctorAtA->id)->exists())->toBeFalse()
         ->and($announcement->refresh()->status)->toBe(PopupAnnouncement::STATUS_PUBLISHED);
+
+    $audit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_POPUP_ANNOUNCEMENT)
+        ->where('entity_id', $announcement->id)
+        ->where('action', AuditLog::ACTION_UPDATE)
+        ->latest('id')
+        ->first();
+
+    expect($audit)->not->toBeNull()
+        ->and($audit?->metadata)->toMatchArray([
+            'status_from' => PopupAnnouncement::STATUS_SCHEDULED,
+            'status_to' => PopupAnnouncement::STATUS_PUBLISHED,
+            'reason' => 'dispatch_due',
+            'trigger' => 'dispatch_due',
+        ]);
 });
 
 it('blocks non configured sender roles from creating global all-branch popup', function (): void {
@@ -125,4 +141,19 @@ it('marks popup as failed when there are no eligible recipients', function (): v
     expect($report['deliveries_created'])->toBe(0)
         ->and($announcement->refresh()->status)->toBe(PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT)
         ->and(PopupAnnouncementDelivery::query()->count())->toBe(0);
+
+    $audit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_POPUP_ANNOUNCEMENT)
+        ->where('entity_id', $announcement->id)
+        ->where('action', AuditLog::ACTION_FAIL)
+        ->latest('id')
+        ->first();
+
+    expect($audit)->not->toBeNull()
+        ->and($audit?->metadata)->toMatchArray([
+            'status_from' => PopupAnnouncement::STATUS_SCHEDULED,
+            'status_to' => PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
+            'reason' => 'no_eligible_recipients',
+            'trigger' => 'dispatch_due',
+        ]);
 });

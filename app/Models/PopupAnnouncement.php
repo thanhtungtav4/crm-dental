@@ -15,6 +15,8 @@ class PopupAnnouncement extends Model
 {
     use SoftDeletes;
 
+    protected static int $managedWorkflowDepth = 0;
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_SCHEDULED = 'scheduled';
@@ -96,6 +98,7 @@ class PopupAnnouncement extends Model
                 $announcement->updated_by = auth()->id();
             }
 
+            $announcement->status = static::normalizeStatusValue($announcement->status) ?? static::STATUS_DRAFT;
             $announcement->show_once = true;
             $announcement->message = static::normalizeMessage($announcement->message);
             $announcement->target_role_names = static::normalizeRoleNames($announcement->target_role_names);
@@ -112,12 +115,22 @@ class PopupAnnouncement extends Model
             }
 
             if ($announcement->exists && $announcement->isDirty('status')) {
-                $fromStatus = (string) ($announcement->getOriginal('status') ?? static::STATUS_DRAFT);
-                $toStatus = (string) $announcement->status;
+                if (! static::isManagedWorkflow()) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Trang thai popup chi duoc thay doi qua PopupAnnouncementWorkflowService.',
+                    ]);
+                }
+
+                $fromStatus = static::normalizeStatusValue($announcement->getOriginal('status')) ?? static::STATUS_DRAFT;
+                $toStatus = static::normalizeStatusValue($announcement->status) ?? static::STATUS_DRAFT;
 
                 if (! static::canTransitionStatus($fromStatus, $toStatus)) {
                     throw ValidationException::withMessages([
-                        'status' => sprintf('Không thể chuyển popup từ "%s" sang "%s".', $fromStatus, $toStatus),
+                        'status' => sprintf(
+                            'Không thể chuyển popup từ "%s" sang "%s".',
+                            static::statusLabel($fromStatus),
+                            static::statusLabel($toStatus),
+                        ),
                     ]);
                 }
             }
@@ -251,17 +264,47 @@ class PopupAnnouncement extends Model
         return "POP-{$prefix}-{$random}";
     }
 
-    protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        static::$managedWorkflowDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            static::$managedWorkflowDepth = max(0, static::$managedWorkflowDepth - 1);
+        }
+    }
+
+    public static function normalizeStatusValue(mixed $status): ?string
+    {
+        $normalized = strtolower(trim((string) $status));
+
+        return array_key_exists($normalized, static::statusOptions()) ? $normalized : null;
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        $normalizedStatus = static::normalizeStatusValue($status);
+
+        return static::statusOptions()[$normalizedStatus] ?? (string) $status;
+    }
+
+    public static function canTransitionStatus(string $fromStatus, string $toStatus): bool
     {
         if ($fromStatus === $toStatus) {
             return true;
         }
 
         return in_array(
-            $toStatus,
-            static::STATUS_TRANSITIONS[$fromStatus] ?? [],
+            static::normalizeStatusValue($toStatus) ?? $toStatus,
+            static::STATUS_TRANSITIONS[static::normalizeStatusValue($fromStatus) ?? static::STATUS_DRAFT] ?? [],
             true,
         );
+    }
+
+    protected static function isManagedWorkflow(): bool
+    {
+        return static::$managedWorkflowDepth > 0;
     }
 
     protected static function normalizeMessage(mixed $message): string

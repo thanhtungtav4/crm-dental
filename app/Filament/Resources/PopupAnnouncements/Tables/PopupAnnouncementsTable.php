@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PopupAnnouncements\Tables;
 
 use App\Models\PopupAnnouncement;
 use App\Services\PopupAnnouncementDispatchService;
+use App\Services\PopupAnnouncementWorkflowService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -11,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -141,17 +143,20 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_SCHEDULED,
                         PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
-                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú vận hành')
+                            ->rows(3),
+                    ])
                     ->modalHeading('Phát popup ngay bây giờ?')
                     ->modalDescription('Popup sẽ được gửi tới đúng nhóm quyền và chi nhánh đang cấu hình ngay sau khi xác nhận.')
-                    ->action(function (PopupAnnouncement $record): void {
-                        $record->forceFill([
-                            'status' => PopupAnnouncement::STATUS_PUBLISHED,
-                            'starts_at' => $record->starts_at ?? now(),
-                            'published_at' => now(),
-                        ])->save();
+                    ->action(function (PopupAnnouncement $record, array $data): void {
+                        $announcement = app(PopupAnnouncementWorkflowService::class)->publish(
+                            announcement: $record,
+                            reason: $data['reason'] ?? null,
+                        );
 
-                        $created = app(PopupAnnouncementDispatchService::class)->dispatchAnnouncement($record->refresh());
+                        $created = app(PopupAnnouncementDispatchService::class)->dispatchAnnouncement($announcement);
 
                         Notification::make()
                             ->title('Đã phát popup')
@@ -169,13 +174,19 @@ class PopupAnnouncementsTable
                         PopupAnnouncement::STATUS_PUBLISHED,
                         PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
                     ], true))
-                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Lý do hủy')
+                            ->rows(3)
+                            ->required(),
+                    ])
                     ->modalHeading('Hủy popup này?')
                     ->modalDescription('Popup sẽ ngừng được phát cho các user mới sau khi xác nhận.')
-                    ->action(function (PopupAnnouncement $record): void {
-                        $record->forceFill([
-                            'status' => PopupAnnouncement::STATUS_CANCELLED,
-                        ])->save();
+                    ->action(function (PopupAnnouncement $record, array $data): void {
+                        app(PopupAnnouncementWorkflowService::class)->cancel(
+                            announcement: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     }),
             ])
             ->toolbarActions([

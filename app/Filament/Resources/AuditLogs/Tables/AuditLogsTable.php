@@ -30,6 +30,7 @@ class AuditLogsTable
                         'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM, AuditLog::ENTITY_PRESCRIPTION],
                         'info' => [
                             AuditLog::ENTITY_APPOINTMENT,
+                            AuditLog::ENTITY_POPUP_ANNOUNCEMENT,
                             AuditLog::ENTITY_MASTER_PATIENT_INDEX,
                             AuditLog::ENTITY_PLAN_ITEM,
                             AuditLog::ENTITY_MASTER_PATIENT_DUPLICATE,
@@ -80,6 +81,7 @@ class AuditLogsTable
                         AuditLog::ENTITY_INVOICE => 'Invoice',
                         AuditLog::ENTITY_PRESCRIPTION => 'Prescription',
                         AuditLog::ENTITY_APPOINTMENT => 'Appointment',
+                        AuditLog::ENTITY_POPUP_ANNOUNCEMENT => 'Popup Announcement',
                         AuditLog::ENTITY_CARE_TICKET => 'Care Ticket',
                         AuditLog::ENTITY_PLAN_ITEM => 'Plan Item',
                         AuditLog::ENTITY_MASTER_DATA_SYNC => 'Master Data Sync',

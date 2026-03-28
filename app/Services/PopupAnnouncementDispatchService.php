@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Schema;
 
 class PopupAnnouncementDispatchService
 {
+    public function __construct(
+        private readonly PopupAnnouncementWorkflowService $workflowService,
+    ) {}
+
     /**
      * @return array{enabled: bool, announcements_processed: int, announcements_expired: int, deliveries_created: int, deliveries_expired: int}
      */
@@ -74,9 +78,7 @@ class PopupAnnouncementDispatchService
 
         if ($recipients->isEmpty()) {
             if (in_array($announcement->status, [PopupAnnouncement::STATUS_SCHEDULED, PopupAnnouncement::STATUS_PUBLISHED], true)) {
-                $announcement->forceFill([
-                    'status' => PopupAnnouncement::STATUS_FAILED_NO_RECIPIENT,
-                ])->save();
+                $this->workflowService->markFailedNoRecipients($announcement);
             }
 
             return 0;
@@ -101,10 +103,7 @@ class PopupAnnouncementDispatchService
         $created = PopupAnnouncementDelivery::query()->insertOrIgnore($rows);
 
         if ($announcement->status === PopupAnnouncement::STATUS_SCHEDULED) {
-            $announcement->forceFill([
-                'status' => PopupAnnouncement::STATUS_PUBLISHED,
-                'published_at' => $announcement->published_at ?? $now,
-            ])->save();
+            $this->workflowService->markPublishedFromDispatch($announcement);
         }
 
         return $created;
@@ -192,20 +191,23 @@ class PopupAnnouncementDispatchService
      */
     protected function expireEndedAnnouncements(): array
     {
-        $expiredAnnouncementIds = PopupAnnouncement::query()
+        $expiredAnnouncements = PopupAnnouncement::query()
             ->whereIn('status', [
                 PopupAnnouncement::STATUS_SCHEDULED,
                 PopupAnnouncement::STATUS_PUBLISHED,
             ])
             ->whereNotNull('ends_at')
             ->where('ends_at', '<=', now())
+            ->get();
+
+        if ($expiredAnnouncements->isEmpty()) {
+            return ['announcements' => 0, 'deliveries' => 0];
+        }
+
+        $expiredAnnouncementIds = $expiredAnnouncements
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
-
-        if ($expiredAnnouncementIds === []) {
-            return ['announcements' => 0, 'deliveries' => 0];
-        }
 
         $deliveries = PopupAnnouncementDelivery::query()
             ->whereIn('popup_announcement_id', $expiredAnnouncementIds)
@@ -219,15 +221,12 @@ class PopupAnnouncementDispatchService
                 'updated_at' => now(),
             ]);
 
-        $announcements = PopupAnnouncement::query()
-            ->whereIn('id', $expiredAnnouncementIds)
-            ->update([
-                'status' => PopupAnnouncement::STATUS_EXPIRED,
-                'updated_at' => now(),
-            ]);
+        foreach ($expiredAnnouncements as $announcement) {
+            $this->workflowService->expire($announcement);
+        }
 
         return [
-            'announcements' => $announcements,
+            'announcements' => count($expiredAnnouncementIds),
             'deliveries' => $deliveries,
         ];
     }

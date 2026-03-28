@@ -10,3 +10,12 @@ it('uses schemas section component in audit log infolist schema', function (): v
         ->toContain('use Filament\\Schemas\\Components\\Section;')
         ->not->toContain('use Filament\\Infolists\\Components\\Section;');
 });
+
+it('includes popup announcement entity in audit log table filters and badges', function (): void {
+    $path = app_path('Filament/Resources/AuditLogs/Tables/AuditLogsTable.php');
+    $content = File::get($path);
+
+    expect($content)
+        ->toContain('AuditLog::ENTITY_POPUP_ANNOUNCEMENT')
+        ->toContain("'Popup Announcement'");
+});
