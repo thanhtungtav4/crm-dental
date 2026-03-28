@@ -109,3 +109,12 @@ it('returns recent tracked ops runs with actor loaded and newest first', functio
         ->and($runs->last()->is($first))->toBeTrue()
         ->and($runs->every(fn (AuditLog $auditLog): bool => $auditLog->relationLoaded('actor')))->toBeTrue();
 });
+
+it('tracks popup and photo automation commands in the shared automation reader', function (): void {
+    $commands = app(OperationalAutomationAuditReadModelService::class)->trackedCommands();
+
+    expect($commands)
+        ->toContain('popups:dispatch-due')
+        ->toContain('popups:prune')
+        ->toContain('photos:prune');
+});

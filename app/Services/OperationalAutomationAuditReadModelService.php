@@ -34,6 +34,9 @@ class OperationalAutomationAuditReadModelService
             'zns:sync-automation-events',
             'zns:prune-operational-data',
             'zns:run-campaigns',
+            'popups:dispatch-due',
+            'popups:prune',
+            'photos:prune',
         ];
     }
 
