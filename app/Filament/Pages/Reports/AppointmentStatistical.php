@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\Appointment;
-use App\Models\VisitEpisode;
+use App\Services\AppointmentReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,9 +27,8 @@ class AppointmentStatistical extends BaseReportPage
 
     protected function getTableQuery(): Builder
     {
-        return $this->applyDirectBranchScope(
-            Appointment::query()->with(['patient', 'doctor', 'visitEpisode']),
-        );
+        return $this->appointmentReports()
+            ->appointmentQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -107,31 +106,26 @@ class AppointmentStatistical extends BaseReportPage
 
     public function getStats(): array
     {
-        $baseQuery = $this->applyDirectBranchScope(Appointment::query());
-        $this->applyDateRange($baseQuery, 'date');
-
-        $total = (clone $baseQuery)->count();
-        $new = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_SCHEDULED]))->count();
-        $cancelled = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CANCELLED]))->count();
-        $completed = (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))->count();
-
-        $episodeQuery = $this->applyDirectBranchScope(VisitEpisode::query())
-            ->whereHas('appointment', function (Builder $query): void {
-                $this->applyDateRange($query, 'date');
-            });
-
-        $avgWaiting = round((float) ((clone $episodeQuery)->whereNotNull('waiting_minutes')->avg('waiting_minutes') ?? 0), 1);
-        $avgChair = round((float) ((clone $episodeQuery)->whereNotNull('chair_minutes')->avg('chair_minutes') ?? 0), 1);
-        $avgOverrun = round((float) ((clone $episodeQuery)->whereNotNull('overrun_minutes')->avg('overrun_minutes') ?? 0), 1);
+        [$from, $until] = $this->getDateRangeFromFilters();
+        $summary = $this->appointmentReports()->appointmentSummary(
+            $this->resolvedVisibleBranchIds(),
+            $from,
+            $until,
+        );
 
         return [
-            ['label' => 'Tổng lịch hẹn', 'value' => number_format($total)],
-            ['label' => 'Lịch hẹn mới', 'value' => number_format($new)],
-            ['label' => 'Lịch hẹn bị hủy', 'value' => number_format($cancelled)],
-            ['label' => 'Hoàn thành', 'value' => number_format($completed)],
-            ['label' => 'Waiting TB (phút)', 'value' => number_format($avgWaiting, 1)],
-            ['label' => 'Chair TB (phút)', 'value' => number_format($avgChair, 1)],
-            ['label' => 'Overrun TB (phút)', 'value' => number_format($avgOverrun, 1)],
+            ['label' => 'Tổng lịch hẹn', 'value' => number_format($summary['total'])],
+            ['label' => 'Lịch hẹn mới', 'value' => number_format($summary['new'])],
+            ['label' => 'Lịch hẹn bị hủy', 'value' => number_format($summary['cancelled'])],
+            ['label' => 'Hoàn thành', 'value' => number_format($summary['completed'])],
+            ['label' => 'Waiting TB (phút)', 'value' => number_format($summary['avg_waiting'], 1)],
+            ['label' => 'Chair TB (phút)', 'value' => number_format($summary['avg_chair'], 1)],
+            ['label' => 'Overrun TB (phút)', 'value' => number_format($summary['avg_overrun'], 1)],
         ];
+    }
+
+    protected function appointmentReports(): AppointmentReportReadModelService
+    {
+        return app(AppointmentReportReadModelService::class);
     }
 }

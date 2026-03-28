@@ -104,9 +104,11 @@ it('scopes appointment statistical records to accessible branches', function ():
 
     $page = Livewire::test(AppointmentStatistical::class)->instance();
     $records = invokeTableQuery($page)->get();
+    $stats = $page->getStats();
 
     expect($records)->toHaveCount(1)
-        ->and((int) $records->first()->branch_id)->toBe($branchA->id);
+        ->and((int) $records->first()->branch_id)->toBe($branchA->id)
+        ->and($stats[0]['value'])->toBe('1');
 });
 
 it('scopes revenue statistical aggregates to accessible branches when no branch filter is selected', function (): void {
