@@ -38,6 +38,7 @@ it('shows web lead api integration guide in settings page', function () {
 
     expect($blade)
         ->toContain('Hướng dẫn tích hợp Web Lead API')
+        ->toContain('wire:click="testWebLeadReadiness"')
         ->toContain('wire:click="generateWebLeadApiToken"')
         ->toContain('Tạo API Token')
         ->toContain("route('api.v1.web-leads.store')")
@@ -63,6 +64,8 @@ it('renders concrete input html for integration text fields', function () {
         ->toContain('Runtime disabled')
         ->toContain('DICOM / PACS')
         ->toContain('Web Lead API')
+        ->toContain('wire:click="testDicomReadiness"')
+        ->toContain('wire:click="testWebLeadReadiness"')
         ->toContain('class="fi-input"')
         ->toContain('wire:model.blur="settings.google_calendar_client_id"')
         ->toContain('wire:model.blur="settings.emr_provider"')

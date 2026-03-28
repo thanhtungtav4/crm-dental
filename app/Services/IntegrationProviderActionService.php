@@ -58,11 +58,7 @@ class IntegrationProviderActionService
     {
         $report = $this->integrationProviderHealthReadModelService->provider($providerKey);
         $success = ($report['score'] ?? 0) >= 80;
-        $label = match ($providerKey) {
-            'zalo_oa' => 'Zalo OA',
-            'zns' => 'ZNS',
-            default => throw new InvalidArgumentException("Unsupported readiness report provider [{$providerKey}]."),
-        };
+        $label = $this->readinessLabel($providerKey);
 
         $body = collect([
             'Điểm sẵn sàng: '.($report['score'] ?? 0).'/100',
@@ -91,5 +87,16 @@ class IntegrationProviderActionService
             'message' => (string) ($result['message'] ?? 'EMR chưa trả về URL cấu hình hợp lệ.'),
             'url' => filled($result['url'] ?? null) ? (string) $result['url'] : null,
         ];
+    }
+
+    protected function readinessLabel(string $providerKey): string
+    {
+        return match ($providerKey) {
+            'zalo_oa' => 'Zalo OA',
+            'zns' => 'ZNS',
+            'dicom' => 'DICOM / PACS',
+            'web_lead' => 'Web Lead API',
+            default => throw new InvalidArgumentException("Unsupported readiness report provider [{$providerKey}]."),
+        };
     }
 }

@@ -575,26 +575,32 @@
                 @endif
 
                 @if(($provider['group'] ?? null) === 'emr')
-                    @if($this->canManageSecrets())
-                        <div class="mt-4 flex flex-wrap gap-2">
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-shield-check" wire:click="testDicomReadiness">
+                            Đánh giá sẵn sàng DICOM / PACS
+                        </x-filament::button>
+                        @if($this->canManageSecrets())
                             <x-filament::button type="button" color="gray" icon="heroicon-o-signal" wire:click="testEmrConnection">
                                 Test EMR
                             </x-filament::button>
                             <x-filament::button type="button" color="info" icon="heroicon-o-arrow-top-right-on-square" wire:click="openEmrConfigUrl">
                                 Mở config EMR
                             </x-filament::button>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 @endif
 
                 @if(($provider['group'] ?? null) === 'web_lead')
-                    @if($this->canManageSecrets())
-                        <div class="mt-4 flex flex-wrap gap-2">
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-shield-check" wire:click="testWebLeadReadiness">
+                            Đánh giá sẵn sàng Web Lead API
+                        </x-filament::button>
+                        @if($this->canManageSecrets())
                             <x-filament::button type="button" color="gray" icon="heroicon-o-key" wire:click="generateWebLeadApiToken">
                                 Tạo API Token
                             </x-filament::button>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
 
                     <div class="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
                         <div class="mb-2 text-sm font-semibold">Hướng dẫn tích hợp Web Lead API</div>

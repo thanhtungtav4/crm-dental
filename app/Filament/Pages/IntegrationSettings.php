@@ -928,22 +928,22 @@ class IntegrationSettings extends Page
 
     public function testZaloReadiness(): void
     {
-        $report = app(IntegrationProviderActionService::class)->readinessReport('zalo_oa');
-        $notification = Notification::make()
-            ->title($report['title'])
-            ->body($report['body']);
-
-        ($report['success'] ? $notification->success() : $notification->warning())->send();
+        $this->sendProviderReadinessNotification('zalo_oa');
     }
 
     public function testZnsReadiness(): void
     {
-        $report = app(IntegrationProviderActionService::class)->readinessReport('zns');
-        $notification = Notification::make()
-            ->title($report['title'])
-            ->body($report['body']);
+        $this->sendProviderReadinessNotification('zns');
+    }
 
-        ($report['success'] ? $notification->success() : $notification->warning())->send();
+    public function testDicomReadiness(): void
+    {
+        $this->sendProviderReadinessNotification('dicom');
+    }
+
+    public function testWebLeadReadiness(): void
+    {
+        $this->sendProviderReadinessNotification('web_lead');
     }
 
     public function testGoogleCalendarConnection(): void
@@ -993,6 +993,16 @@ class IntegrationSettings extends Page
             ->body('Token mới đã được điền vào form. Nhấn "Lưu cài đặt tích hợp" để áp dụng.')
             ->success()
             ->send();
+    }
+
+    protected function sendProviderReadinessNotification(string $providerKey): void
+    {
+        $report = app(IntegrationProviderActionService::class)->readinessReport($providerKey);
+        $notification = Notification::make()
+            ->title($report['title'])
+            ->body($report['body']);
+
+        ($report['success'] ? $notification->success() : $notification->warning())->send();
     }
 
     public function addCatalogRow(string $state): void

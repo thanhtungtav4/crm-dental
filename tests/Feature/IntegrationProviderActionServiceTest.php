@@ -20,6 +20,31 @@ it('formats readiness notifications from shared provider health cards', function
         ->and($report['score'])->toBeGreaterThanOrEqual(80);
 });
 
+it('formats readiness notifications for dicom and web lead providers', function (): void {
+    configureProviderActionSetting('emr.dicom.enabled', true, 'boolean', 'emr');
+    configureProviderActionSetting('emr.dicom.base_url', 'https://dicom.example.test', 'text', 'emr');
+    configureProviderActionSetting('emr.dicom.facility_code', 'HCM-01', 'text', 'emr');
+    configureProviderActionSetting('emr.dicom.auth_token', 'dicom-action-token', 'text', 'emr', isSecret: true);
+
+    configureProviderActionSetting('web_lead.enabled', true, 'boolean', 'web_lead');
+    configureProviderActionSetting('web_lead.api_token', 'wla_action_token_1234567890', 'text', 'web_lead', isSecret: true);
+    configureProviderActionSetting('web_lead.default_branch_code', '', 'text', 'web_lead');
+
+    $service = app(IntegrationProviderActionService::class);
+
+    $dicom = $service->readinessReport('dicom');
+    $webLead = $service->readinessReport('web_lead');
+
+    expect($dicom['success'])->toBeTrue()
+        ->and($dicom['title'])->toBe('DICOM / PACS sẵn sàng tốt')
+        ->and($dicom['body'])->toContain('Điểm sẵn sàng:')
+        ->and($dicom['score'])->toBeGreaterThanOrEqual(80)
+        ->and($webLead['success'])->toBeTrue()
+        ->and($webLead['title'])->toBe('Web Lead API sẵn sàng tốt')
+        ->and($webLead['body'])->toContain('Điểm sẵn sàng:')
+        ->and($webLead['score'])->toBeGreaterThanOrEqual(80);
+});
+
 it('formats google calendar connection report and surfaces account email', function (): void {
     configureProviderActionSetting('google_calendar.enabled', true, 'boolean', 'google_calendar');
     configureProviderActionSetting('google_calendar.client_id', 'gcal-client-id', 'text', 'google_calendar');
