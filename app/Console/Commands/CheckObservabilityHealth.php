@@ -3,12 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\ZnsAutomationEvent;
 use App\Services\IntegrationOperationalReadModelService;
 use App\Services\OperationalAutomationAuditReadModelService;
 use App\Services\OperationalKpiAlertReadModelService;
 use App\Services\OperationalKpiSnapshotReadModelService;
 use App\Services\OpsCommandAuthorizer;
+use App\Services\ZnsOperationalReadModelService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -29,6 +29,7 @@ class CheckObservabilityHealth extends Command
         protected OperationalAutomationAuditReadModelService $operationalAutomationAuditReadModelService,
         protected OperationalKpiAlertReadModelService $operationalKpiAlertReadModelService,
         protected OperationalKpiSnapshotReadModelService $operationalKpiSnapshotReadModelService,
+        protected ZnsOperationalReadModelService $znsOperationalReadModelService,
     ) {
         parent::__construct();
     }
@@ -49,12 +50,12 @@ class CheckObservabilityHealth extends Command
         $deadBacklog = [
             'google' => $this->integrationOperationalReadModelService->googleCalendarDeadBacklogCount(),
             'emr' => $this->integrationOperationalReadModelService->emrDeadBacklogCount(),
-            'zns' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_DEAD)->count(),
+            'zns' => $this->znsOperationalReadModelService->automationDeadCount(),
         ];
         $failedBacklog = [
             'google' => $this->integrationOperationalReadModelService->googleCalendarFailedBacklogCount(),
             'emr' => $this->integrationOperationalReadModelService->emrFailedBacklogCount(),
-            'zns' => ZnsAutomationEvent::query()->where('status', ZnsAutomationEvent::STATUS_FAILED)->count(),
+            'zns' => $this->znsOperationalReadModelService->automationFailedCount(),
         ];
 
         $metrics = [
