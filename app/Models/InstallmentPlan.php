@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InstallmentPlanLifecycleService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -127,60 +128,7 @@ class InstallmentPlan extends Model
 
     public function syncFinancialState(?Carbon $asOf = null, bool $persist = true): void
     {
-        if ($this->status === self::STATUS_CANCELLED) {
-            return;
-        }
-
-        $asOfDate = ($asOf ?? now())->copy()->startOfDay();
-        $paidAmount = (float) ($this->invoice?->getTotalPaid() ?? 0);
-        $paidTowardsInstallment = max(0, $paidAmount - (float) $this->down_payment_amount);
-
-        $schedule = $this->schedule ?? [];
-        $remainingPaid = $paidTowardsInstallment;
-        $nextDueDate = null;
-        $hasOverdue = false;
-
-        foreach ($schedule as $index => $installment) {
-            $installmentAmount = round(max(0, (float) ($installment['amount'] ?? 0)), 2);
-            $paidForInstallment = min($installmentAmount, $remainingPaid);
-            $remainingPaid = round(max(0, $remainingPaid - $paidForInstallment), 2);
-
-            $dueDate = Carbon::parse((string) ($installment['due_date'] ?? $asOfDate->toDateString()))->startOfDay();
-            $isPaid = $paidForInstallment >= $installmentAmount;
-            $isOverdue = ! $isPaid && $dueDate->lt($asOfDate);
-
-            if (! $isPaid && $nextDueDate === null) {
-                $nextDueDate = $dueDate;
-            }
-
-            if ($isOverdue) {
-                $hasOverdue = true;
-            }
-
-            $schedule[$index]['paid_amount'] = $paidForInstallment;
-            $schedule[$index]['status'] = $isPaid ? 'paid' : ($isOverdue ? 'overdue' : 'pending');
-            $schedule[$index]['paid_at'] = $isPaid ? ($schedule[$index]['paid_at'] ?? $asOfDate->toDateString()) : null;
-        }
-
-        $remainingAmount = round(max(0, (float) $this->financed_amount - $paidTowardsInstallment), 2);
-
-        $this->schedule = $schedule;
-        $this->remaining_amount = $remainingAmount;
-        $this->next_due_date = $nextDueDate?->toDateString();
-
-        if ($remainingAmount <= 0.0) {
-            $this->status = self::STATUS_COMPLETED;
-            $this->dunning_level = 0;
-        } elseif ($hasOverdue) {
-            $this->status = self::STATUS_DEFAULTED;
-        } else {
-            $this->status = self::STATUS_ACTIVE;
-            $this->dunning_level = 0;
-        }
-
-        if ($persist) {
-            $this->save();
-        }
+        app(InstallmentPlanLifecycleService::class)->syncFinancialState($this, $asOf, $persist);
     }
 
     public function getCurrentAgingBucket(?Carbon $asOf = null): int

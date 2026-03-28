@@ -4,6 +4,8 @@ use App\Models\InstallmentPlan;
 use App\Models\Invoice;
 use App\Models\Note;
 use App\Models\Patient;
+use App\Services\InstallmentPlanLifecycleService;
+use Illuminate\Support\Facades\File;
 
 it('marks installment plan as defaulted when overdue and unpaid', function () {
     $patient = Patient::factory()->create();
@@ -28,7 +30,7 @@ it('marks installment plan as defaulted when overdue and unpaid', function () {
         'status' => InstallmentPlan::STATUS_ACTIVE,
     ]);
 
-    $plan->syncFinancialState(now());
+    app(InstallmentPlanLifecycleService::class)->syncFinancialState($plan, now());
 
     expect($plan->fresh()->status)->toBe(InstallmentPlan::STATUS_DEFAULTED)
         ->and((float) $plan->fresh()->remaining_amount)->toEqualWithDelta(1000000.00, 0.01);
@@ -58,7 +60,7 @@ it('marks installment plan as completed when fully paid', function () {
     ]);
 
     $invoice->recordPayment(1200000, 'cash');
-    $plan->syncFinancialState(now());
+    app(InstallmentPlanLifecycleService::class)->syncFinancialState($plan, now());
 
     expect($plan->fresh()->status)->toBe(InstallmentPlan::STATUS_COMPLETED)
         ->and((float) $plan->fresh()->remaining_amount)->toEqualWithDelta(0.00, 0.01);
@@ -99,4 +101,51 @@ it('creates dunning care ticket and updates dunning level', function () {
 
     expect($ticket)->not->toBeNull()
         ->and($plan->fresh()->dunning_level)->toBeGreaterThan(0);
+});
+
+it('syncs installment plan status through the lifecycle command', function () {
+    $patient = Patient::factory()->create();
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 1_200_000,
+        'paid_amount' => 0,
+    ]);
+
+    $plan = InstallmentPlan::create([
+        'invoice_id' => $invoice->id,
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'financed_amount' => 1_000_000,
+        'down_payment_amount' => 200_000,
+        'remaining_amount' => 1_000_000,
+        'number_of_installments' => 2,
+        'installment_amount' => 500_000,
+        'start_date' => now()->subMonths(2)->toDateString(),
+        'status' => InstallmentPlan::STATUS_ACTIVE,
+    ]);
+
+    $this->artisan('installments:sync-status')
+        ->assertSuccessful();
+
+    expect($plan->fresh()->status)->toBe(InstallmentPlan::STATUS_DEFAULTED);
+});
+
+it('routes installment lifecycle surfaces through InstallmentPlanLifecycleService', function (): void {
+    $observer = File::get(app_path('Observers/PaymentObserver.php'));
+    $runDunningCommand = File::get(app_path('Console/Commands/RunInstallmentDunning.php'));
+    $syncStatusCommand = File::get(app_path('Console/Commands/SyncInstallmentPlanStatus.php'));
+
+    expect($observer)
+        ->toContain('InstallmentPlanLifecycleService')
+        ->not->toContain('installmentPlan?->syncFinancialState()');
+
+    expect($runDunningCommand)
+        ->toContain('InstallmentPlanLifecycleService')
+        ->not->toContain('->syncFinancialState($asOf');
+
+    expect($syncStatusCommand)
+        ->toContain('InstallmentPlanLifecycleService')
+        ->not->toContain('->syncFinancialState(persist:');
 });

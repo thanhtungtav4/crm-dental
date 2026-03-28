@@ -5,15 +5,20 @@ namespace App\Observers;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\InstallmentPlanLifecycleService;
 use App\Services\PatientWalletService;
 use App\Support\WorkflowAuditMetadata;
 
 class PaymentObserver
 {
+    public function __construct(
+        protected InstallmentPlanLifecycleService $installmentPlanLifecycleService,
+    ) {}
+
     public function created(Payment $payment): void
     {
         $payment->invoice?->updatePaidAmount();
-        $payment->invoice?->installmentPlan?->syncFinancialState();
+        $this->syncInstallmentPlan($payment);
         app(PatientWalletService::class)->postPayment($payment);
         $this->logPaymentCreated($payment);
     }
@@ -27,7 +32,7 @@ class PaymentObserver
         }
 
         $payment->invoice?->updatePaidAmount();
-        $payment->invoice?->installmentPlan?->syncFinancialState();
+        $this->syncInstallmentPlan($payment);
     }
 
     public function deleted(Payment $payment): void
@@ -36,13 +41,22 @@ class PaymentObserver
             ->find($payment->invoice_id)
             ?->updatePaidAmount();
 
-        $payment->invoice?->installmentPlan?->syncFinancialState();
+        $this->syncInstallmentPlan($payment);
     }
 
     public function restored(Payment $payment): void
     {
         $payment->invoice?->updatePaidAmount();
-        $payment->invoice?->installmentPlan?->syncFinancialState();
+        $this->syncInstallmentPlan($payment);
+    }
+
+    protected function syncInstallmentPlan(Payment $payment): void
+    {
+        if (! $payment->invoice?->installmentPlan) {
+            return;
+        }
+
+        $this->installmentPlanLifecycleService->syncFinancialState($payment->invoice->installmentPlan);
     }
 
     protected function logPaymentCreated(Payment $payment): void

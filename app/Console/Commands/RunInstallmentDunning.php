@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\InstallmentPlan;
 use App\Models\Note;
 use App\Services\CareTicketWorkflowService;
+use App\Services\InstallmentPlanLifecycleService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Carbon\Carbon;
@@ -17,8 +18,10 @@ class RunInstallmentDunning extends Command
 
     protected $description = 'Chạy nhắc nợ trả góp theo aging bucket và log ticket CSKH.';
 
-    public function handle(CareTicketWorkflowService $careTicketWorkflowService): int
-    {
+    public function handle(
+        CareTicketWorkflowService $careTicketWorkflowService,
+        InstallmentPlanLifecycleService $installmentPlanLifecycleService,
+    ): int {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy automation dunning trả góp.',
@@ -33,9 +36,9 @@ class RunInstallmentDunning extends Command
 
         InstallmentPlan::query()
             ->whereNotIn('status', [InstallmentPlan::STATUS_CANCELLED, InstallmentPlan::STATUS_COMPLETED])
-            ->chunkById(100, function ($plans) use (&$queued, $asOf, $careTicketWorkflowService, $dryRun): void {
+            ->chunkById(100, function ($plans) use (&$queued, $asOf, $careTicketWorkflowService, $dryRun, $installmentPlanLifecycleService): void {
                 foreach ($plans as $plan) {
-                    $plan->syncFinancialState($asOf, ! $dryRun);
+                    $installmentPlanLifecycleService->syncFinancialState($plan, $asOf, ! $dryRun);
 
                     if (! $plan->shouldRunDunning($asOf)) {
                         continue;

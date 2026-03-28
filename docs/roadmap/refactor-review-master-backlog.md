@@ -243,6 +243,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `CareTicket/Note` vao workflow service canonical cho manual vs canonical status transitions, model guard raw status update, va managed audit metadata `reason` / `trigger`
     - da dua `Consent` vao managed workflow context trong lifecycle service, model guard raw status update, va audit metadata `trigger` / `signature_source`
     - da dua `ExamSession / TreatmentProgress` vao workflow service canonical cho clinical-note sync, treatment-progress prime, lifecycle refresh, va managed mutation cho `TreatmentProgressDay / TreatmentProgressItem`; model guard raw status update, va loai bo `saveQuietly()` doi `status` rai rac
+    - da dua `InstallmentPlan` vao lifecycle service canonical, giu model facade `syncFinancialState()` cho backward compatibility, va keo `PaymentObserver`, `installments:run-dunning`, `installments:sync-status` qua cung lifecycle contract
     - da chuan hoa them `Payment` refund / reversal audit metadata theo pattern `reason` / `trigger` / canonical identifiers
     - da dua `MasterPatientDuplicate / MasterPatientMerge` vao workflow contract voi model guard raw status update, canonical workflow service cho `ignore`, `merge-resolution`, `rollback restore`, va duong `auto-ignore` tu `MasterPatientIndexService`
     - da dua `WebLeadEmailDelivery` vao managed workflow contract voi model guard raw status update, canonical resend / claim / sent / fail mutation methods, va giu service mail noi bo di qua canonical path

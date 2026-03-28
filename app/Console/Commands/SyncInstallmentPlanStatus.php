@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Models\InstallmentPlan;
+use App\Services\InstallmentPlanLifecycleService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use Illuminate\Console\Command;
@@ -14,7 +15,7 @@ class SyncInstallmentPlanStatus extends Command
 
     protected $description = 'Đồng bộ trạng thái trả góp theo lịch và số tiền đã thu trên hóa đơn.';
 
-    public function handle(): int
+    public function handle(InstallmentPlanLifecycleService $installmentPlanLifecycleService): int
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -26,7 +27,7 @@ class SyncInstallmentPlanStatus extends Command
 
         InstallmentPlan::query()
             ->whereNotIn('status', [InstallmentPlan::STATUS_CANCELLED, InstallmentPlan::STATUS_COMPLETED])
-            ->chunkById(200, function ($plans) use ($dryRun, &$updated): void {
+            ->chunkById(200, function ($plans) use ($dryRun, &$updated, $installmentPlanLifecycleService): void {
                 foreach ($plans as $plan) {
                     $before = [
                         'status' => $plan->status,
@@ -34,7 +35,7 @@ class SyncInstallmentPlanStatus extends Command
                         'next_due_date' => optional($plan->next_due_date)->toDateString(),
                     ];
 
-                    $plan->syncFinancialState(persist: ! $dryRun);
+                    $installmentPlanLifecycleService->syncFinancialState($plan, persist: ! $dryRun);
 
                     $after = [
                         'status' => $plan->status,
