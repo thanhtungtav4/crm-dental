@@ -79,7 +79,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 3 - Authorization and Scope Hardening Convergence
 
-- Status: `In progress`
+- Status: `Completed`
 - Goal:
   - Rut gon cac pattern auth/branch scope thanh contract on dinh toan he thong.
 - Scope:
@@ -99,6 +99,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 4 - Workflow Consistency and Auditability
 
+- Status: `In progress`
 - Goal:
   - Chuan hoa cac workflow mutation lane va audit reason contract giua module co state machine.
 - Scope:
@@ -112,6 +113,10 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - workflow transition tests
   - audit timeline tests
   - browser checks cho dangerous actions
+- Progress update:
+  - `RRB-009` da cover lane uu tien cho `APPT`, `TRT`, `FIN`, `SUP`, `ZNS` va cac observer audit lien quan.
+  - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`.
+  - Chua mo wave rieng cho `CARE` / `OPS` beyond baseline packs.
 - Deploy safety note:
   - Lam tung workflow module mot.
   - Khong doi workflow contract cua nhieu module trong cung mot release.
