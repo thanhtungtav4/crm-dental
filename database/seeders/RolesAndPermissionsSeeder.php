@@ -188,6 +188,7 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
         $cskhPerms[] = 'View:FrontdeskControlCenter';
+        $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
         $cskhPerms[] = ActionPermission::PATIENT_BRANCH_TRANSFER;
         $cskh->syncPermissions($cskhPerms);
 
