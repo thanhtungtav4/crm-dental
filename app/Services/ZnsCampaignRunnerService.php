@@ -23,7 +23,7 @@ class ZnsCampaignRunnerService
     protected const DELIVERY_LOCK_TTL_MINUTES = 15;
 
     public function __construct(
-        private readonly IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        private readonly IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
         private readonly ZnsProviderClient $providerClient,
         private readonly ZnsPayloadSanitizer $payloadSanitizer,
         private readonly ZnsCampaignWorkflowService $workflowService,
@@ -598,23 +598,11 @@ class ZnsCampaignRunnerService
 
     protected function assertZnsReadyForRun(): void
     {
-        $providerHealth = $this->integrationProviderHealthReadModelService->provider('zns');
+        $runtimeStatus = $this->integrationProviderRuntimeGate->znsCampaignWorkflowStatus();
 
-        if (! ($providerHealth['enabled'] ?? false)) {
+        if ($runtimeStatus['state'] !== 'ready') {
             throw ValidationException::withMessages([
-                'zns' => 'ZNS đang tắt, không thể chạy campaign.',
-            ]);
-        }
-
-        if (($providerHealth['runtime_error_message'] ?? null) !== null) {
-            throw ValidationException::withMessages([
-                'zns' => (string) $providerHealth['runtime_error_message'],
-            ]);
-        }
-
-        if (($providerHealth['score'] ?? 0) < 80) {
-            throw ValidationException::withMessages([
-                'zns' => 'ZNS chưa sẵn sàng: '.implode(' ', $providerHealth['issues'] ?? []),
+                'zns' => (string) $runtimeStatus['message'],
             ]);
         }
     }

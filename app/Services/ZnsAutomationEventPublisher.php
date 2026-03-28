@@ -13,10 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class ZnsAutomationEventPublisher
 {
-    protected ?array $znsProviderHealthCache = null;
-
     public function __construct(
-        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
     ) {}
 
     public function publishLeadWelcomeForWebLead(Customer $customer, string $requestId): ?ZnsAutomationEvent
@@ -324,33 +322,7 @@ class ZnsAutomationEventPublisher
 
     protected function isZnsRuntimeReady(): bool
     {
-        $providerHealth = $this->znsProviderHealth();
-
-        return ($providerHealth['enabled'] ?? false)
-            && blank($providerHealth['runtime_error_message'] ?? null);
-    }
-
-    /**
-     * @return array{
-     *   key:string,
-     *   label:string,
-     *   description:string,
-     *   enabled:bool,
-     *   tone:string,
-     *   status:string,
-     *   score:int,
-     *   issues:array<int, string>,
-     *   recommendations:array<int, string>,
-     *   meta:array<int, array{label:string, value:int|string}>,
-     *   issue_count:int,
-     *   recommendation_count:int,
-     *   runtime_error_message:?string,
-     *   webhook_url:?string
-     * }
-     */
-    protected function znsProviderHealth(): array
-    {
-        return $this->znsProviderHealthCache ??= $this->integrationProviderHealthReadModelService->provider('zns');
+        return $this->integrationProviderRuntimeGate->allowsZnsPublish();
     }
 
     protected function isAppointmentReminderEligible(Appointment $appointment): bool

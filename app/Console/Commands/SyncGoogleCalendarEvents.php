@@ -9,7 +9,7 @@ use App\Models\GoogleCalendarSyncLog;
 use App\Services\GoogleCalendarIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationOperationalReadModelService;
-use App\Services\IntegrationProviderHealthReadModelService;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -31,7 +31,7 @@ class SyncGoogleCalendarEvents extends Command
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
-        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
     ) {
         parent::__construct();
     }
@@ -43,22 +43,16 @@ class SyncGoogleCalendarEvents extends Command
             'Bạn không có quyền chạy automation Google Calendar sync.',
         );
 
-        if (! ClinicRuntimeSettings::isGoogleCalendarEnabled()) {
-            $this->warn('Google Calendar integration đang tắt. Không có dữ liệu cần sync.');
+        $runtimeStatus = $this->integrationProviderRuntimeGate->googleCalendarSyncCommandStatus();
 
-            return self::SUCCESS;
-        }
+        if ($runtimeStatus['state'] !== 'ready') {
+            if ($runtimeStatus['state'] === 'skip') {
+                $this->warn((string) $runtimeStatus['message']);
 
-        if (! ClinicRuntimeSettings::googleCalendarAllowsPushToGoogle()) {
-            $this->warn('Google Calendar sync mode hiện không hỗ trợ CRM -> Google. Bỏ qua.');
+                return self::SUCCESS;
+            }
 
-            return self::SUCCESS;
-        }
-
-        $providerHealth = $this->integrationProviderHealthReadModelService->provider('google_calendar');
-
-        if (($providerHealth['runtime_error_message'] ?? null) !== null) {
-            $this->error((string) $providerHealth['runtime_error_message']);
+            $this->error((string) $runtimeStatus['message']);
 
             return self::FAILURE;
         }

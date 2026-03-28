@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsAutomationLog;
-use App\Services\IntegrationProviderHealthReadModelService;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
 use App\Services\ZnsProviderClient;
@@ -30,7 +30,7 @@ class SyncZnsAutomationEvents extends Command
         protected ZnsProviderClient $znsProviderClient,
         protected ZnsPayloadSanitizer $payloadSanitizer,
         protected ZnsOperationalReadModelService $znsOperationalReadModelService,
-        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
     ) {
         parent::__construct();
     }
@@ -42,16 +42,16 @@ class SyncZnsAutomationEvents extends Command
             'Bạn không có quyền chạy automation ZNS.',
         );
 
-        if (! ClinicRuntimeSettings::boolean('zns.enabled', false)) {
-            $this->warn('ZNS integration đang tắt. Không có event automation cần xử lý.');
+        $runtimeStatus = $this->integrationProviderRuntimeGate->znsAutomationSyncCommandStatus();
 
-            return self::SUCCESS;
-        }
+        if ($runtimeStatus['state'] !== 'ready') {
+            if ($runtimeStatus['state'] === 'skip') {
+                $this->warn((string) $runtimeStatus['message']);
 
-        $providerHealth = $this->integrationProviderHealthReadModelService->provider('zns');
+                return self::SUCCESS;
+            }
 
-        if (($configurationError = $providerHealth['runtime_error_message'] ?? null) !== null) {
-            $this->error($configurationError.' Không thể xử lý event automation.');
+            $this->error((string) $runtimeStatus['message']);
 
             return self::FAILURE;
         }

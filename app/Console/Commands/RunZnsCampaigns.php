@@ -4,11 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\ZnsCampaign;
 use App\Models\ZnsCampaignDelivery;
-use App\Services\IntegrationProviderHealthReadModelService;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\ZnsCampaignRunnerService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
-use App\Support\ClinicRuntimeSettings;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
@@ -33,23 +32,23 @@ class RunZnsCampaigns extends Command
      */
     public function handle(
         ZnsCampaignRunnerService $runner,
-        IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
     ): int {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
             'Bạn không có quyền chạy campaign ZNS.',
         );
 
-        if (! ClinicRuntimeSettings::boolean('zns.enabled', false)) {
-            $this->info('ZNS đang tắt, bỏ qua chạy campaign.');
+        $runtimeStatus = $integrationProviderRuntimeGate->znsCampaignCommandStatus();
 
-            return self::SUCCESS;
-        }
+        if ($runtimeStatus['state'] !== 'ready') {
+            if ($runtimeStatus['state'] === 'skip') {
+                $this->info((string) $runtimeStatus['message']);
 
-        $providerHealth = $integrationProviderHealthReadModelService->provider('zns');
+                return self::SUCCESS;
+            }
 
-        if (($configurationError = $providerHealth['runtime_error_message'] ?? null) !== null) {
-            $this->error($configurationError.' Không thể chạy campaign ZNS.');
+            $this->error((string) $runtimeStatus['message']);
 
             return self::FAILURE;
         }

@@ -11,7 +11,7 @@ use App\Services\EmrAuditLogger;
 use App\Services\EmrIntegrationService;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationOperationalReadModelService;
-use App\Services\IntegrationProviderHealthReadModelService;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -33,7 +33,7 @@ class SyncEmrEvents extends Command
         protected EmrAuditLogger $emrAuditLogger,
         protected IntegrationOperationalPayloadSanitizer $payloadSanitizer,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
-        protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
     ) {
         parent::__construct();
     }
@@ -49,16 +49,16 @@ class SyncEmrEvents extends Command
             'Bạn không có quyền đẩy dữ liệu đồng bộ EMR.',
         );
 
-        if (! ClinicRuntimeSettings::isEmrEnabled()) {
-            $this->warn('EMR integration đang tắt. Không có dữ liệu cần sync.');
+        $runtimeStatus = $this->integrationProviderRuntimeGate->emrSyncCommandStatus();
 
-            return self::SUCCESS;
-        }
+        if ($runtimeStatus['state'] !== 'ready') {
+            if ($runtimeStatus['state'] === 'skip') {
+                $this->warn((string) $runtimeStatus['message']);
 
-        $providerHealth = $this->integrationProviderHealthReadModelService->provider('emr');
+                return self::SUCCESS;
+            }
 
-        if (($providerHealth['runtime_error_message'] ?? null) !== null) {
-            $this->error((string) $providerHealth['runtime_error_message']);
+            $this->error((string) $runtimeStatus['message']);
 
             return self::FAILURE;
         }
