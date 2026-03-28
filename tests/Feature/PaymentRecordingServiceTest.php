@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Invoice;
 use App\Models\Patient;
@@ -83,6 +84,56 @@ it('returns the existing payment when the same transaction ref is retried throug
 
     expect($first->id)->toBe($second->id)
         ->and($invoice->payments()->count())->toBe(1);
+});
+
+it('records normalized audit metadata when creating a payment through the canonical service', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 900_000,
+    ]);
+
+    $payment = app(PaymentRecordingService::class)->record(
+        invoice: $invoice,
+        data: [
+            'amount' => 250_000,
+            'method' => 'transfer',
+            'direction' => 'receipt',
+            'payment_source' => 'patient',
+            'transaction_ref' => 'PAY-AUDIT-001',
+            'paid_at' => now(),
+        ],
+        actor: $manager,
+    );
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_PAYMENT)
+        ->where('entity_id', $payment->id)
+        ->where('action', AuditLog::ACTION_CREATE)
+        ->latest('id')
+        ->first();
+
+    expect($auditLog)->not->toBeNull()
+        ->and($auditLog?->actor_id)->toBe($manager->id)
+        ->and($auditLog?->patient_id)->toBe($invoice->patient_id)
+        ->and($auditLog?->branch_id)->toBe($invoice->resolveBranchId())
+        ->and($auditLog?->metadata)->toMatchArray([
+            'payment_id' => $payment->id,
+            'invoice_id' => $invoice->id,
+            'invoice_no' => $invoice->invoice_no,
+            'method' => 'transfer',
+            'direction' => 'receipt',
+            'trigger' => 'record_payment',
+            'transaction_ref' => 'PAY-AUDIT-001',
+            'payment_source' => 'patient',
+        ]);
 });
 
 it('rejects received_by outside the accessible branch scope in the canonical service', function (): void {

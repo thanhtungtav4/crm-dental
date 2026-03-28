@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\PatientWalletService;
+use App\Support\WorkflowAuditMetadata;
 
 class PaymentObserver
 {
@@ -58,22 +59,36 @@ class PaymentObserver
             default => AuditLog::ACTION_CREATE,
         };
 
+        $reason = in_array($action, [AuditLog::ACTION_REFUND, AuditLog::ACTION_REVERSAL], true)
+            ? WorkflowAuditMetadata::normalizeReason($payment->refund_reason)
+            : null;
+        $trigger = match ($action) {
+            AuditLog::ACTION_REVERSAL => 'manual_reversal',
+            AuditLog::ACTION_REFUND => 'manual_refund',
+            default => 'record_payment',
+        };
+
         AuditLog::record(
             entityType: AuditLog::ENTITY_PAYMENT,
             entityId: $payment->id,
             action: $action,
             actorId: $payment->received_by,
-            metadata: [
+            metadata: array_filter([
                 'patient_id' => $invoice->patient_id,
+                'payment_id' => $payment->id,
                 'invoice_id' => $invoice->id,
                 'invoice_no' => $invoice->invoice_no,
                 'amount' => $payment->amount,
                 'method' => $payment->method,
                 'direction' => $payment->direction,
+                'trigger' => $trigger,
+                'reason' => $reason,
                 'is_deposit' => (bool) $payment->is_deposit,
                 'reversal_of_id' => $payment->reversal_of_id,
                 'refund_reason' => $payment->refund_reason,
-            ]
+                'transaction_ref' => $payment->transaction_ref,
+                'payment_source' => $payment->payment_source,
+            ], static fn (mixed $value): bool => $value !== null)
         );
     }
 }

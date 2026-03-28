@@ -326,7 +326,7 @@ class PatientOperationalTimelineService
                 $description .= ' • '.$amount.'đ';
             }
 
-            $refundReason = data_get($log->metadata, 'refund_reason');
+            $refundReason = data_get($log->metadata, 'reason') ?? data_get($log->metadata, 'refund_reason');
             if (filled($refundReason)) {
                 $description .= ' • '.trim((string) $refundReason);
             }
