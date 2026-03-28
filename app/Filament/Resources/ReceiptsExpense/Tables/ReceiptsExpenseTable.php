@@ -6,8 +6,10 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Models\ReceiptExpense;
+use App\Services\ReceiptExpenseWorkflowService;
 use App\Support\BranchAccess;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -172,27 +174,41 @@ class ReceiptsExpenseTable
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->successNotificationTitle('Đã duyệt phiếu thu/chi')
-                    ->visible(fn (ReceiptExpense $record): bool => $record->status === 'draft'
+                    ->visible(fn (ReceiptExpense $record): bool => $record->status === ReceiptExpense::STATUS_DRAFT
                         && (auth()->user()?->can('update', $record) ?? false))
                     ->authorize(fn (ReceiptExpense $record): bool => auth()->user()?->can('update', $record) ?? false)
-                    ->action(function (ReceiptExpense $record): void {
-                        $record->update(['status' => 'approved']);
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú duyệt')
+                            ->rows(3),
+                    ])
+                    ->action(function (ReceiptExpense $record, array $data): void {
+                        app(ReceiptExpenseWorkflowService::class)->approve(
+                            receiptExpense: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     }),
                 Action::make('post')
                     ->label('Hạch toán')
                     ->icon('heroicon-o-arrow-up-on-square')
                     ->color('info')
                     ->successNotificationTitle('Đã hạch toán phiếu thu/chi')
-                    ->visible(fn (ReceiptExpense $record): bool => in_array($record->status, ['draft', 'approved'], true)
+                    ->visible(fn (ReceiptExpense $record): bool => in_array($record->status, [
+                        ReceiptExpense::STATUS_DRAFT,
+                        ReceiptExpense::STATUS_APPROVED,
+                    ], true)
                         && (auth()->user()?->can('update', $record) ?? false))
                     ->authorize(fn (ReceiptExpense $record): bool => auth()->user()?->can('update', $record) ?? false)
-                    ->requiresConfirmation()
-                    ->action(function (ReceiptExpense $record): void {
-                        $record->update([
-                            'status' => 'posted',
-                            'posted_at' => now(),
-                            'posted_by' => auth()->id(),
-                        ]);
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Ghi chú hạch toán')
+                            ->rows(3),
+                    ])
+                    ->action(function (ReceiptExpense $record, array $data): void {
+                        app(ReceiptExpenseWorkflowService::class)->post(
+                            receiptExpense: $record,
+                            reason: $data['reason'] ?? null,
+                        );
                     }),
             ])
             ->defaultSort('voucher_date', 'desc')

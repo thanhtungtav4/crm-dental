@@ -9,6 +9,7 @@ use App\Models\InsuranceClaim;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PlanItem;
+use App\Models\ReceiptExpense;
 use App\Models\User;
 use App\Services\PatientOperationalTimelineService;
 use Carbon\Carbon;
@@ -211,4 +212,85 @@ it('includes plan item workflow audit entries in the patient operational timelin
 
     expect($entries->pluck('title')->all())->toContain('Bắt đầu hạng mục điều trị')
         ->and($descriptions)->toContain('Implant 26 • Đang thực hiện • Lần khám 1/2 • Bat dau lam tru implant');
+});
+
+it('includes receipt expense workflow audit entries in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_RECEIPT_EXPENSE,
+        'entity_id' => 808,
+        'action' => AuditLog::ACTION_COMPLETE,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'receipt_expense_id' => 808,
+            'voucher_code' => 'PTC-808',
+            'status_to' => ReceiptExpense::STATUS_POSTED,
+            'amount' => 850000,
+            'reason' => 'Ket chuyen cuoi ngay',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 16:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Hạch toán phiếu thu/chi')
+        ->and($descriptions)->toContain('Phiếu PTC-808 • 850.000đ');
+});
+
+it('formats payment refund audit entries with a finance-friendly description', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_PAYMENT,
+        'entity_id' => 909,
+        'action' => AuditLog::ACTION_REFUND,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'invoice_id' => 99,
+            'invoice_no' => 'INV-909',
+            'amount' => -425000,
+            'refund_reason' => 'Hoan phan thu thua',
+        ],
+        'occurred_at' => Carbon::parse('2026-03-10 17:00:00'),
+    ]);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Hoàn tiền')
+        ->and($descriptions)->toContain('Hóa đơn INV-909 • 425.000đ • Hoan phan thu thua');
 });

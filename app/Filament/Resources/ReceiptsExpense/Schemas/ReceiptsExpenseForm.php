@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ReceiptsExpense\Schemas;
 
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\ReceiptExpense;
 use App\Support\BranchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -179,13 +180,16 @@ class ReceiptsExpenseForm
                         Select::make('status')
                             ->label('Trạng thái')
                             ->options([
-                                'draft' => 'Nháp',
-                                'approved' => 'Đã duyệt',
-                                'posted' => 'Đã hạch toán',
-                                'cancelled' => 'Đã hủy',
+                                ReceiptExpense::STATUS_DRAFT => 'Nháp',
+                                ReceiptExpense::STATUS_APPROVED => 'Đã duyệt',
+                                ReceiptExpense::STATUS_POSTED => 'Đã hạch toán',
+                                ReceiptExpense::STATUS_CANCELLED => 'Đã hủy',
                             ])
-                            ->default('draft')
+                            ->default(ReceiptExpense::STATUS_DRAFT)
                             ->required()
+                            ->disabled()
+                            ->dehydrated()
+                            ->helperText('Phiếu mới luôn tạo ở trạng thái Nháp. Dùng action Duyệt / Hạch toán để đổi trạng thái và giữ audit workflow nhất quán.')
                             ->native(false),
                         DateTimePicker::make('posted_at')
                             ->label('Hạch toán lúc')

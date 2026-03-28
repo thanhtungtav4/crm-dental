@@ -27,7 +27,7 @@ class AuditLogsTable
                     ->label('Entity')
                     ->colors([
                         'primary' => AuditLog::ENTITY_PAYMENT,
-                        'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM, AuditLog::ENTITY_PRESCRIPTION],
+                        'warning' => [AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_INSURANCE_CLAIM, AuditLog::ENTITY_PRESCRIPTION, AuditLog::ENTITY_RECEIPT_EXPENSE],
                         'info' => [
                             AuditLog::ENTITY_APPOINTMENT,
                             AuditLog::ENTITY_POPUP_ANNOUNCEMENT,
@@ -79,6 +79,7 @@ class AuditLogsTable
                     ->options([
                         AuditLog::ENTITY_PAYMENT => 'Payment',
                         AuditLog::ENTITY_INVOICE => 'Invoice',
+                        AuditLog::ENTITY_RECEIPT_EXPENSE => 'Receipt Expense',
                         AuditLog::ENTITY_PRESCRIPTION => 'Prescription',
                         AuditLog::ENTITY_APPOINTMENT => 'Appointment',
                         AuditLog::ENTITY_POPUP_ANNOUNCEMENT => 'Popup Announcement',

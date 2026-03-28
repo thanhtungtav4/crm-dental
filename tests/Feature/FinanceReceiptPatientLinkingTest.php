@@ -27,16 +27,21 @@ it('supports patient and invoice linking in receipts expense form and table', fu
     expect($form)
         ->toContain("Select::make('patient_id')")
         ->toContain("Select::make('invoice_id')")
+        ->toContain("Select::make('status')")
         ->toContain('invoiceOptionsForPatient')
         ->toContain('defaultVoucherType')
         ->toContain('defaultPaymentMethod')
-        ->toContain('defaultAmount');
+        ->toContain('defaultAmount')
+        ->toContain('Dùng action Duyệt / Hạch toán');
 
     expect($table)
         ->toContain("TextColumn::make('patient.full_name')")
         ->toContain("TextColumn::make('invoice.invoice_no')")
         ->toContain("Action::make('openPatient')")
-        ->toContain("Action::make('openInvoice')");
+        ->toContain("Action::make('openInvoice')")
+        ->toContain("Action::make('approve')")
+        ->toContain("Action::make('post')")
+        ->toContain('ReceiptExpenseWorkflowService::class');
 
     expect($model)
         ->toContain("'patient_id'")

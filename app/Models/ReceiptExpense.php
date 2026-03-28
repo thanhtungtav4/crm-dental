@@ -12,6 +12,16 @@ class ReceiptExpense extends Model
 {
     use HasFactory;
 
+    protected static bool $allowsManagedWorkflowMutation = false;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_POSTED = 'posted';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
     protected $table = 'receipts_expense';
 
     protected $fillable = [
@@ -93,6 +103,27 @@ class ReceiptExpense extends Model
                 message: 'Bạn không có quyền thao tác phiếu thu/chi ở chi nhánh này.',
             );
 
+            if ($receiptExpense->exists && $receiptExpense->isDirty('status')) {
+                if (! static::$allowsManagedWorkflowMutation) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Trang thai phieu thu chi chi duoc thay doi qua ReceiptExpenseWorkflowService.',
+                    ]);
+                }
+
+                $fromStatus = (string) ($receiptExpense->getOriginal('status') ?? static::STATUS_DRAFT);
+                $toStatus = (string) $receiptExpense->status;
+
+                if (! static::canTransitionStatus($fromStatus, $toStatus)) {
+                    throw ValidationException::withMessages([
+                        'status' => sprintf(
+                            'Khong the chuyen phieu thu chi tu "%s" sang "%s".',
+                            static::statusLabel($fromStatus),
+                            static::statusLabel($toStatus),
+                        ),
+                    ]);
+                }
+            }
+
             $receiptExpense->clinic_id = $resolvedBranchId;
         });
     }
@@ -144,12 +175,42 @@ class ReceiptExpense extends Model
 
     public function getStatusLabel(): string
     {
-        return match ($this->status) {
-            'approved' => 'Đã duyệt',
-            'posted' => 'Đã hạch toán',
-            'cancelled' => 'Đã hủy',
+        return static::statusLabel($this->status);
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            self::STATUS_APPROVED => 'Đã duyệt',
+            self::STATUS_POSTED => 'Đã hạch toán',
+            self::STATUS_CANCELLED => 'Đã hủy',
             default => 'Nháp',
         };
+    }
+
+    public static function runWithinManagedWorkflow(callable $callback): mixed
+    {
+        $previousState = static::$allowsManagedWorkflowMutation;
+        static::$allowsManagedWorkflowMutation = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$allowsManagedWorkflowMutation = $previousState;
+        }
+    }
+
+    protected static function canTransitionStatus(string $fromStatus, string $toStatus): bool
+    {
+        $allowedTransitions = match ($fromStatus) {
+            self::STATUS_DRAFT => [self::STATUS_APPROVED, self::STATUS_POSTED],
+            self::STATUS_APPROVED => [self::STATUS_POSTED],
+            self::STATUS_POSTED => [self::STATUS_POSTED],
+            self::STATUS_CANCELLED => [self::STATUS_CANCELLED],
+            default => [],
+        };
+
+        return in_array($toStatus, $allowedTransitions, true);
     }
 
     protected static function assertConsistentLinkedBranch(

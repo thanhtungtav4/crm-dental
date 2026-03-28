@@ -3,12 +3,18 @@
 namespace App\Filament\Resources\ReceiptsExpense\Pages;
 
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
+use App\Services\ReceiptExpenseWorkflowService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateReceiptsExpense extends CreateRecord
 {
     protected static string $resource = ReceiptsExpenseResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return app(ReceiptExpenseWorkflowService::class)->prepareCreatePayload($data);
+    }
 
     public function mount(): void
     {

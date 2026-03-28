@@ -29,6 +29,8 @@ class AuditLog extends Model
 
     public const ENTITY_INVOICE = 'invoice';
 
+    public const ENTITY_RECEIPT_EXPENSE = 'receipt_expense';
+
     public const ENTITY_PATIENT_WALLET = 'patient_wallet';
 
     public const ENTITY_PRESCRIPTION = 'prescription';

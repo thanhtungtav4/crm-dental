@@ -40,6 +40,14 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_UPDATE,
                         ]);
                 })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_RECEIPT_EXPENSE)
+                        ->whereIn('action', [
+                            AuditLog::ACTION_APPROVE,
+                            AuditLog::ACTION_COMPLETE,
+                            AuditLog::ACTION_CANCEL,
+                            AuditLog::ACTION_UPDATE,
+                        ]);
+                })->orWhere(function (Builder $query): void {
                     $query->whereIn('entity_type', [AuditLog::ENTITY_APPOINTMENT, AuditLog::ENTITY_CARE_TICKET])
                         ->whereIn('action', [
                             AuditLog::ACTION_CANCEL,
@@ -94,7 +102,7 @@ class PatientOperationalTimelineService
     protected function mapAuditLogEntry(AuditLog $log): ?array
     {
         return match ($log->entity_type) {
-            AuditLog::ENTITY_PAYMENT, AuditLog::ENTITY_INVOICE => $this->mapFinancialEntry($log),
+            AuditLog::ENTITY_PAYMENT, AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_RECEIPT_EXPENSE => $this->mapFinancialEntry($log),
             AuditLog::ENTITY_APPOINTMENT => $this->mapAppointmentEntry($log),
             AuditLog::ENTITY_CARE_TICKET => $this->mapCareTicketEntry($log),
             AuditLog::ENTITY_FACTORY_ORDER => $this->mapFactoryOrderEntry($log),
@@ -110,13 +118,30 @@ class PatientOperationalTimelineService
      */
     protected function mapFinancialEntry(AuditLog $log): array
     {
-        $title = match ($log->action) {
-            AuditLog::ACTION_REFUND => 'Hoàn tiền',
-            AuditLog::ACTION_REVERSAL => 'Đảo phiếu',
-            AuditLog::ACTION_CANCEL => 'Hủy hóa đơn',
-            AuditLog::ACTION_UPDATE => 'Cập nhật hóa đơn',
-            default => 'Giao dịch tài chính',
-        };
+        if ($log->entity_type === AuditLog::ENTITY_RECEIPT_EXPENSE) {
+            $title = match ($log->action) {
+                AuditLog::ACTION_APPROVE => 'Duyệt phiếu thu/chi',
+                AuditLog::ACTION_COMPLETE => 'Hạch toán phiếu thu/chi',
+                AuditLog::ACTION_CANCEL => 'Hủy phiếu thu/chi',
+                default => 'Cập nhật phiếu thu/chi',
+            };
+        } elseif ($log->entity_type === AuditLog::ENTITY_PAYMENT) {
+            $title = match ($log->action) {
+                AuditLog::ACTION_CREATE => 'Ghi nhận thanh toán',
+                AuditLog::ACTION_REFUND => 'Hoàn tiền',
+                AuditLog::ACTION_REVERSAL => 'Đảo phiếu thu',
+                AuditLog::ACTION_CANCEL => 'Hủy phiếu thu',
+                default => 'Cập nhật thanh toán',
+            };
+        } else {
+            $title = match ($log->action) {
+                AuditLog::ACTION_REFUND => 'Hoàn tiền',
+                AuditLog::ACTION_REVERSAL => 'Đảo phiếu',
+                AuditLog::ACTION_CANCEL => 'Hủy hóa đơn',
+                AuditLog::ACTION_UPDATE => 'Cập nhật hóa đơn',
+                default => 'Giao dịch tài chính',
+            };
+        }
 
         $description = $this->buildFinancialDescription($log);
 
@@ -276,6 +301,39 @@ class PatientOperationalTimelineService
 
     protected function buildFinancialDescription(AuditLog $log): string
     {
+        if ($log->entity_type === AuditLog::ENTITY_RECEIPT_EXPENSE) {
+            $description = data_get($log->metadata, 'voucher_code') ?: 'Phiếu thu/chi';
+            $amount = data_get($log->metadata, 'amount');
+
+            if ($amount !== null) {
+                $amount = number_format((float) $amount, 0, ',', '.');
+            }
+
+            return $amount !== null ? "Phiếu {$description} • {$amount}đ" : "Phiếu {$description}";
+        }
+
+        if ($log->entity_type === AuditLog::ENTITY_PAYMENT) {
+            $description = data_get($log->metadata, 'invoice_no') ?? data_get($log->metadata, 'invoice_id');
+            $amount = data_get($log->metadata, 'amount');
+
+            if ($amount !== null) {
+                $amount = number_format(abs((float) $amount), 0, ',', '.');
+            }
+
+            $description = $description ? "Hóa đơn {$description}" : 'Thanh toán';
+
+            if ($amount !== null) {
+                $description .= ' • '.$amount.'đ';
+            }
+
+            $refundReason = data_get($log->metadata, 'refund_reason');
+            if (filled($refundReason)) {
+                $description .= ' • '.trim((string) $refundReason);
+            }
+
+            return $description;
+        }
+
         $description = data_get($log->metadata, 'invoice_no') ?? data_get($log->metadata, 'invoice_id');
         $amount = data_get($log->metadata, 'amount');
 

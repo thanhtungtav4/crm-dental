@@ -19,3 +19,12 @@ it('includes popup announcement entity in audit log table filters and badges', f
         ->toContain('AuditLog::ENTITY_POPUP_ANNOUNCEMENT')
         ->toContain("'Popup Announcement'");
 });
+
+it('includes receipt expense entity in audit log table filters and badges', function (): void {
+    $path = app_path('Filament/Resources/AuditLogs/Tables/AuditLogsTable.php');
+    $content = File::get($path);
+
+    expect($content)
+        ->toContain('AuditLog::ENTITY_RECEIPT_EXPENSE')
+        ->toContain("'Receipt Expense'");
+});
