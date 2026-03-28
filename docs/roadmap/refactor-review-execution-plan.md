@@ -183,6 +183,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 5 - Structural Refactor
 
+- Status: `In progress`
 - Goal:
   - Xu ly nhung diem coupling lon nhat giua domain va control-plane.
 - Scope:
@@ -197,11 +198,15 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - concurrency tests
   - migration rehearsal
   - canary rollout va rollback drill
+- Progress update:
+  - `RRB-013` da co `IntegrationProviderRuntimeGate` cho contract `skip / fail / ready` tren cac lane `EMR / Google Calendar / ZNS`.
+  - `RRB-013` da co `IntegrationProviderActionService` de `IntegrationSettings` dung chung contract action/readiness cho `EMR`, `Google Calendar`, `Zalo OA`, va `ZNS`.
 - Deploy safety note:
   - Chi nen lam tren branch/PR rieng, co feature flag hoac song song read-model neu can.
 
 ## Phase 6 - Performance and Reporting Hardening
 
+- Status: `In progress`
 - Goal:
   - Hoan thien layer report/read-model khi dataset va tan suat van hanh tang.
 - Scope:
@@ -217,6 +222,9 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - export scope tests
   - production-like dataset smoke tests
   - snapshot freshness drills
+- Progress update:
+  - `RRB-012` da co `HotReportAggregateReadModelService`, `FinancialReportReadModelService`, `PatientInsightReportReadModelService`, `InventorySupplyReportReadModelService`, va `AppointmentReportReadModelService` cho cac page report branch-scoped.
+  - `RRB-012` da mo rong them `ReportSnapshotComparisonService` va `ReportSnapshotSlaService`, de `CompareReportSnapshots` va `CheckSnapshotSla` khong con tu giu logic diff/SLA ad-hoc trong command class.
 - Deploy safety note:
   - Moi toi uu query/report phai co measurement truoc/sau, va tranh thay doi cung luc voi structural ledger refactor.
 

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ReportSnapshot;
+use App\Services\ReportSnapshotComparisonService;
 use App\Services\ReportSnapshotReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -15,8 +16,10 @@ class CompareReportSnapshots extends Command
 
     protected $description = 'So sánh snapshot trước/sau để audit drift và thay đổi KPI.';
 
-    public function __construct(protected ReportSnapshotReadModelService $reportSnapshots)
-    {
+    public function __construct(
+        protected ReportSnapshotReadModelService $reportSnapshots,
+        protected ReportSnapshotComparisonService $snapshotComparison,
+    ) {
         parent::__construct();
     }
 
@@ -35,15 +38,7 @@ class CompareReportSnapshots extends Command
             return self::INVALID;
         }
 
-        $comparison = [
-            'baseline' => $this->snapshotSummary($leftSnapshot),
-            'current' => $this->snapshotSummary($rightSnapshot),
-            'drift' => [
-                'status' => $rightSnapshot->drift_status,
-                'details' => is_array($rightSnapshot->drift_details) ? $rightSnapshot->drift_details : [],
-            ],
-            'metrics' => $this->buildMetricDiff((array) $leftSnapshot->payload, (array) $rightSnapshot->payload),
-        ];
+        $comparison = $this->snapshotComparison->compare($leftSnapshot, $rightSnapshot);
 
         if ((bool) $this->option('json')) {
             $this->line((string) json_encode($comparison, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -111,93 +106,5 @@ class CompareReportSnapshots extends Command
             $this->reportSnapshots->previousSuccessfulSnapshot($current),
             $current,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $baselinePayload
-     * @param  array<string, mixed>  $currentPayload
-     * @return array<int, array{
-     *     metric:string,
-     *     baseline:string,
-     *     current:string,
-     *     delta:string,
-     *     delta_percent:string
-     * }>
-     */
-    protected function buildMetricDiff(array $baselinePayload, array $currentPayload): array
-    {
-        $keys = collect(array_merge(array_keys($baselinePayload), array_keys($currentPayload)))
-            ->unique()
-            ->sort()
-            ->values();
-
-        return $keys
-            ->map(function (string $metric) use ($baselinePayload, $currentPayload): array {
-                $baselineValue = data_get($baselinePayload, $metric);
-                $currentValue = data_get($currentPayload, $metric);
-
-                if ($this->isNumericValue($baselineValue) && $this->isNumericValue($currentValue)) {
-                    $baselineNumber = (float) $baselineValue;
-                    $currentNumber = (float) $currentValue;
-                    $delta = round($currentNumber - $baselineNumber, 2);
-                    $deltaPercent = $baselineNumber !== 0.0
-                        ? round(($delta / abs($baselineNumber)) * 100, 2)
-                        : null;
-
-                    return [
-                        'metric' => $metric,
-                        'baseline' => number_format($baselineNumber, 2, '.', ''),
-                        'current' => number_format($currentNumber, 2, '.', ''),
-                        'delta' => number_format($delta, 2, '.', ''),
-                        'delta_percent' => $deltaPercent === null ? '-' : number_format($deltaPercent, 2, '.', '').'%',
-                    ];
-                }
-
-                $changed = $baselineValue !== $currentValue;
-
-                return [
-                    'metric' => $metric,
-                    'baseline' => $this->stringifyValue($baselineValue),
-                    'current' => $this->stringifyValue($currentValue),
-                    'delta' => $changed ? 'changed' : 'unchanged',
-                    'delta_percent' => '-',
-                ];
-            })
-            ->all();
-    }
-
-    /**
-     * @return array{id:int,snapshot_key:string,snapshot_date:string|null,schema_version:string|null,payload_checksum:string|null,lineage_checksum:string|null}
-     */
-    protected function snapshotSummary(ReportSnapshot $snapshot): array
-    {
-        return [
-            'id' => (int) $snapshot->id,
-            'snapshot_key' => (string) $snapshot->snapshot_key,
-            'snapshot_date' => $snapshot->snapshot_date?->toDateString(),
-            'schema_version' => $snapshot->schema_version,
-            'payload_checksum' => $snapshot->payload_checksum,
-            'lineage_checksum' => $snapshot->lineage_checksum,
-        ];
-    }
-
-    protected function isNumericValue(mixed $value): bool
-    {
-        return is_int($value) || is_float($value) || (is_string($value) && is_numeric($value));
-    }
-
-    protected function stringifyValue(mixed $value): string
-    {
-        if ($value === null) {
-            return 'null';
-        }
-
-        if (is_scalar($value)) {
-            return (string) $value;
-        }
-
-        $encoded = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        return $encoded === false ? 'complex' : $encoded;
     }
 }
