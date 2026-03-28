@@ -34,9 +34,7 @@ class SnapshotHotReportAggregates extends Command
         );
 
         $dryRun = (bool) $this->option('dry-run');
-        $snapshotDate = $this->option('date')
-            ? Carbon::parse((string) $this->option('date'))->startOfDay()
-            : now()->startOfDay();
+        $snapshotDate = $this->resolveSnapshotDate();
         $requestedBranchId = $this->option('branch_id') !== null
             ? (int) $this->option('branch_id')
             : null;
@@ -87,5 +85,14 @@ class SnapshotHotReportAggregates extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    protected function resolveSnapshotDate(): Carbon
+    {
+        if ($this->option('date')) {
+            return Carbon::parse((string) $this->option('date'))->startOfDay();
+        }
+
+        return now()->subDay()->startOfDay();
     }
 }

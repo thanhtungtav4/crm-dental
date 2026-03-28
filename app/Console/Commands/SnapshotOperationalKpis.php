@@ -40,9 +40,7 @@ class SnapshotOperationalKpis extends Command
         );
 
         $dryRun = (bool) $this->option('dry-run');
-        $snapshotDate = $this->option('date')
-            ? Carbon::parse((string) $this->option('date'))->startOfDay()
-            : now()->startOfDay();
+        $snapshotDate = $this->resolveSnapshotDate();
 
         $snapshotKey = (string) $this->option('key');
         $branchOption = $this->option('branch_id') !== null
@@ -177,6 +175,15 @@ class SnapshotOperationalKpis extends Command
         $this->info("[{$mode}] KPI snapshots processed. success={$created}, failed={$failed}, snapshot_date={$snapshotDate->toDateString()}");
 
         return self::SUCCESS;
+    }
+
+    protected function resolveSnapshotDate(): Carbon
+    {
+        if ($this->option('date')) {
+            return Carbon::parse((string) $this->option('date'))->startOfDay();
+        }
+
+        return now()->subDay()->startOfDay();
     }
 
     /**

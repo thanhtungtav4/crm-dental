@@ -18,7 +18,7 @@ class CheckObservabilityHealth extends Command
 {
     protected $signature = 'ops:check-observability-health
         {--window-hours= : Cửa sổ lookback (giờ) cho chỉ số lỗi automation}
-        {--snapshot-date= : Ngày snapshot để kiểm tra SLA (Y-m-d), mặc định hôm nay}
+        {--snapshot-date= : Ngày snapshot để kiểm tra SLA (Y-m-d), mặc định hôm qua}
         {--strict : Fail command khi vượt error budget}
         {--dry-run : Chỉ preview, không ghi audit log}';
 
@@ -218,7 +218,7 @@ class CheckObservabilityHealth extends Command
         $rawDate = trim((string) ($this->option('snapshot-date') ?? ''));
 
         if ($rawDate === '') {
-            return now()->toDateString();
+            return now()->subDay()->toDateString();
         }
 
         return Carbon::parse($rawDate)->toDateString();

@@ -4,6 +4,8 @@ use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\ClinicSetting;
 use App\Models\GoogleCalendarSyncEvent;
+use App\Models\ReportSnapshot;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 it('fails strict mode when dead-letter error budget is exceeded', function (): void {
@@ -134,6 +136,57 @@ it('counts tracked ops control plane failures in recent automation failure budge
         ->expectsOutputToContain('recent_automation_failures')
         ->expectsOutputToContain('OBS_HEALTH_STATUS: unhealthy')
         ->assertFailed();
+});
+
+it('defaults observability snapshot date to yesterday for sla budget checks', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-03-28 02:25:00'));
+
+    try {
+        seedObservabilityBudgets(
+            deadLetterBudget: 0,
+            retryableFailureBudget: 0,
+            openKpiAlertBudget: 0,
+            snapshotSlaBudget: 0,
+            recentAutomationFailureBudget: 100,
+        );
+
+        ReportSnapshot::query()->create([
+            'snapshot_key' => 'operational_kpi_pack',
+            'snapshot_date' => '2026-03-27',
+            'branch_id' => null,
+            'branch_scope_id' => 0,
+            'status' => ReportSnapshot::STATUS_SUCCESS,
+            'sla_status' => ReportSnapshot::SLA_ON_TIME,
+            'generated_at' => Carbon::parse('2026-03-28 00:20:00'),
+            'sla_due_at' => Carbon::parse('2026-03-28 06:00:00'),
+            'payload' => ['booking_count' => 1],
+            'lineage' => ['generated_at' => Carbon::parse('2026-03-28 00:20:00')->toIso8601String()],
+        ]);
+
+        ReportSnapshot::query()->create([
+            'snapshot_key' => 'operational_kpi_pack',
+            'snapshot_date' => '2026-03-28',
+            'branch_id' => null,
+            'branch_scope_id' => 0,
+            'status' => ReportSnapshot::STATUS_FAILED,
+            'sla_status' => ReportSnapshot::SLA_MISSING,
+            'generated_at' => null,
+            'sla_due_at' => Carbon::parse('2026-03-29 06:00:00'),
+            'payload' => [],
+            'lineage' => ['generated_at' => null],
+        ]);
+
+        $this->artisan('ops:check-observability-health', [
+            '--strict' => true,
+            '--window-hours' => 1,
+        ])
+            ->expectsOutputToContain('OBS_SNAPSHOT_DATE: 2026-03-27')
+            ->expectsOutputToContain('OBS_SNAPSHOT_SLA_VIOLATIONS: 0')
+            ->expectsOutputToContain('OBS_HEALTH_STATUS: healthy')
+            ->assertSuccessful();
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 function seedObservabilityBudgets(

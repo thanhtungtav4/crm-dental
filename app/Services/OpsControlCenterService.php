@@ -680,7 +680,7 @@ class OpsControlCenterService
     protected function kpiOperationsSummary(): array
     {
         $branchIds = $this->operatorBranchIds();
-        $snapshotDate = now()->toDateString();
+        $snapshotDate = $this->latestOperationalKpiSnapshotDate($branchIds);
         $snapshots = ReportSnapshot::query()
             ->where('snapshot_key', 'operational_kpi_pack')
             ->whereDate('snapshot_date', $snapshotDate)
@@ -1122,7 +1122,7 @@ class OpsControlCenterService
     protected function observabilitySummary(): array
     {
         $windowHours = ClinicRuntimeSettings::observabilityWindowHours();
-        $snapshotDate = now()->toDateString();
+        $snapshotDate = now()->subDay()->toDateString();
         $windowStartedAt = now()->subHours($windowHours);
         $runbookMap = ClinicRuntimeSettings::opsAlertRunbookMap();
 
@@ -1471,6 +1471,25 @@ class OpsControlCenterService
         }
 
         return $query->whereIn($column, $branchIds);
+    }
+
+    /**
+     * @param  array<int, int>  $branchIds
+     */
+    protected function latestOperationalKpiSnapshotDate(array $branchIds): string
+    {
+        if ($branchIds === []) {
+            return now()->subDay()->toDateString();
+        }
+
+        $snapshotDate = ReportSnapshot::query()
+            ->where('snapshot_key', 'operational_kpi_pack')
+            ->whereIn('branch_scope_id', $branchIds)
+            ->max('snapshot_date');
+
+        return $snapshotDate
+            ? (string) $snapshotDate
+            : now()->subDay()->toDateString();
     }
 
     protected function formatMoney(mixed $amount): string

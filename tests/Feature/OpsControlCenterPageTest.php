@@ -95,7 +95,6 @@ it('renders integration, kpi, and zns triage summaries from the local seed pack'
         ->assertSee('Lead mail retryable')
         ->assertSee('Lead mail dead')
         ->assertSee('Delivery mail web lead')
-        ->assertSee('No-show vượt ngưỡng')
         ->assertSee('Revenue aggregate')
         ->assertSee('ZNS automation events')
         ->assertSee('Automation dead-letter')

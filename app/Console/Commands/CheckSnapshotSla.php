@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
 
 class CheckSnapshotSla extends Command
 {
-    protected $signature = 'reports:check-snapshot-sla {--date= : Ngày snapshot cần kiểm tra (Y-m-d)} {--key=operational_kpi_pack : Snapshot key} {--branch_id= : Branch id} {--dry-run : Chỉ preview, không ghi DB}';
+    protected $signature = 'reports:check-snapshot-sla {--date= : Ngày snapshot cần kiểm tra (Y-m-d), mặc định hôm qua} {--key=operational_kpi_pack : Snapshot key} {--branch_id= : Branch id} {--dry-run : Chỉ preview, không ghi DB}';
 
     protected $description = 'Đánh giá SLA cho report snapshots (on_time/late/stale/missing).';
 
@@ -32,7 +32,7 @@ class CheckSnapshotSla extends Command
         $dryRun = (bool) $this->option('dry-run');
         $snapshotDate = $this->option('date')
             ? Carbon::parse((string) $this->option('date'))->toDateString()
-            : now()->toDateString();
+            : now()->subDay()->toDateString();
 
         $snapshotKey = (string) $this->option('key');
         $requestedBranchId = $this->option('branch_id') !== null
