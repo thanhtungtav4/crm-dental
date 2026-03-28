@@ -92,9 +92,9 @@ it('routes campaign transitions through workflow service with audit trail', func
 
     $workflow = app(ZnsCampaignWorkflowService::class);
 
-    $scheduledCampaign = $workflow->schedule($campaign, now()->addHour(), 'Len lich gui toi');
-    $runningCampaign = $workflow->runNow($scheduledCampaign, 'Can gui gap');
-    $cancelledCampaign = $workflow->cancel($runningCampaign, 'Dung campaign do doi noi dung');
+    $scheduledCampaign = $workflow->schedule($campaign, now()->addHour(), '  Len lich gui toi  ');
+    $runningCampaign = $workflow->runNow($scheduledCampaign, '  Can gui gap  ');
+    $cancelledCampaign = $workflow->cancel($runningCampaign, '  Dung campaign do doi noi dung  ');
 
     expect($scheduledCampaign->status)->toBe(ZnsCampaign::STATUS_SCHEDULED)
         ->and($scheduledCampaign->scheduled_at)->not->toBeNull()

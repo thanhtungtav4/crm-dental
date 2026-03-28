@@ -172,6 +172,8 @@ it('requires a reason and records audit metadata when rescheduling appointments'
         ->and($rescheduled->status)->toBe(Appointment::STATUS_RESCHEDULED)
         ->and($rescheduled->reschedule_reason)->toBe('Khach xin doi sang cuoi gio chieu')
         ->and($auditLog)->not->toBeNull()
+        ->and(data_get($auditLog?->metadata, 'status_from'))->toBe(Appointment::STATUS_SCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'status_to'))->toBe(Appointment::STATUS_RESCHEDULED)
         ->and(data_get($auditLog?->metadata, 'from_at'))->toContain('15:00:00')
         ->and(data_get($auditLog?->metadata, 'to_at'))->toContain('15:30:00')
         ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Khach xin doi sang cuoi gio chieu')
@@ -216,6 +218,8 @@ it('requires a reason and records form audit metadata when updating appointment 
 
     expect($updated->date?->format('H:i'))->toBe('10:45')
         ->and($updated->status)->toBe(Appointment::STATUS_RESCHEDULED)
+        ->and(data_get($auditLog?->metadata, 'status_from'))->toBe(Appointment::STATUS_CONFIRMED)
+        ->and(data_get($auditLog?->metadata, 'status_to'))->toBe(Appointment::STATUS_RESCHEDULED)
         ->and(data_get($auditLog?->metadata, 'source'))->toBe('form')
         ->and(data_get($auditLog?->metadata, 'reason'))->toBe('Benh nhan xin doi sang ca muon hon');
 });

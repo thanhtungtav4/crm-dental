@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\TreatmentPlan;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
+use App\Support\WorkflowAuditMetadata;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -113,10 +114,10 @@ class TreatmentPlanWorkflowService
                 plan: $lockedPlan,
                 action: AuditLog::ACTION_COMPLETE,
                 actorId: $resolvedActorId,
-                metadata: [
-                    'status_from' => $fromStatus,
-                    'status_to' => TreatmentPlan::STATUS_COMPLETED,
-                ],
+                metadata: WorkflowAuditMetadata::transition(
+                    fromStatus: $fromStatus,
+                    toStatus: TreatmentPlan::STATUS_COMPLETED,
+                ),
             );
 
             return $lockedPlan;
@@ -172,10 +173,12 @@ class TreatmentPlanWorkflowService
                 plan: $lockedPlan,
                 action: $auditAction,
                 actorId: $resolvedActorId,
-                metadata: array_merge($metadata, [
-                    'status_from' => $fromStatus,
-                    'status_to' => $normalizedTargetStatus,
-                ]),
+                metadata: WorkflowAuditMetadata::transition(
+                    fromStatus: $fromStatus,
+                    toStatus: $normalizedTargetStatus,
+                    reason: data_get($metadata, 'reason'),
+                    metadata: $metadata,
+                ),
             );
 
             return $lockedPlan;

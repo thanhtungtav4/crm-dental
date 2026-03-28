@@ -6,6 +6,7 @@ use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\WorkflowAuditMetadata;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -161,12 +162,17 @@ class Invoice extends Model
                     entityId: $invoice->id,
                     action: AuditLog::ACTION_CANCEL,
                     actorId: $actorId,
-                    metadata: [
-                        'patient_id' => $invoice->patient_id,
-                        'invoice_no' => $invoice->invoice_no,
-                        'previous_status' => $invoice->getOriginal('status'),
-                        ...static::currentManagedCancellationContext(),
-                    ]
+                    metadata: WorkflowAuditMetadata::transition(
+                        fromStatus: (string) $invoice->getOriginal('status'),
+                        toStatus: self::STATUS_CANCELLED,
+                        reason: data_get(static::currentManagedCancellationContext(), 'reason'),
+                        metadata: [
+                            'patient_id' => $invoice->patient_id,
+                            'invoice_no' => $invoice->invoice_no,
+                            'previous_status' => $invoice->getOriginal('status'),
+                            ...static::currentManagedCancellationContext(),
+                        ],
+                    )
                 );
 
                 return;
