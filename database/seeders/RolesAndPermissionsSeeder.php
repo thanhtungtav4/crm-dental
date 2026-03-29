@@ -73,6 +73,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'IntegrationSettings',
             'OpsControlCenter',
             'FrontdeskControlCenter',
+            'ConversationInbox',
             'DeliveryOpsCenter',
             'FinancialDashboard',
             'DentalChainReport',
@@ -116,7 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $managerPerms[] = $prefix.':'.$res; // e.g. ViewAny:Customer
             }
         }
-        foreach (['FrontdeskControlCenter', 'DeliveryOpsCenter', 'FinancialDashboard', 'DentalChainReport', 'DentalApp'] as $page) {
+        foreach (['FrontdeskControlCenter', 'ConversationInbox', 'DeliveryOpsCenter', 'FinancialDashboard', 'DentalChainReport', 'DentalApp'] as $page) {
             $managerPerms[] = 'View:'.$page;
         }
         $managerPerms = array_merge($managerPerms, [
@@ -188,6 +189,7 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
         $cskhPerms[] = 'View:FrontdeskControlCenter';
+        $cskhPerms[] = 'View:ConversationInbox';
         $cskhPerms[] = ActionPermission::AUTOMATION_RUN;
         $cskhPerms[] = ActionPermission::PATIENT_BRANCH_TRANSFER;
         $cskh->syncPermissions($cskhPerms);

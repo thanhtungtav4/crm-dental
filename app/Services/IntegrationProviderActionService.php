@@ -93,6 +93,7 @@ class IntegrationProviderActionService
     {
         return match ($providerKey) {
             'zalo_oa' => 'Zalo OA',
+            'facebook_messenger' => 'Facebook Messenger',
             'zns' => 'ZNS',
             'dicom' => 'DICOM / PACS',
             'web_lead' => 'Web Lead API',

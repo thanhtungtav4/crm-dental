@@ -6,16 +6,19 @@ Day la muc luc chinh cho toan bo tai lieu cua CRM.
 
 - [Getting Started](getting-started/README.md)
 - [User Guides](user-guides/README.md)
+- [Conversation Inbox Guide](user-guides/conversation-inbox.md)
 
 ## 2. Van hanh va deploy
 
 - [Operations](operations/README.md)
+- [Conversation Inbox Token Rotation](operations/conversation-inbox-token-rotation.md)
 - [Troubleshooting](troubleshooting/README.md)
 
 ## 3. Cau truc he thong va nghiep vu
 
 - [Module Inventory](modules/README.md)
 - [Integrations](integrations/README.md)
+- [Conversation Inbox Integration](integrations/conversation-inbox.md)
 - [Product Documents](product/README.md)
 
 ## 4. Review va ke hoach

@@ -54,6 +54,36 @@ class IntegrationOperationalPayloadSanitizer
      * @param  array<string, mixed>|null  $payload
      * @return array<string, mixed>|null
      */
+    public function sanitizeFacebookWebhookPayload(?array $payload): ?array
+    {
+        if (! is_array($payload) || $payload === []) {
+            return null;
+        }
+
+        $topLevelKeys = collect(array_keys($payload))
+            ->filter(static fn (mixed $key): bool => is_string($key) && trim($key) !== '')
+            ->map(static fn (string $key): string => trim($key))
+            ->values()
+            ->all();
+
+        return $this->filterNulls([
+            'object' => self::trimString(data_get($payload, 'object')),
+            'page_id' => self::trimString(data_get($payload, 'page_id') ?? data_get($payload, 'recipient.id')),
+            'sender_id' => self::trimString(data_get($payload, 'sender.id')),
+            'recipient_id' => self::trimString(data_get($payload, 'recipient.id')),
+            'timestamp' => self::trimString(data_get($payload, 'timestamp') ?? data_get($payload, 'entry_time')),
+            'message_id' => self::trimString(data_get($payload, 'message.mid')),
+            'message_text_present' => filled(data_get($payload, 'message.text')) ? true : null,
+            'is_echo' => data_get($payload, 'message.is_echo') === true ? true : null,
+            'has_attachments' => filled(data_get($payload, 'message.attachments')) ? true : null,
+            'event_keys' => $topLevelKeys === [] ? null : $topLevelKeys,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $payload
+     * @return array<string, mixed>|null
+     */
     public function sanitizeWebLeadPayload(?array $payload): ?array
     {
         if (! is_array($payload) || $payload === []) {

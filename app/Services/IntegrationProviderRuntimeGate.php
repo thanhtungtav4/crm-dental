@@ -113,6 +113,48 @@ class IntegrationProviderRuntimeGate
     /**
      * @return array{state:string,message:?string}
      */
+    public function facebookWebhookVerifyStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('facebook.enabled', false)) {
+            return $this->skip('Facebook Messenger integration chưa bật.');
+        }
+
+        if (ClinicRuntimeSettings::facebookWebhookVerifyToken() === '') {
+            return $this->fail('Facebook webhook verify token chưa được cấu hình.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsFacebookWebhookVerify(): bool
+    {
+        return $this->facebookWebhookVerifyStatus()['state'] === 'ready';
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
+    public function facebookWebhookDeliveryStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('facebook.enabled', false)) {
+            return $this->skip('Facebook Messenger integration chưa bật.');
+        }
+
+        if (ClinicRuntimeSettings::facebookAppSecret() === '') {
+            return $this->fail('Facebook webhook signature verification misconfigured.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsFacebookWebhookDelivery(): bool
+    {
+        return $this->facebookWebhookDeliveryStatus()['state'] === 'ready';
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
     public function googleCalendarSyncCommandStatus(): array
     {
         if (! ClinicRuntimeSettings::isGoogleCalendarEnabled()) {

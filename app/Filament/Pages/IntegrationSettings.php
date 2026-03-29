@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Models\User;
@@ -88,7 +89,7 @@ class IntegrationSettings extends Page
 
     public function getSubheading(): string
     {
-        return 'Quản lý cấu hình kết nối Zalo, ZNS, Google Calendar, EMR và runtime CSKH.';
+        return 'Quản lý cấu hình kết nối Zalo, Facebook, ZNS, Google Calendar, EMR và runtime CSKH.';
     }
 
     /**
@@ -106,10 +107,29 @@ class IntegrationSettings extends Page
                     ['state' => 'zalo_oa_id', 'key' => 'zalo.oa_id', 'label' => 'OA ID', 'type' => 'text', 'default' => '', 'sort_order' => 20],
                     ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
                     ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
+                    ['state' => 'zalo_access_token', 'key' => 'zalo.access_token', 'label' => 'Access Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 45],
                     ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
                     ['state' => 'zalo_webhook_token_grace_minutes', 'key' => 'zalo.webhook_token_grace_minutes', 'label' => 'Grace window webhook token cũ (phút)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookTokenGraceMinutes(), 'sort_order' => 51],
                     ['state' => 'zalo_webhook_rate_limit_per_minute', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook/phút', 'type' => 'integer', 'default' => 120, 'sort_order' => 55],
                     ['state' => 'zalo_webhook_retention_days', 'key' => 'zalo.webhook_retention_days', 'label' => 'Giữ webhook Zalo (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookRetentionDays(), 'sort_order' => 56],
+                    ['state' => 'zalo_send_endpoint', 'key' => 'zalo.send_endpoint', 'label' => 'Zalo OA send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::zaloSendEndpoint(), 'sort_order' => 57],
+                    ['state' => 'zalo_inbox_default_branch_code', 'key' => 'zalo.inbox_default_branch_code', 'label' => 'Chi nhánh mặc định cho inbox Zalo', 'type' => 'text', 'default' => ClinicRuntimeSettings::zaloInboxDefaultBranchCode(), 'sort_order' => 58],
+                    ['state' => 'zalo_inbox_polling_seconds', 'key' => 'zalo.inbox_polling_seconds', 'label' => 'Chu kỳ polling inbox (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloInboxPollingSeconds(), 'sort_order' => 59],
+                ],
+            ],
+            [
+                'group' => 'facebook',
+                'title' => 'Facebook Messenger',
+                'description' => 'Thiết lập Page inbox, webhook và token gửi phản hồi cho Messenger.',
+                'fields' => [
+                    ['state' => 'facebook_enabled', 'key' => 'facebook.enabled', 'label' => 'Bật tích hợp Facebook Messenger', 'type' => 'boolean', 'default' => false, 'sort_order' => 60],
+                    ['state' => 'facebook_page_id', 'key' => 'facebook.page_id', 'label' => 'Page ID', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookPageId(), 'sort_order' => 61],
+                    ['state' => 'facebook_app_id', 'key' => 'facebook.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookAppId(), 'sort_order' => 62],
+                    ['state' => 'facebook_app_secret', 'key' => 'facebook.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookAppSecret(), 'is_secret' => true, 'sort_order' => 63],
+                    ['state' => 'facebook_webhook_verify_token', 'key' => 'facebook.webhook_verify_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookWebhookVerifyToken(), 'is_secret' => true, 'sort_order' => 64],
+                    ['state' => 'facebook_page_access_token', 'key' => 'facebook.page_access_token', 'label' => 'Page Access Token', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookPageAccessToken(), 'is_secret' => true, 'sort_order' => 65],
+                    ['state' => 'facebook_send_endpoint', 'key' => 'facebook.send_endpoint', 'label' => 'Messenger send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::facebookSendEndpoint(), 'sort_order' => 66],
+                    ['state' => 'facebook_inbox_default_branch_code', 'key' => 'facebook.inbox_default_branch_code', 'label' => 'Chi nhánh mặc định cho inbox Facebook', 'type' => 'text', 'default' => ClinicRuntimeSettings::facebookInboxDefaultBranchCode(), 'sort_order' => 67],
                 ],
             ],
             [
@@ -770,7 +790,7 @@ class IntegrationSettings extends Page
         }
 
         $validated = $this->validate($rules);
-        $this->validateZaloAndZnsDependencies($validated);
+        $this->validateIntegrationProviderDependencies($validated);
 
         try {
             Cache::lock('integration-settings:save', 15)->block(5, function () use ($validated, &$rotationNotifications, &$changedFieldLabels, &$sensitiveFieldLabels): void {
@@ -1532,7 +1552,7 @@ class IntegrationSettings extends Page
     /**
      * @param  array<string, mixed>  $validated
      */
-    protected function validateZaloAndZnsDependencies(array $validated): void
+    protected function validateIntegrationProviderDependencies(array $validated): void
     {
         $errors = [];
 
@@ -1552,11 +1572,74 @@ class IntegrationSettings extends Page
             }
 
             $webhookToken = trim((string) data_get($validated, 'settings.zalo_webhook_token', ''));
+            $accessToken = trim((string) data_get($validated, 'settings.zalo_access_token', ''));
+            $sendEndpoint = trim((string) data_get($validated, 'settings.zalo_send_endpoint', ''));
+            $defaultBranchCode = trim((string) data_get($validated, 'settings.zalo_inbox_default_branch_code', ''));
+            $pollingSeconds = data_get($validated, 'settings.zalo_inbox_polling_seconds');
 
             if ($webhookToken === '') {
                 $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token là bắt buộc khi bật Zalo OA.';
             } elseif (mb_strlen($webhookToken) < 24) {
                 $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token cần tối thiểu 24 ký tự.';
+            }
+
+            if ($accessToken === '') {
+                $errors['settings.zalo_access_token'] = 'Access Token là bắt buộc khi bật Zalo OA inbox.';
+            }
+
+            if ($sendEndpoint === '') {
+                $errors['settings.zalo_send_endpoint'] = 'Zalo OA send endpoint là bắt buộc khi bật Zalo OA inbox.';
+            }
+
+            if ($defaultBranchCode === '') {
+                $errors['settings.zalo_inbox_default_branch_code'] = 'Chi nhánh mặc định cho inbox Zalo là bắt buộc.';
+            } elseif (! Branch::query()->where('code', $defaultBranchCode)->where('active', true)->exists()) {
+                $errors['settings.zalo_inbox_default_branch_code'] = 'Chi nhánh mặc định của inbox Zalo không hợp lệ hoặc không còn hoạt động.';
+            }
+
+            if (! is_numeric($pollingSeconds) || (int) $pollingSeconds < 1 || (int) $pollingSeconds > 30) {
+                $errors['settings.zalo_inbox_polling_seconds'] = 'Chu kỳ polling inbox phải nằm trong khoảng 1-30 giây.';
+            }
+        }
+
+        $facebookEnabled = filter_var(data_get($validated, 'settings.facebook_enabled', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($facebookEnabled) {
+            if (trim((string) data_get($validated, 'settings.facebook_page_id', '')) === '') {
+                $errors['settings.facebook_page_id'] = 'Page ID là bắt buộc khi bật Facebook Messenger.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.facebook_app_id', '')) === '') {
+                $errors['settings.facebook_app_id'] = 'App ID là bắt buộc khi bật Facebook Messenger.';
+            }
+
+            if (trim((string) data_get($validated, 'settings.facebook_app_secret', '')) === '') {
+                $errors['settings.facebook_app_secret'] = 'App Secret là bắt buộc khi bật Facebook Messenger.';
+            }
+
+            $verifyToken = trim((string) data_get($validated, 'settings.facebook_webhook_verify_token', ''));
+            $pageAccessToken = trim((string) data_get($validated, 'settings.facebook_page_access_token', ''));
+            $sendEndpoint = trim((string) data_get($validated, 'settings.facebook_send_endpoint', ''));
+            $defaultBranchCode = trim((string) data_get($validated, 'settings.facebook_inbox_default_branch_code', ''));
+
+            if ($verifyToken === '') {
+                $errors['settings.facebook_webhook_verify_token'] = 'Webhook Verify Token là bắt buộc khi bật Facebook Messenger.';
+            } elseif (mb_strlen($verifyToken) < 24) {
+                $errors['settings.facebook_webhook_verify_token'] = 'Webhook Verify Token cần tối thiểu 24 ký tự.';
+            }
+
+            if ($pageAccessToken === '') {
+                $errors['settings.facebook_page_access_token'] = 'Page Access Token là bắt buộc khi bật Facebook Messenger.';
+            }
+
+            if ($sendEndpoint === '') {
+                $errors['settings.facebook_send_endpoint'] = 'Messenger send endpoint là bắt buộc khi bật Facebook Messenger.';
+            }
+
+            if ($defaultBranchCode === '') {
+                $errors['settings.facebook_inbox_default_branch_code'] = 'Chi nhánh mặc định cho inbox Facebook là bắt buộc.';
+            } elseif (! Branch::query()->where('code', $defaultBranchCode)->where('active', true)->exists()) {
+                $errors['settings.facebook_inbox_default_branch_code'] = 'Chi nhánh mặc định của inbox Facebook không hợp lệ hoặc không còn hoạt động.';
             }
         }
 

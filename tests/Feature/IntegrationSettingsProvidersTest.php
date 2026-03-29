@@ -149,6 +149,27 @@ it('exposes secret rotation grace window fields for inbound integrations', funct
         ->and($webLeadFields)->toContain('web_lead.api_token_grace_minutes');
 });
 
+it('exposes facebook messenger provider fields in integration settings', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+
+    $facebookProvider = $providers->firstWhere('group', 'facebook');
+
+    expect($facebookProvider)->not->toBeNull();
+
+    $facebookFields = collect($facebookProvider['fields'] ?? [])
+        ->keyBy('key');
+
+    expect($facebookFields->has('facebook.enabled'))->toBeTrue()
+        ->and($facebookFields->has('facebook.page_id'))->toBeTrue()
+        ->and($facebookFields->has('facebook.app_id'))->toBeTrue()
+        ->and($facebookFields->has('facebook.app_secret'))->toBeTrue()
+        ->and($facebookFields->has('facebook.webhook_verify_token'))->toBeTrue()
+        ->and($facebookFields->has('facebook.page_access_token'))->toBeTrue()
+        ->and($facebookFields->has('facebook.send_endpoint'))->toBeTrue()
+        ->and($facebookFields->has('facebook.inbox_default_branch_code'))->toBeTrue();
+});
+
 it('can autogenerate web lead api token in form state', function () {
     actingAsIntegrationSettingsProvidersAdmin();
 

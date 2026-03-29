@@ -24,6 +24,16 @@ class ClinicSettingsSeeder extends Seeder
             ['group' => 'zalo', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 50],
             ['group' => 'zalo', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook / phút', 'value' => 120, 'value_type' => 'integer', 'is_secret' => false, 'sort_order' => 55],
 
+            // Facebook Messenger
+            ['group' => 'facebook', 'key' => 'facebook.enabled', 'label' => 'Bật tích hợp Facebook Messenger', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 60],
+            ['group' => 'facebook', 'key' => 'facebook.page_id', 'label' => 'Facebook Page ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 61],
+            ['group' => 'facebook', 'key' => 'facebook.app_id', 'label' => 'Facebook App ID', 'value' => '', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 62],
+            ['group' => 'facebook', 'key' => 'facebook.app_secret', 'label' => 'Facebook App Secret', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 63],
+            ['group' => 'facebook', 'key' => 'facebook.webhook_verify_token', 'label' => 'Facebook Webhook Verify Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 64],
+            ['group' => 'facebook', 'key' => 'facebook.page_access_token', 'label' => 'Facebook Page Access Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 65],
+            ['group' => 'facebook', 'key' => 'facebook.send_endpoint', 'label' => 'Facebook Messenger send endpoint', 'value' => 'https://graph.facebook.com/v23.0/me/messages', 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 66],
+            ['group' => 'facebook', 'key' => 'facebook.inbox_default_branch_code', 'label' => 'Chi nhánh mặc định cho Facebook inbox', 'value' => $defaultBranchCode, 'value_type' => 'text', 'is_secret' => false, 'sort_order' => 67],
+
             // ZNS
             ['group' => 'zns', 'key' => 'zns.enabled', 'label' => 'Bật tích hợp ZNS', 'value' => false, 'value_type' => 'boolean', 'is_secret' => false, 'sort_order' => 110],
             ['group' => 'zns', 'key' => 'zns.access_token', 'label' => 'ZNS Access Token', 'value' => '', 'value_type' => 'text', 'is_secret' => true, 'sort_order' => 120],

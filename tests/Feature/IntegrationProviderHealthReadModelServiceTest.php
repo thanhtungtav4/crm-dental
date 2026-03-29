@@ -10,6 +10,15 @@ it('builds shared provider health cards and counts from runtime settings', funct
     configureIntegrationProviderHealth('zalo.app_secret', 'secret-provider-health', 'text', 'zalo', isSecret: true);
     configureIntegrationProviderHealth('zalo.webhook_token', 'secure-token-provider-health-1234567890', 'text', 'zalo', isSecret: true);
 
+    configureIntegrationProviderHealth('facebook.enabled', true, 'boolean', 'facebook');
+    configureIntegrationProviderHealth('facebook.page_id', 'page-provider-health', 'text', 'facebook');
+    configureIntegrationProviderHealth('facebook.app_id', 'facebook-app-id', 'text', 'facebook');
+    configureIntegrationProviderHealth('facebook.app_secret', 'facebook-app-secret', 'text', 'facebook', isSecret: true);
+    configureIntegrationProviderHealth('facebook.webhook_verify_token', 'facebook-verify-token-1234567890', 'text', 'facebook', isSecret: true);
+    configureIntegrationProviderHealth('facebook.page_access_token', 'facebook-page-access-token', 'text', 'facebook', isSecret: true);
+    configureIntegrationProviderHealth('facebook.send_endpoint', 'https://graph.facebook.com/v23.0/me/messages', 'text', 'facebook');
+    configureIntegrationProviderHealth('facebook.inbox_default_branch_code', 'BR-WEB-01', 'text', 'facebook');
+
     configureIntegrationProviderHealth('zns.enabled', true, 'boolean', 'zns');
     configureIntegrationProviderHealth('zns.access_token', '', 'text', 'zns', isSecret: true);
     configureIntegrationProviderHealth('zns.refresh_token', 'zns-refresh-token', 'text', 'zns', isSecret: true);
@@ -52,6 +61,7 @@ it('builds shared provider health cards and counts from runtime settings', funct
 
     expect($cards->keys()->all())->toBe([
         'zalo_oa',
+        'facebook_messenger',
         'zns',
         'google_calendar',
         'emr',
@@ -60,6 +70,8 @@ it('builds shared provider health cards and counts from runtime settings', funct
     ])
         ->and($cards->get('zalo_oa')['status'])->toBe('Healthy')
         ->and($cards->get('zalo_oa')['webhook_url'])->toContain('/api/v1/integrations/zalo/webhook')
+        ->and($cards->get('facebook_messenger')['status'])->toBe('Healthy')
+        ->and($cards->get('facebook_messenger')['webhook_url'])->toContain('/api/v1/integrations/facebook/webhook')
         ->and($cards->get('zns')['runtime_error_message'])->toBe('Thiếu ZNS access token.')
         ->and($cards->get('google_calendar')['runtime_error_message'])->toBe('Google Calendar chưa cấu hình đầy đủ (client_id/client_secret/refresh_token/calendar_id).')
         ->and($cards->get('emr')['status'])->toBe('Disabled')
@@ -67,7 +79,7 @@ it('builds shared provider health cards and counts from runtime settings', funct
         ->and($cards->get('web_lead')['status'])->toBe('Healthy')
         ->and($cards->get('web_lead')['meta'][0]['value'])->toContain('/api/v1/web-leads')
         ->and($counts)->toBe([
-            'healthy' => 3,
+            'healthy' => 4,
             'degraded' => 2,
             'disabled' => 1,
         ]);

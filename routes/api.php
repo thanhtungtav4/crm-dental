@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\FacebookWebhookController;
 use App\Http\Controllers\Api\InternalEmrMutationController;
 use App\Http\Controllers\Api\V1\MobileAppointmentController;
 use App\Http\Controllers\Api\V1\MobileAuthController;
@@ -19,6 +20,10 @@ Route::prefix('v1')
 Route::match(['get', 'post'], '/v1/integrations/zalo/webhook', ZaloWebhookController::class)
     ->middleware('throttle:zalo-webhook')
     ->name('api.v1.integrations.zalo.webhook');
+
+Route::match(['get', 'post'], '/v1/integrations/facebook/webhook', FacebookWebhookController::class)
+    ->middleware('throttle:facebook-webhook')
+    ->name('api.v1.integrations.facebook.webhook');
 
 Route::prefix('v1/emr/internal')
     ->middleware(['emr.internal.token'])

@@ -489,6 +489,75 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function zaloAccessToken(): string
+    {
+        return trim((string) static::get('zalo.access_token', ''));
+    }
+
+    public static function zaloSendEndpoint(): string
+    {
+        return trim((string) static::get(
+            'zalo.send_endpoint',
+            'https://openapi.zalo.me/v3.0/oa/message/cs',
+        ));
+    }
+
+    public static function zaloInboxDefaultBranchCode(): string
+    {
+        return trim((string) static::get('zalo.inbox_default_branch_code', ''));
+    }
+
+    public static function zaloInboxPollingSeconds(): int
+    {
+        return max(
+            1,
+            min(
+                30,
+                static::integer('zalo.inbox_polling_seconds', 3),
+            ),
+        );
+    }
+
+    public static function conversationInboxPollingSeconds(): int
+    {
+        return static::zaloInboxPollingSeconds();
+    }
+
+    public static function facebookPageId(): string
+    {
+        return trim((string) static::get('facebook.page_id', ''));
+    }
+
+    public static function facebookAppId(): string
+    {
+        return trim((string) static::get('facebook.app_id', ''));
+    }
+
+    public static function facebookAppSecret(): string
+    {
+        return trim((string) static::get('facebook.app_secret', ''));
+    }
+
+    public static function facebookWebhookVerifyToken(): string
+    {
+        return trim((string) static::get('facebook.webhook_verify_token', ''));
+    }
+
+    public static function facebookPageAccessToken(): string
+    {
+        return trim((string) static::get('facebook.page_access_token', ''));
+    }
+
+    public static function facebookSendEndpoint(): string
+    {
+        return trim((string) static::get('facebook.send_endpoint', 'https://graph.facebook.com/v23.0/me/messages'));
+    }
+
+    public static function facebookInboxDefaultBranchCode(): string
+    {
+        return trim((string) static::get('facebook.inbox_default_branch_code', ''));
+    }
+
     public static function znsSendEndpoint(): string
     {
         $endpoint = trim((string) static::get(

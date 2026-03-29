@@ -48,6 +48,14 @@ class ZaloIntegrationService
             $recommendations[] = 'Đăng ký webhook URL trong Zalo OA Console và bật HTTPS-only.';
         }
 
+        if (ClinicRuntimeSettings::zaloAccessToken() === '') {
+            $recommendations[] = 'Cấu hình access token để gửi phản hồi từ CRM inbox.';
+        }
+
+        if (ClinicRuntimeSettings::zaloInboxDefaultBranchCode() === '') {
+            $recommendations[] = 'Chọn chi nhánh mặc định để hội thoại mới được route đúng queue CSKH.';
+        }
+
         return [
             'enabled' => $enabled,
             'score' => $this->calculateScore($issues),
