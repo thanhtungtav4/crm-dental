@@ -303,4 +303,127 @@ class PatientOverviewReadModelService
                 'created_at',
             ]);
     }
+
+    /**
+     * @return Collection<int, array{
+     *     session_id:int,
+     *     performed_at:string,
+     *     progress_date:string,
+     *     tooth_label:string,
+     *     plan_item_name:string,
+     *     procedure:string,
+     *     doctor_name:string,
+     *     assistant_name:string,
+     *     quantity:int|float,
+     *     price_formatted:string,
+     *     total_amount:float,
+     *     total_amount_formatted:string,
+     *     status_label:string,
+     *     status_class:string,
+     *     edit_url:?string
+     * }>
+     */
+    public function treatmentProgress(Patient $patient, string $workspaceReturnUrl = ''): Collection
+    {
+        return $patient->treatmentProgressItems()
+            ->with([
+                'doctor:id,name',
+                'assistant:id,name',
+                'planItem:id,name,tooth_number,tooth_ids,quantity,price,status',
+                'progressDay:id,progress_date,status',
+            ])
+            ->latest('performed_at')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(function ($progressItem) use ($workspaceReturnUrl): array {
+                $performedAt = $progressItem->performed_at ?? $progressItem->created_at;
+                $progressDate = $progressItem->progressDay?->progress_date?->format('d/m/Y')
+                    ?? $performedAt?->format('d/m/Y')
+                    ?? '-';
+                $statusLabel = match ($progressItem->status) {
+                    'completed' => 'Hoàn thành',
+                    'in_progress' => 'Đang thực hiện',
+                    'cancelled' => 'Đã hủy',
+                    default => 'Đã lên lịch',
+                };
+                $statusClass = match ($progressItem->status) {
+                    'completed' => 'is-completed',
+                    'in_progress' => 'is-progress',
+                    'cancelled' => 'is-default',
+                    default => 'is-default',
+                };
+                $toothLabel = $progressItem->tooth_number
+                    ?: $progressItem->planItem?->tooth_number
+                    ?: (is_array($progressItem->planItem?->tooth_ids) ? implode(' ', $progressItem->planItem?->tooth_ids) : '-');
+                $sessionQty = (float) ($progressItem->quantity ?? 1);
+                $sessionPrice = (float) ($progressItem->unit_price ?? 0);
+                $sessionLineTotal = (float) ($progressItem->total_amount ?? ($sessionQty * $sessionPrice));
+                $sessionId = $progressItem->treatment_session_id ? (int) $progressItem->treatment_session_id : null;
+
+                return [
+                    'session_id' => $progressItem->id,
+                    'performed_at' => $performedAt?->format('d/m/Y H:i') ?? '-',
+                    'progress_date' => $progressDate,
+                    'tooth_label' => $toothLabel,
+                    'plan_item_name' => $progressItem->procedure_name ?: ($progressItem->planItem?->name ?? '-'),
+                    'procedure' => $progressItem->notes ?: '-',
+                    'doctor_name' => $progressItem->doctor?->name ?? '-',
+                    'assistant_name' => $progressItem->assistant?->name ?? '-',
+                    'quantity' => fmod($sessionQty, 1.0) === 0.0 ? (int) $sessionQty : $sessionQty,
+                    'price_formatted' => $this->formatMoney($sessionPrice),
+                    'total_amount' => $sessionLineTotal,
+                    'total_amount_formatted' => $this->formatMoney($sessionLineTotal),
+                    'status_label' => $statusLabel,
+                    'status_class' => $statusClass,
+                    'edit_url' => $sessionId
+                        ? route('filament.admin.resources.treatment-sessions.edit', [
+                            'record' => $sessionId,
+                            'return_url' => $workspaceReturnUrl,
+                        ])
+                        : null,
+                ];
+            });
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     progress_date:string,
+     *     status_label:string,
+     *     sessions_count:int,
+     *     day_total_amount:float,
+     *     day_total_amount_formatted:string
+     * }>
+     */
+    public function treatmentProgressDaySummaries(Patient $patient): Collection
+    {
+        return $patient->treatmentProgressDays()
+            ->withSum('items as day_total_amount', 'total_amount')
+            ->withCount('items as sessions_count')
+            ->latest('progress_date')
+            ->latest('id')
+            ->limit(20)
+            ->get(['id', 'progress_date', 'status'])
+            ->map(function ($day): array {
+                $statusLabel = match ($day->status) {
+                    'completed' => 'Hoàn thành',
+                    'in_progress' => 'Đang thực hiện',
+                    'locked' => 'Đã khoá',
+                    default => 'Đã lên lịch',
+                };
+
+                return [
+                    'progress_date' => $day->progress_date?->format('d/m/Y') ?? '-',
+                    'status_label' => $statusLabel,
+                    'sessions_count' => (int) ($day->sessions_count ?? 0),
+                    'day_total_amount' => (float) ($day->day_total_amount ?? 0),
+                    'day_total_amount_formatted' => $this->formatMoney((float) ($day->day_total_amount ?? 0)),
+                ];
+            });
+    }
+
+    protected function formatMoney(float|int|string|null $value): string
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
 }

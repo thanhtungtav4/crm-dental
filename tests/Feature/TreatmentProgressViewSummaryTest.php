@@ -6,6 +6,7 @@ use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\PatientOverviewReadModelService;
 
 it('builds treatment progress totals by day and by session for exam treatment tab', function (): void {
     $doctor = User::factory()->create();
@@ -85,10 +86,16 @@ it('builds treatment progress totals by day and by session for exam treatment ta
 
     $page->forceRecord($patient->fresh());
 
+    $service = app(PatientOverviewReadModelService::class);
+    $serviceDaySummaries = $service->treatmentProgressDaySummaries($patient->fresh());
+    $serviceSessions = $service->treatmentProgress($patient->fresh());
+
     $daySummaries = $page->getTreatmentProgressDaySummariesProperty();
     $sessions = $page->getTreatmentProgressProperty();
 
-    expect($sessions)->toHaveCount(3)
+    expect($serviceSessions->pluck('session_id')->all())->toBe($sessions->pluck('session_id')->all())
+        ->and($serviceDaySummaries->pluck('progress_date')->all())->toBe($daySummaries->pluck('progress_date')->all())
+        ->and($sessions)->toHaveCount(3)
         ->and($page->getTreatmentProgressCountProperty())->toBe(3)
         ->and($daySummaries)->toHaveCount(2)
         ->and($page->getTreatmentProgressDayCountProperty())->toBe(2)
