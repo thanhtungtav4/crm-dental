@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\AppointmentSchedulingService;
 use App\Services\CareTicketService;
 use Livewire\Livewire;
 
@@ -36,9 +37,13 @@ it('uses note tickets as canonical source for appointment reminder tab', functio
     expect($query->getModel())->toBeInstanceOf(Note::class)
         ->and($query->count())->toBe(0);
 
-    $appointment->update([
-        'status' => Appointment::STATUS_NO_SHOW,
-    ]);
+    app(AppointmentSchedulingService::class)->transitionStatus(
+        $appointment->fresh(),
+        Appointment::STATUS_NO_SHOW,
+        [
+            'reason' => 'Patient did not arrive',
+        ],
+    );
 
     app(CareTicketService::class)->syncAppointment($appointment->fresh());
 

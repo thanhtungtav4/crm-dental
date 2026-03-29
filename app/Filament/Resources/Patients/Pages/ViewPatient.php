@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Prescription;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
+use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -404,38 +405,26 @@ class ViewPatient extends ViewRecord
             return $this->cachedPaymentSummary;
         }
 
-        $totalTreatmentAmount = (float) $this->record->invoices()->sum('total_amount');
-        $totalDiscountAmount = (float) $this->record->invoices()->sum('discount_amount');
-        $mustPayAmount = max(0, $totalTreatmentAmount);
-        $receiptAmount = (float) $this->record->payments()->where('direction', 'receipt')->sum('amount');
-        $refundAmount = abs((float) $this->record->payments()->where('direction', 'refund')->sum('amount'));
-        $netCollectedAmount = $receiptAmount - $refundAmount;
-        $remainingAmount = max(0, $mustPayAmount - $netCollectedAmount);
-        $balanceAmount = $netCollectedAmount - $mustPayAmount;
-
-        $openInvoice = $this->record->invoices()
-            ->whereNotIn('status', ['paid', 'cancelled'])
-            ->latest('created_at')
-            ->first();
-        $latestInvoice = $openInvoice ?: $this->record->invoices()->latest('created_at')->first();
+        $summary = app(PatientOverviewReadModelService::class)->paymentSummary($this->record);
+        $latestInvoiceId = $summary['latest_invoice_id'];
 
         $this->cachedPaymentSummary = [
-            'total_treatment_amount' => $totalTreatmentAmount,
-            'total_treatment_amount_formatted' => $this->formatMoney($totalTreatmentAmount),
-            'total_discount_amount' => $totalDiscountAmount,
-            'total_discount_amount_formatted' => $this->formatMoney($totalDiscountAmount),
-            'must_pay_amount' => $mustPayAmount,
-            'must_pay_amount_formatted' => $this->formatMoney($mustPayAmount),
-            'net_collected_amount' => $netCollectedAmount,
-            'net_collected_amount_formatted' => $this->formatMoney($netCollectedAmount),
-            'remaining_amount' => $remainingAmount,
-            'remaining_amount_formatted' => $this->formatMoney($remainingAmount),
-            'balance_amount' => $balanceAmount,
-            'balance_amount_formatted' => $this->formatMoney($balanceAmount),
-            'balance_is_positive' => $balanceAmount >= 0,
+            'total_treatment_amount' => $summary['total_treatment_amount'],
+            'total_treatment_amount_formatted' => $this->formatMoney($summary['total_treatment_amount']),
+            'total_discount_amount' => $summary['total_discount_amount'],
+            'total_discount_amount_formatted' => $this->formatMoney($summary['total_discount_amount']),
+            'must_pay_amount' => $summary['must_pay_amount'],
+            'must_pay_amount_formatted' => $this->formatMoney($summary['must_pay_amount']),
+            'net_collected_amount' => $summary['net_collected_amount'],
+            'net_collected_amount_formatted' => $this->formatMoney($summary['net_collected_amount']),
+            'remaining_amount' => $summary['remaining_amount'],
+            'remaining_amount_formatted' => $this->formatMoney($summary['remaining_amount']),
+            'balance_amount' => $summary['balance_amount'],
+            'balance_amount_formatted' => $this->formatMoney($summary['balance_amount']),
+            'balance_is_positive' => $summary['balance_is_positive'],
             'create_payment_url' => route(
                 'filament.admin.resources.payments.create',
-                $latestInvoice ? ['invoice_id' => $latestInvoice->id] : []
+                $latestInvoiceId ? ['invoice_id' => $latestInvoiceId] : []
             ),
         ];
 

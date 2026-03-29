@@ -4,12 +4,12 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
-use App\Models\Branch;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\CustomerCareSlaReadModelService;
 use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -130,89 +130,11 @@ class CustomerCare extends Page implements HasTable
      */
     public function getSlaSummaryProperty(): array
     {
-        $baseQuery = $this->baseCareTicketQuery();
-        $now = now();
-        $today = $now->toDateString();
-
-        $totalOpen = (clone $baseQuery)->count();
-        $overdue = (clone $baseQuery)
-            ->whereNotNull('care_at')
-            ->where('care_at', '<', $now)
-            ->count();
-        $dueToday = (clone $baseQuery)
-            ->whereDate('care_at', $today)
-            ->count();
-        $unassigned = (clone $baseQuery)
-            ->whereNull('user_id')
-            ->count();
-        $ownedByMe = $this->careSummaryOwnedByCurrentUser($baseQuery);
-
-        $priorityNoShow = (clone $baseQuery)->where('care_type', 'no_show_recovery')->count();
-        $priorityRecall = (clone $baseQuery)->where('care_type', 'recall_recare')->count();
-        $priorityFollowUp = (clone $baseQuery)->where('care_type', 'treatment_plan_follow_up')->count();
-
-        $byChannelRows = (clone $baseQuery)
-            ->selectRaw('COALESCE(care_channel, "other") as metric_key, COUNT(*) as total')
-            ->groupBy('metric_key')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-
-        $byBranchRows = (clone $baseQuery)
-            ->whereNotNull('branch_id')
-            ->selectRaw('branch_id as metric_key, COUNT(*) as total')
-            ->groupBy('metric_key')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-
-        $byStaffRows = (clone $baseQuery)
-            ->whereNotNull('user_id')
-            ->selectRaw('user_id as metric_key, COUNT(*) as total')
-            ->groupBy('metric_key')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-
-        $branchNames = Branch::query()
-            ->whereIn('id', $byBranchRows->pluck('metric_key')->filter()->map(static fn ($id): int => (int) $id)->all())
-            ->pluck('name', 'id');
-
-        $staffNames = User::query()
-            ->whereIn('id', $byStaffRows->pluck('metric_key')->filter()->map(static fn ($id): int => (int) $id)->all())
-            ->pluck('name', 'id');
-
-        return [
-            'total_open' => (int) $totalOpen,
-            'overdue' => (int) $overdue,
-            'due_today' => (int) $dueToday,
-            'unassigned' => (int) $unassigned,
-            'owned_by_me' => (int) $ownedByMe,
-            'priority_no_show' => (int) $priorityNoShow,
-            'priority_recall' => (int) $priorityRecall,
-            'priority_follow_up' => (int) $priorityFollowUp,
-            'by_channel' => $byChannelRows
-                ->map(fn ($row): array => [
-                    'label' => $this->formatCareChannel((string) $row->metric_key),
-                    'total' => (int) $row->total,
-                ])
-                ->values()
-                ->all(),
-            'by_branch' => $byBranchRows
-                ->map(fn ($row): array => [
-                    'label' => (string) ($branchNames[(int) $row->metric_key] ?? 'Không xác định'),
-                    'total' => (int) $row->total,
-                ])
-                ->values()
-                ->all(),
-            'by_staff' => $byStaffRows
-                ->map(fn ($row): array => [
-                    'label' => (string) ($staffNames[(int) $row->metric_key] ?? 'Chưa phân công'),
-                    'total' => (int) $row->total,
-                ])
-                ->values()
-                ->all(),
-        ];
+        return app(CustomerCareSlaReadModelService::class)->summary(
+            baseQuery: $this->baseCareTicketQuery(),
+            authUser: auth()->user(),
+            careChannelOptions: $this->getCareChannelOptions(),
+        );
     }
 
     protected function getTableQuery(): Builder

@@ -207,7 +207,7 @@
 
 ## Quick Wins
 
-1. RRB-009 va RRB-010: workflow + audit convergence, voi lane `PAT/MPI`, outbox/event noi bo, va provider-health/control-plane readers da vao contract; con lai chu yeu la cac lane delivery/read-model bo sung va phan doc timeline hop nhat.
+1. RRB-009 va RRB-010: workflow + audit convergence, voi lane `PAT/MPI`, patient workspace aggregates, `CustomerCare` SLA summary, outbox/event noi bo, va provider-health/control-plane readers da vao contract; con lai chu yeu la cac lane delivery/read-model bo sung va phan doc timeline hop nhat.
 2. Mo rong read-model timeline ngoai patient activity neu nghiep vu can.
 3. Chot lane observer/service con lai truoc khi vao structural refactor lon.
 
