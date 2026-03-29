@@ -1,12 +1,6 @@
 <?php
 
-use App\Filament\Pages\FinancialDashboard;
-use App\Filament\Resources\Payments\Widgets\PaymentMethodsChartWidget;
-use App\Filament\Widgets\MonthlyRevenueChartWidget;
-use App\Filament\Widgets\OutstandingBalanceWidget;
-use App\Filament\Widgets\OverdueInvoicesWidget;
-use App\Filament\Widgets\QuickFinancialStatsWidget;
-use App\Filament\Widgets\RevenueOverviewWidget;
+use App\Filament\Resources\Payments\Widgets\PaymentStatsWidget;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -81,24 +75,30 @@ if (! function_exists('createFinancialDashboardInvoice')) {
     }
 }
 
-it('renders financial dashboard widgets through the shared read model service', function (): void {
+it('scopes payment stats widget to the manager branch', function (): void {
     $now = Carbon::parse('2026-03-18 10:00:00');
     Carbon::setTestNow($now);
 
-    $branch = Branch::factory()->create();
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
 
     $manager = User::factory()->create([
-        'branch_id' => $branch->id,
+        'branch_id' => $branchA->id,
     ]);
     $manager->assignRole('Manager');
 
-    $doctor = User::factory()->create([
-        'branch_id' => $branch->id,
+    $doctorA = User::factory()->create([
+        'branch_id' => $branchA->id,
     ]);
-    $doctor->assignRole('Doctor');
+    $doctorA->assignRole('Doctor');
 
-    createFinancialDashboardInvoice($branch, $doctor, $manager, [
-        'invoice_no' => 'INV-WIDGET-001',
+    $doctorB = User::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $doctorB->assignRole('Doctor');
+
+    createFinancialDashboardInvoice($branchA, $doctorA, $manager, [
+        'invoice_no' => 'INV-PAYMENT-STATS-A1',
         'status' => Invoice::STATUS_PARTIAL,
         'total_amount' => 2_000_000,
         'paid_amount' => 500_000,
@@ -110,56 +110,34 @@ it('renders financial dashboard widgets through the shared read model service', 
         ],
     ]);
 
-    createFinancialDashboardInvoice($branch, $doctor, $manager, [
-        'invoice_no' => 'INV-WIDGET-002',
-        'status' => Invoice::STATUS_OVERDUE,
-        'total_amount' => 3_000_000,
-        'paid_amount' => 1_000_000,
-        'due_date' => $now->copy()->subDays(3)->toDateString(),
+    createFinancialDashboardInvoice($branchA, $doctorA, $manager, [
+        'invoice_no' => 'INV-PAYMENT-STATS-A2',
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 1_000_000,
+        'paid_amount' => 0,
+    ]);
+
+    createFinancialDashboardInvoice($branchB, $doctorB, $manager, [
+        'invoice_no' => 'INV-PAYMENT-STATS-B1',
+        'status' => Invoice::STATUS_PAID,
+        'total_amount' => 7_777_000,
+        'paid_amount' => 7_777_000,
     ], [
         [
-            'amount' => 1_000_000,
+            'amount' => 7_777_000,
             'method' => 'card',
-            'paid_at' => $now->copy()->subDay(),
+            'paid_at' => $now->copy(),
         ],
     ]);
 
-    $this->actingAs($manager)
-        ->get(FinancialDashboard::getUrl())
-        ->assertOk()
-        ->assertSeeLivewire(RevenueOverviewWidget::class)
-        ->assertSeeLivewire(OutstandingBalanceWidget::class)
-        ->assertSeeLivewire(MonthlyRevenueChartWidget::class)
-        ->assertSeeLivewire(PaymentMethodsChartWidget::class)
-        ->assertSeeLivewire(OverdueInvoicesWidget::class)
-        ->assertSeeLivewire(QuickFinancialStatsWidget::class);
-
     $this->actingAs($manager);
 
-    Livewire::test(RevenueOverviewWidget::class)
-        ->assertSee('Doanh thu hôm nay')
+    Livewire::test(PaymentStatsWidget::class)
+        ->assertSee('💰 Tổng thu hôm nay')
         ->assertSee('500.000đ')
-        ->assertSee('Tổng công nợ')
-        ->assertSee('3.500.000đ');
-
-    Livewire::test(OutstandingBalanceWidget::class)
-        ->assertSee('Hóa đơn quá hạn')
-        ->assertSee('1 hóa đơn')
-        ->assertSee('Nợ: 2.000.000đ');
-
-    Livewire::test(OverdueInvoicesWidget::class)
-        ->assertSee('Hóa đơn quá hạn (1 hóa đơn, nợ: 2.000.000đ)');
-
-    Livewire::test(MonthlyRevenueChartWidget::class)
-        ->assertSee('Doanh thu 12 tháng');
-
-    Livewire::test(PaymentMethodsChartWidget::class)
-        ->assertSee('Phân tích phương thức thanh toán');
-
-    Livewire::test(QuickFinancialStatsWidget::class)
-        ->assertSee('Tổng doanh thu')
-        ->assertSee('1.500.000đ')
-        ->assertSee('Tỷ lệ thanh toán');
+        ->assertDontSee('8.277.000đ')
+        ->assertSee('⏰ Hóa đơn chưa thanh toán')
+        ->assertSee('1.000.000đ | Quá hạn: 0');
 
     Carbon::setTestNow();
 });

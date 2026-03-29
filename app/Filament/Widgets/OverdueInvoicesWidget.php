@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use App\Models\Invoice;
+use App\Services\FinancialDashboardReadModelService;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\BadgeColumn;
@@ -88,15 +89,10 @@ class OverdueInvoicesWidget extends BaseWidget
             ->emptyStateDescription('Tất cả hóa đơn đều được thanh toán đúng hạn')
             ->emptyStateIcon('heroicon-o-check-circle')
             ->heading(function (): string {
-                $count = $this->scopedInvoiceQuery()
-                    ->overdue()
-                    ->count();
-                $total = $this->scopedInvoiceQuery()
-                    ->overdue()
-                    ->get()
-                    ->sum(fn (Invoice $invoice): float => $invoice->calculateBalance());
+                $balances = app(FinancialDashboardReadModelService::class)
+                    ->outstandingBalances(auth()->user());
 
-                return "Hóa đơn quá hạn ({$count} hóa đơn, nợ: ".number_format($total, 0, ',', '.').'đ)';
+                return "Hóa đơn quá hạn ({$balances['overdue_count']} hóa đơn, nợ: ".number_format($balances['overdue_balance'], 0, ',', '.').'đ)';
             });
     }
 }

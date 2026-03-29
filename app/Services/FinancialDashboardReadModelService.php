@@ -109,6 +109,7 @@ class FinancialDashboardReadModelService
      *     cash_payments: float,
      *     card_payments: float,
      *     transfer_payments: float,
+     *     insurance_payments: float,
      *     non_cash_total: float,
      *     cash_percentage: float,
      *     avg_invoice: float,
@@ -127,6 +128,7 @@ class FinancialDashboardReadModelService
         $cashPayments = (float) $this->paymentQuery($user)->cash()->sum('amount');
         $cardPayments = (float) $this->paymentQuery($user)->card()->sum('amount');
         $transferPayments = (float) $this->paymentQuery($user)->transfer()->sum('amount');
+        $insurancePayments = (float) $this->paymentQuery($user)->insuranceOnly()->sum('amount');
         $nonCashTotal = $cardPayments + $transferPayments;
 
         $lastMonth = now()->subMonth();
@@ -146,6 +148,7 @@ class FinancialDashboardReadModelService
             'cash_payments' => $cashPayments,
             'card_payments' => $cardPayments,
             'transfer_payments' => $transferPayments,
+            'insurance_payments' => $insurancePayments,
             'non_cash_total' => $nonCashTotal,
             'cash_percentage' => $totalRevenue > 0 ? round(($cashPayments / $totalRevenue) * 100, 1) : 0.0,
             'avg_invoice' => $totalInvoices > 0 ? round((float) $this->invoiceQuery($user)->avg('total_amount'), 2) : 0.0,
