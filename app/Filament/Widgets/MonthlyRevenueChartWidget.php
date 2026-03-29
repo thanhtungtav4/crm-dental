@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
-use Carbon\Carbon;
+use App\Services\FinancialDashboardReadModelService;
 use Filament\Widgets\ChartWidget;
 
 class MonthlyRevenueChartWidget extends ChartWidget
@@ -22,7 +22,8 @@ class MonthlyRevenueChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = $this->getRevenueData();
+        $data = app(FinancialDashboardReadModelService::class)
+            ->monthlyRevenueSeries($this->filter ?? 'year', auth()->user());
 
         return [
             'datasets' => [
@@ -115,43 +116,6 @@ class MonthlyRevenueChartWidget extends ChartWidget
             'year' => 'Năm nay (12 tháng)',
             '6months' => '6 tháng gần đây',
             '3months' => '3 tháng gần đây',
-        ];
-    }
-
-    private function getRevenueData(): array
-    {
-        $months = match ($this->filter) {
-            '3months' => 3,
-            '6months' => 6,
-            default => 12,
-        };
-
-        $revenue = [];
-        $count = [];
-        $labels = [];
-
-        for ($i = $months - 1; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
-
-            $monthRevenue = $this->scopedPaymentQuery()
-                ->whereYear('paid_at', $date->year)
-                ->whereMonth('paid_at', $date->month)
-                ->sum('amount');
-
-            $monthCount = $this->scopedPaymentQuery()
-                ->whereYear('paid_at', $date->year)
-                ->whereMonth('paid_at', $date->month)
-                ->count();
-
-            $revenue[] = $monthRevenue;
-            $count[] = $monthCount;
-            $labels[] = $date->format('m/Y');
-        }
-
-        return [
-            'revenue' => $revenue,
-            'count' => $count,
-            'labels' => $labels,
         ];
     }
 }

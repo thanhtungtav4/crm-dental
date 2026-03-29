@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Payments\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
+use App\Services\FinancialDashboardReadModelService;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Widgets\ChartWidget;
 
@@ -84,17 +85,9 @@ class PaymentMethodsChartWidget extends ChartWidget
 
     private function getMethodData(): array
     {
-        $query = $this->scopedPaymentQuery();
-
-        match ($this->filter) {
-            'today' => $query->today(),
-            'week' => $query->thisWeek(),
-            'month' => $query->thisMonth(),
-            'year' => $query->whereYear('paid_at', now()->year),
-            default => $query->thisMonth(),
-        };
-
         $methods = ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true);
+        $totals = app(FinancialDashboardReadModelService::class)
+            ->paymentMethodTotals($this->filter ?? 'month', auth()->user());
 
         $values = [];
         $labels = [];
@@ -109,7 +102,7 @@ class PaymentMethodsChartWidget extends ChartWidget
         ];
 
         foreach ($methods as $method => $label) {
-            $amount = (clone $query)->where('method', $method)->sum('amount');
+            $amount = $totals[$method] ?? 0;
             if ($amount > 0) {
                 $values[] = $amount;
                 $labels[] = $label;

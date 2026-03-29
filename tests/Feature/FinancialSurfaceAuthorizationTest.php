@@ -6,9 +6,13 @@ use App\Filament\Pages\FinancialDashboard;
 use App\Filament\Resources\ReceiptsExpense\ReceiptsExpenseResource;
 use App\Filament\Widgets\OverdueInvoicesWidget;
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\PlanItem;
 use App\Models\ReceiptExpense;
+use App\Models\TreatmentPlan;
+use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -88,32 +92,61 @@ it('scopes overdue invoice widgets to the manager branch scope', function (): vo
     ]);
     $manager->assignRole('Manager');
 
-    $patientA = Patient::factory()->create([
-        'first_branch_id' => $branchA->id,
-    ]);
-    $patientB = Patient::factory()->create([
-        'first_branch_id' => $branchB->id,
-    ]);
-
-    $invoiceA = Invoice::factory()->create([
-        'patient_id' => $patientA->id,
+    $doctorA = User::factory()->create([
         'branch_id' => $branchA->id,
-        'invoice_no' => 'INV-SCOPE-A',
-        'total_amount' => 5000000,
-        'paid_amount' => 1000000,
-        'status' => Invoice::STATUS_OVERDUE,
-        'due_date' => now()->subDays(5)->toDateString(),
     ]);
+    $doctorA->assignRole('Doctor');
 
-    $invoiceB = Invoice::factory()->create([
-        'patient_id' => $patientB->id,
+    $doctorB = User::factory()->create([
         'branch_id' => $branchB->id,
-        'invoice_no' => 'INV-SCOPE-B',
-        'total_amount' => 7000000,
-        'paid_amount' => 0,
-        'status' => Invoice::STATUS_OVERDUE,
-        'due_date' => now()->subDays(7)->toDateString(),
     ]);
+    $doctorB->assignRole('Doctor');
+
+    $buildScopedInvoice = function (Branch $branch, User $doctor, string $invoiceNo, int $paidAmount): Invoice {
+        $customer = Customer::factory()->create([
+            'branch_id' => $branch->id,
+        ]);
+
+        $patient = Patient::factory()->create([
+            'customer_id' => $customer->id,
+            'first_branch_id' => $branch->id,
+            'full_name' => $customer->full_name,
+            'phone' => $customer->phone,
+            'email' => $customer->email,
+        ]);
+
+        $plan = TreatmentPlan::factory()->create([
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'branch_id' => $branch->id,
+        ]);
+
+        $planItem = PlanItem::factory()->create([
+            'treatment_plan_id' => $plan->id,
+        ]);
+
+        $session = TreatmentSession::factory()->create([
+            'treatment_plan_id' => $plan->id,
+            'plan_item_id' => $planItem->id,
+            'doctor_id' => $doctor->id,
+            'status' => 'scheduled',
+        ]);
+
+        return Invoice::factory()->create([
+            'treatment_session_id' => $session->id,
+            'treatment_plan_id' => $plan->id,
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'invoice_no' => $invoiceNo,
+            'total_amount' => 5000000,
+            'paid_amount' => $paidAmount,
+            'status' => Invoice::STATUS_OVERDUE,
+            'due_date' => now()->subDays(5)->toDateString(),
+        ]);
+    };
+
+    $invoiceA = $buildScopedInvoice($branchA, $doctorA, 'INV-SCOPE-A', 1000000);
+    $invoiceB = $buildScopedInvoice($branchB, $doctorB, 'INV-SCOPE-B', 0);
 
     $this->actingAs($manager);
 
