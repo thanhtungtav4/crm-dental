@@ -60,12 +60,7 @@ class CustomsCareStatistical extends BaseReportPage
             return $this->hotReportAggregates()->careBreakdownQuery($scopeIds);
         }
 
-        return $this->applyNoteBranchScope(
-            Note::query()
-                ->selectRaw('care_type, care_status, count(*) as total_count, max(care_at) as care_at')
-                ->whereNotNull('care_type')
-                ->whereNotNull('care_status')
-        )->groupBy('care_type', 'care_status');
+        return $this->hotReportAggregates()->liveCareBreakdownQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -138,16 +133,14 @@ class CustomsCareStatistical extends BaseReportPage
             $completed = $summary['completed'];
             $planned = $summary['planned'];
         } else {
-            $baseQuery = $this->applyNoteBranchScope(
-                Note::query()
-                    ->whereNotNull('care_type')
-                    ->whereNotNull('care_status')
+            $summary = $this->hotReportAggregates()->liveCareSummary(
+                $this->resolvedVisibleBranchIds(),
+                $from,
+                $until,
             );
-            $this->applyDateRange($baseQuery, 'care_at');
-
-            $total = (clone $baseQuery)->count();
-            $completed = (clone $baseQuery)->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_DONE]))->count();
-            $planned = (clone $baseQuery)->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_NOT_STARTED]))->count();
+            $total = $summary['total'];
+            $completed = $summary['completed'];
+            $planned = $summary['planned'];
         }
 
         return [
@@ -216,53 +209,5 @@ class CustomsCareStatistical extends BaseReportPage
         }
 
         return $accessibleBranchIds;
-    }
-
-    protected function applyNoteBranchScope(Builder $query): Builder
-    {
-        if ($this->isAdmin()) {
-            $branchId = $this->rawSelectedBranchId();
-
-            if ($branchId === null) {
-                return $query;
-            }
-
-            return $this->applyBranchConstraint($query, $branchId);
-        }
-
-        $accessibleBranchIds = $this->accessibleBranchIds();
-
-        if ($accessibleBranchIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $branchId = $this->rawSelectedBranchId();
-
-        if ($branchId !== null) {
-            if (! in_array($branchId, $accessibleBranchIds, true)) {
-                return $query->whereRaw('1 = 0');
-            }
-
-            return $this->applyBranchConstraint($query, $branchId);
-        }
-
-        return $query->where(function (Builder $scopeQuery) use ($accessibleBranchIds): void {
-            $scopeQuery->whereIn('branch_id', $accessibleBranchIds)
-                ->orWhere(function (Builder $legacyQuery) use ($accessibleBranchIds): void {
-                    $legacyQuery->whereNull('branch_id')
-                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $accessibleBranchIds));
-                });
-        });
-    }
-
-    protected function applyBranchConstraint(Builder $query, int $branchId): Builder
-    {
-        return $query->where(function (Builder $scopeQuery) use ($branchId): void {
-            $scopeQuery->where('branch_id', $branchId)
-                ->orWhere(function (Builder $legacyQuery) use ($branchId): void {
-                    $legacyQuery->whereNull('branch_id')
-                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->where('first_branch_id', $branchId));
-                });
-        });
     }
 }

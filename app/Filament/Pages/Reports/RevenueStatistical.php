@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\PlanItem;
 use App\Services\HotReportAggregateReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -49,19 +48,7 @@ class RevenueStatistical extends BaseReportPage
             return $this->hotReportAggregates()->revenueBreakdownQuery($scopeIds);
         }
 
-        $query = PlanItem::query()
-            ->selectRaw('
-                plan_items.service_id as service_id,
-                COALESCE(services.name, CONCAT("Service #", plan_items.service_id)) as service_name,
-                service_categories.name as category_name,
-                COUNT(plan_items.id) as total_count,
-                COALESCE(SUM(COALESCE(plan_items.final_amount, 0)), 0) as total_revenue
-            ')
-            ->join('services', 'services.id', '=', 'plan_items.service_id')
-            ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
-            ->groupBy('plan_items.service_id', 'services.name', 'service_categories.name');
-
-        return $this->applyRelatedBranchScope($query, 'treatmentPlan');
+        return $this->hotReportAggregates()->liveRevenueBreakdownQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableColumns(): array
@@ -115,11 +102,13 @@ class RevenueStatistical extends BaseReportPage
             $totalProcedures = $summary['total_procedures'];
             $totalRevenue = $summary['total_revenue'];
         } else {
-            $baseQuery = $this->applyRelatedBranchScope(PlanItem::query(), 'treatmentPlan');
-            $this->applyDateRange($baseQuery, 'plan_items.created_at');
-
-            $totalProcedures = (clone $baseQuery)->count();
-            $totalRevenue = (float) (clone $baseQuery)->sum('final_amount');
+            $summary = $this->hotReportAggregates()->liveRevenueSummary(
+                $this->resolvedVisibleBranchIds(),
+                $from,
+                $until,
+            );
+            $totalProcedures = $summary['total_procedures'];
+            $totalRevenue = $summary['total_revenue'];
         }
 
         return [

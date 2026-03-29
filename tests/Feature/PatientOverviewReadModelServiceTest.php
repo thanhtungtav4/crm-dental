@@ -12,6 +12,7 @@ use App\Models\MaterialBatch;
 use App\Models\MaterialIssueItem;
 use App\Models\MaterialIssueNote;
 use App\Models\Patient;
+use App\Models\PatientMedicalRecord;
 use App\Models\Payment;
 use App\Models\PlanItem;
 use App\Models\Prescription;
@@ -649,4 +650,55 @@ it('builds latest printable forms through the shared read model', function (): v
 
     expect($page->getLatestPrescriptionsProperty()->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
         ->and($page->getLatestInvoicesProperty()->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
+});
+
+it('builds patient medical record actions through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctor->id,
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+
+    $createAction = $service->medicalRecordAction($patient, $doctor, includePatientContextOnEditUrl: true);
+
+    expect($createAction)->toMatchArray([
+        'label' => 'Tạo bệnh án điện tử',
+        'mode' => 'create',
+        'record_id' => null,
+        'url' => route('filament.admin.resources.patient-medical-records.create', [
+            'patient_id' => $patient->id,
+        ]),
+    ]);
+
+    $medicalRecord = PatientMedicalRecord::query()->create([
+        'patient_id' => $patient->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $editAction = $service->medicalRecordAction($patient->fresh(), $doctor, includePatientContextOnEditUrl: true);
+
+    expect($editAction)->toMatchArray([
+        'label' => 'Mở bệnh án điện tử',
+        'mode' => 'edit',
+        'record_id' => $medicalRecord->id,
+        'url' => route('filament.admin.resources.patient-medical-records.edit', [
+            'record' => $medicalRecord->id,
+            'patient_id' => $patient->id,
+        ]),
+    ]);
+
+    expect($service->medicalRecordAction($patient->fresh(), null))->toBeNull();
 });

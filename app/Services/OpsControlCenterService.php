@@ -39,6 +39,7 @@ class OpsControlCenterService
     public function __construct(
         protected AutomationActorResolver $automationActorResolver,
         protected BackupArtifactManifestService $manifestService,
+        protected FinanceOperationalReadModelService $financeOperationalReadModelService,
         protected GovernanceAuditReadModelService $governanceAuditReadModelService,
         protected IntegrationOperationalReadModelService $integrationOperationalReadModelService,
         protected IntegrationProviderHealthReadModelService $integrationProviderHealthReadModelService,
@@ -769,72 +770,17 @@ class OpsControlCenterService
     protected function financeOperationsSummary(): array
     {
         $branchIds = $this->operatorBranchIds();
-        $needsOverdueSyncCount = $this->applyBranchScope(
-            Invoice::query(),
-            $branchIds,
-        )
-            ->whereDate('due_date', '<', today())
-            ->whereIn('status', [
-                Invoice::STATUS_ISSUED,
-                Invoice::STATUS_PARTIAL,
-            ])
-            ->count();
-        $overdueCount = $this->applyBranchScope(
-            Invoice::query(),
-            $branchIds,
-        )
-            ->where('status', Invoice::STATUS_OVERDUE)
-            ->count();
-        $partialCount = $this->applyBranchScope(
-            Invoice::query(),
-            $branchIds,
-        )
-            ->where('status', Invoice::STATUS_PARTIAL)
-            ->count();
-        $dunningCandidateCount = $this->applyBranchScope(
-            InstallmentPlan::query(),
-            $branchIds,
-        )
-            ->whereIn('status', [
-                InstallmentPlan::STATUS_ACTIVE,
-                InstallmentPlan::STATUS_DEFAULTED,
-            ])
-            ->whereDate('next_due_date', '<', today())
-            ->count();
-        $reversibleReceiptCount = $this->applyBranchScope(
-            Payment::query(),
-            $branchIds,
-        )
-            ->where('direction', 'receipt')
-            ->whereNull('reversal_of_id')
-            ->whereNull('reversed_at')
-            ->count();
-
-        $overdueScenarioInvoice = $this->applyBranchScope(
-            Invoice::query()->with(['patient:id,full_name,patient_code', 'branch:id,name']),
-            $branchIds,
-        )
-            ->where('invoice_no', FinanceScenarioSeeder::OVERDUE_INVOICE_NO)
-            ->first();
-        $reversalScenarioPayment = $this->applyBranchScope(
-            Payment::query()->with(['invoice.patient:id,full_name,patient_code', 'branch:id,name']),
-            $branchIds,
-        )
-            ->where('transaction_ref', FinanceScenarioSeeder::REVERSAL_RECEIPT_TRANSACTION_REF)
-            ->first();
-        $installmentScenarioPlan = $this->applyBranchScope(
-            InstallmentPlan::query()->with(['patient:id,full_name,patient_code', 'branch:id,name']),
-            $branchIds,
-        )
-            ->where('plan_code', FinanceScenarioSeeder::INSTALLMENT_PLAN_CODE)
-            ->first();
-
-        $tone = $needsOverdueSyncCount > 0
-            ? 'danger'
-            : (($dunningCandidateCount > 0 || $overdueCount > 0) ? 'warning' : 'success');
-        $status = $needsOverdueSyncCount > 0
-            ? 'Needs aging sync'
-            : (($dunningCandidateCount > 0 || $overdueCount > 0) ? 'Collections backlog' : 'Healthy');
+        $summary = $this->financeOperationalReadModelService->summary($branchIds);
+        $needsOverdueSyncCount = (int) $summary['needs_overdue_sync_count'];
+        $overdueCount = (int) $summary['overdue_count'];
+        $partialCount = (int) $summary['partial_count'];
+        $dunningCandidateCount = (int) $summary['dunning_candidate_count'];
+        $reversibleReceiptCount = (int) $summary['reversible_receipt_count'];
+        $overdueScenarioInvoice = $summary['overdue_scenario_invoice'];
+        $reversalScenarioPayment = $summary['reversal_scenario_payment'];
+        $installmentScenarioPlan = $summary['installment_scenario_plan'];
+        $tone = (string) $summary['tone'];
+        $status = (string) $summary['status'];
 
         return [
             'tone' => $tone,
@@ -842,7 +788,7 @@ class OpsControlCenterService
             'meta' => [
                 [
                     'label' => 'Visible branches',
-                    'value' => count($branchIds),
+                    'value' => (int) $summary['visible_branch_count'],
                 ],
                 [
                     'label' => 'Needs overdue sync',

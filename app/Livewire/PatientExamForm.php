@@ -8,7 +8,6 @@ use App\Models\ClinicalNote;
 use App\Models\Disease;
 use App\Models\ExamSession;
 use App\Models\Patient;
-use App\Models\PatientMedicalRecord;
 use App\Models\ToothCondition;
 use App\Models\User;
 use App\Services\ClinicalMediaAccessService;
@@ -16,6 +15,7 @@ use App\Services\ClinicalNoteVersioningService;
 use App\Services\EncounterService;
 use App\Services\ExamSessionProvisioningService;
 use App\Services\PatientAssignmentAuthorizer;
+use App\Services\PatientOverviewReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
@@ -616,24 +616,8 @@ class PatientExamForm extends Component
             );
         }
 
-        $authUser = Auth::user();
-        $medicalRecord = $this->patient->medicalRecord()
-            ->first(['id', 'patient_id']);
-
-        $medicalRecordActionUrl = null;
-        $medicalRecordActionLabel = null;
-
-        if ($authUser instanceof User) {
-            if ($medicalRecord instanceof PatientMedicalRecord) {
-                if ($authUser->can('update', $medicalRecord) || $authUser->can('view', $medicalRecord)) {
-                    $medicalRecordActionUrl = route('filament.admin.resources.patient-medical-records.edit', ['record' => $medicalRecord->id]);
-                    $medicalRecordActionLabel = 'Mở bệnh án điện tử';
-                }
-            } elseif ($authUser->can('create', PatientMedicalRecord::class)) {
-                $medicalRecordActionUrl = route('filament.admin.resources.patient-medical-records.create', ['patient_id' => $this->patient->id]);
-                $medicalRecordActionLabel = 'Tạo bệnh án điện tử';
-            }
-        }
+        $medicalRecordAction = app(PatientOverviewReadModelService::class)
+            ->medicalRecordAction($this->patient, Auth::user());
 
         $mediaAccessService = $this->clinicalMediaAccessService();
         $mediaAssets = $this->patient->clinicalMediaAssets()
@@ -699,8 +683,8 @@ class PatientExamForm extends Component
             'sessions' => $sessions,
             'examiningDoctors' => $this->getDoctors($this->examiningDoctorSearch),
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
-            'medicalRecordActionUrl' => $medicalRecordActionUrl,
-            'medicalRecordActionLabel' => $medicalRecordActionLabel,
+            'medicalRecordActionUrl' => $medicalRecordAction['url'] ?? null,
+            'medicalRecordActionLabel' => $medicalRecordAction['label'] ?? null,
             'conditions' => $conditions,
             'conditionsJson' => $conditionsArray,
             'conditionOrder' => $conditionOrder,

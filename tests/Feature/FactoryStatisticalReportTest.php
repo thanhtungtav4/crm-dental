@@ -112,3 +112,29 @@ it('computes factory report stats from factory orders within actor branch scope'
         ['label' => 'Tổng giá trị', 'value' => '2,250,000 đ'],
     ]);
 });
+
+it('limits factory statistical branch filter options to accessible branches for managers', function (): void {
+    $branchA = Branch::factory()->create(['active' => true]);
+    $branchB = Branch::factory()->create(['active' => true]);
+
+    $manager = User::factory()->create(['branch_id' => $branchA->id]);
+    $manager->assignRole('Manager');
+
+    $this->actingAs($manager);
+
+    $page = app(FactoryStatistical::class);
+    $filtersMethod = new ReflectionMethod($page, 'getTableFilters');
+    $filtersMethod->setAccessible(true);
+    $filters = $filtersMethod->invoke($page);
+    $branchFilter = collect($filters)
+        ->first(fn ($filter) => method_exists($filter, 'getName') && $filter->getName() === 'branch_id');
+
+    expect($branchFilter)->not->toBeNull();
+
+    $options = $branchFilter->getOptions();
+
+    expect($options)->toBe([
+        $branchA->id => $branchA->name,
+    ])
+        ->and($options)->not->toHaveKey($branchB->id);
+});

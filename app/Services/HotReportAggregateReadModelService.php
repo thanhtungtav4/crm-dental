@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Note;
+use App\Models\PlanItem;
 use App\Models\ReportCareQueueDailyAggregate;
 use App\Models\ReportRevenueDailyAggregate;
 use Illuminate\Database\Eloquent\Builder;
@@ -102,6 +103,68 @@ class HotReportAggregateReadModelService
     }
 
     /**
+     * @param  array<int, int>|null  $branchIds
+     */
+    public function liveRevenueBreakdownQuery(?array $branchIds): Builder
+    {
+        $query = PlanItem::query()
+            ->selectRaw('
+                plan_items.service_id as service_id,
+                COALESCE(services.name, CONCAT("Service #", plan_items.service_id)) as service_name,
+                service_categories.name as category_name,
+                COUNT(plan_items.id) as total_count,
+                COALESCE(SUM(COALESCE(plan_items.final_amount, 0)), 0) as total_revenue
+            ')
+            ->join('services', 'services.id', '=', 'plan_items.service_id')
+            ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
+            ->groupBy('plan_items.service_id', 'services.name', 'service_categories.name');
+
+        return $this->applyPlanItemBranchScope($query, $branchIds);
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     */
+    public function liveRevenueCategoryBreakdownQuery(?array $branchIds): Builder
+    {
+        $query = PlanItem::query()
+            ->join('services', 'services.id', '=', 'plan_items.service_id')
+            ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
+            ->selectRaw('
+                services.category_id as category_id,
+                service_categories.name as category_name,
+                COUNT(*) as total_count,
+                COALESCE(SUM(COALESCE(plan_items.final_amount, 0)), 0) as total_revenue,
+                MAX(plan_items.created_at) as created_at
+            ')
+            ->groupBy('services.category_id', 'service_categories.name');
+
+        return $this->applyPlanItemBranchScope($query, $branchIds);
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     * @return array{total_procedures:int,total_revenue:float}
+     */
+    public function liveRevenueSummary(?array $branchIds, ?string $from, ?string $until): array
+    {
+        if ($branchIds === []) {
+            return [
+                'total_procedures' => 0,
+                'total_revenue' => 0.0,
+            ];
+        }
+
+        $query = $this->applyPlanItemBranchScope(PlanItem::query(), $branchIds);
+        $this->applyDateRange($query, 'plan_items.created_at', $from, $until);
+
+        return [
+            'total_procedures' => (clone $query)->count(),
+            'total_revenue' => (float) (clone $query)->sum('final_amount'),
+        ];
+    }
+
+    /**
      * @param  array<int, int>  $scopeIds
      */
     public function careBreakdownQuery(array $scopeIds): Builder
@@ -157,6 +220,52 @@ class HotReportAggregateReadModelService
         ];
     }
 
+    /**
+     * @param  array<int, int>|null  $branchIds
+     */
+    public function liveCareBreakdownQuery(?array $branchIds): Builder
+    {
+        $query = Note::query()
+            ->selectRaw('care_type, care_status, count(*) as total_count, max(care_at) as care_at')
+            ->whereNotNull('care_type')
+            ->whereNotNull('care_status')
+            ->groupBy('care_type', 'care_status');
+
+        return $this->applyCareBranchScope($query, $branchIds);
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     * @return array{total:int,completed:int,planned:int}
+     */
+    public function liveCareSummary(?array $branchIds, ?string $from, ?string $until): array
+    {
+        if ($branchIds === []) {
+            return [
+                'total' => 0,
+                'completed' => 0,
+                'planned' => 0,
+            ];
+        }
+
+        $query = Note::query()
+            ->whereNotNull('care_type')
+            ->whereNotNull('care_status');
+
+        $query = $this->applyCareBranchScope($query, $branchIds);
+        $this->applyDateRange($query, 'care_at', $from, $until);
+
+        return [
+            'total' => (clone $query)->count(),
+            'completed' => (int) (clone $query)
+                ->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_DONE]))
+                ->count(),
+            'planned' => (int) (clone $query)
+                ->whereIn('care_status', Note::statusesForQuery([Note::CARE_STATUS_NOT_STARTED]))
+                ->count(),
+        ];
+    }
+
     protected function applyDateRange(Builder $query, string $column, ?string $from, ?string $until): Builder
     {
         if (filled($from)) {
@@ -168,5 +277,43 @@ class HotReportAggregateReadModelService
         }
 
         return $query;
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     */
+    protected function applyPlanItemBranchScope(Builder $query, ?array $branchIds): Builder
+    {
+        if ($branchIds === null) {
+            return $query;
+        }
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('treatmentPlan', fn (Builder $relationQuery) => $relationQuery->whereIn('branch_id', $branchIds));
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     */
+    protected function applyCareBranchScope(Builder $query, ?array $branchIds): Builder
+    {
+        if ($branchIds === null) {
+            return $query;
+        }
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $scopeQuery) use ($branchIds): void {
+            $scopeQuery->whereIn('branch_id', $branchIds)
+                ->orWhere(function (Builder $legacyQuery) use ($branchIds): void {
+                    $legacyQuery->whereNull('branch_id')
+                        ->whereHas('patient', fn (Builder $patientQuery) => $patientQuery->whereIn('first_branch_id', $branchIds));
+                });
+        });
     }
 }

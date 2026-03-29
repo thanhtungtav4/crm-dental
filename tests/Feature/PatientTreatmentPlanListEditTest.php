@@ -138,7 +138,7 @@ it('rejects livewire internal endpoint as return url for treatment session edit 
 });
 
 it('provides treatment session edit link from patient exam treatment progress table', function (): void {
-    $pageClassPath = app_path('Filament/Resources/Patients/Pages/ViewPatient.php');
+    $pageClassPath = app_path('Services/PatientOverviewReadModelService.php');
     $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
 
     $pageClass = File::get($pageClassPath);
@@ -147,7 +147,7 @@ it('provides treatment session edit link from patient exam treatment progress ta
     expect($pageClass)
         ->toContain("'edit_url' => \$sessionId")
         ->toContain("route('filament.admin.resources.treatment-sessions.edit'")
-        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+        ->toContain("'return_url' => \$workspaceReturnUrl");
 
     expect($blade)
         ->toContain("{{ \$session['edit_url'] }}")

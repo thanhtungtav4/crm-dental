@@ -4,12 +4,10 @@ namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
 use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
-use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource;
 use App\Models\Appointment;
 use App\Models\Invoice;
-use App\Models\PatientMedicalRecord;
 use App\Models\Payment;
 use App\Models\Prescription;
 use App\Models\TreatmentPlan;
@@ -46,9 +44,12 @@ class ViewPatient extends ViewRecord
 
     protected ?Collection $cachedLatestInvoices = null;
 
-    protected bool $hasResolvedMedicalRecord = false;
+    protected bool $hasResolvedMedicalRecordAction = false;
 
-    protected ?PatientMedicalRecord $resolvedMedicalRecord = null;
+    /**
+     * @var array{label:string,url:string,mode:'create'|'edit',record_id:?int}|null
+     */
+    protected ?array $cachedMedicalRecordAction = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -403,11 +404,11 @@ class ViewPatient extends ViewRecord
                 ->openUrlInNewTab(),
 
             Action::make('medicalRecord')
-                ->label(fn (): string => $this->resolveMedicalRecordActionLabel())
+                ->label(fn (): string => (string) ($this->resolveMedicalRecordAction()['label'] ?? 'Mở bệnh án điện tử'))
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('primary')
-                ->url(fn (): ?string => $this->resolveMedicalRecordActionUrl())
-                ->visible(fn (): bool => $this->resolveMedicalRecordActionUrl() !== null),
+                ->url(fn (): ?string => $this->resolveMedicalRecordAction()['url'] ?? null)
+                ->visible(fn (): bool => $this->resolveMedicalRecordAction() !== null),
 
             Actions\EditAction::make()
                 ->label('Chỉnh sửa')
@@ -424,53 +425,22 @@ class ViewPatient extends ViewRecord
         return number_format((float) $value, 0, ',', '.');
     }
 
-    protected function resolveMedicalRecordActionUrl(): ?string
+    /**
+     * @return array{label:string,url:string,mode:'create'|'edit',record_id:?int}|null
+     */
+    protected function resolveMedicalRecordAction(): ?array
     {
-        $authUser = auth()->user();
-        if (! $authUser) {
-            return null;
+        if ($this->hasResolvedMedicalRecordAction) {
+            return $this->cachedMedicalRecordAction;
         }
 
-        $medicalRecord = $this->resolvePatientMedicalRecord();
+        $this->cachedMedicalRecordAction = app(PatientOverviewReadModelService::class)->medicalRecordAction(
+            $this->record,
+            auth()->user(),
+            includePatientContextOnEditUrl: true,
+        );
+        $this->hasResolvedMedicalRecordAction = true;
 
-        if ($medicalRecord instanceof PatientMedicalRecord) {
-            if (! ($authUser->can('update', $medicalRecord) || $authUser->can('view', $medicalRecord))) {
-                return null;
-            }
-
-            return PatientMedicalRecordResource::getUrl('edit', [
-                'record' => $medicalRecord,
-                'patient_id' => $this->record->id,
-            ]);
-        }
-
-        if (! $authUser->can('create', PatientMedicalRecord::class)) {
-            return null;
-        }
-
-        return PatientMedicalRecordResource::getUrl('create', [
-            'patient_id' => $this->record->id,
-        ]);
-    }
-
-    protected function resolveMedicalRecordActionLabel(): string
-    {
-        return $this->resolvePatientMedicalRecord() instanceof PatientMedicalRecord
-            ? 'Mở bệnh án điện tử'
-            : 'Tạo bệnh án điện tử';
-    }
-
-    protected function resolvePatientMedicalRecord(): ?PatientMedicalRecord
-    {
-        if ($this->hasResolvedMedicalRecord) {
-            return $this->resolvedMedicalRecord;
-        }
-
-        $this->resolvedMedicalRecord = $this->record->medicalRecord()
-            ->first(['id', 'patient_id']);
-
-        $this->hasResolvedMedicalRecord = true;
-
-        return $this->resolvedMedicalRecord;
+        return $this->cachedMedicalRecordAction;
     }
 }

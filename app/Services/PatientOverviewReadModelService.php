@@ -2,14 +2,17 @@
 
 namespace App\Services;
 
+use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
 use App\Models\Appointment;
 use App\Models\FactoryOrder;
 use App\Models\Invoice;
 use App\Models\MaterialIssueNote;
 use App\Models\Patient;
+use App\Models\PatientMedicalRecord;
 use App\Models\Prescription;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -302,6 +305,61 @@ class PatientOverviewReadModelService
                 'issued_at',
                 'created_at',
             ]);
+    }
+
+    /**
+     * @return array{
+     *     label:string,
+     *     url:string,
+     *     mode:'create'|'edit',
+     *     record_id:?int
+     * }|null
+     */
+    public function medicalRecordAction(
+        Patient $patient,
+        ?User $authUser,
+        bool $includePatientContextOnEditUrl = false,
+    ): ?array {
+        if (! $authUser instanceof User) {
+            return null;
+        }
+
+        $medicalRecord = $patient->medicalRecord()
+            ->first(['id', 'patient_id']);
+
+        if ($medicalRecord instanceof PatientMedicalRecord) {
+            if (! ($authUser->can('update', $medicalRecord) || $authUser->can('view', $medicalRecord))) {
+                return null;
+            }
+
+            $editParameters = [
+                'record' => $medicalRecord->id,
+            ];
+
+            if ($includePatientContextOnEditUrl) {
+                $editParameters['patient_id'] = $patient->id;
+            }
+
+            return [
+                'label' => 'Mở bệnh án điện tử',
+                'url' => PatientMedicalRecordResource::getUrl('edit', $editParameters),
+                'mode' => 'edit',
+                'record_id' => $medicalRecord->id,
+            ];
+        }
+
+        if (! $authUser->can('create', PatientMedicalRecord::class)) {
+            return null;
+        }
+
+        return [
+            'label' => 'Tạo bệnh án điện tử',
+            'url' => PatientMedicalRecordResource::getUrl('create', [
+                'patient_id' => $patient->id,
+            ]),
+            'mode' => 'create',
+            'record_id' => null,
+        ];
     }
 
     /**

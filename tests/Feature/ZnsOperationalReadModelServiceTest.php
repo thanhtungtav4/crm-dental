@@ -288,6 +288,76 @@ it('supports scoped dead-letter counts by zns event type', function (): void {
         ->and(app(ZnsOperationalReadModelService::class)->automationDeadCount(ZnsAutomationEvent::EVENT_BIRTHDAY_GREETING))->toBe(1);
 });
 
+it('builds scoped zns summary metrics and provider status options through the shared read model', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    ZnsCampaign::query()->create([
+        'branch_id' => $branchA->id,
+        'name' => 'Campaign running A',
+        'audience_source' => 'manual',
+        'template_key' => 'birthday',
+        'template_id' => 'TPL-A',
+        'status' => ZnsCampaign::STATUS_RUNNING,
+    ]);
+
+    ZnsCampaign::query()->create([
+        'branch_id' => $branchB->id,
+        'name' => 'Campaign running B',
+        'audience_source' => 'manual',
+        'template_key' => 'birthday',
+        'template_id' => 'TPL-B',
+        'status' => ZnsCampaign::STATUS_RUNNING,
+    ]);
+
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-summary-a',
+        'event_type' => ZnsAutomationEvent::EVENT_LEAD_WELCOME,
+        'template_key' => 'lead_welcome',
+        'template_id_snapshot' => 'tpl-summary-a',
+        'branch_id' => $branchA->id,
+        'phone' => '0903000001',
+        'normalized_phone' => '84903000001',
+        'payload' => ['recipient_name' => 'Summary A'],
+        'payload_checksum' => hash('sha256', 'evt-summary-a'),
+        'status' => ZnsAutomationEvent::STATUS_FAILED,
+        'provider_status_code' => 'E100',
+        'next_retry_at' => now()->subMinute(),
+        'max_attempts' => 3,
+    ]);
+
+    ZnsAutomationEvent::query()->create([
+        'event_key' => 'evt-summary-b',
+        'event_type' => ZnsAutomationEvent::EVENT_APPOINTMENT_REMINDER,
+        'template_key' => 'appointment_reminder',
+        'template_id_snapshot' => 'tpl-summary-b',
+        'branch_id' => $branchB->id,
+        'phone' => '0903000002',
+        'normalized_phone' => '84903000002',
+        'payload' => ['recipient_name' => 'Summary B'],
+        'payload_checksum' => hash('sha256', 'evt-summary-b'),
+        'status' => ZnsAutomationEvent::STATUS_DEAD,
+        'provider_status_code' => 'E200',
+        'max_attempts' => 3,
+    ]);
+
+    $service = app(ZnsOperationalReadModelService::class);
+
+    expect($service->summaryMetrics([$branchA->id]))->toMatchArray([
+        'automation_pending' => 0,
+        'automation_retry_due' => 1,
+        'automation_dead' => 0,
+        'deliveries_retry_due' => 0,
+        'deliveries_terminal_failed' => 0,
+        'campaigns_running' => 1,
+        'campaigns_failed' => 0,
+    ]);
+
+    expect($service->automationProviderStatusOptions([$branchA->id]))->toBe([
+        'E100' => 'E100',
+    ]);
+});
+
 it('supports branch-scoped zns backlog summary cards', function (): void {
     $branch = Branch::factory()->create();
     $otherBranch = Branch::factory()->create();

@@ -6,12 +6,10 @@ use App\Models\ClinicalNote;
 use App\Models\Patient;
 use App\Models\PatientToothCondition;
 use App\Models\PlanItem;
-use App\Models\Service;
-use App\Models\ServiceCategory;
 use App\Models\ToothCondition;
 use App\Models\TreatmentPlan;
+use App\Services\PatientTreatmentPlanReadModelService;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -74,9 +72,8 @@ class PatientTreatmentPlanSection extends Component
             return;
         }
 
-        $services = Service::query()
-            ->whereIn('id', $this->selectedServiceIds)
-            ->get(['id', 'name', 'default_price']);
+        $services = app(PatientTreatmentPlanReadModelService::class)
+            ->servicesByIds($this->selectedServiceIds);
 
         foreach ($services as $service) {
             $this->draftItems[] = [
@@ -426,142 +423,16 @@ class PatientTreatmentPlanSection extends Component
         return PlanItem::normalizeApprovalStatus($status) ?? PlanItem::DEFAULT_APPROVAL_STATUS;
     }
 
-    protected function getPlanItems(): Collection
-    {
-        return PlanItem::query()
-            ->with(['service:id,name', 'treatmentPlan:id,patient_id,title'])
-            ->whereHas('treatmentPlan', fn ($query) => $query->where('patient_id', $this->patientId))
-            ->latest('id')
-            ->get();
-    }
-
-    protected function getDiagnosisMap(Collection $planItems): Collection
-    {
-        $diagnosisIds = $planItems
-            ->pluck('diagnosis_ids')
-            ->filter()
-            ->flatten()
-            ->unique()
-            ->values();
-
-        if ($diagnosisIds->isEmpty()) {
-            return collect();
-        }
-
-        return PatientToothCondition::with('condition:id,name')
-            ->whereIn('id', $diagnosisIds)
-            ->get()
-            ->keyBy('id');
-    }
-
-    protected function getDiagnosisRecords(): Collection
-    {
-        return PatientToothCondition::query()
-            ->with('condition:id,name')
-            ->where('patient_id', $this->patientId)
-            ->where(function ($query) {
-                $query->whereNull('treatment_status')
-                    ->orWhereIn('treatment_status', [
-                        PatientToothCondition::STATUS_CURRENT,
-                        PatientToothCondition::STATUS_IN_TREATMENT,
-                    ]);
-            })
-            ->orderByRaw('CAST(tooth_number AS UNSIGNED) ASC')
-            ->orderBy('id')
-            ->get();
-    }
-
-    protected function getDiagnosisOptions(Collection $diagnosisRecords): array
-    {
-        return $diagnosisRecords
-            ->mapWithKeys(function (PatientToothCondition $condition) {
-                $label = trim(sprintf('%s %s',
-                    $condition->tooth_number ? 'Răng '.$condition->tooth_number.' -' : '',
-                    $condition->condition?->name ?? $condition->tooth_condition_id
-                ));
-
-                return [$condition->id => $label];
-            })
-            ->all();
-    }
-
-    protected function getCategories(): Collection
-    {
-        return ServiceCategory::query()
-            ->active()
-            ->ordered()
-            ->get(['id', 'name', 'parent_id']);
-    }
-
-    protected function getServices(): Collection
-    {
-        return Service::query()
-            ->active()
-            ->when($this->selectedCategoryId, fn ($query) => $query->where('category_id', $this->selectedCategoryId))
-            ->when($this->procedureSearch, fn ($query) => $query->where('name', 'like', '%'.$this->procedureSearch.'%'))
-            ->ordered()
-            ->limit(200)
-            ->get(['id', 'name', 'default_price', 'description']);
-    }
-
     public function render()
     {
-        $planItems = $this->getPlanItems();
-        $diagnosisMap = $this->getDiagnosisMap($planItems);
-        $diagnosisRecords = $this->getDiagnosisRecords();
-        $diagnosisOptions = $this->getDiagnosisOptions($diagnosisRecords);
-        $diagnosisDetails = $diagnosisRecords
-            ->mapWithKeys(fn (PatientToothCondition $condition) => [
-                $condition->id => [
-                    'tooth_number' => (string) $condition->tooth_number,
-                    'condition_name' => (string) ($condition->condition?->name ?? ''),
-                ],
-            ])
-            ->all();
-        $categories = $this->getCategories();
-        $services = $this->getServices();
-
-        $calcLineAmount = fn ($item) => ((float) ($item->price ?? 0)) * ((int) ($item->quantity ?? 0));
-        $calcDiscountAmount = function ($item) use ($calcLineAmount) {
-            $amount = $calcLineAmount($item);
-            $discountAmount = (float) ($item->discount_amount ?? 0);
-            $discountPercent = (float) ($item->discount_percent ?? 0);
-
-            if ($discountAmount <= 0 && $discountPercent > 0) {
-                $discountAmount = ($discountPercent / 100) * $amount;
-            }
-
-            return $discountAmount;
-        };
-        $calcFinalAmount = function ($item) use ($calcLineAmount, $calcDiscountAmount) {
-            if ($item->final_amount !== null) {
-                return (float) $item->final_amount;
-            }
-
-            $vatAmount = (float) ($item->vat_amount ?? 0);
-
-            return max(0, $calcLineAmount($item) - $calcDiscountAmount($item) + $vatAmount);
-        };
-
-        $estimatedTotal = $planItems->sum(fn ($item) => $calcLineAmount($item));
-        $discountTotal = $planItems->sum(fn ($item) => $calcDiscountAmount($item));
-        $totalCost = $planItems->sum(fn ($item) => $calcFinalAmount($item));
-        $completedCost = $planItems->filter(fn ($item) => $item->is_completed || $item->status === 'completed')
-            ->sum(fn ($item) => $calcFinalAmount($item));
-        $pendingCost = max(0, $totalCost - $completedCost);
+        $sectionData = app(PatientTreatmentPlanReadModelService::class)->sectionData(
+            $this->patientId,
+            $this->selectedCategoryId,
+            $this->procedureSearch,
+        );
 
         return view('livewire.patient-treatment-plan-section', [
-            'planItems' => $planItems,
-            'diagnosisMap' => $diagnosisMap,
-            'diagnosisOptions' => $diagnosisOptions,
-            'diagnosisDetails' => $diagnosisDetails,
-            'categories' => $categories,
-            'services' => $services,
-            'estimatedTotal' => $estimatedTotal,
-            'discountTotal' => $discountTotal,
-            'totalCost' => $totalCost,
-            'completedCost' => $completedCost,
-            'pendingCost' => $pendingCost,
+            ...$sectionData,
         ]);
     }
 }

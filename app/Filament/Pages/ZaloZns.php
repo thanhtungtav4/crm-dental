@@ -6,7 +6,6 @@ use App\Filament\Resources\ZnsCampaigns\ZnsCampaignResource;
 use App\Models\User;
 use App\Models\ZnsAutomationEvent;
 use App\Models\ZnsCampaign;
-use App\Models\ZnsCampaignDelivery;
 use App\Services\IntegrationProviderHealthReadModelService;
 use App\Services\ZnsOperationalReadModelService;
 use App\Services\ZnsPayloadSanitizer;
@@ -73,20 +72,8 @@ class ZaloZns extends Page implements HasTable
     public function getOperationalSummaryProperty(): array
     {
         $branchIds = BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false);
-        $summaryCards = collect(app(ZnsOperationalReadModelService::class)->summaryCards($branchIds))
-            ->keyBy('label');
 
-        return [
-            'automation_pending' => (int) ($summaryCards->get('Automation pending')['value'] ?? 0),
-            'automation_retry_due' => (int) ($summaryCards->get('Automation retry due')['value'] ?? 0),
-            'automation_dead' => (int) ($summaryCards->get('Automation dead-letter')['value'] ?? 0),
-            'deliveries_retry_due' => (int) ($summaryCards->get('Delivery retry due')['value'] ?? 0),
-            'deliveries_terminal_failed' => (int) ($summaryCards->get('Delivery terminal failed')['value'] ?? 0),
-            'campaigns_running' => (clone $this->baseCampaignQuery())
-                ->where('status', ZnsCampaign::STATUS_RUNNING)
-                ->count(),
-            'campaigns_failed' => (int) ($summaryCards->get('Campaign failed')['value'] ?? 0),
-        ];
+        return app(ZnsOperationalReadModelService::class)->summaryMetrics($branchIds);
     }
 
     /**
@@ -265,15 +252,6 @@ class ZaloZns extends Page implements HasTable
         );
     }
 
-    protected function baseDeliveryQuery(): Builder
-    {
-        return BranchAccess::scopeQueryByAccessibleBranches(
-            ZnsCampaignDelivery::query(),
-            column: 'branch_id',
-            activeOnly: false,
-        );
-    }
-
     protected function baseCampaignQuery(): Builder
     {
         return ZnsCampaign::query()->branchAccessible();
@@ -331,13 +309,9 @@ class ZaloZns extends Page implements HasTable
      */
     protected function providerStatusOptionsForAutomationTable(): array
     {
-        return $this->baseAutomationQuery()
-            ->whereNotNull('provider_status_code')
-            ->distinct()
-            ->orderBy('provider_status_code')
-            ->pluck('provider_status_code', 'provider_status_code')
-            ->mapWithKeys(static fn (mixed $value, mixed $key): array => [(string) $key => (string) $value])
-            ->all();
+        return app(ZnsOperationalReadModelService::class)->automationProviderStatusOptions(
+            BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false),
+        );
     }
 
     protected function maskedPhone(?string $phone): ?string

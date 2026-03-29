@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\Branch;
 use App\Models\FactoryOrder;
 use App\Services\InventorySupplyReportReadModelService;
 use Filament\Tables\Columns\TextColumn;
@@ -78,7 +77,7 @@ class FactoryStatistical extends BaseReportPage
         return array_merge(parent::getTableFilters(), [
             SelectFilter::make('branch_id')
                 ->label('Chi nhánh')
-                ->options(fn (): array => Branch::query()->orderBy('name')->pluck('name', 'id')->all()),
+                ->options(fn (): array => $this->branchFilterOptions()),
             SelectFilter::make('status')
                 ->label('Trạng thái')
                 ->options(FactoryOrder::statusOptions()),

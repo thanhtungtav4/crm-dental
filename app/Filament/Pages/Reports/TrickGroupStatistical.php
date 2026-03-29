@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages\Reports;
 
-use App\Models\PlanItem;
 use App\Services\HotReportAggregateReadModelService;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -48,13 +47,8 @@ class TrickGroupStatistical extends BaseReportPage
                 ->revenueCategoryBreakdownQuery($this->resolvedRevenueScopeIds());
         }
 
-        $query = PlanItem::query()
-            ->join('services', 'services.id', '=', 'plan_items.service_id')
-            ->leftJoin('service_categories', 'service_categories.id', '=', 'services.category_id')
-            ->selectRaw('services.category_id as category_id, service_categories.name as category_name, count(*) as total_count, sum(plan_items.final_amount) as total_revenue, max(plan_items.created_at) as created_at')
-            ->groupBy('services.category_id', 'service_categories.name');
-
-        return $this->applyRelatedBranchScope($query, 'treatmentPlan');
+        return $this->hotReportAggregates()
+            ->liveRevenueCategoryBreakdownQuery($this->resolvedVisibleBranchIds());
     }
 
     protected function getTableFilters(): array
@@ -102,11 +96,13 @@ class TrickGroupStatistical extends BaseReportPage
             $totalProcedures = $summary['total_procedures'];
             $totalRevenue = $summary['total_revenue'];
         } else {
-            $baseQuery = $this->applyRelatedBranchScope(PlanItem::query(), 'treatmentPlan');
-            $this->applyDateRange($baseQuery, 'created_at');
-
-            $totalProcedures = (clone $baseQuery)->count();
-            $totalRevenue = (clone $baseQuery)->sum('final_amount');
+            $summary = $this->hotReportAggregates()->liveRevenueSummary(
+                $this->resolvedVisibleBranchIds(),
+                $from,
+                $until,
+            );
+            $totalProcedures = $summary['total_procedures'];
+            $totalRevenue = $summary['total_revenue'];
         }
 
         return [
