@@ -74,6 +74,53 @@ class AppointmentReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array{
+     *     total:int,
+     *     scheduled:int,
+     *     confirmed:int,
+     *     in_progress:int,
+     *     completed:int,
+     *     no_show:int
+     * }
+     */
+    public function operationalStatusMetrics(?array $branchIds, ?string $from, ?string $until): array
+    {
+        if ($branchIds === []) {
+            return [
+                'total' => 0,
+                'scheduled' => 0,
+                'confirmed' => 0,
+                'in_progress' => 0,
+                'completed' => 0,
+                'no_show' => 0,
+            ];
+        }
+
+        $query = $this->applyBranchScope(Appointment::query(), $branchIds, 'branch_id');
+        $this->applyDateRange($query, 'date', $from, $until);
+
+        return [
+            'total' => (int) (clone $query)->count(),
+            'scheduled' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_SCHEDULED]))
+                ->count(),
+            'confirmed' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CONFIRMED]))
+                ->count(),
+            'in_progress' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_IN_PROGRESS]))
+                ->count(),
+            'completed' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))
+                ->count(),
+            'no_show' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
+                ->count(),
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     protected function applyBranchScope(Builder $query, ?array $branchIds, string $column): Builder
     {

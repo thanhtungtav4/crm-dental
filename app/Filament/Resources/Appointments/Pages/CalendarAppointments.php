@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Appointments\Pages;
 use App\Filament\Resources\Appointments\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Services\AppointmentReportReadModelService;
 use App\Services\AppointmentSchedulingService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -86,18 +87,11 @@ class CalendarAppointments extends Page
      */
     public function getOperationalStatusMetrics(): array
     {
-        $baseQuery = $this->scopeBranchAccess(
-            Appointment::query()->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()])
+        return app(AppointmentReportReadModelService::class)->operationalStatusMetrics(
+            $this->accessibleBranchIds(),
+            now()->startOfWeek()->toDateString(),
+            now()->endOfWeek()->toDateString(),
         );
-
-        return [
-            'total' => (int) (clone $baseQuery)->count(),
-            'scheduled' => (int) (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_SCHEDULED]))->count(),
-            'confirmed' => (int) (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CONFIRMED]))->count(),
-            'in_progress' => (int) (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_IN_PROGRESS]))->count(),
-            'completed' => (int) (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_COMPLETED]))->count(),
-            'no_show' => (int) (clone $baseQuery)->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))->count(),
-        ];
     }
 
     /**
@@ -183,17 +177,31 @@ class CalendarAppointments extends Page
 
     protected function scopeBranchAccess(Builder $query): Builder
     {
-        $authUser = auth()->user();
-        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+        $branchIds = $this->accessibleBranchIds();
+
+        if ($branchIds === null) {
             return $query;
         }
 
-        $branchIds = BranchAccess::accessibleBranchIds($authUser);
         if ($branchIds === []) {
             return $query->whereRaw('1 = 0');
         }
 
         return $query->whereIn('branch_id', $branchIds);
+    }
+
+    /**
+     * @return array<int, int>|null
+     */
+    protected function accessibleBranchIds(): ?array
+    {
+        $authUser = auth()->user();
+
+        if (! $authUser instanceof User || $authUser->hasRole('Admin')) {
+            return null;
+        }
+
+        return BranchAccess::accessibleBranchIds($authUser);
     }
 
     /**

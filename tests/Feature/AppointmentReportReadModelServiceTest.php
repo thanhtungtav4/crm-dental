@@ -98,6 +98,16 @@ it('summarizes appointment metrics within selected branches', function (): void 
             'avg_chair' => 45.0,
             'avg_overrun' => 5.0,
         ]);
+
+    expect($service->operationalStatusMetrics([$branchA->id], $reportDate, $reportDate))
+        ->toBe([
+            'total' => 1,
+            'scheduled' => 0,
+            'confirmed' => 0,
+            'in_progress' => 0,
+            'completed' => 1,
+            'no_show' => 0,
+        ]);
 });
 
 it('returns empty appointment readers for inaccessible branch selections', function (): void {
@@ -112,5 +122,13 @@ it('returns empty appointment readers for inaccessible branch selections', funct
             'avg_waiting' => 0.0,
             'avg_chair' => 0.0,
             'avg_overrun' => 0.0,
+        ])
+        ->and($service->operationalStatusMetrics([], now()->toDateString(), now()->toDateString()))->toBe([
+            'total' => 0,
+            'scheduled' => 0,
+            'confirmed' => 0,
+            'in_progress' => 0,
+            'completed' => 0,
+            'no_show' => 0,
         ]);
 });
