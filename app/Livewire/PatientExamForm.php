@@ -2,19 +2,19 @@
 
 namespace App\Livewire;
 
-use App\Models\ClinicalMediaAsset;
-use App\Models\ClinicalMediaVersion;
 use App\Models\ClinicalNote;
-use App\Models\Disease;
 use App\Models\ExamSession;
 use App\Models\Patient;
-use App\Models\ToothCondition;
 use App\Models\User;
-use App\Services\ClinicalMediaAccessService;
-use App\Services\ClinicalNoteVersioningService;
-use App\Services\EncounterService;
-use App\Services\ExamSessionProvisioningService;
-use App\Services\PatientAssignmentAuthorizer;
+use App\Services\PatientExamClinicalNoteWorkflowService;
+use App\Services\PatientExamDoctorReadModelService;
+use App\Services\PatientExamIndicationStateService;
+use App\Services\PatientExamMediaReadModelService;
+use App\Services\PatientExamMediaWorkflowService;
+use App\Services\PatientExamReferenceReadModelService;
+use App\Services\PatientExamSessionReadModelService;
+use App\Services\PatientExamSessionWorkflowService;
+use App\Services\PatientExamStatusReadModelService;
 use App\Services\PatientOverviewReadModelService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
@@ -22,9 +22,7 @@ use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -109,20 +107,13 @@ class PatientExamForm extends Component
             'newSessionDate' => ['required', 'date'],
         ]);
 
-        $sessionDate = (string) $validated['newSessionDate'];
-
-        $visitEpisodeId = $this->resolveEncounterIdForDate($sessionDate);
-
-        $session = $this->examSessionProvisioningService()->resolveForPatientOnDate(
-            patientId: (int) $this->patient->id,
-            branchId: $this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null,
-            date: $sessionDate,
+        $result = $this->patientExamSessionWorkflowService()->openSession(
+            patient: $this->patient,
+            sessionDate: (string) $validated['newSessionDate'],
             doctorId: Auth::id() ?: null,
-            visitEpisodeId: $visitEpisodeId,
-            createIfMissing: true,
         );
 
-        if (! $session) {
+        if (($result['status'] ?? null) === 'unavailable' || ! isset($result['session'])) {
             Notification::make()
                 ->title('Không thể khởi tạo phiếu khám cho ngày đã chọn.')
                 ->danger()
@@ -131,9 +122,10 @@ class PatientExamForm extends Component
             return;
         }
 
-        $session->load('clinicalNote');
+        /** @var ExamSession $session */
+        $session = $result['session'];
 
-        if ($session->clinicalNote) {
+        if (($result['status'] ?? null) === 'existing') {
             $this->setActiveSession($session->id);
 
             Notification::make()
@@ -166,7 +158,11 @@ class PatientExamForm extends Component
         $note = $session->clinicalNote;
 
         if (! $note) {
-            $note = $this->makeDraftClinicalNoteForSession($session);
+            $note = $this->patientExamClinicalNoteWorkflowService()->draftForSession(
+                patient: $this->patient,
+                session: $session,
+                actor: Auth::user(),
+            );
         }
 
         $this->examSession = $session;
@@ -218,33 +214,37 @@ class PatientExamForm extends Component
             'editingSessionDate' => ['required', 'date'],
         ]);
 
-        $session = $this->patient->examSessions()
-            ->with('clinicalNote')
-            ->find($this->editingSessionId);
+        try {
+            $result = $this->patientExamSessionWorkflowService()->rescheduleSession(
+                patient: $this->patient,
+                sessionId: $this->editingSessionId,
+                newDate: (string) $this->editingSessionDate,
+                actorId: Auth::id() ?: null,
+                doctorId: $this->examining_doctor_id ?: (Auth::id() ?: null),
+            );
+        } catch (ValidationException $exception) {
+            $errorMessage = (string) (collect($exception->errors())->flatten()->first()
+                ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
 
-        if (! $session) {
-            $this->cancelEditingSession();
-
-            return;
-        }
-
-        if ($this->isSessionLockedByProgress($session)) {
             Notification::make()
-                ->title('Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.')
+                ->title($errorMessage)
                 ->danger()
                 ->send();
+
+            if ($this->editingSessionId) {
+                $this->setActiveSession($this->editingSessionId);
+            }
+
+            return;
+        }
+
+        if (($result['status'] ?? null) === 'missing') {
             $this->cancelEditingSession();
 
             return;
         }
 
-        $newDate = (string) $this->editingSessionDate;
-        $existingSession = $this->patient->examSessions()
-            ->whereDate('session_date', $newDate)
-            ->where('id', '!=', $session->id)
-            ->first();
-
-        if ($existingSession) {
+        if (($result['status'] ?? null) === 'duplicate') {
             Notification::make()
                 ->title('Ngày khám đã tồn tại. Vui lòng chọn ngày khác.')
                 ->warning()
@@ -253,52 +253,12 @@ class PatientExamForm extends Component
             return;
         }
 
-        $visitEpisodeId = $session->visit_episode_id
-            ?: $this->resolveEncounterIdForDate($newDate);
-
-        $session->fill([
-            'session_date' => $newDate,
-            'visit_episode_id' => $visitEpisodeId,
-            'updated_by' => Auth::id(),
-        ]);
-        $session->save();
-
-        $note = $session->clinicalNote;
-
-        if ($note) {
-            $payload = [
-                'date' => $newDate,
-                'visit_episode_id' => $visitEpisodeId,
-                'updated_by' => Auth::id(),
-            ];
-
-            try {
-                $this->clinicalNote = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
-                    clinicalNote: $note,
-                    attributes: $payload,
-                    expectedVersion: (int) ($note->lock_version ?: 1),
-                    actorId: Auth::id(),
-                    operation: 'amend',
-                    reason: 'session_date_update',
-                );
-            } catch (ValidationException $exception) {
-                $errorMessage = (string) (collect($exception->errors())->flatten()->first()
-                    ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
-
-                Notification::make()
-                    ->title($errorMessage)
-                    ->danger()
-                    ->send();
-
-                $this->setActiveSession($session->id);
-
-                return;
-            }
+        if (($result['clinicalNote'] ?? null) instanceof ClinicalNote) {
+            $this->clinicalNote = $result['clinicalNote'];
         }
 
-        if ($visitEpisodeId) {
-            $this->encounterService()->syncStandaloneEncounterDate((int) $visitEpisodeId, $newDate);
-        }
+        /** @var ExamSession $session */
+        $session = $result['session'];
 
         $this->setActiveSession($session->id);
 
@@ -311,38 +271,22 @@ class PatientExamForm extends Component
     public function deleteSession(int $sessionId): void
     {
         $this->authorizeClinicalWrite();
+        $deleted = false;
 
-        $session = $this->patient->examSessions()
-            ->with(['clinicalOrders:id,exam_session_id', 'prescriptions:id,exam_session_id'])
-            ->find($sessionId);
-
-        if (! $session) {
-            return;
-        }
-
-        if ($this->isSessionLockedByProgress($session)) {
+        try {
+            $deleted = $this->patientExamSessionWorkflowService()->deleteSession($this->patient, $sessionId);
+        } catch (ValidationException $exception) {
             Notification::make()
-                ->title('Ngày khám đã có tiến trình điều trị nên không thể xóa được.')
+                ->title((string) (collect($exception->errors())->flatten()->first() ?? 'Không thể xóa phiếu khám.'))
                 ->danger()
                 ->send();
 
             return;
         }
 
-        if ($session->clinicalOrders->isNotEmpty() || $session->prescriptions->isNotEmpty()) {
-            Notification::make()
-                ->title('Phiếu khám đã phát sinh chỉ định/đơn thuốc nên không thể xóa.')
-                ->danger()
-                ->send();
-
+        if (! $deleted) {
             return;
         }
-
-        ClinicalNote::query()
-            ->where('exam_session_id', $session->id)
-            ->delete();
-
-        $session->delete();
 
         if ($this->activeSessionId === $sessionId) {
             $nextSession = $this->getSessionQuery()->first();
@@ -386,10 +330,11 @@ class PatientExamForm extends Component
      */
     public function getDoctors(string $search = ''): Collection
     {
-        return $this->assignableDoctorQuery($search)
-            ->orderBy('name')
-            ->limit(10)
-            ->get(['id', 'name']);
+        return $this->patientExamDoctorReadModelService()->options(
+            actor: Auth::user(),
+            branchId: $this->resolveDoctorAssignmentBranchId(),
+            search: $search,
+        );
     }
 
     public function selectExaminingDoctor(int $id): void
@@ -428,15 +373,16 @@ class PatientExamForm extends Component
 
     public function toggleIndication(string $type): void
     {
-        $normalizedType = $this->normalizeIndicationKey($type);
+        $state = $this->patientExamIndicationStateService()->toggle(
+            indications: $this->indications,
+            indicationImages: $this->indicationImages,
+            tempUploads: $this->tempUploads,
+            type: $type,
+        );
 
-        if (in_array($normalizedType, $this->indications, true)) {
-            $this->indications = array_values(array_diff($this->indications, [$normalizedType]));
-            unset($this->indicationImages[$normalizedType], $this->tempUploads[$normalizedType]);
-        } else {
-            $this->indications[] = $normalizedType;
-            $this->indications = array_values(array_unique($this->indications));
-        }
+        $this->indications = $state['indications'];
+        $this->indicationImages = $state['indicationImages'];
+        $this->tempUploads = $state['tempUploads'];
 
         $this->saveData();
     }
@@ -444,26 +390,41 @@ class PatientExamForm extends Component
     public function updatedTempUploads($value, string $key): void
     {
         $parts = explode('.', $key);
-        $type = $this->normalizeIndicationKey($parts[0]);
+        $type = $this->patientExamIndicationStateService()->normalizeKey($parts[0]);
 
         if (! isset($this->tempUploads[$type]) || ! is_array($this->tempUploads[$type])) {
             return;
         }
 
-        foreach ($this->tempUploads[$type] as $file) {
-            if (! $file || ! method_exists($file, 'store')) {
-                continue;
-            }
+        $result = $this->patientExamMediaWorkflowService()->storeUploads(
+            patient: $this->patient,
+            session: $this->examSession,
+            clinicalNote: $this->clinicalNote,
+            payload: $this->patientExamClinicalNoteWorkflowService()->buildPayload(
+                patient: $this->patient,
+                clinicalNote: $this->clinicalNote,
+                session: $this->examSession,
+                data: $this->clinicalNotePayloadData(),
+                actorId: Auth::id() ?: null,
+            ),
+            indicationType: $type,
+            uploads: $this->tempUploads[$type],
+            actor: Auth::user(),
+            actorId: Auth::id() ?: null,
+        );
 
-            $path = $file->store("patients/{$this->patient->id}/indications/{$type}", 'public');
-
-            if (! isset($this->indicationImages[$type])) {
-                $this->indicationImages[$type] = [];
-            }
-
-            $this->indicationImages[$type][] = $path;
-            $this->persistClinicalMediaAsset($type, $path);
+        if (($result['clinicalNote'] ?? null) instanceof ClinicalNote) {
+            $this->clinicalNote = $result['clinicalNote'];
         }
+
+        if (! isset($this->indicationImages[$type])) {
+            $this->indicationImages[$type] = [];
+        }
+
+        $this->indicationImages[$type] = [
+            ...$this->indicationImages[$type],
+            ...($result['paths'] ?? []),
+        ];
 
         $this->tempUploads[$type] = [];
         $this->saveData();
@@ -471,7 +432,7 @@ class PatientExamForm extends Component
 
     public function removeImage(string $type, int $index): void
     {
-        $normalizedType = $this->normalizeIndicationKey($type);
+        $normalizedType = $this->patientExamIndicationStateService()->normalizeKey($type);
 
         if (! isset($this->indicationImages[$normalizedType][$index])) {
             return;
@@ -479,16 +440,11 @@ class PatientExamForm extends Component
 
         $path = $this->indicationImages[$normalizedType][$index];
 
-        Storage::disk('public')->delete($path);
-        ClinicalMediaAsset::query()
-            ->where('patient_id', $this->patient->id)
-            ->where('exam_session_id', $this->examSession?->id)
-            ->where('storage_disk', 'public')
-            ->where('storage_path', $path)
-            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
-            ->get()
-            ->each
-            ->delete();
+        $this->patientExamMediaWorkflowService()->removeAsset(
+            patient: $this->patient,
+            session: $this->examSession,
+            storagePath: $path,
+        );
         unset($this->indicationImages[$normalizedType][$index]);
         $this->indicationImages[$normalizedType] = array_values($this->indicationImages[$normalizedType]);
 
@@ -511,7 +467,16 @@ class PatientExamForm extends Component
         $this->authorizeClinicalWrite();
 
         if (! $this->clinicalNote || ! $this->clinicalNote->exists) {
-            $this->clinicalNote = $this->ensurePersistedClinicalNote();
+            $result = $this->patientExamClinicalNoteWorkflowService()->saveForSession(
+                patient: $this->patient,
+                session: $this->examSession,
+                clinicalNote: $this->clinicalNote,
+                data: $this->clinicalNotePayloadData(),
+                expectedVersion: $this->clinicalNoteVersion,
+                actor: Auth::user(),
+                actorId: Auth::id() ?: null,
+            );
+            $this->clinicalNote = $result['clinicalNote'] ?? null;
 
             if (! $this->clinicalNote) {
                 return;
@@ -523,16 +488,17 @@ class PatientExamForm extends Component
             return;
         }
 
-        $data = $this->buildClinicalNotePayload();
-
         try {
-            $this->clinicalNote = $this->clinicalNoteVersioningService()->updateWithOptimisticLock(
+            $result = $this->patientExamClinicalNoteWorkflowService()->saveForSession(
+                patient: $this->patient,
+                session: $this->examSession,
                 clinicalNote: $this->clinicalNote,
-                attributes: $data,
+                data: $this->clinicalNotePayloadData(),
                 expectedVersion: $this->clinicalNoteVersion,
+                actor: Auth::user(),
                 actorId: Auth::id(),
-                operation: 'update',
             );
+            $this->clinicalNote = $result['clinicalNote'] ?? $this->clinicalNote;
         } catch (ValidationException $exception) {
             $errorMessage = (string) (collect($exception->errors())->flatten()->first()
                 ?? 'Phiếu khám đã thay đổi. Vui lòng tải lại dữ liệu mới nhất.');
@@ -556,128 +522,29 @@ class PatientExamForm extends Component
 
     public function getExaminingDoctorNameProperty(): string
     {
-        if (! $this->examining_doctor_id) {
-            return '';
-        }
-
-        return User::find($this->examining_doctor_id)?->name ?? '';
+        return $this->patientExamDoctorReadModelService()->name($this->examining_doctor_id);
     }
 
     public function getTreatingDoctorNameProperty(): string
     {
-        if (! $this->treating_doctor_id) {
-            return '';
-        }
-
-        return User::find($this->treating_doctor_id)?->name ?? '';
+        return $this->patientExamDoctorReadModelService()->name($this->treating_doctor_id);
     }
 
     public function render()
     {
-        $sessions = $this->getSessionQuery()->get();
-
-        $lockedDates = array_flip($this->getTreatmentProgressDates());
+        $sessions = $this->patientExamSessionReadModelService()->sessions($this->patient);
         $toothTreatmentStates = $this->buildToothTreatmentStates();
-        $conditions = ToothCondition::query()
-            ->ordered()
-            ->get()
-            ->values();
-
-        if (! $conditions->contains(fn (ToothCondition $condition) => strtoupper((string) $condition->code) === 'KHAC')) {
-            $conditions->push(new ToothCondition([
-                'code' => 'KHAC',
-                'name' => '(*) Khác',
-                'category' => 'Khác',
-                'color' => '#9ca3af',
-            ]));
-        }
-
-        $conditions = $conditions->values();
-        $conditionsArray = $conditions->map(fn (ToothCondition $condition) => [
-            'code' => $condition->code,
-            'name' => $condition->name,
-            'category' => $condition->category,
-            'color' => $condition->color,
-            'display_code' => $this->getConditionDisplayCode($condition),
-        ])->values()->all();
-
-        $conditionOrder = $conditions
-            ->pluck('code')
-            ->map(fn ($code) => (string) $code)
-            ->values()
-            ->all();
-
-        foreach ($sessions as $session) {
-            $sessionDate = $session->session_date?->toDateString();
-            $session->setAttribute(
-                'is_locked',
-                $session->status === ExamSession::STATUS_LOCKED
-                    || ($sessionDate !== null && isset($lockedDates[$sessionDate]))
-            );
-        }
-
+        $selectedIndications = collect($this->patientExamIndicationStateService()->normalizeSelected($this->indications));
         $medicalRecordAction = app(PatientOverviewReadModelService::class)
             ->medicalRecordAction($this->patient, Auth::user());
-
-        $mediaAccessService = $this->clinicalMediaAccessService();
-        $mediaAssets = $this->patient->clinicalMediaAssets()
-            ->where('status', ClinicalMediaAsset::STATUS_ACTIVE)
-            ->latest('captured_at')
-            ->limit(120)
-            ->get();
-        $mediaPhaseSummary = $mediaAssets
-            ->groupBy(fn (ClinicalMediaAsset $asset): string => (string) ($asset->phase ?: 'unspecified'))
-            ->map(fn ($group): int => $group->count())
-            ->toArray();
-        $mediaTimeline = $mediaAssets
-            ->take(20)
-            ->map(function (ClinicalMediaAsset $asset) use ($mediaAccessService): array {
-                return [
-                    'id' => (int) $asset->id,
-                    'captured_at' => $asset->captured_at?->toDateTimeString(),
-                    'phase' => (string) ($asset->phase ?: 'unspecified'),
-                    'modality' => (string) ($asset->modality ?: ClinicalMediaAsset::MODALITY_PHOTO),
-                    'anatomy_scope' => (string) ($asset->anatomy_scope ?: 'general'),
-                    'exam_session_id' => $asset->exam_session_id ? (int) $asset->exam_session_id : null,
-                    'view_url' => $mediaAccessService->signedViewUrl($asset),
-                    'download_url' => $mediaAccessService->signedDownloadUrl($asset),
-                ];
-            })
-            ->values()
-            ->all();
-
-        $activeSessionMedia = $mediaAssets
-            ->filter(fn (ClinicalMediaAsset $asset): bool => (int) ($asset->exam_session_id ?? 0) === (int) ($this->activeSessionId ?? 0))
-            ->values();
-        $selectedIndications = collect($this->normalizeIndications($this->indications));
-        $missingIndications = $selectedIndications
-            ->filter(function (string $type) use ($activeSessionMedia): bool {
-                $uploadedCount = count((array) ($this->indicationImages[$type] ?? []));
-                $assetCount = $activeSessionMedia
-                    ->filter(fn (ClinicalMediaAsset $asset): bool => strtolower((string) data_get($asset->meta, 'indication_type', '')) === $type)
-                    ->count();
-
-                return ($uploadedCount + $assetCount) <= 0;
-            })
-            ->map(fn (string $type): string => (string) ($this->indicationTypes[$type] ?? strtoupper($type)))
-            ->values()
-            ->all();
-        $requiredEvidenceCount = $selectedIndications->count();
-        $fulfilledEvidenceCount = max(0, $requiredEvidenceCount - count($missingIndications));
-        $evidenceCompletionPercent = $requiredEvidenceCount > 0
-            ? (int) floor(($fulfilledEvidenceCount / $requiredEvidenceCount) * 100)
-            : 100;
-
-        $qualityWarnings = [];
-        if ($activeSessionMedia->whereNull('checksum_sha256')->count() > 0) {
-            $qualityWarnings[] = 'Có ảnh chưa có checksum, cần kiểm tra integrity dữ liệu.';
-        }
-        if ($activeSessionMedia->whereNull('captured_at')->count() > 0) {
-            $qualityWarnings[] = 'Có ảnh thiếu thời gian chụp, nên chuẩn hóa metadata.';
-        }
-        if ($requiredEvidenceCount > 0 && $fulfilledEvidenceCount <= 0) {
-            $qualityWarnings[] = 'Phiếu khám đã chọn chỉ định nhưng chưa có bằng chứng ảnh lâm sàng.';
-        }
+        $referencePayload = app(PatientExamReferenceReadModelService::class)->toothConditionsPayload();
+        $mediaReadModel = app(PatientExamMediaReadModelService::class)->build(
+            patient: $this->patient,
+            activeSessionId: $this->activeSessionId,
+            selectedIndications: $selectedIndications->all(),
+            indicationImages: $this->indicationImages,
+            indicationTypes: $this->indicationTypes,
+        );
 
         return view('livewire.patient-exam-form', [
             'sessions' => $sessions,
@@ -685,48 +552,16 @@ class PatientExamForm extends Component
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
             'medicalRecordActionUrl' => $medicalRecordAction['url'] ?? null,
             'medicalRecordActionLabel' => $medicalRecordAction['label'] ?? null,
-            'conditions' => $conditions,
-            'conditionsJson' => $conditionsArray,
-            'conditionOrder' => $conditionOrder,
+            'conditions' => $referencePayload['conditions'],
+            'conditionsJson' => $referencePayload['conditionsJson'],
+            'conditionOrder' => $referencePayload['conditionOrder'],
             'toothTreatmentStates' => $toothTreatmentStates,
             'defaultDentitionMode' => DentitionModeResolver::resolveFromBirthday($this->patient->birthday),
-            'otherDiagnosisOptions' => Disease::query()
-                ->active()
-                ->with(['diseaseGroup:id,name,sort_order'])
-                ->get()
-                ->sortBy([
-                    fn (Disease $disease) => $disease->diseaseGroup?->sort_order ?? 0,
-                    fn (Disease $disease) => $disease->code,
-                ])
-                ->values()
-                ->map(fn (Disease $disease) => [
-                    'code' => $disease->code,
-                    'label' => $disease->full_name,
-                    'group' => $disease->diseaseGroup?->name ?? 'Khác',
-                ])
-                ->values()
-                ->all(),
-            'mediaTimeline' => $mediaTimeline,
-            'mediaPhaseSummary' => $mediaPhaseSummary,
-            'evidenceChecklist' => [
-                'required' => $requiredEvidenceCount,
-                'fulfilled' => $fulfilledEvidenceCount,
-                'completion_percent' => max(0, min(100, $evidenceCompletionPercent)),
-                'missing_labels' => $missingIndications,
-                'quality_warnings' => $qualityWarnings,
-            ],
+            'otherDiagnosisOptions' => app(PatientExamReferenceReadModelService::class)->otherDiagnosisOptions(),
+            'mediaTimeline' => $mediaReadModel['mediaTimeline'],
+            'mediaPhaseSummary' => $mediaReadModel['mediaPhaseSummary'],
+            'evidenceChecklist' => $mediaReadModel['evidenceChecklist'],
         ]);
-    }
-
-    protected function getConditionDisplayCode(ToothCondition $condition): string
-    {
-        $name = (string) ($condition->name ?? '');
-
-        if (preg_match('/^\(([^)]+)\)/', $name, $matches)) {
-            return strtoupper(str_replace(' ', '', $matches[1]));
-        }
-
-        return strtoupper((string) $condition->code);
     }
 
     protected function getSessionQuery()
@@ -762,8 +597,11 @@ class PatientExamForm extends Component
         $this->treating_doctor_id = $session->treating_doctor_id;
         $this->general_exam_notes = $session->general_exam_notes ?? '';
         $this->treatment_plan_note = $session->treatment_plan_note ?? '';
-        $this->indications = $this->normalizeIndications($session->indications ?? []);
-        $this->indicationImages = $this->normalizeIndicationImages($session->indication_images ?? [], $this->indications);
+        $this->indications = $this->patientExamIndicationStateService()->normalizeSelected($session->indications ?? []);
+        $this->indicationImages = $this->patientExamIndicationStateService()->normalizeImages(
+            $session->indication_images ?? [],
+            $this->indications,
+        );
         $this->tooth_diagnosis_data = $session->tooth_diagnosis_data ?? [];
         $this->other_diagnosis = $session->other_diagnosis ?? '';
         $this->dentition_mode = DentitionModeResolver::MODE_AUTO;
@@ -777,402 +615,26 @@ class PatientExamForm extends Component
 
     protected function isSessionLockedByProgress(ExamSession $session): bool
     {
-        if ($session->status === ExamSession::STATUS_LOCKED) {
-            return true;
-        }
-
-        $sessionDate = $session->session_date?->toDateString();
-
-        if (! $sessionDate) {
-            return false;
-        }
-
-        return in_array($sessionDate, $this->getTreatmentProgressDates(), true);
+        return $this->patientExamSessionReadModelService()->isLocked($this->patient, $session);
     }
 
     protected function getTreatmentProgressDates(): array
     {
-        $progressDates = $this->patient->treatmentProgressDays()
-            ->get(['progress_date'])
-            ->map(fn ($day) => $day->progress_date?->toDateString())
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($progressDates !== []) {
-            return $progressDates;
-        }
-
-        return $this->patient->treatmentSessions()
-            ->get(['performed_at', 'start_at', 'end_at'])
-            ->flatMap(function ($session) {
-                return collect([
-                    $session->performed_at,
-                    $session->start_at,
-                    $session->end_at,
-                ])
-                    ->filter()
-                    ->map(fn ($dateTime) => Carbon::parse($dateTime)->toDateString());
-            })
-            ->unique()
-            ->values()
-            ->all();
+        return app(PatientExamStatusReadModelService::class)->treatmentProgressDates($this->patient);
     }
 
     protected function buildToothTreatmentStates(): array
     {
-        $statePriority = [
-            'normal' => 0,
-            'current' => 1,
-            'completed' => 2,
-            'in_treatment' => 3,
-        ];
-
-        $toothStates = [];
-
-        $planItems = \App\Models\PlanItem::query()
-            ->whereHas('treatmentPlan', fn ($query) => $query->where('patient_id', $this->patient->id))
-            ->get(['tooth_number', 'status']);
-
-        foreach ($planItems as $planItem) {
-            $targetState = $this->mapPlanItemStatusToToothState((string) $planItem->status);
-
-            foreach ($planItem->getToothNumbers() as $toothNumber) {
-                $toothKey = (string) $toothNumber;
-                $currentState = $toothStates[$toothKey] ?? 'normal';
-
-                if (($statePriority[$targetState] ?? 0) >= ($statePriority[$currentState] ?? 0)) {
-                    $toothStates[$toothKey] = $targetState;
-                }
-            }
-        }
-
-        $sessionStates = $this->patient->treatmentSessions()
-            ->get([
-                'treatment_sessions.plan_item_id',
-                'treatment_sessions.status',
-            ]);
-
-        $planItemsById = \App\Models\PlanItem::withTrashed()
-            ->whereIn('id', $sessionStates->pluck('plan_item_id')->filter()->unique()->values())
-            ->get(['id', 'tooth_number'])
-            ->keyBy('id');
-
-        foreach ($sessionStates as $sessionState) {
-            $planItem = $planItemsById->get($sessionState->plan_item_id);
-
-            if (! $planItem) {
-                continue;
-            }
-
-            $targetState = $this->mapTreatmentSessionStatusToToothState((string) $sessionState->status);
-
-            foreach ($planItem->getToothNumbers() as $toothNumber) {
-                $toothKey = (string) $toothNumber;
-                $currentState = $toothStates[$toothKey] ?? 'normal';
-
-                if (($statePriority[$targetState] ?? 0) >= ($statePriority[$currentState] ?? 0)) {
-                    $toothStates[$toothKey] = $targetState;
-                }
-            }
-        }
-
-        return $toothStates;
-    }
-
-    protected function mapPlanItemStatusToToothState(string $status): string
-    {
-        return match ($status) {
-            'in_progress' => 'in_treatment',
-            'completed' => 'completed',
-            default => 'current',
-        };
-    }
-
-    protected function mapTreatmentSessionStatusToToothState(string $status): string
-    {
-        return match ($status) {
-            'done' => 'completed',
-            'scheduled', 'follow_up' => 'in_treatment',
-            default => 'current',
-        };
-    }
-
-    protected function persistClinicalMediaAsset(string $indicationType, string $storagePath): void
-    {
-        $clinicalNote = $this->ensurePersistedClinicalNote();
-
-        if (! $clinicalNote) {
-            return;
-        }
-
-        $normalizedType = $this->normalizeIndicationKey($indicationType);
-        $existing = ClinicalMediaAsset::query()
-            ->where('patient_id', $this->patient->id)
-            ->where('exam_session_id', $this->examSession?->id)
-            ->where('storage_disk', 'public')
-            ->where('storage_path', $storagePath)
-            ->first();
-
-        if ($existing) {
-            return;
-        }
-
-        $modality = in_array($normalizedType, ['xray', 'panorama', 'cephalometric', '3d', '3d5x5'], true)
-            ? ClinicalMediaAsset::MODALITY_XRAY
-            : ClinicalMediaAsset::MODALITY_PHOTO;
-        $anatomyScope = match ($normalizedType) {
-            'int' => 'intraoral',
-            'ext' => 'extraoral',
-            default => $normalizedType !== '' ? $normalizedType : 'general',
-        };
-
-        $asset = ClinicalMediaAsset::query()->create([
-            'patient_id' => (int) $this->patient->id,
-            'visit_episode_id' => $clinicalNote->visit_episode_id ? (int) $clinicalNote->visit_episode_id : null,
-            'exam_session_id' => $this->examSession?->id ? (int) $this->examSession->id : null,
-            'branch_id' => $clinicalNote->branch_id
-                ? (int) $clinicalNote->branch_id
-                : ($this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null),
-            'captured_by' => Auth::id() ?: null,
-            'captured_at' => now(),
-            'modality' => $modality,
-            'anatomy_scope' => $anatomyScope,
-            'phase' => 'pre',
-            'mime_type' => $this->guessMimeTypeFromPath($storagePath),
-            'file_size_bytes' => $this->resolveStoredFileSize($storagePath),
-            'checksum_sha256' => $this->resolveStoredFileChecksum($storagePath),
-            'storage_disk' => 'public',
-            'storage_path' => $storagePath,
-            'status' => ClinicalMediaAsset::STATUS_ACTIVE,
-            'retention_class' => ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
-            'legal_hold' => false,
-            'meta' => [
-                'source_table' => 'clinical_notes.indication_images',
-                'source_id' => (int) $clinicalNote->id,
-                'indication_type' => $normalizedType,
-            ],
-        ]);
-
-        ClinicalMediaVersion::query()->create([
-            'clinical_media_asset_id' => (int) $asset->id,
-            'version_number' => 1,
-            'is_original' => true,
-            'mime_type' => $asset->mime_type,
-            'checksum_sha256' => $asset->checksum_sha256,
-            'storage_disk' => $asset->storage_disk,
-            'storage_path' => $asset->storage_path,
-            'created_by' => Auth::id() ?: null,
-        ]);
-    }
-
-    protected function guessMimeTypeFromPath(string $path): ?string
-    {
-        $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
-
-        return match ($extension) {
-            'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'pdf' => 'application/pdf',
-            default => null,
-        };
-    }
-
-    protected function resolveStoredFileChecksum(string $path): string
-    {
-        if (Storage::disk('public')->exists($path)) {
-            $stream = Storage::disk('public')->readStream($path);
-
-            if (is_resource($stream)) {
-                $hash = hash_init('sha256');
-                hash_update_stream($hash, $stream);
-                fclose($stream);
-
-                return hash_final($hash);
-            }
-        }
-
-        return hash('sha256', 'public|'.$path);
-    }
-
-    protected function resolveStoredFileSize(string $path): ?int
-    {
-        if (! Storage::disk('public')->exists($path)) {
-            return null;
-        }
-
-        $size = Storage::disk('public')->size($path);
-
-        return is_int($size) ? $size : null;
-    }
-
-    protected function normalizeIndications(array $indications): array
-    {
-        return collect($indications)
-            ->filter(fn ($item) => filled($item))
-            ->map(fn ($item) => $this->normalizeIndicationKey((string) $item))
-            ->unique()
-            ->values()
-            ->all();
-    }
-
-    protected function normalizeIndicationImages(array $indicationImages, ?array $selectedIndications = null): array
-    {
-        $selected = $selectedIndications ?? $this->indications;
-        $selected = $this->normalizeIndications($selected);
-
-        $normalized = [];
-
-        foreach ($indicationImages as $rawType => $paths) {
-            $type = $this->normalizeIndicationKey((string) $rawType);
-
-            if (! in_array($type, $selected, true)) {
-                continue;
-            }
-
-            $normalized[$type] = collect(is_array($paths) ? $paths : [$paths])
-                ->filter(fn ($path) => filled($path))
-                ->values()
-                ->all();
-        }
-
-        foreach ($selected as $type) {
-            if (! array_key_exists($type, $normalized)) {
-                $normalized[$type] = [];
-            }
-        }
-
-        return $normalized;
-    }
-
-    protected function normalizeIndicationKey(string $key): string
-    {
-        return ClinicRuntimeSettings::normalizeExamIndicationKey($key);
-    }
-
-    protected function makeDraftClinicalNoteForSession(ExamSession $session): ClinicalNote
-    {
-        $defaultDoctorId = $this->resolveDefaultDoctorIdForSession($session);
-
-        return new ClinicalNote([
-            'exam_session_id' => $session->id,
-            'patient_id' => $this->patient->id,
-            'visit_episode_id' => $session->visit_episode_id,
-            'doctor_id' => $session->doctor_id ?: $defaultDoctorId,
-            'branch_id' => $session->branch_id ?: $this->patient->first_branch_id,
-            'date' => $session->session_date?->toDateString() ?? now()->toDateString(),
-            'examining_doctor_id' => $defaultDoctorId,
-            'treating_doctor_id' => $defaultDoctorId,
-            'indications' => [],
-            'indication_images' => [],
-            'tooth_diagnosis_data' => [],
-            'other_diagnosis' => '',
-        ]);
-    }
-
-    protected function resolveDefaultDoctorIdForSession(ExamSession $session): ?int
-    {
-        if (is_numeric($session->doctor_id)) {
-            return (int) $session->doctor_id;
-        }
-
-        $authUser = Auth::user();
-
-        if ($authUser instanceof User && $authUser->hasRole('Doctor')) {
-            return $authUser->getKey();
-        }
-
-        return null;
-    }
-
-    protected function ensurePersistedClinicalNote(): ?ClinicalNote
-    {
-        if (! $this->examSession) {
-            return null;
-        }
-
-        if ($this->clinicalNote?->exists) {
-            return $this->clinicalNote;
-        }
-
-        $existingNote = $this->patient->clinicalNotes()
-            ->where('exam_session_id', $this->examSession->id)
-            ->first();
-
-        if ($existingNote) {
-            $this->clinicalNote = $existingNote;
-
-            return $this->clinicalNote;
-        }
-
-        $this->clinicalNote = $this->patient->clinicalNotes()->create(array_merge(
-            [
-                'exam_session_id' => $this->examSession->id,
-                'patient_id' => $this->patient->id,
-                'doctor_id' => $this->examSession->doctor_id ?: $this->resolveDefaultDoctorIdForSession($this->examSession),
-                'branch_id' => $this->examSession->branch_id ?: $this->patient->first_branch_id,
-                'date' => $this->examSession->session_date?->toDateString() ?? now()->toDateString(),
-                'created_by' => Auth::id(),
-            ],
-            $this->buildClinicalNotePayload(),
-        ));
-
-        $this->examSession = $this->examSession->fresh(['clinicalNote']);
-
-        return $this->clinicalNote;
-    }
-
-    protected function buildClinicalNotePayload(): array
-    {
-        $normalizedIndications = $this->normalizeIndications($this->indications);
-        $noteDate = $this->clinicalNote?->date?->toDateString()
-            ?? $this->examSession?->session_date?->toDateString()
-            ?? now()->toDateString();
-
-        $visitEpisodeId = $this->clinicalNote?->visit_episode_id
-            ?: $this->examSession?->visit_episode_id;
-
-        if (! $visitEpisodeId) {
-            $visitEpisodeId = $this->resolveEncounterIdForDate($noteDate);
-        }
-
-        return [
-            'visit_episode_id' => $visitEpisodeId,
-            'examining_doctor_id' => $this->examining_doctor_id,
-            'treating_doctor_id' => $this->treating_doctor_id,
-            'general_exam_notes' => $this->general_exam_notes,
-            'treatment_plan_note' => $this->treatment_plan_note,
-            'indications' => $normalizedIndications,
-            'indication_images' => $this->normalizeIndicationImages($this->indicationImages, $normalizedIndications),
-            'tooth_diagnosis_data' => $this->tooth_diagnosis_data,
-            'other_diagnosis' => $this->other_diagnosis,
-            'updated_by' => Auth::id(),
-        ];
-    }
-
-    protected function assignableDoctorQuery(string $search = ''): \Illuminate\Database\Eloquent\Builder
-    {
-        $query = $this->patientAssignmentAuthorizer()->scopeAssignableDoctors(
-            query: User::query(),
-            actor: Auth::user(),
-            branchId: $this->resolveDoctorAssignmentBranchId(),
-        );
-
-        if ($search !== '') {
-            $query->where('name', 'like', '%'.$search.'%');
-        }
-
-        return $query;
+        return app(PatientExamStatusReadModelService::class)->toothTreatmentStates($this->patient);
     }
 
     protected function findAssignableDoctor(int $doctorId): ?User
     {
-        return $this->assignableDoctorQuery()
-            ->whereKey($doctorId)
-            ->first(['id', 'name']);
+        return $this->patientExamDoctorReadModelService()->find(
+            actor: Auth::user(),
+            branchId: $this->resolveDoctorAssignmentBranchId(),
+            doctorId: $doctorId,
+        );
     }
 
     protected function resolveDoctorAssignmentBranchId(): ?int
@@ -1200,42 +662,67 @@ class PatientExamForm extends Component
             ->send();
     }
 
-    protected function resolveEncounterIdForDate(string $date): ?int
+    /**
+     * @return array{
+     *     examining_doctor_id: ?int,
+     *     treating_doctor_id: ?int,
+     *     general_exam_notes: ?string,
+     *     treatment_plan_note: ?string,
+     *     indications: array<int, string>,
+     *     indication_images: array<string, array<int, string>>,
+     *     tooth_diagnosis_data: array<mixed>,
+     *     other_diagnosis: ?string,
+     *     updated_by: ?int
+     * }
+     */
+    protected function clinicalNotePayloadData(): array
     {
-        $encounter = $this->encounterService()->resolveForPatientOnDate(
-            patientId: (int) $this->patient->id,
-            branchId: $this->patient->first_branch_id ? (int) $this->patient->first_branch_id : null,
-            date: $date,
-            doctorId: $this->examining_doctor_id ?: (Auth::id() ?: null),
-            createIfMissing: true,
-        );
+        $normalizedIndications = $this->patientExamIndicationStateService()->normalizeSelected($this->indications);
 
-        return $encounter?->id ? (int) $encounter->id : null;
+        return [
+            'examining_doctor_id' => $this->examining_doctor_id,
+            'treating_doctor_id' => $this->treating_doctor_id,
+            'general_exam_notes' => $this->general_exam_notes,
+            'treatment_plan_note' => $this->treatment_plan_note,
+            'indications' => $normalizedIndications,
+            'indication_images' => $this->patientExamIndicationStateService()->normalizeImages(
+                $this->indicationImages,
+                $normalizedIndications,
+            ),
+            'tooth_diagnosis_data' => $this->tooth_diagnosis_data,
+            'other_diagnosis' => $this->other_diagnosis,
+            'updated_by' => Auth::id() ?: null,
+        ];
     }
 
-    protected function encounterService(): EncounterService
+    protected function patientExamDoctorReadModelService(): PatientExamDoctorReadModelService
     {
-        return app(EncounterService::class);
+        return app(PatientExamDoctorReadModelService::class);
     }
 
-    protected function patientAssignmentAuthorizer(): PatientAssignmentAuthorizer
+    protected function patientExamIndicationStateService(): PatientExamIndicationStateService
     {
-        return app(PatientAssignmentAuthorizer::class);
+        return app(PatientExamIndicationStateService::class);
     }
 
-    protected function clinicalMediaAccessService(): ClinicalMediaAccessService
+    protected function patientExamSessionReadModelService(): PatientExamSessionReadModelService
     {
-        return app(ClinicalMediaAccessService::class);
+        return app(PatientExamSessionReadModelService::class);
     }
 
-    protected function clinicalNoteVersioningService(): ClinicalNoteVersioningService
+    protected function patientExamMediaWorkflowService(): PatientExamMediaWorkflowService
     {
-        return app(ClinicalNoteVersioningService::class);
+        return app(PatientExamMediaWorkflowService::class);
     }
 
-    protected function examSessionProvisioningService(): ExamSessionProvisioningService
+    protected function patientExamClinicalNoteWorkflowService(): PatientExamClinicalNoteWorkflowService
     {
-        return app(ExamSessionProvisioningService::class);
+        return app(PatientExamClinicalNoteWorkflowService::class);
+    }
+
+    protected function patientExamSessionWorkflowService(): PatientExamSessionWorkflowService
+    {
+        return app(PatientExamSessionWorkflowService::class);
     }
 
     protected function authorizeClinicalWrite(): void

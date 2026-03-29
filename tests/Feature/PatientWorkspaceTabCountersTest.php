@@ -16,6 +16,7 @@ use App\Models\Prescription;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
+use App\Services\PatientOverviewReadModelService;
 
 it('builds patient workspace tab counters through the shared read model', function (): void {
     $branch = Branch::factory()->create();
@@ -151,7 +152,9 @@ it('builds patient workspace tab counters through the shared read model', functi
 
     $page->forceRecord($patient->fresh());
 
+    $service = app(PatientOverviewReadModelService::class);
     $counters = $page->getTabCountersProperty();
+    $serviceTabs = collect($service->workspaceTabs($patient->fresh(), $admin))->keyBy('id');
     $tabs = collect($page->getTabsProperty())->keyBy('id');
 
     expect($counters)->toMatchArray([
@@ -168,10 +171,29 @@ it('builds patient workspace tab counters through the shared read model', functi
         'activity' => 7,
     ]);
 
-    expect($tabs['exam-treatment']['count'])->toBe(2)
+    expect($tabs->keys()->all())->toBe($serviceTabs->keys()->all())
+        ->and($tabs['exam-treatment']['count'])->toBe(2)
         ->and($tabs['photos']['count'])->toBe(1)
         ->and($tabs['appointments']['count'])->toBe(1)
         ->and($tabs['payments']['count'])->toBe(2)
         ->and($tabs['care']['count'])->toBe(2)
         ->and($tabs['activity-log']['count'])->toBe(7);
+});
+
+it('returns closed patient workspace capabilities when there is no authenticated actor', function (): void {
+    $capabilities = app(PatientOverviewReadModelService::class)->workspaceCapabilities(null);
+
+    expect($capabilities)->toBe([
+        'prescriptions' => false,
+        'appointments' => false,
+        'payments' => false,
+        'invoice_forms' => false,
+        'forms' => false,
+        'care' => false,
+        'lab_materials' => false,
+        'create_treatment_plan' => false,
+        'create_invoice' => false,
+        'create_appointment' => false,
+        'create_payment' => false,
+    ]);
 });
