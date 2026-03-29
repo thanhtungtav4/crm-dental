@@ -1,9 +1,16 @@
 <?php
 
+use App\Filament\Resources\Patients\Pages\ViewPatient;
 use App\Models\Appointment;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\FactoryOrder;
+use App\Models\FactoryOrderItem;
 use App\Models\Invoice;
+use App\Models\Material;
+use App\Models\MaterialBatch;
+use App\Models\MaterialIssueItem;
+use App\Models\MaterialIssueNote;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\PlanItem;
@@ -11,6 +18,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Services\PatientOverviewReadModelService;
+use App\Services\TreatmentMaterialUsageService;
 use Illuminate\Support\Carbon;
 
 if (! function_exists('createPatientOverviewInvoice')) {
@@ -305,4 +313,221 @@ it('summarizes patient payment balances through the shared read model', function
         'balance_is_positive' => false,
         'latest_invoice_id' => $latestInvoice->id,
     ]);
+});
+
+it('builds patient workspace lab material surfaces through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'email' => $customer->email,
+    ]);
+
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'status' => TreatmentPlan::STATUS_APPROVED,
+    ]);
+
+    $planItem = PlanItem::factory()->create([
+        'treatment_plan_id' => $plan->id,
+    ]);
+
+    $session = TreatmentSession::factory()->create([
+        'treatment_plan_id' => $plan->id,
+        'plan_item_id' => $planItem->id,
+        'doctor_id' => $doctor->id,
+        'performed_at' => now(),
+        'status' => 'done',
+    ]);
+
+    $material = Material::factory()->create([
+        'branch_id' => $branch->id,
+        'stock_qty' => 100,
+        'cost_price' => 125000,
+    ]);
+
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'LOT-POV-001',
+        'expiry_date' => now()->addMonths(6)->toDateString(),
+        'quantity' => 100,
+        'purchase_price' => 125000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $usage = app(TreatmentMaterialUsageService::class)->create([
+        'treatment_session_id' => $session->id,
+        'material_id' => $material->id,
+        'batch_id' => $batch->id,
+        'quantity' => 2,
+        'cost' => 0,
+        'used_by' => $manager->id,
+    ]);
+
+    $supplier = \App\Models\Supplier::query()->create([
+        'name' => 'Lab Scope Test',
+        'code' => 'LAB-SCOPE',
+        'active' => true,
+        'created_by' => $admin->id,
+        'updated_by' => $admin->id,
+    ]);
+
+    $factoryOrder = FactoryOrder::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'doctor_id' => $doctor->id,
+        'supplier_id' => $supplier->id,
+        'requested_by' => $admin->id,
+        'status' => FactoryOrder::STATUS_DRAFT,
+        'priority' => 'high',
+        'ordered_at' => now()->subDay(),
+        'due_at' => now()->addDays(2),
+        'notes' => 'Scope test order',
+    ]);
+
+    FactoryOrderItem::query()->create([
+        'factory_order_id' => $factoryOrder->id,
+        'item_name' => 'Abutment zirconia',
+        'quantity' => 1,
+        'unit_price' => 450000,
+        'status' => 'ordered',
+    ]);
+
+    $issueNote = MaterialIssueNote::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'issued_by' => $manager->id,
+        'issued_at' => now()->subHours(2),
+        'status' => MaterialIssueNote::STATUS_DRAFT,
+        'reason' => 'Chairside support',
+        'notes' => 'Workspace scope test',
+    ]);
+
+    MaterialIssueItem::query()->create([
+        'material_issue_note_id' => $issueNote->id,
+        'material_id' => $material->id,
+        'material_batch_id' => $batch->id,
+        'quantity' => 1,
+        'unit_cost' => 125000,
+    ]);
+
+    $otherCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $otherPatient = Patient::factory()->create([
+        'customer_id' => $otherCustomer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $otherCustomer->full_name,
+        'phone' => $otherCustomer->phone,
+        'email' => $otherCustomer->email,
+    ]);
+
+    $otherPlan = TreatmentPlan::factory()->create([
+        'patient_id' => $otherPatient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+    ]);
+
+    $otherPlanItem = PlanItem::factory()->create([
+        'treatment_plan_id' => $otherPlan->id,
+    ]);
+
+    $otherSession = TreatmentSession::factory()->create([
+        'treatment_plan_id' => $otherPlan->id,
+        'plan_item_id' => $otherPlanItem->id,
+        'doctor_id' => $doctor->id,
+        'performed_at' => now(),
+        'status' => 'done',
+    ]);
+
+    app(TreatmentMaterialUsageService::class)->create([
+        'treatment_session_id' => $otherSession->id,
+        'material_id' => $material->id,
+        'batch_id' => $batch->id,
+        'quantity' => 1,
+        'cost' => 0,
+        'used_by' => $manager->id,
+    ]);
+
+    FactoryOrder::query()->create([
+        'patient_id' => $otherPatient->id,
+        'branch_id' => $branch->id,
+        'doctor_id' => $doctor->id,
+        'supplier_id' => $supplier->id,
+        'requested_by' => $admin->id,
+        'status' => FactoryOrder::STATUS_DRAFT,
+        'priority' => 'normal',
+        'ordered_at' => now(),
+        'notes' => 'Other patient order',
+    ]);
+
+    MaterialIssueNote::query()->create([
+        'patient_id' => $otherPatient->id,
+        'branch_id' => $branch->id,
+        'issued_by' => $manager->id,
+        'issued_at' => now(),
+        'status' => MaterialIssueNote::STATUS_DRAFT,
+        'reason' => 'Other patient issue note',
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+
+    $materialUsages = $service->materialUsages($patient);
+    $factoryOrders = $service->factoryOrders($patient);
+    $materialIssueNotes = $service->materialIssueNotes($patient);
+
+    expect($materialUsages)->toHaveCount(1)
+        ->and($materialUsages->pluck('id')->all())->toBe([$usage->id])
+        ->and($materialUsages->first()?->material?->id)->toBe($material->id)
+        ->and($materialUsages->first()?->user?->id)->toBe($admin->id);
+
+    expect($factoryOrders)->toHaveCount(1)
+        ->and($factoryOrders->pluck('id')->all())->toBe([$factoryOrder->id])
+        ->and((int) ($factoryOrders->first()?->items_count ?? 0))->toBe(1);
+
+    expect($materialIssueNotes)->toHaveCount(1)
+        ->and($materialIssueNotes->pluck('id')->all())->toBe([$issueNote->id])
+        ->and((int) ($materialIssueNotes->first()?->items_count ?? 0))->toBe(1)
+        ->and((float) ($materialIssueNotes->first()?->total_cost ?? 0))->toEqualWithDelta(125000.0, 0.01);
+
+    $page = new class extends ViewPatient
+    {
+        public function forceRecord(Patient $patient): void
+        {
+            $this->record = $patient;
+        }
+    };
+
+    $page->forceRecord($patient->fresh());
+
+    expect($page->getMaterialUsagesProperty()->pluck('id')->all())->toBe([$usage->id])
+        ->and($page->getFactoryOrdersProperty()->pluck('id')->all())->toBe([$factoryOrder->id])
+        ->and($page->getMaterialIssueNotesProperty()->pluck('id')->all())->toBe([$issueNote->id]);
 });

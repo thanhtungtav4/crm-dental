@@ -12,7 +12,6 @@ use App\Models\Invoice;
 use App\Models\PatientMedicalRecord;
 use App\Models\Payment;
 use App\Models\Prescription;
-use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
@@ -298,12 +297,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedMaterialUsages;
         }
 
-        $this->cachedMaterialUsages = TreatmentMaterial::query()
-            ->with(['session', 'material', 'user'])
-            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $this->record->id))
-            ->latest('created_at')
-            ->limit(100)
-            ->get();
+        $this->cachedMaterialUsages = app(PatientOverviewReadModelService::class)->materialUsages($this->record);
 
         return $this->cachedMaterialUsages;
     }
@@ -314,22 +308,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedFactoryOrders;
         }
 
-        $this->cachedFactoryOrders = $this->record->factoryOrders()
-            ->withCount('items')
-            ->latest('ordered_at')
-            ->latest('id')
-            ->limit(20)
-            ->get([
-                'id',
-                'order_no',
-                'patient_id',
-                'status',
-                'priority',
-                'ordered_at',
-                'due_at',
-                'delivered_at',
-                'notes',
-            ]);
+        $this->cachedFactoryOrders = app(PatientOverviewReadModelService::class)->factoryOrders($this->record);
 
         return $this->cachedFactoryOrders;
     }
@@ -340,22 +319,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedMaterialIssueNotes;
         }
 
-        $this->cachedMaterialIssueNotes = $this->record->materialIssueNotes()
-            ->withCount('items')
-            ->withSum('items as total_cost', 'total_cost')
-            ->latest('issued_at')
-            ->latest('id')
-            ->limit(20)
-            ->get([
-                'id',
-                'note_no',
-                'patient_id',
-                'status',
-                'issued_at',
-                'posted_at',
-                'reason',
-                'notes',
-            ]);
+        $this->cachedMaterialIssueNotes = app(PatientOverviewReadModelService::class)->materialIssueNotes($this->record);
 
         return $this->cachedMaterialIssueNotes;
     }

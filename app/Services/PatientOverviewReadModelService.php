@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\FactoryOrder;
+use App\Models\MaterialIssueNote;
 use App\Models\Patient;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class PatientOverviewReadModelService
 {
@@ -204,5 +207,64 @@ class PatientOverviewReadModelService
                 + $notesCount
                 + (int) ($countedPatient->branch_logs_count ?? 0),
         ];
+    }
+
+    /**
+     * @return Collection<int, FactoryOrder>
+     */
+    public function factoryOrders(Patient $patient): Collection
+    {
+        return $patient->factoryOrders()
+            ->withCount('items')
+            ->latest('ordered_at')
+            ->latest('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'order_no',
+                'patient_id',
+                'status',
+                'priority',
+                'ordered_at',
+                'due_at',
+                'delivered_at',
+                'notes',
+            ]);
+    }
+
+    /**
+     * @return Collection<int, MaterialIssueNote>
+     */
+    public function materialIssueNotes(Patient $patient): Collection
+    {
+        return $patient->materialIssueNotes()
+            ->withCount('items')
+            ->withSum('items as total_cost', 'total_cost')
+            ->latest('issued_at')
+            ->latest('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'note_no',
+                'patient_id',
+                'status',
+                'issued_at',
+                'posted_at',
+                'reason',
+                'notes',
+            ]);
+    }
+
+    /**
+     * @return Collection<int, TreatmentMaterial>
+     */
+    public function materialUsages(Patient $patient): Collection
+    {
+        return TreatmentMaterial::query()
+            ->with(['session', 'material', 'user'])
+            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $patient->id))
+            ->latest('created_at')
+            ->limit(100)
+            ->get();
     }
 }
