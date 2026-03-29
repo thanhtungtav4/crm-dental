@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\BranchAccess;
+use App\Support\ConversationProvider;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,27 @@ class Conversation extends Model
 
     public const PROVIDER_ZALO = 'zalo';
 
+    public const PROVIDER_FACEBOOK = 'facebook';
+
     public const STATUS_OPEN = 'open';
+
+    public const PRIORITY_LOW = 'low';
+
+    public const PRIORITY_NORMAL = 'normal';
+
+    public const PRIORITY_HIGH = 'high';
+
+    public const PRIORITY_URGENT = 'urgent';
+
+    public const HANDOFF_STATUS_NEW = 'new';
+
+    public const HANDOFF_STATUS_CONSULTING = 'consulting';
+
+    public const HANDOFF_STATUS_QUOTED = 'quoted';
+
+    public const HANDOFF_STATUS_WAITING_CUSTOMER = 'waiting_customer';
+
+    public const HANDOFF_STATUS_FOLLOW_UP = 'follow_up';
 
     protected $fillable = [
         'provider',
@@ -34,6 +55,13 @@ class Conversation extends Model
         'last_message_at',
         'last_inbound_at',
         'last_outbound_at',
+        'handoff_priority',
+        'handoff_status',
+        'handoff_summary',
+        'handoff_next_action_at',
+        'handoff_updated_by',
+        'handoff_updated_at',
+        'handoff_version',
     ];
 
     protected function casts(): array
@@ -46,6 +74,10 @@ class Conversation extends Model
             'last_message_at' => 'datetime',
             'last_inbound_at' => 'datetime',
             'last_outbound_at' => 'datetime',
+            'handoff_next_action_at' => 'datetime',
+            'handoff_updated_by' => 'integer',
+            'handoff_updated_at' => 'datetime',
+            'handoff_version' => 'integer',
         ];
     }
 
@@ -83,6 +115,11 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function handoffEditor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'handoff_updated_by');
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(ConversationMessage::class)
@@ -100,8 +137,11 @@ class Conversation extends Model
 
         $normalizedExternalId = preg_replace('/[^A-Za-z0-9]/', '', (string) $this->external_user_id) ?: '';
         $suffix = Str::upper(Str::limit($normalizedExternalId !== '' ? $normalizedExternalId : (string) $this->getKey(), 6, ''));
+        $provider = $this->providerEnum();
 
-        return 'Khách Zalo '.$suffix;
+        return $provider instanceof ConversationProvider
+            ? $provider->fallbackCustomerLabel($suffix)
+            : 'Khách '.$suffix;
     }
 
     public function latestPreview(): string
@@ -109,5 +149,86 @@ class Conversation extends Model
         $preview = trim((string) $this->latest_message_preview);
 
         return $preview !== '' ? $preview : 'Chưa có tin nhắn';
+    }
+
+    public function providerEnum(): ?ConversationProvider
+    {
+        return ConversationProvider::tryFromNullable($this->provider);
+    }
+
+    public function providerLabel(): string
+    {
+        return $this->providerEnum()?->label() ?? strtoupper((string) $this->provider);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function handoffPriorityOptions(): array
+    {
+        return [
+            self::PRIORITY_LOW => 'Theo dõi',
+            self::PRIORITY_NORMAL => 'Bình thường',
+            self::PRIORITY_HIGH => 'Ưu tiên cao',
+            self::PRIORITY_URGENT => 'Khẩn',
+        ];
+    }
+
+    public function handoffPriorityLabel(): string
+    {
+        return static::handoffPriorityOptions()[$this->handoffPriorityValue()] ?? 'Bình thường';
+    }
+
+    public function handoffPriorityValue(): string
+    {
+        $priority = trim((string) $this->handoff_priority);
+
+        return array_key_exists($priority, static::handoffPriorityOptions())
+            ? $priority
+            : static::PRIORITY_NORMAL;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function handoffStatusOptions(): array
+    {
+        return [
+            self::HANDOFF_STATUS_NEW => 'Mới vào',
+            self::HANDOFF_STATUS_CONSULTING => 'Đang tư vấn',
+            self::HANDOFF_STATUS_QUOTED => 'Đã báo giá',
+            self::HANDOFF_STATUS_WAITING_CUSTOMER => 'Chờ khách phản hồi',
+            self::HANDOFF_STATUS_FOLLOW_UP => 'Cần follow-up',
+        ];
+    }
+
+    public function handoffStatusLabel(): string
+    {
+        return static::handoffStatusOptions()[$this->handoffStatusValue()] ?? 'Mới vào';
+    }
+
+    public function handoffStatusValue(): string
+    {
+        $status = trim((string) $this->handoff_status);
+
+        return array_key_exists($status, static::handoffStatusOptions())
+            ? $status
+            : static::HANDOFF_STATUS_NEW;
+    }
+
+    public function handoffSummaryPreview(int $limit = 96): ?string
+    {
+        $summary = trim((string) $this->handoff_summary);
+
+        if ($summary === '') {
+            return null;
+        }
+
+        return Str::limit($summary, $limit);
+    }
+
+    public function handoffNextActionLabel(string $format = 'd/m H:i'): ?string
+    {
+        return $this->handoff_next_action_at?->format($format);
     }
 }

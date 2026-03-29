@@ -287,10 +287,16 @@
         {{-- Tabs Navigation --}}
         <div class="crm-section-block">
             <div class="crm-top-tabs-shell">
-                <nav x-ref="topTabs" class="crm-top-tabs crm-top-tabs-nav" aria-label="Tabs">
+                <nav x-ref="topTabs" class="crm-top-tabs crm-top-tabs-nav" role="tablist" aria-label="Khu vực làm việc hồ sơ bệnh nhân">
                     @foreach($this->tabs as $tab)
                         <button
+                            type="button"
+                            id="patient-workspace-tab-{{ $tab['id'] }}"
                             wire:click="setActiveTab('{{ $tab['id'] }}')"
+                            role="tab"
+                            aria-selected="{{ $activeTab === $tab['id'] ? 'true' : 'false' }}"
+                            aria-controls="patient-workspace-panel-{{ $tab['id'] }}"
+                            tabindex="{{ $activeTab === $tab['id'] ? '0' : '-1' }}"
                             class="crm-top-tab {{ $activeTab === $tab['id'] ? 'is-active' : '' }}"
                         >
                             <span>{{ $tab['label'] }}</span>
@@ -304,7 +310,12 @@
 
 
             {{-- Tab Content --}}
-            <div>
+            <div
+                id="patient-workspace-panel-{{ $activeTab }}"
+                role="tabpanel"
+                aria-labelledby="patient-workspace-tab-{{ $activeTab }}"
+                tabindex="0"
+            >
                 @if($activeTab === 'basic-info')
                     <div class="crm-pane-stack-lg" wire:key="patient-{{ $this->record->id }}-basic-info">
                         @if($this->record)
@@ -436,7 +447,7 @@
                                                     </td>
                                                     <td class="is-center">
                                                         @if($session['edit_url'])
-                                                            <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị">
+                                                            <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị" aria-label="Chỉnh sửa phiên điều trị">
                                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
                                                                 </svg>

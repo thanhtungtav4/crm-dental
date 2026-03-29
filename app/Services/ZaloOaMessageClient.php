@@ -4,12 +4,18 @@ namespace App\Services;
 
 use App\Models\ConversationMessage;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\ConversationProvider;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
 class ZaloOaMessageClient implements OutboundMessageClient
 {
+    public function provider(): ConversationProvider
+    {
+        return ConversationProvider::Zalo;
+    }
+
     public function isConfigured(): bool
     {
         return $this->configurationErrorMessage() === null;

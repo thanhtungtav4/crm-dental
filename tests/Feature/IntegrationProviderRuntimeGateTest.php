@@ -22,6 +22,14 @@ it('returns skip states for disabled provider command lanes', function (): void 
             'state' => 'skip',
             'message' => 'Zalo OA integration chưa bật.',
         ])
+        ->and($gate->facebookWebhookVerifyStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'Facebook Messenger integration chưa bật.',
+        ])
+        ->and($gate->facebookWebhookDeliveryStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'Facebook Messenger integration chưa bật.',
+        ])
         ->and($gate->googleCalendarSyncCommandStatus())->toBe([
             'state' => 'skip',
             'message' => 'Google Calendar integration đang tắt. Không có dữ liệu cần sync.',
@@ -45,6 +53,8 @@ it('returns skip states for disabled provider command lanes', function (): void 
         ->and($gate->allowsEmrInternalIngress())->toBeFalse()
         ->and($gate->allowsZaloWebhookVerify())->toBeFalse()
         ->and($gate->allowsZaloWebhookDelivery())->toBeFalse()
+        ->and($gate->allowsFacebookWebhookVerify())->toBeFalse()
+        ->and($gate->allowsFacebookWebhookDelivery())->toBeFalse()
         ->and($gate->allowsWebLeadIngress())->toBeFalse();
 });
 
@@ -86,6 +96,23 @@ it('fails zalo webhook ingress when required secrets have not been configured', 
         ->and($gate->zaloWebhookDeliveryStatus())->toBe([
             'state' => 'fail',
             'message' => 'Webhook signature verification misconfigured.',
+        ]);
+});
+
+it('fails facebook webhook ingress when required secrets have not been configured', function (): void {
+    configureRuntimeGateSetting('facebook.enabled', true, 'boolean', 'facebook');
+    configureRuntimeGateSetting('facebook.webhook_verify_token', '', 'text', 'facebook', isSecret: true);
+    configureRuntimeGateSetting('facebook.app_secret', '', 'text', 'facebook', isSecret: true);
+
+    $gate = app(IntegrationProviderRuntimeGate::class);
+
+    expect($gate->facebookWebhookVerifyStatus())->toBe([
+        'state' => 'fail',
+        'message' => 'Facebook webhook verify token chưa được cấu hình.',
+    ])
+        ->and($gate->facebookWebhookDeliveryStatus())->toBe([
+            'state' => 'fail',
+            'message' => 'Facebook webhook signature verification misconfigured.',
         ]);
 });
 
@@ -151,6 +178,10 @@ it('allows healthy providers to publish through the shared runtime gate', functi
     configureRuntimeGateSetting('zalo.webhook_token', 'zalo-webhook-token', 'text', 'zalo', isSecret: true);
     configureRuntimeGateSetting('zalo.app_secret', 'zalo-app-secret', 'text', 'zalo', isSecret: true);
 
+    configureRuntimeGateSetting('facebook.enabled', true, 'boolean', 'facebook');
+    configureRuntimeGateSetting('facebook.webhook_verify_token', 'facebook-webhook-token', 'text', 'facebook', isSecret: true);
+    configureRuntimeGateSetting('facebook.app_secret', 'facebook-app-secret', 'text', 'facebook', isSecret: true);
+
     configureRuntimeGateSetting('web_lead.enabled', true, 'boolean', 'web_lead');
     configureRuntimeGateSetting('web_lead.api_token', 'web-lead-token', 'text', 'web_lead', isSecret: true);
 
@@ -178,6 +209,16 @@ it('allows healthy providers to publish through the shared runtime gate', functi
         ])
         ->and($gate->allowsZaloWebhookVerify())->toBeTrue()
         ->and($gate->allowsZaloWebhookDelivery())->toBeTrue()
+        ->and($gate->facebookWebhookVerifyStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->facebookWebhookDeliveryStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->allowsFacebookWebhookVerify())->toBeTrue()
+        ->and($gate->allowsFacebookWebhookDelivery())->toBeTrue()
         ->and($gate->webLeadIngressStatus())->toBe([
             'state' => 'ready',
             'message' => null,

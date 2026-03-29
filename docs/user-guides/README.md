@@ -6,6 +6,7 @@ Tài liệu này dành cho người dùng vận hành hằng ngày, không dành
 
 - Nếu bạn mới dùng hệ thống: xem [Bắt đầu nhanh](getting-started.md)
 - Nếu bạn là lễ tân, tư vấn, CSKH: xem [Hướng dẫn Lễ tân / CSKH](frontdesk-cskh.md)
+- Nếu bạn trực inbox Zalo/Facebook: xem [Hướng dẫn Conversation Inbox](conversation-inbox.md)
 - Nếu bạn là bác sĩ: xem [Hướng dẫn Bác sĩ](doctor.md)
 - Nếu bạn là quản lý chi nhánh hoặc admin: xem [Hướng dẫn Quản lý / Admin](manager-admin.md)
 - Nếu bạn đang làm nghiệm thu nội bộ: xem [Checklist UAT theo vai trò](uat-checklist-by-role.md)
@@ -41,6 +42,7 @@ CRM này hỗ trợ phòng khám nha khoa quản lý toàn bộ luồng:
 
 - [Bắt đầu nhanh](getting-started.md)
 - [Lễ tân / CSKH](frontdesk-cskh.md)
+- [Conversation Inbox](conversation-inbox.md)
 - [Bác sĩ](doctor.md)
 - [Quản lý / Admin](manager-admin.md)
 - [Checklist UAT theo vai trò](uat-checklist-by-role.md)

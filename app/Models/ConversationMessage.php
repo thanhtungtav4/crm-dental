@@ -121,7 +121,7 @@ class ConversationMessage extends Model
             'processing_token' => null,
             'processed_at' => now(),
             'next_retry_at' => now()->addMinutes($delayMinutes),
-            'last_error' => $result['error'] ?? 'Zalo OA send failed.',
+            'last_error' => $result['error'] ?? 'Channel send failed.',
         ])->save();
     }
 

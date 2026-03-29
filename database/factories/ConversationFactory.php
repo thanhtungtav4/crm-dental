@@ -40,6 +40,28 @@ class ConversationFactory extends Factory
             'latest_message_preview' => fake()->sentence(),
             'last_message_at' => now(),
             'last_inbound_at' => now(),
+            'handoff_priority' => Conversation::PRIORITY_NORMAL,
+            'handoff_status' => Conversation::HANDOFF_STATUS_NEW,
+            'handoff_version' => 0,
         ];
+    }
+
+    public function facebook(): static
+    {
+        return $this->state(function (): array {
+            $channelKey = 'page_'.fake()->numerify('#####');
+            $externalUserId = 'psid_'.fake()->numerify('########');
+
+            return [
+                'provider' => Conversation::PROVIDER_FACEBOOK,
+                'channel_key' => $channelKey,
+                'external_conversation_key' => implode(':', [
+                    Conversation::PROVIDER_FACEBOOK,
+                    $channelKey,
+                    $externalUserId,
+                ]),
+                'external_user_id' => $externalUserId,
+            ];
+        });
     }
 }

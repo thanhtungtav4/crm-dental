@@ -21,7 +21,7 @@ it('allows admin manager and cskh personas to access the conversation inbox page
     $this->actingAs($user)
         ->get(ConversationInbox::getUrl())
         ->assertOk()
-        ->assertSee('Inbox hội thoại Zalo')
+        ->assertSee('Inbox hội thoại đa kênh')
         ->assertSee('Queue hội thoại');
 })->with([
     'admin' => 'Admin',
@@ -68,6 +68,239 @@ it('scopes conversation inbox rows to the authenticated users accessible branche
         ->assertOk()
         ->assertSee('Khach scope A')
         ->assertDontSee('Khach scope B');
+});
+
+it('stores structured handoff context on the selected conversation for team visibility', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $conversation = Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach handoff note',
+        'handoff_priority' => Conversation::PRIORITY_NORMAL,
+        'handoff_status' => Conversation::HANDOFF_STATUS_NEW,
+        'handoff_summary' => null,
+    ]);
+
+    $this->actingAs($cskh);
+
+    $nextActionAt = now()->addDay()->setTime(17, 0)->seconds(0);
+
+    Livewire::test(ConversationInbox::class)
+        ->call('selectConversation', $conversation->id)
+        ->set('handoffForm.priority', Conversation::PRIORITY_URGENT)
+        ->set('handoffForm.status', Conversation::HANDOFF_STATUS_QUOTED)
+        ->set('handoffForm.next_action_at', $nextActionAt->format('Y-m-d\TH:i'))
+        ->set('handoffForm.summary', 'Khach xin bao gia gap, can goi lai truoc 17h.')
+        ->call('saveHandoffNote')
+        ->assertSet('handoffForm.priority', Conversation::PRIORITY_URGENT)
+        ->assertSet('handoffForm.status', Conversation::HANDOFF_STATUS_QUOTED)
+        ->assertSet('handoffForm.next_action_at', $nextActionAt->format('Y-m-d\TH:i'))
+        ->assertSet('handoffForm.summary', 'Khach xin bao gia gap, can goi lai truoc 17h.');
+
+    $freshConversation = $conversation->fresh();
+
+    expect($freshConversation)->not->toBeNull()
+        ->and($freshConversation?->handoff_priority)->toBe(Conversation::PRIORITY_URGENT)
+        ->and($freshConversation?->handoff_status)->toBe(Conversation::HANDOFF_STATUS_QUOTED)
+        ->and($freshConversation?->handoff_summary)->toBe('Khach xin bao gia gap, can goi lai truoc 17h.')
+        ->and($freshConversation?->handoff_next_action_at?->format('Y-m-d H:i'))->toBe($nextActionAt->format('Y-m-d H:i'))
+        ->and($freshConversation?->handoff_updated_by)->toBe($cskh->id)
+        ->and($freshConversation?->handoff_updated_at)->not->toBeNull()
+        ->and($freshConversation?->handoff_version)->toBe(1);
+});
+
+it('refreshes the handoff form instead of overwriting a newer teammate update', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $conversation = Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach stale handoff',
+        'handoff_priority' => Conversation::PRIORITY_NORMAL,
+        'handoff_status' => Conversation::HANDOFF_STATUS_NEW,
+        'handoff_summary' => 'Ban dau',
+        'handoff_version' => 0,
+    ]);
+
+    $this->actingAs($cskh);
+
+    $component = Livewire::test(ConversationInbox::class)
+        ->call('selectConversation', $conversation->id)
+        ->set('handoffForm.priority', Conversation::PRIORITY_HIGH)
+        ->set('handoffForm.status', Conversation::HANDOFF_STATUS_QUOTED)
+        ->set('handoffForm.summary', 'Ban nhap nhap local');
+
+    $conversation->forceFill([
+        'handoff_priority' => Conversation::PRIORITY_LOW,
+        'handoff_status' => Conversation::HANDOFF_STATUS_WAITING_CUSTOMER,
+        'handoff_summary' => 'Da duoc dong nghiep cap nhat truoc',
+        'handoff_updated_by' => $cskh->id,
+        'handoff_updated_at' => now(),
+        'handoff_version' => 1,
+    ])->save();
+
+    $component->call('saveHandoffNote')
+        ->assertSet('handoffForm.priority', Conversation::PRIORITY_LOW)
+        ->assertSet('handoffForm.status', Conversation::HANDOFF_STATUS_WAITING_CUSTOMER)
+        ->assertSet('handoffForm.summary', 'Da duoc dong nghiep cap nhat truoc');
+
+    $freshConversation = $conversation->fresh();
+
+    expect($freshConversation)->not->toBeNull()
+        ->and($freshConversation?->handoff_priority)->toBe(Conversation::PRIORITY_LOW)
+        ->and($freshConversation?->handoff_status)->toBe(Conversation::HANDOFF_STATUS_WAITING_CUSTOMER)
+        ->and($freshConversation?->handoff_summary)->toBe('Da duoc dong nghiep cap nhat truoc')
+        ->and($freshConversation?->handoff_version)->toBe(1);
+});
+
+it('loads recent thread messages first and can reveal older history on demand', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    $conversation = Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach lich su dai',
+        'latest_message_preview' => 'Tin nhan 45',
+    ]);
+
+    foreach (range(1, 45) as $index) {
+        ConversationMessage::factory()->create([
+            'conversation_id' => $conversation->id,
+            'direction' => ConversationMessage::DIRECTION_INBOUND,
+            'body' => sprintf('Tin nhan %02d', $index),
+            'message_at' => now()->copy()->startOfMinute()->addSeconds($index),
+        ]);
+    }
+
+    $this->actingAs($cskh);
+
+    Livewire::test(ConversationInbox::class)
+        ->call('selectConversation', $conversation->id)
+        ->assertSee('Tin nhan 45')
+        ->assertSee('Tin nhan 16')
+        ->assertDontSee('Tin nhan 15')
+        ->assertSee('Xem tin cũ hơn')
+        ->call('loadOlderMessages')
+        ->assertSee('Tin nhan 15')
+        ->assertSee('Tin nhan 01');
+});
+
+it('filters the inbox list by search term provider and queue tab for faster cskh triage', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskh = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskh->assignRole('CSKH');
+
+    Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach Bao Gia Gap',
+        'provider' => Conversation::PROVIDER_ZALO,
+        'latest_message_preview' => 'Can bao gia gap trong hom nay',
+        'handoff_priority' => Conversation::PRIORITY_URGENT,
+        'customer_id' => null,
+        'assigned_to' => null,
+        'unread_count' => 2,
+    ]);
+
+    Conversation::factory()->facebook()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach Facebook Thuong',
+        'latest_message_preview' => 'Tin nhan Facebook',
+        'handoff_priority' => Conversation::PRIORITY_NORMAL,
+        'assigned_to' => $cskh->id,
+        'customer_id' => Customer::factory()->create()->id,
+        'unread_count' => 0,
+    ]);
+
+    Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'external_display_name' => 'Khach Theo Doi',
+        'latest_message_preview' => 'Theo doi sau',
+        'handoff_priority' => Conversation::PRIORITY_LOW,
+        'handoff_status' => Conversation::HANDOFF_STATUS_FOLLOW_UP,
+        'handoff_next_action_at' => now()->subMinutes(30),
+        'assigned_to' => null,
+        'customer_id' => null,
+        'unread_count' => 0,
+    ]);
+
+    $this->actingAs($cskh);
+
+    Livewire::test(ConversationInbox::class)
+        ->set('search', 'Bao Gia')
+        ->assertSee('Khach Bao Gia Gap')
+        ->assertDontSee('Khach Facebook Thuong')
+        ->set('search', '')
+        ->set('providerFilter', Conversation::PROVIDER_FACEBOOK)
+        ->assertSee('Khach Facebook Thuong')
+        ->assertDontSee('Khach Bao Gia Gap')
+        ->set('providerFilter', 'all')
+        ->set('inboxTab', 'priority')
+        ->assertSee('Khach Bao Gia Gap')
+        ->assertDontSee('Khach Theo Doi')
+        ->set('inboxTab', 'due')
+        ->assertSee('Khach Theo Doi')
+        ->assertDontSee('Khach Bao Gia Gap')
+        ->set('inboxTab', 'mine')
+        ->assertSee('Khach Facebook Thuong')
+        ->assertDontSee('Khach Bao Gia Gap');
+});
+
+it('allows cskh to claim reassign and release a conversation from the thread header', function (): void {
+    $branch = Branch::factory()->create();
+
+    $cskhA = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskhA->assignRole('CSKH');
+
+    $cskhB = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $cskhB->assignRole('CSKH');
+
+    $conversation = Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'assigned_to' => null,
+        'external_display_name' => 'Khach claim thread',
+    ]);
+
+    $this->actingAs($cskhA);
+
+    $component = Livewire::test(ConversationInbox::class)
+        ->call('selectConversation', $conversation->id)
+        ->call('claimConversation')
+        ->assertSet('assignmentForm.assigned_to', (string) $cskhA->id);
+
+    expect($conversation->fresh()?->assigned_to)->toBe($cskhA->id);
+
+    $component
+        ->set('assignmentForm.assigned_to', (string) $cskhB->id)
+        ->call('saveConversationAssignee')
+        ->assertSet('assignmentForm.assigned_to', (string) $cskhB->id);
+
+    expect($conversation->fresh()?->assigned_to)->toBe($cskhB->id);
+
+    $component
+        ->call('releaseConversation')
+        ->assertSet('assignmentForm.assigned_to', '');
+
+    expect($conversation->fresh()?->assigned_to)->toBeNull();
 });
 
 it('creates a pending outbound message and auto claims the conversation when staff replies from the inbox', function (): void {

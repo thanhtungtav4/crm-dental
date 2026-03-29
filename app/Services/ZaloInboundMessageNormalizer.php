@@ -7,7 +7,9 @@ use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\ZaloWebhookEvent;
 use App\Support\ClinicRuntimeSettings;
+use App\Support\ConversationProvider;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Throwable;
 
 class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
@@ -16,8 +18,17 @@ class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
         protected IntegrationOperationalPayloadSanitizer $integrationOperationalPayloadSanitizer,
     ) {}
 
-    public function normalize(ZaloWebhookEvent $event, array $payload): ?ConversationMessage
+    public function provider(): ConversationProvider
     {
+        return ConversationProvider::Zalo;
+    }
+
+    public function normalize(object $event, array $payload): ?ConversationMessage
+    {
+        if (! $event instanceof ZaloWebhookEvent) {
+            throw new InvalidArgumentException('Zalo inbound normalizer requires a ZaloWebhookEvent instance.');
+        }
+
         $messageText = trim((string) data_get($payload, 'message.text', ''));
         $senderId = trim((string) (data_get($payload, 'sender.id') ?? data_get($payload, 'from.uid') ?? ''));
         $channelKey = $this->resolveChannelKey($payload);
@@ -37,7 +48,7 @@ class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
         $messageAt = $this->resolveMessageTimestamp($payload);
         $providerMessageId = $this->resolveProviderMessageId($payload);
         $externalConversationKey = implode(':', [
-            Conversation::PROVIDER_ZALO,
+            $this->provider()->value,
             $channelKey,
             $senderId,
         ]);
@@ -59,14 +70,14 @@ class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
             ): ?ConversationMessage {
                 $conversation = Conversation::query()
                     ->lockForUpdate()
-                    ->where('provider', Conversation::PROVIDER_ZALO)
+                    ->where('provider', $this->provider()->value)
                     ->where('channel_key', $channelKey)
                     ->where('external_conversation_key', $externalConversationKey)
                     ->first();
 
                 if (! $conversation instanceof Conversation) {
                     $conversation = Conversation::query()->create([
-                        'provider' => Conversation::PROVIDER_ZALO,
+                        'provider' => $this->provider()->value,
                         'channel_key' => $channelKey,
                         'external_conversation_key' => $externalConversationKey,
                         'external_user_id' => $senderId,
@@ -84,8 +95,14 @@ class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
                 }
 
                 $message = $providerMessageId !== null
-                    ? ConversationMessage::query()->where('provider_message_id', $providerMessageId)->first()
-                    : ConversationMessage::query()->where('source_event_fingerprint', $event->event_fingerprint)->first();
+                    ? ConversationMessage::query()
+                        ->where('conversation_id', $conversation->id)
+                        ->where('provider_message_id', $providerMessageId)
+                        ->first()
+                    : ConversationMessage::query()
+                        ->where('conversation_id', $conversation->id)
+                        ->where('source_event_fingerprint', $event->event_fingerprint)
+                        ->first();
 
                 if ($message instanceof ConversationMessage) {
                     $this->markEventNormalized($event, $conversation, $message);
@@ -193,7 +210,7 @@ class ZaloInboundMessageNormalizer implements InboundMessageNormalizer
 
     protected function resolveDefaultBranchId(): ?int
     {
-        $defaultBranchCode = ClinicRuntimeSettings::zaloInboxDefaultBranchCode();
+        $defaultBranchCode = $this->provider()->inboxDefaultBranchCode();
 
         if ($defaultBranchCode === '') {
             return null;

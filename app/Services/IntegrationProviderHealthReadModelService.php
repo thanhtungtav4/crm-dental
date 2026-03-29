@@ -12,6 +12,7 @@ class IntegrationProviderHealthReadModelService
     public function __construct(
         protected DicomReadinessService $dicomReadinessService,
         protected EmrIntegrationService $emrIntegrationService,
+        protected FacebookIntegrationService $facebookIntegrationService,
         protected GoogleCalendarIntegrationService $googleCalendarIntegrationService,
         protected ZaloIntegrationService $zaloIntegrationService,
         protected ZnsProviderClient $znsProviderClient,
@@ -39,6 +40,7 @@ class IntegrationProviderHealthReadModelService
     {
         return [
             $this->provider('zalo_oa'),
+            $this->provider('facebook_messenger'),
             $this->provider('zns'),
             $this->provider('google_calendar'),
             $this->provider('emr'),
@@ -83,6 +85,7 @@ class IntegrationProviderHealthReadModelService
     {
         return match ($key) {
             'zalo_oa' => $this->zaloOaCard(),
+            'facebook_messenger' => $this->facebookMessengerCard(),
             'zns' => $this->znsCard(),
             'google_calendar' => $this->googleCalendarCard(),
             'emr' => $this->emrCard(),
@@ -258,6 +261,49 @@ class IntegrationProviderHealthReadModelService
                 ],
             ],
             runtimeErrorMessage: $enabled ? $this->znsProviderClient->configurationErrorMessage() : null,
+        );
+    }
+
+    /**
+     * @return array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     enabled:bool,
+     *     tone:string,
+     *     status:string,
+     *     score:int,
+     *     issues:array<int, string>,
+     *     recommendations:array<int, string>,
+     *     meta:array<int, array{label:string, value:int|string}>,
+     *     issue_count:int,
+     *     recommendation_count:int,
+     *     runtime_error_message:?string,
+     *     webhook_url:?string
+     * }
+     */
+    protected function facebookMessengerCard(): array
+    {
+        $report = $this->facebookIntegrationService->auditMessengerReadiness();
+
+        return $this->buildCard(
+            key: 'facebook_messenger',
+            label: 'Facebook Messenger',
+            description: 'Webhook verify token, App secret va Page access token cho Page inbox Messenger.',
+            enabled: (bool) ($report['enabled'] ?? false),
+            issues: (array) ($report['issues'] ?? []),
+            recommendations: (array) ($report['recommendations'] ?? []),
+            meta: [
+                [
+                    'label' => 'Webhook URL',
+                    'value' => (string) ($report['webhook_url'] ?? '-'),
+                ],
+                [
+                    'label' => 'Send endpoint',
+                    'value' => ClinicRuntimeSettings::facebookSendEndpoint() !== '' ? ClinicRuntimeSettings::facebookSendEndpoint() : '-',
+                ],
+            ],
+            webhookUrl: filled($report['webhook_url'] ?? null) ? (string) $report['webhook_url'] : null,
         );
     }
 

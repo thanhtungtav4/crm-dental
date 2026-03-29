@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\ConversationMessage;
-use App\Models\ZaloWebhookEvent;
+use App\Support\ConversationProvider;
 
 interface InboundMessageNormalizer
 {
+    public function provider(): ConversationProvider;
+
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function normalize(ZaloWebhookEvent $event, array $payload): ?ConversationMessage;
+    public function normalize(object $event, array $payload): ?ConversationMessage;
 }

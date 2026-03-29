@@ -7,8 +7,10 @@ use App\Models\Appointment;
 use App\Models\FactoryOrder;
 use App\Models\Invoice;
 use App\Models\MaterialIssueNote;
+use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PatientMedicalRecord;
+use App\Models\Payment;
 use App\Models\Prescription;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
@@ -103,13 +105,20 @@ class PatientOverviewReadModelService
     /**
      * @return array{
      *     total_treatment_amount:float,
+     *     total_treatment_amount_formatted:string,
      *     total_discount_amount:float,
+     *     total_discount_amount_formatted:string,
      *     must_pay_amount:float,
+     *     must_pay_amount_formatted:string,
      *     net_collected_amount:float,
+     *     net_collected_amount_formatted:string,
      *     remaining_amount:float,
+     *     remaining_amount_formatted:string,
      *     balance_amount:float,
+     *     balance_amount_formatted:string,
      *     balance_is_positive:bool,
-     *     latest_invoice_id:?int
+     *     latest_invoice_id:?int,
+     *     create_payment_url:string
      * }
      */
     public function paymentSummary(Patient $patient): array
@@ -138,13 +147,23 @@ class PatientOverviewReadModelService
 
         return [
             'total_treatment_amount' => $totalTreatmentAmount,
+            'total_treatment_amount_formatted' => $this->formatMoney($totalTreatmentAmount),
             'total_discount_amount' => $totalDiscountAmount,
+            'total_discount_amount_formatted' => $this->formatMoney($totalDiscountAmount),
             'must_pay_amount' => $mustPayAmount,
+            'must_pay_amount_formatted' => $this->formatMoney($mustPayAmount),
             'net_collected_amount' => $netCollectedAmount,
+            'net_collected_amount_formatted' => $this->formatMoney($netCollectedAmount),
             'remaining_amount' => $remainingAmount,
+            'remaining_amount_formatted' => $this->formatMoney($remainingAmount),
             'balance_amount' => $balanceAmount,
+            'balance_amount_formatted' => $this->formatMoney($balanceAmount),
             'balance_is_positive' => $balanceAmount >= 0,
             'latest_invoice_id' => $latestInvoiceId,
+            'create_payment_url' => route(
+                'filament.admin.resources.payments.create',
+                $latestInvoiceId ? ['invoice_id' => $latestInvoiceId] : []
+            ),
         ];
     }
 
@@ -211,6 +230,164 @@ class PatientOverviewReadModelService
                 + $paymentsCount
                 + $notesCount
                 + (int) ($countedPatient->branch_logs_count ?? 0),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     prescriptions:bool,
+     *     appointments:bool,
+     *     payments:bool,
+     *     invoice_forms:bool,
+     *     forms:bool,
+     *     care:bool,
+     *     lab_materials:bool,
+     *     create_treatment_plan:bool,
+     *     create_invoice:bool,
+     *     create_appointment:bool,
+     *     create_payment:bool
+     * }
+     */
+    public function workspaceCapabilities(?User $authUser): array
+    {
+        if (! $authUser instanceof User) {
+            return [
+                'prescriptions' => false,
+                'appointments' => false,
+                'payments' => false,
+                'invoice_forms' => false,
+                'forms' => false,
+                'care' => false,
+                'lab_materials' => false,
+                'create_treatment_plan' => false,
+                'create_invoice' => false,
+                'create_appointment' => false,
+                'create_payment' => false,
+            ];
+        }
+
+        $canViewPrescriptions = $authUser->can('viewAny', Prescription::class);
+        $canViewAppointments = $authUser->can('viewAny', Appointment::class);
+        $canViewInvoiceForms = $authUser->can('viewAny', Invoice::class);
+        $canViewPayments = $canViewInvoiceForms || $authUser->can('viewAny', Payment::class);
+        $canViewCare = $authUser->can('viewAny', Note::class);
+        $canViewLabMaterials = $authUser->hasAnyAccessibleBranch()
+            && $authUser->hasAnyRole(['Admin', 'Manager', 'Doctor']);
+
+        return [
+            'prescriptions' => $canViewPrescriptions,
+            'appointments' => $canViewAppointments,
+            'payments' => $canViewPayments,
+            'invoice_forms' => $canViewInvoiceForms,
+            'forms' => $canViewPrescriptions || $canViewInvoiceForms,
+            'care' => $canViewCare,
+            'lab_materials' => $canViewLabMaterials,
+            'create_treatment_plan' => $authUser->can('create', TreatmentPlan::class),
+            'create_invoice' => $authUser->can('create', Invoice::class),
+            'create_appointment' => $authUser->can('create', Appointment::class),
+            'create_payment' => $authUser->can('create', Payment::class),
+        ];
+    }
+
+    /**
+     * @return array<int, array{id:string,label:string,count:?int}>
+     */
+    public function workspaceTabs(Patient $patient, ?User $authUser): array
+    {
+        $counter = $this->tabCounters($patient);
+        $capabilities = $this->workspaceCapabilities($authUser);
+
+        $tabs = [
+            ['id' => 'basic-info', 'label' => 'Thông tin cơ bản', 'count' => null],
+            ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $counter['exam_sessions'] + $counter['treatment_plans']],
+        ];
+
+        if ($capabilities['prescriptions']) {
+            $tabs[] = ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $counter['prescriptions']];
+        }
+
+        $tabs[] = ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $counter['photos']];
+
+        if ($capabilities['lab_materials']) {
+            $tabs[] = ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $counter['materials']];
+        }
+
+        if ($capabilities['appointments']) {
+            $tabs[] = ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $counter['appointments']];
+        }
+
+        if ($capabilities['payments']) {
+            $tabs[] = ['id' => 'payments', 'label' => 'Thanh toán', 'count' => $counter['invoices'] + $counter['payments']];
+        }
+
+        if ($capabilities['forms']) {
+            $tabs[] = [
+                'id' => 'forms',
+                'label' => 'Biểu mẫu',
+                'count' => ($capabilities['prescriptions'] ? $counter['prescriptions'] : 0)
+                    + ($capabilities['invoice_forms'] ? $counter['invoices'] : 0),
+            ];
+        }
+
+        if ($capabilities['care']) {
+            $tabs[] = ['id' => 'care', 'label' => 'Chăm sóc', 'count' => $counter['notes']];
+        }
+
+        $tabs[] = ['id' => 'activity-log', 'label' => 'Lịch sử thao tác', 'count' => $counter['activity']];
+
+        return $tabs;
+    }
+
+    /**
+     * @return array{
+     *     create_treatment_plan:array{label:string,url:string,visible:bool},
+     *     create_invoice:array{label:string,url:string,visible:bool},
+     *     create_appointment:array{label:string,url:string,visible:bool},
+     *     medical_record:array{label:string,url:?string,visible:bool,mode:?string,record_id:?int}
+     * }
+     */
+    public function workspaceHeaderActions(
+        Patient $patient,
+        ?User $authUser,
+        string $workspaceReturnUrl = '',
+    ): array {
+        $capabilities = $this->workspaceCapabilities($authUser);
+        $medicalRecordAction = $this->medicalRecordAction(
+            $patient,
+            $authUser,
+            includePatientContextOnEditUrl: true,
+        );
+
+        return [
+            'create_treatment_plan' => [
+                'label' => 'Tạo kế hoạch điều trị',
+                'url' => route('filament.admin.resources.treatment-plans.create', [
+                    'patient_id' => $patient->id,
+                    'return_url' => $workspaceReturnUrl,
+                ]),
+                'visible' => $capabilities['create_treatment_plan'],
+            ],
+            'create_invoice' => [
+                'label' => 'Tạo hóa đơn',
+                'url' => route('filament.admin.resources.invoices.create', [
+                    'patient_id' => $patient->id,
+                ]),
+                'visible' => $capabilities['create_invoice'],
+            ],
+            'create_appointment' => [
+                'label' => 'Đặt lịch hẹn',
+                'url' => route('filament.admin.resources.appointments.create', [
+                    'patient_id' => $patient->id,
+                ]),
+                'visible' => $capabilities['create_appointment'],
+            ],
+            'medical_record' => [
+                'label' => $medicalRecordAction['label'] ?? 'Mở bệnh án điện tử',
+                'url' => $medicalRecordAction['url'] ?? null,
+                'visible' => $medicalRecordAction !== null,
+                'mode' => $medicalRecordAction['mode'] ?? null,
+                'record_id' => $medicalRecordAction['record_id'] ?? null,
+            ],
         ];
     }
 

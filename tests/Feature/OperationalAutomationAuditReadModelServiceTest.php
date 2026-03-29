@@ -120,6 +120,7 @@ it('tracks popup and photo automation commands in the shared automation reader',
         ->toContain('emr:check-dicom-readiness')
         ->toContain('emr:prune-clinical-media')
         ->toContain('google-calendar:sync-events')
+        ->toContain('conversations:retry-failed-messages')
         ->toContain('popups:dispatch-due')
         ->toContain('popups:prune')
         ->toContain('photos:prune');

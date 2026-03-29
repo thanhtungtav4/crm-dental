@@ -94,6 +94,11 @@ class AppServiceProvider extends ServiceProvider
                 ->by(sha1('zalo-webhook|'.$request->ip()));
         });
 
+        RateLimiter::for('facebook-webhook', function (Request $request): Limit {
+            return Limit::perMinute(120)
+                ->by(sha1('facebook-webhook|'.$request->ip()));
+        });
+
         RateLimiter::for('api-mobile', function (Request $request): Limit {
             $tokenId = optional($request->user()?->currentAccessToken())->id;
 

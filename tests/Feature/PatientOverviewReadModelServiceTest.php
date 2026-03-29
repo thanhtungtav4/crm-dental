@@ -307,13 +307,22 @@ it('summarizes patient payment balances through the shared read model', function
 
     expect($summary)->toMatchArray([
         'total_treatment_amount' => 3500000.0,
+        'total_treatment_amount_formatted' => '3.500.000',
         'total_discount_amount' => 100000.0,
+        'total_discount_amount_formatted' => '100.000',
         'must_pay_amount' => 3500000.0,
+        'must_pay_amount_formatted' => '3.500.000',
         'net_collected_amount' => 1300000.0,
+        'net_collected_amount_formatted' => '1.300.000',
         'remaining_amount' => 2200000.0,
+        'remaining_amount_formatted' => '2.200.000',
         'balance_amount' => -2200000.0,
+        'balance_amount_formatted' => '-2.200.000',
         'balance_is_positive' => false,
         'latest_invoice_id' => $latestInvoice->id,
+        'create_payment_url' => route('filament.admin.resources.payments.create', [
+            'invoice_id' => $latestInvoice->id,
+        ]),
     ]);
 });
 
@@ -701,4 +710,78 @@ it('builds patient medical record actions through the shared read model', functi
     ]);
 
     expect($service->medicalRecordAction($patient->fresh(), null))->toBeNull();
+});
+
+it('builds patient workspace header actions through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    $workspaceReturnUrl = route('filament.admin.resources.patients.view', [
+        'record' => $patient->id,
+        'tab' => 'exam-treatment',
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+
+    $createActions = $service->workspaceHeaderActions($patient, $admin, $workspaceReturnUrl);
+
+    expect($createActions['create_treatment_plan'])->toMatchArray([
+        'label' => 'Tạo kế hoạch điều trị',
+        'url' => route('filament.admin.resources.treatment-plans.create', [
+            'patient_id' => $patient->id,
+            'return_url' => $workspaceReturnUrl,
+        ]),
+        'visible' => true,
+    ])->and($createActions['create_invoice'])->toMatchArray([
+        'label' => 'Tạo hóa đơn',
+        'url' => route('filament.admin.resources.invoices.create', [
+            'patient_id' => $patient->id,
+        ]),
+        'visible' => true,
+    ])->and($createActions['create_appointment'])->toMatchArray([
+        'label' => 'Đặt lịch hẹn',
+        'url' => route('filament.admin.resources.appointments.create', [
+            'patient_id' => $patient->id,
+        ]),
+        'visible' => true,
+    ])->and($createActions['medical_record'])->toMatchArray([
+        'label' => 'Tạo bệnh án điện tử',
+        'url' => route('filament.admin.resources.patient-medical-records.create', [
+            'patient_id' => $patient->id,
+        ]),
+        'visible' => true,
+        'mode' => 'create',
+        'record_id' => null,
+    ]);
+
+    $medicalRecord = PatientMedicalRecord::query()->create([
+        'patient_id' => $patient->id,
+        'updated_by' => $admin->id,
+    ]);
+
+    $editActions = $service->workspaceHeaderActions($patient->fresh(), $admin, $workspaceReturnUrl);
+
+    expect($editActions['medical_record'])->toMatchArray([
+        'label' => 'Mở bệnh án điện tử',
+        'url' => route('filament.admin.resources.patient-medical-records.edit', [
+            'record' => $medicalRecord->id,
+            'patient_id' => $patient->id,
+        ]),
+        'visible' => true,
+        'mode' => 'edit',
+        'record_id' => $medicalRecord->id,
+    ]);
 });

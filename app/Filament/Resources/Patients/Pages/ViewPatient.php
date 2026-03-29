@@ -2,15 +2,7 @@
 
 namespace App\Filament\Resources\Patients\Pages;
 
-use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
-use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
 use App\Filament\Resources\Patients\PatientResource;
-use App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource;
-use App\Models\Appointment;
-use App\Models\Invoice;
-use App\Models\Payment;
-use App\Models\Prescription;
-use App\Models\TreatmentPlan;
 use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions;
@@ -43,13 +35,6 @@ class ViewPatient extends ViewRecord
     protected ?Collection $cachedLatestPrescriptions = null;
 
     protected ?Collection $cachedLatestInvoices = null;
-
-    protected bool $hasResolvedMedicalRecordAction = false;
-
-    /**
-     * @var array{label:string,url:string,mode:'create'|'edit',record_id:?int}|null
-     */
-    protected ?array $cachedMedicalRecordAction = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -113,47 +98,7 @@ class ViewPatient extends ViewRecord
 
     public function getTabsProperty(): array
     {
-        $counter = $this->tabCounters;
-
-        $tabs = [
-            ['id' => 'basic-info', 'label' => 'Thông tin cơ bản', 'count' => null],
-            ['id' => 'exam-treatment', 'label' => 'Khám & Điều trị', 'count' => $counter['exam_sessions'] + $counter['treatment_plans']],
-        ];
-
-        if ($this->canViewPrescriptionsTab()) {
-            $tabs[] = ['id' => 'prescriptions', 'label' => 'Đơn thuốc', 'count' => $counter['prescriptions']];
-        }
-
-        $tabs[] = ['id' => 'photos', 'label' => 'Thư viện ảnh', 'count' => $counter['photos']];
-
-        if ($this->canViewLabMaterialsTab()) {
-            $tabs[] = ['id' => 'lab-materials', 'label' => 'Xưởng/Vật tư', 'count' => $counter['materials']];
-        }
-
-        if ($this->canViewAppointmentsTab()) {
-            $tabs[] = ['id' => 'appointments', 'label' => 'Lịch hẹn', 'count' => $counter['appointments']];
-        }
-
-        if ($this->canViewPaymentsTab()) {
-            $tabs[] = ['id' => 'payments', 'label' => 'Thanh toán', 'count' => $counter['invoices'] + $counter['payments']];
-        }
-
-        if ($this->canViewFormsTab()) {
-            $tabs[] = [
-                'id' => 'forms',
-                'label' => 'Biểu mẫu',
-                'count' => ($this->canViewPrescriptionsTab() ? $counter['prescriptions'] : 0)
-                    + ($this->canViewInvoiceForms() ? $counter['invoices'] : 0),
-            ];
-        }
-
-        if ($this->canViewCareTab()) {
-            $tabs[] = ['id' => 'care', 'label' => 'Chăm sóc', 'count' => $counter['notes']];
-        }
-
-        $tabs[] = ['id' => 'activity-log', 'label' => 'Lịch sử thao tác', 'count' => $counter['activity']];
-
-        return $tabs;
+        return app(PatientOverviewReadModelService::class)->workspaceTabs($this->record, auth()->user());
     }
 
     public function getTabCountersProperty(): array
@@ -251,28 +196,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedPaymentSummary;
         }
 
-        $summary = app(PatientOverviewReadModelService::class)->paymentSummary($this->record);
-        $latestInvoiceId = $summary['latest_invoice_id'];
-
-        $this->cachedPaymentSummary = [
-            'total_treatment_amount' => $summary['total_treatment_amount'],
-            'total_treatment_amount_formatted' => $this->formatMoney($summary['total_treatment_amount']),
-            'total_discount_amount' => $summary['total_discount_amount'],
-            'total_discount_amount_formatted' => $this->formatMoney($summary['total_discount_amount']),
-            'must_pay_amount' => $summary['must_pay_amount'],
-            'must_pay_amount_formatted' => $this->formatMoney($summary['must_pay_amount']),
-            'net_collected_amount' => $summary['net_collected_amount'],
-            'net_collected_amount_formatted' => $this->formatMoney($summary['net_collected_amount']),
-            'remaining_amount' => $summary['remaining_amount'],
-            'remaining_amount_formatted' => $this->formatMoney($summary['remaining_amount']),
-            'balance_amount' => $summary['balance_amount'],
-            'balance_amount_formatted' => $this->formatMoney($summary['balance_amount']),
-            'balance_is_positive' => $summary['balance_is_positive'],
-            'create_payment_url' => route(
-                'filament.admin.resources.payments.create',
-                $latestInvoiceId ? ['invoice_id' => $latestInvoiceId] : []
-            ),
-        ];
+        $this->cachedPaymentSummary = app(PatientOverviewReadModelService::class)->paymentSummary($this->record);
 
         return $this->cachedPaymentSummary;
     }
@@ -326,89 +250,45 @@ class ViewPatient extends ViewRecord
         ]);
     }
 
-    protected function canViewPrescriptionsTab(): bool
-    {
-        return auth()->user()?->can('viewAny', Prescription::class) ?? false;
-    }
-
-    protected function canViewAppointmentsTab(): bool
-    {
-        return auth()->user()?->can('viewAny', Appointment::class) ?? false;
-    }
-
-    protected function canViewPaymentsTab(): bool
-    {
-        return (auth()->user()?->can('viewAny', Invoice::class) ?? false)
-            || (auth()->user()?->can('viewAny', Payment::class) ?? false);
-    }
-
-    protected function canCreatePayments(): bool
-    {
-        return auth()->user()?->can('create', Payment::class) ?? false;
-    }
-
-    protected function canViewInvoiceForms(): bool
-    {
-        return auth()->user()?->can('viewAny', Invoice::class) ?? false;
-    }
-
-    protected function canViewFormsTab(): bool
-    {
-        return $this->canViewPrescriptionsTab() || $this->canViewInvoiceForms();
-    }
-
-    protected function canViewCareTab(): bool
-    {
-        return auth()->user()?->can('viewAny', \App\Models\Note::class) ?? false;
-    }
-
-    protected function canViewLabMaterialsTab(): bool
-    {
-        return FactoryOrderResource::canAccess()
-            || MaterialIssueNoteResource::canAccess()
-            || TreatmentMaterialResource::canAccess();
-    }
-
     protected function getHeaderActions(): array
     {
+        $headerActions = app(PatientOverviewReadModelService::class)->workspaceHeaderActions(
+            $this->record,
+            auth()->user(),
+            $this->workspaceReturnUrl,
+        );
+
         return [
             Action::make('createTreatmentPlan')
-                ->label('Tạo kế hoạch điều trị')
+                ->label((string) ($headerActions['create_treatment_plan']['label'] ?? 'Tạo kế hoạch điều trị'))
                 ->icon('heroicon-o-clipboard-document-list')
                 ->color('success')
-                ->visible(fn (): bool => auth()->user()?->can('create', TreatmentPlan::class) ?? false)
-                ->url(fn () => route('filament.admin.resources.treatment-plans.create', [
-                    'patient_id' => $this->record->id,
-                    'return_url' => $this->workspaceReturnUrl,
-                ]))
+                ->visible(fn (): bool => (bool) ($headerActions['create_treatment_plan']['visible'] ?? false))
+                ->url(fn (): string => (string) ($headerActions['create_treatment_plan']['url'] ?? ''))
                 ->openUrlInNewTab(),
 
             Action::make('createInvoice')
-                ->label('Tạo hóa đơn')
+                ->label((string) ($headerActions['create_invoice']['label'] ?? 'Tạo hóa đơn'))
                 ->icon('heroicon-o-document-text')
                 ->color('warning')
-                ->visible(fn (): bool => auth()->user()?->can('create', Invoice::class) ?? false)
-                ->url(fn () => route('filament.admin.resources.invoices.create', [
-                    'patient_id' => $this->record->id,
-                ]))
+                ->visible(fn (): bool => (bool) ($headerActions['create_invoice']['visible'] ?? false))
+                ->url(fn (): string => (string) ($headerActions['create_invoice']['url'] ?? ''))
                 ->openUrlInNewTab(),
 
             Action::make('createAppointment')
-                ->label('Đặt lịch hẹn')
+                ->label((string) ($headerActions['create_appointment']['label'] ?? 'Đặt lịch hẹn'))
                 ->icon('heroicon-o-calendar')
                 ->color('info')
-                ->visible(fn (): bool => auth()->user()?->can('create', Appointment::class) ?? false)
-                ->url(fn () => route('filament.admin.resources.appointments.create', [
-                    'patient_id' => $this->record->id,
-                ]))
+                ->visible(fn (): bool => (bool) ($headerActions['create_appointment']['visible'] ?? false))
+                ->url(fn (): string => (string) ($headerActions['create_appointment']['url'] ?? ''))
                 ->openUrlInNewTab(),
 
             Action::make('medicalRecord')
-                ->label(fn (): string => (string) ($this->resolveMedicalRecordAction()['label'] ?? 'Mở bệnh án điện tử'))
+                ->label(fn (): string => (string) ($headerActions['medical_record']['label'] ?? 'Mở bệnh án điện tử'))
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('primary')
-                ->url(fn (): ?string => $this->resolveMedicalRecordAction()['url'] ?? null)
-                ->visible(fn (): bool => $this->resolveMedicalRecordAction() !== null),
+                ->url(fn (): ?string => $headerActions['medical_record']['url'] ?? null)
+                ->visible(fn (): bool => (bool) ($headerActions['medical_record']['visible'] ?? false)),
 
             Actions\EditAction::make()
                 ->label('Chỉnh sửa')
@@ -423,24 +303,5 @@ class ViewPatient extends ViewRecord
     protected function formatMoney(float|int|string|null $value): string
     {
         return number_format((float) $value, 0, ',', '.');
-    }
-
-    /**
-     * @return array{label:string,url:string,mode:'create'|'edit',record_id:?int}|null
-     */
-    protected function resolveMedicalRecordAction(): ?array
-    {
-        if ($this->hasResolvedMedicalRecordAction) {
-            return $this->cachedMedicalRecordAction;
-        }
-
-        $this->cachedMedicalRecordAction = app(PatientOverviewReadModelService::class)->medicalRecordAction(
-            $this->record,
-            auth()->user(),
-            includePatientContextOnEditUrl: true,
-        );
-        $this->hasResolvedMedicalRecordAction = true;
-
-        return $this->cachedMedicalRecordAction;
     }
 }

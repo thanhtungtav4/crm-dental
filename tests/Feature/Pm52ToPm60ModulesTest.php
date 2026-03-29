@@ -562,10 +562,14 @@ it('enforces mobile api branch isolation for appointments and invoices', functio
     Invoice::factory()->create([
         'patient_id' => $patientA->id,
         'branch_id' => $branchA->id,
+        'treatment_plan_id' => null,
+        'treatment_session_id' => null,
     ]);
     Invoice::factory()->create([
         'patient_id' => $patientB->id,
         'branch_id' => $branchB->id,
+        'treatment_plan_id' => null,
+        'treatment_session_id' => null,
     ]);
 
     $token = $manager->createToken('mobile-test', ['mobile:read'])->plainTextToken;

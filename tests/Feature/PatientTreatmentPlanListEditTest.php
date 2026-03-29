@@ -157,15 +157,19 @@ it('provides treatment session edit link from patient exam treatment progress ta
 
 it('captures exam-treatment workspace url once and reuses it for create and edit session links', function (): void {
     $pageClassPath = app_path('Filament/Resources/Patients/Pages/ViewPatient.php');
+    $servicePath = app_path('Services/PatientOverviewReadModelService.php');
     $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
 
     $pageClass = File::get($pageClassPath);
+    $service = File::get($servicePath);
     $blade = File::get($bladePath);
 
     expect($pageClass)
         ->toContain("public string \$workspaceReturnUrl = '';")
-        ->toContain('$this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($this->activeTab);')
-        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+        ->toContain('$this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($this->activeTab);');
+
+    expect($service)
+        ->toContain("'return_url' => \$workspaceReturnUrl");
 
     expect($blade)
         ->toContain("route('filament.admin.resources.treatment-sessions.create', [")

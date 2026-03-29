@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Models\ConversationMessage;
+use App\Support\ConversationProvider;
 
 interface OutboundMessageClient
 {
+    public function provider(): ConversationProvider;
+
     /**
      * @return array{
      *     success:bool,

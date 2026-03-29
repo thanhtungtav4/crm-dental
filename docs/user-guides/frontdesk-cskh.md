@@ -75,14 +75,29 @@ Khi làm việc với care queue:
 - không mở ticket trùng cho cùng một lý do nếu ticket cũ vẫn còn active
 - ghi chú rõ nội dung liên hệ
 
-## 5) Điều bạn không nên làm
+## 5) Xử lý Conversation Inbox
+
+Khi khách nhắn từ `Zalo OA` hoặc `Facebook Messenger`, bạn nên dùng `Inbox hội thoại` để xử lý thay vì ghi chú rời rạc ngoài hệ thống.
+
+Thói quen nên có:
+
+1. claim hội thoại về cho mình nếu đang trực tiếp xử lý
+2. cập nhật `trạng thái`, `ưu tiên`, `follow-up`, và `note bàn giao`
+3. tạo lead ngay khi đã đủ thông tin cơ bản
+4. dùng tab `Đến hạn` ở đầu ca để kéo lại các case phải gọi hoặc nhắn tiếp
+
+Nên đọc thêm:
+
+- [Hướng dẫn Conversation Inbox](conversation-inbox.md)
+
+## 6) Điều bạn không nên làm
 
 - không vào module tài chính bằng link trực tiếp
 - không tự sửa dữ liệu ngoài chi nhánh của mình
 - không tạo nhiều hồ sơ cho cùng một người
 - không dùng workaround để vượt qua giới hạn quyền
 
-## 6) Khi cần nhờ quản lý hoặc admin
+## 7) Khi cần nhờ quản lý hoặc admin
 
 Nhờ quản lý hoặc admin khi:
 

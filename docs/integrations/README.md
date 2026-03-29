@@ -12,6 +12,7 @@ Muc nay tong hop cac boundary tich hop ngoai he thong.
 
 ## Tai lieu nen doc
 
+- [Conversation Inbox đa kênh](conversation-inbox.md)
 - [INT review](../reviews/modules/INT-integrations.md)
 - [ZNS review](../reviews/modules/ZNS-zalo-zns.md)
 - [Operations Runbook](../operations/production-operations-runbook.md)

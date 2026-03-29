@@ -23,6 +23,22 @@ function configureConversationDeliveryRuntime(): void
     }
 }
 
+function configureFacebookConversationDeliveryRuntime(): void
+{
+    $settings = [
+        'facebook.page_access_token' => 'facebook-page-access-token-001',
+        'facebook.send_endpoint' => 'https://graph.facebook.com/v23.0/me/messages',
+    ];
+
+    foreach ($settings as $key => $value) {
+        ClinicSetting::setValue($key, $value, [
+            'group' => 'facebook',
+            'value_type' => 'text',
+            'is_secret' => $key === 'facebook.page_access_token',
+        ]);
+    }
+}
+
 it('delivers a pending outbound message through the zalo oa client', function (): void {
     Http::preventStrayRequests();
     Http::fake([
@@ -102,4 +118,52 @@ it('marks an outbound message as failed when the provider rejects the send reque
         ->and($freshMessage?->attempts)->toBe(1)
         ->and($freshMessage?->next_retry_at)->not->toBeNull()
         ->and($freshMessage?->last_error)->toContain('Recipient blocked the OA.');
+});
+
+it('delivers a pending outbound message through the facebook messenger client', function (): void {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://graph.facebook.com/v23.0/me/messages*' => Http::response([
+            'recipient_id' => 'facebook-user-001',
+            'message_id' => 'facebook-provider-msg-001',
+        ], 200),
+    ]);
+
+    configureFacebookConversationDeliveryRuntime();
+
+    $branch = Branch::factory()->create();
+    $conversation = Conversation::factory()
+        ->facebook()
+        ->create([
+            'branch_id' => $branch->id,
+            'channel_key' => 'page-001',
+            'external_conversation_key' => 'facebook:page-001:facebook-user-001',
+            'external_user_id' => 'facebook-user-001',
+        ]);
+
+    $message = ConversationMessage::factory()->create([
+        'conversation_id' => $conversation->id,
+        'direction' => ConversationMessage::DIRECTION_OUTBOUND,
+        'status' => ConversationMessage::STATUS_PENDING,
+        'provider_message_id' => null,
+        'body' => 'Cam on ban da nhan tin Facebook',
+    ]);
+
+    SendConversationMessage::dispatchSync($message->id);
+
+    $freshMessage = $message->fresh();
+
+    expect($freshMessage)->not->toBeNull()
+        ->and($freshMessage?->status)->toBe(ConversationMessage::STATUS_SENT)
+        ->and($freshMessage?->attempts)->toBe(1)
+        ->and($freshMessage?->provider_message_id)->toBe('facebook-provider-msg-001')
+        ->and($freshMessage?->last_error)->toBeNull();
+
+    Http::assertSent(function (\Illuminate\Http\Client\Request $request): bool {
+        return str_starts_with($request->url(), 'https://graph.facebook.com/v23.0/me/messages')
+            && str_contains($request->url(), 'access_token=facebook-page-access-token-001')
+            && $request['messaging_type'] === 'RESPONSE'
+            && $request['recipient']['id'] === 'facebook-user-001'
+            && $request['message']['text'] === 'Cam on ban da nhan tin Facebook';
+    });
 });

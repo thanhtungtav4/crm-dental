@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ConversationMessage;
-use App\Services\OutboundMessageClient;
+use App\Services\ConversationProviderManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,7 +25,7 @@ class SendConversationMessage implements ShouldQueue
         public int $conversationMessageId,
     ) {}
 
-    public function handle(OutboundMessageClient $outboundMessageClient): void
+    public function handle(ConversationProviderManager $conversationProviderManager): void
     {
         $claim = DB::transaction(function (): ?array {
             $message = ConversationMessage::query()
@@ -73,7 +73,9 @@ class SendConversationMessage implements ShouldQueue
             return;
         }
 
-        $result = $outboundMessageClient->send($message);
+        $result = $conversationProviderManager
+            ->outboundClientForMessage($message)
+            ->send($message);
 
         DB::transaction(function () use ($claim, $result): void {
             $message = ConversationMessage::query()

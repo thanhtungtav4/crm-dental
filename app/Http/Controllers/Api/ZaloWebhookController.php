@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ZaloWebhookEvent;
-use App\Services\InboundMessageNormalizer;
+use App\Services\ConversationProviderManager;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\IntegrationSecretRotationService;
@@ -18,7 +18,7 @@ use Throwable;
 class ZaloWebhookController extends Controller
 {
     public function __construct(
-        protected InboundMessageNormalizer $inboundMessageNormalizer,
+        protected ConversationProviderManager $conversationProviderManager,
         protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
         protected IntegrationOperationalPayloadSanitizer $integrationOperationalPayloadSanitizer,
         protected IntegrationSecretRotationService $integrationSecretRotationService,
@@ -88,7 +88,9 @@ class ZaloWebhookController extends Controller
         ]);
 
         try {
-            $this->inboundMessageNormalizer->normalize($event, $payload);
+            $this->conversationProviderManager
+                ->inboundNormalizerFor('zalo')
+                ->normalize($event, $payload);
         } catch (Throwable $throwable) {
             report($throwable);
 

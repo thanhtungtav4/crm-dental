@@ -81,19 +81,31 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-4 border-b border-gray-200">
+        <div class="flex items-center gap-4 border-b border-gray-200" role="tablist" aria-label="Danh mục chăm sóc khách hàng">
             @foreach($this->getTabs() as $tabKey => $tabLabel)
+                @php($isActiveTab = $activeTab === $tabKey)
                 <button
                     type="button"
+                    id="customer-care-tab-{{ $tabKey }}"
                     wire:click="setActiveTab('{{ $tabKey }}')"
-                    class="px-4 py-2 text-sm font-medium border-b-2 {{ $activeTab === $tabKey ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}"
+                    role="tab"
+                    aria-selected="{{ $isActiveTab ? 'true' : 'false' }}"
+                    aria-controls="customer-care-panel-{{ $tabKey }}"
+                    tabindex="{{ $isActiveTab ? '0' : '-1' }}"
+                    class="px-4 py-2 text-sm font-medium border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 {{ $isActiveTab ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}"
                 >
                     {{ $tabLabel }}
                 </button>
             @endforeach
         </div>
 
-        <div>
+        <div
+            id="customer-care-panel-{{ $activeTab }}"
+            role="tabpanel"
+            aria-labelledby="customer-care-tab-{{ $activeTab }}"
+            tabindex="0"
+            class="pt-4 focus:outline-none"
+        >
             {{ $this->table }}
         </div>
     </div>
