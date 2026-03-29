@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\ClinicSetting;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\IntegrationSecretRotationService;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +11,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ValidateWebLeadToken
 {
+    public function __construct(
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
+        protected IntegrationSecretRotationService $integrationSecretRotationService,
+    ) {}
+
     /**
      * Handle an incoming request.
      *
@@ -18,25 +23,11 @@ class ValidateWebLeadToken
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $enabled = filter_var(
-            ClinicSetting::getValue('web_lead.enabled', config('services.web_lead.enabled', false)),
-            FILTER_VALIDATE_BOOLEAN,
-        );
+        $status = $this->integrationProviderRuntimeGate->webLeadIngressStatus();
 
-        if (! $enabled) {
+        if ($status['state'] !== 'ready') {
             return new JsonResponse([
-                'message' => 'Web lead API chưa được bật.',
-            ], 503);
-        }
-
-        $configuredToken = (string) ClinicSetting::getValue(
-            'web_lead.api_token',
-            config('services.web_lead.token', ''),
-        );
-
-        if ($configuredToken === '') {
-            return new JsonResponse([
-                'message' => 'Web lead API token chưa được cấu hình.',
+                'message' => $status['message'],
             ], 503);
         }
 
@@ -44,7 +35,7 @@ class ValidateWebLeadToken
 
         if (
             $incomingToken === ''
-            || ! app(IntegrationSecretRotationService::class)->matches('web_lead.api_token', $incomingToken)
+            || ! $this->integrationSecretRotationService->matches('web_lead.api_token', $incomingToken)
         ) {
             return new JsonResponse([
                 'message' => 'Token không hợp lệ.',

@@ -10,6 +10,18 @@ it('returns skip states for disabled provider command lanes', function (): void 
         'state' => 'skip',
         'message' => 'EMR integration đang tắt. Không có dữ liệu cần sync.',
     ])
+        ->and($gate->emrInternalIngressStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'EMR internal API chưa được bật.',
+        ])
+        ->and($gate->zaloWebhookVerifyStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'Zalo OA integration chưa bật.',
+        ])
+        ->and($gate->zaloWebhookDeliveryStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'Zalo OA integration chưa bật.',
+        ])
         ->and($gate->googleCalendarSyncCommandStatus())->toBe([
             'state' => 'skip',
             'message' => 'Google Calendar integration đang tắt. Không có dữ liệu cần sync.',
@@ -25,6 +37,55 @@ it('returns skip states for disabled provider command lanes', function (): void 
         ->and($gate->znsCampaignWorkflowStatus())->toBe([
             'state' => 'fail',
             'message' => 'ZNS đang tắt, không thể chạy campaign.',
+        ])
+        ->and($gate->webLeadIngressStatus())->toBe([
+            'state' => 'skip',
+            'message' => 'Web lead API chưa được bật.',
+        ])
+        ->and($gate->allowsEmrInternalIngress())->toBeFalse()
+        ->and($gate->allowsZaloWebhookVerify())->toBeFalse()
+        ->and($gate->allowsZaloWebhookDelivery())->toBeFalse()
+        ->and($gate->allowsWebLeadIngress())->toBeFalse();
+});
+
+it('fails web lead ingress when token has not been configured', function (): void {
+    configureRuntimeGateSetting('web_lead.enabled', true, 'boolean', 'web_lead');
+    configureRuntimeGateSetting('web_lead.api_token', '', 'text', 'web_lead', isSecret: true);
+
+    $gate = app(IntegrationProviderRuntimeGate::class);
+
+    expect($gate->webLeadIngressStatus())->toBe([
+        'state' => 'fail',
+        'message' => 'Web lead API token chưa được cấu hình.',
+    ]);
+});
+
+it('fails emr internal ingress when api key has not been configured', function (): void {
+    configureRuntimeGateSetting('emr.enabled', true, 'boolean', 'emr');
+    configureRuntimeGateSetting('emr.api_key', '', 'text', 'emr', isSecret: true);
+
+    $gate = app(IntegrationProviderRuntimeGate::class);
+
+    expect($gate->emrInternalIngressStatus())->toBe([
+        'state' => 'fail',
+        'message' => 'EMR API key chưa được cấu hình.',
+    ]);
+});
+
+it('fails zalo webhook ingress when required secrets have not been configured', function (): void {
+    configureRuntimeGateSetting('zalo.enabled', true, 'boolean', 'zalo');
+    configureRuntimeGateSetting('zalo.webhook_token', '', 'text', 'zalo', isSecret: true);
+    configureRuntimeGateSetting('zalo.app_secret', '', 'text', 'zalo', isSecret: true);
+
+    $gate = app(IntegrationProviderRuntimeGate::class);
+
+    expect($gate->zaloWebhookVerifyStatus())->toBe([
+        'state' => 'fail',
+        'message' => 'Zalo webhook token chưa được cấu hình.',
+    ])
+        ->and($gate->zaloWebhookDeliveryStatus())->toBe([
+            'state' => 'fail',
+            'message' => 'Webhook signature verification misconfigured.',
         ]);
 });
 
@@ -86,6 +147,13 @@ it('allows healthy providers to publish through the shared runtime gate', functi
     configureRuntimeGateSetting('zns.access_token', 'zns-access-token', 'text', 'zns', isSecret: true);
     configureRuntimeGateSetting('zns.send_endpoint', 'https://business.openapi.zalo.me/message/template', 'text', 'zns');
 
+    configureRuntimeGateSetting('zalo.enabled', true, 'boolean', 'zalo');
+    configureRuntimeGateSetting('zalo.webhook_token', 'zalo-webhook-token', 'text', 'zalo', isSecret: true);
+    configureRuntimeGateSetting('zalo.app_secret', 'zalo-app-secret', 'text', 'zalo', isSecret: true);
+
+    configureRuntimeGateSetting('web_lead.enabled', true, 'boolean', 'web_lead');
+    configureRuntimeGateSetting('web_lead.api_token', 'web-lead-token', 'text', 'web_lead', isSecret: true);
+
     $gate = app(IntegrationProviderRuntimeGate::class);
 
     expect($gate->googleCalendarSyncCommandStatus())->toBe([
@@ -94,7 +162,27 @@ it('allows healthy providers to publish through the shared runtime gate', functi
     ])
         ->and($gate->allowsGoogleCalendarPublish())->toBeTrue()
         ->and($gate->allowsEmrPublish())->toBeTrue()
-        ->and($gate->allowsZnsPublish())->toBeTrue();
+        ->and($gate->allowsZnsPublish())->toBeTrue()
+        ->and($gate->emrInternalIngressStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->allowsEmrInternalIngress())->toBeTrue()
+        ->and($gate->zaloWebhookVerifyStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->zaloWebhookDeliveryStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->allowsZaloWebhookVerify())->toBeTrue()
+        ->and($gate->allowsZaloWebhookDelivery())->toBeTrue()
+        ->and($gate->webLeadIngressStatus())->toBe([
+            'state' => 'ready',
+            'message' => null,
+        ])
+        ->and($gate->allowsWebLeadIngress())->toBeTrue();
 });
 
 function configureRuntimeGateSetting(

@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\ClinicSetting;
 use App\Services\AutomationActorResolver;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\IntegrationSecretRotationService;
 use App\Support\ActionPermission;
 use Closure;
@@ -14,6 +14,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ValidateInternalEmrToken
 {
+    public function __construct(
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
+        protected IntegrationSecretRotationService $integrationSecretRotationService,
+        protected AutomationActorResolver $automationActorResolver,
+    ) {}
+
     /**
      * Handle an incoming request.
      *
@@ -21,22 +27,11 @@ class ValidateInternalEmrToken
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $enabled = filter_var(
-            ClinicSetting::getValue('emr.enabled', false),
-            FILTER_VALIDATE_BOOLEAN,
-        );
+        $status = $this->integrationProviderRuntimeGate->emrInternalIngressStatus();
 
-        if (! $enabled) {
+        if ($status['state'] !== 'ready') {
             return new JsonResponse([
-                'message' => 'EMR internal API chưa được bật.',
-            ], 503);
-        }
-
-        $configuredToken = trim((string) ClinicSetting::getValue('emr.api_key', ''));
-
-        if ($configuredToken === '') {
-            return new JsonResponse([
-                'message' => 'EMR API key chưa được cấu hình.',
+                'message' => $status['message'],
             ], 503);
         }
 
@@ -44,14 +39,14 @@ class ValidateInternalEmrToken
 
         if (
             $incomingToken === ''
-            || ! app(IntegrationSecretRotationService::class)->matches('emr.api_key', $incomingToken)
+            || ! $this->integrationSecretRotationService->matches('emr.api_key', $incomingToken)
         ) {
             return new JsonResponse([
                 'message' => 'Token không hợp lệ.',
             ], 401);
         }
 
-        $actor = app(AutomationActorResolver::class)->resolveForPermission(
+        $actor = $this->automationActorResolver->resolveForPermission(
             permission: ActionPermission::EMR_CLINICAL_WRITE,
             enforceRequiredRole: true,
             failOnPrivilegedRoles: true,

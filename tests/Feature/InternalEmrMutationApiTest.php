@@ -10,6 +10,56 @@ use App\Models\User;
 use App\Models\VisitEpisode;
 use App\Support\ActionPermission;
 
+it('rejects internal emr mutation when the emr internal api is disabled', function () {
+    $context = seedInternalEmrApiContext();
+    /** @var User $actor */
+    $actor = $context['actor'];
+    $note = $context['note'];
+
+    configureInternalEmrApiRuntime($actor, 'disabled-token');
+    ClinicSetting::setValue('emr.enabled', false, [
+        'group' => 'emr',
+        'label' => 'Bật EMR',
+        'value_type' => 'boolean',
+        'is_active' => true,
+    ]);
+
+    $response = $this->withHeaders([
+        'Authorization' => 'Bearer disabled-token',
+        'X-Idempotency-Key' => 'emr-api-disabled-1',
+    ])->postJson(route('api.v1.emr.internal.clinical-notes.amend', [
+        'clinicalNote' => $note->id,
+    ]), [
+        'expected_version' => 1,
+        'general_exam_notes' => 'Should not run',
+    ]);
+
+    $response->assertServiceUnavailable()
+        ->assertJsonPath('message', 'EMR internal API chưa được bật.');
+});
+
+it('rejects internal emr mutation when the emr api key is missing', function () {
+    $context = seedInternalEmrApiContext();
+    /** @var User $actor */
+    $actor = $context['actor'];
+    $note = $context['note'];
+
+    configureInternalEmrApiRuntime($actor, '');
+
+    $response = $this->withHeaders([
+        'Authorization' => 'Bearer any-token',
+        'X-Idempotency-Key' => 'emr-api-missing-token-1',
+    ])->postJson(route('api.v1.emr.internal.clinical-notes.amend', [
+        'clinicalNote' => $note->id,
+    ]), [
+        'expected_version' => 1,
+        'general_exam_notes' => 'Should not run',
+    ]);
+
+    $response->assertServiceUnavailable()
+        ->assertJsonPath('message', 'EMR API key chưa được cấu hình.');
+});
+
 it('rejects emr internal mutation when token is invalid', function () {
     $context = seedInternalEmrApiContext();
     /** @var User $actor */

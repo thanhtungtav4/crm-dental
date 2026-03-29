@@ -50,6 +50,69 @@ class IntegrationProviderRuntimeGate
     /**
      * @return array{state:string,message:?string}
      */
+    public function emrInternalIngressStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('emr.enabled', false)) {
+            return $this->skip('EMR internal API chưa được bật.');
+        }
+
+        if (trim((string) ClinicRuntimeSettings::get('emr.api_key', '')) === '') {
+            return $this->fail('EMR API key chưa được cấu hình.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsEmrInternalIngress(): bool
+    {
+        return $this->emrInternalIngressStatus()['state'] === 'ready';
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
+    public function zaloWebhookVerifyStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('zalo.enabled', false)) {
+            return $this->skip('Zalo OA integration chưa bật.');
+        }
+
+        if (trim((string) ClinicRuntimeSettings::get('zalo.webhook_token', '')) === '') {
+            return $this->fail('Zalo webhook token chưa được cấu hình.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsZaloWebhookVerify(): bool
+    {
+        return $this->zaloWebhookVerifyStatus()['state'] === 'ready';
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
+    public function zaloWebhookDeliveryStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('zalo.enabled', false)) {
+            return $this->skip('Zalo OA integration chưa bật.');
+        }
+
+        if (trim((string) ClinicRuntimeSettings::get('zalo.app_secret', '')) === '') {
+            return $this->fail('Webhook signature verification misconfigured.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsZaloWebhookDelivery(): bool
+    {
+        return $this->zaloWebhookDeliveryStatus()['state'] === 'ready';
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
     public function googleCalendarSyncCommandStatus(): array
     {
         if (! ClinicRuntimeSettings::isGoogleCalendarEnabled()) {
@@ -119,6 +182,27 @@ class IntegrationProviderRuntimeGate
     {
         return ClinicRuntimeSettings::boolean('zns.enabled', false)
             && $this->runtimeErrorMessage('zns') === null;
+    }
+
+    /**
+     * @return array{state:string,message:?string}
+     */
+    public function webLeadIngressStatus(): array
+    {
+        if (! ClinicRuntimeSettings::boolean('web_lead.enabled', false)) {
+            return $this->skip('Web lead API chưa được bật.');
+        }
+
+        if (trim((string) ClinicRuntimeSettings::get('web_lead.api_token', '')) === '') {
+            return $this->fail('Web lead API token chưa được cấu hình.');
+        }
+
+        return $this->ready();
+    }
+
+    public function allowsWebLeadIngress(): bool
+    {
+        return $this->webLeadIngressStatus()['state'] === 'ready';
     }
 
     /**

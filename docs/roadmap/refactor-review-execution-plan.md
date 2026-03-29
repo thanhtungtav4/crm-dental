@@ -6,7 +6,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 - Backlog source: `docs/roadmap/refactor-review-master-backlog.md`
 - Audit source: `docs/reviews/program-audit-summary.md`
-- Last updated: `2026-03-28`
+- Last updated: `2026-03-29`
 
 ## Current State
 
@@ -133,6 +133,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `WebLeadEmailDelivery` voi model guard raw status update, canonical `markProcessing` / `markSent` / `markFailure` / `resetForReplay`, va service mail noi bo di qua managed workflow path.
   - `RRB-009` da mo rong them sang `ZnsCampaignDelivery` voi model guard raw status update, canonical `markSent` / `markFailure`, `claimForProcessing`, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`.
   - `RRB-009` da dong them cac lane outbox `ZnsAutomationEvent`, `GoogleCalendarSyncEvent`, `EmrSyncEvent` bang transition contract, replay methods, va stale-processing reclaim khong con bypass model events.
+  - `RRB-009` da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress dung chung contract `skip / fail / ready` cho `enabled/token/secret configured` thay vi middleware/controller tu lap lai runtime gate rieng.
   - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`, va da cover them `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, `BranchTransferRequest`, va mo ta finance timeline than thien hon cho `Payment`.
   - `RRB-010` da mo rong sang `ReportSnapshot` reader conventions bang `OperationalKpiSnapshotReadModelService`, va da dua `OperationalKpiPack` cung `OpsControlCenter` dung chung latest snapshot date, SLA counts, filtered latest snapshot, va branch benchmark summary.
   - `RRB-010` da mo rong them lane `OperationalKpiAlertReadModelService` de hop nhat open/resolved KPI alert counts va open-alert summary giua `OperationalKpiPack` va `OpsControlCenter`.
@@ -167,6 +168,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-012` da mo rong them lane appointment report convergence bang `AppointmentReportReadModelService`, de `AppointmentStatistical` dung chung appointment-query / visit-episode metrics summary contract thay vi giu query/stats branch-scoped rieng trong page.
   - `RRB-013` da tiep tuc lane config/runtime settings sang publisher-side: `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher` khong con enqueue them event/outbox moi khi provider runtime dang drift hoac thieu credential.
   - `RRB-013` da bo sung `IntegrationProviderRuntimeGate`, de command/publisher/runner lanes `EMR / Google Calendar / ZNS` dung chung contract `skip / fail / ready`, thay vi moi lane tu lap lai check `enabled`, `sync mode`, hay `runtime_error_message`.
+  - `RRB-013` da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress cung dung contract `skip / fail / ready` cho `enabled/token/secret configured`.
   - `RRB-013` da bo sung `IntegrationProviderActionService`, de `IntegrationSettings` dung chung contract `test connection / readiness / config-url` cho `EMR`, `Google Calendar`, `Zalo OA`, va `ZNS`, tiep tuc loai bo page-side message formatting rieng le.
   - `RRB-013` da mo rong them `IntegrationProviderActionService` sang `DICOM / PACS` va `Web Lead API`, de readiness button tren `IntegrationSettings` dong bo voi provider-health card/read-model thay vi de hai provider nay dung ngoai action contract chung.
   - `RRB-013` da tiep tuc lane `secret rotation / revoke`: `integrations:revoke-rotated-secrets` doc expired-grace preview tu `IntegrationOperationalReadModelService` de summary/audit cua command dung cung reader contract voi OPS va Integration Settings.
@@ -201,6 +203,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - canary rollout va rollback drill
 - Progress update:
   - `RRB-013` da co `IntegrationProviderRuntimeGate` cho contract `skip / fail / ready` tren cac lane `EMR / Google Calendar / ZNS`.
+  - `RRB-013` da mo rong them runtime gate nay sang inbound `Web Lead API`, `EMR internal API`, va `Zalo webhook` ingress gates.
   - `RRB-013` da co `IntegrationProviderActionService` de `IntegrationSettings` dung chung contract action/readiness cho `EMR`, `Google Calendar`, `Zalo OA`, va `ZNS`.
 - Deploy safety note:
   - Chi nen lam tren branch/PR rieng, co feature flag hoac song song read-model neu can.

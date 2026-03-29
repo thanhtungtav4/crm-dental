@@ -60,6 +60,29 @@ it('rejects zalo webhook verification when token does not match', function (): v
         ->assertForbidden();
 });
 
+it('rejects zalo webhook verification when integration is disabled', function (): void {
+    $this->getJson('/api/v1/integrations/zalo/webhook?hub_verify_token=invalid&hub_challenge=abc')
+        ->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Zalo OA integration chưa bật.');
+});
+
+it('rejects zalo webhook verification when webhook token is missing', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+
+    ClinicSetting::setValue('zalo.webhook_token', '', [
+        'group' => 'zalo',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+
+    $this->getJson('/api/v1/integrations/zalo/webhook?hub_verify_token=invalid&hub_challenge=abc')
+        ->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Zalo webhook token chưa được cấu hình.');
+});
+
 it('returns challenge when zalo webhook verification succeeds', function (): void {
     configureZaloWebhookRuntime();
 
@@ -131,6 +154,34 @@ it('rejects webhook payload when signature is missing or invalid', function (): 
     ])->postJson('/api/v1/integrations/zalo/webhook', $payload)
         ->assertForbidden()
         ->assertJsonPath('message', 'Invalid webhook signature.');
+});
+
+it('rejects webhook payload when signature verification runtime is misconfigured', function (): void {
+    ClinicSetting::setValue('zalo.enabled', true, [
+        'group' => 'zalo',
+        'value_type' => 'boolean',
+    ]);
+    ClinicSetting::setValue('zalo.webhook_token', 'secure-token-12345678901234567890', [
+        'group' => 'zalo',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+    ClinicSetting::setValue('zalo.app_secret', '', [
+        'group' => 'zalo',
+        'value_type' => 'text',
+        'is_secret' => true,
+    ]);
+
+    $payload = [
+        'event_name' => 'user_send_text',
+        'timestamp' => 1735689600,
+        'sender' => ['id' => 'sender_001'],
+        'message' => ['text' => 'Thiếu app secret'],
+    ];
+
+    $this->postJson('/api/v1/integrations/zalo/webhook', $payload)
+        ->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Webhook signature verification misconfigured.');
 });
 
 it('does not collide fingerprint when same timestamp but different payload content', function (): void {

@@ -9,6 +9,36 @@ use App\Models\WebLeadIngestion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+it('rejects web lead ingestion when the web lead api is disabled', function (): void {
+    configureWebLeadApi(enabled: false, token: 'valid-token');
+
+    $response = $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Disabled Web Lead',
+        'phone' => '0901234567',
+    ], [
+        'Authorization' => 'Bearer valid-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Web lead API chưa được bật.');
+});
+
+it('rejects web lead ingestion when the web lead api token is missing', function (): void {
+    configureWebLeadApi(enabled: true, token: '');
+
+    $response = $this->postJson('/api/v1/web-leads', [
+        'full_name' => 'Missing Token Config',
+        'phone' => '0901234567',
+    ], [
+        'Authorization' => 'Bearer any-token',
+        'X-Idempotency-Key' => (string) Str::uuid(),
+    ]);
+
+    $response->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Web lead API token chưa được cấu hình.');
+});
+
 it('rejects web lead ingestion when token is invalid', function (): void {
     configureWebLeadApi(enabled: true, token: 'valid-token');
 

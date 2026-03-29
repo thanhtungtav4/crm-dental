@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-03-28`
+- Last updated: `2026-03-29`
 
 ## Working Rules
 
@@ -249,6 +249,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `WebLeadEmailDelivery` vao managed workflow contract voi model guard raw status update, canonical resend / claim / sent / fail mutation methods, va giu service mail noi bo di qua canonical path
     - da dua `ZnsCampaignDelivery` vao managed workflow contract voi model guard raw status update, canonical sent / fail mutation methods, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`
     - da dua cac lane outbox noi bo `ZnsAutomationEvent`, `GoogleCalendarSyncEvent`, `EmrSyncEvent` vao transition contract, canonical replay methods, va loai bo stale-processing mass-update bypass
+    - da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress dung chung contract `skip / fail / ready` cho `enabled/token/secret configured` thay vi middleware/controller tu lap lai runtime gate rieng
     - `OPS` chua can lane refactor rieng trong wave nay
 - Tests needed:
   - workflow transition contract tests
@@ -299,6 +300,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong `ZnsOperationalReadModelService` them branch-scoped summary cards, va page `ZaloZns` da bat dau dung reader nay cho automation/delivery/campaign failure summary thay vi tu dem query raw tren page
     - da tao `IntegrationSettingsAuditReadModelService` de gom recent setting-log query, va page `IntegrationSettings` da doc recent audit trail qua reader nay thay vi tu query raw `ClinicSettingLog`
     - da tao `IntegrationProviderHealthReadModelService` de hop nhat provider readiness contract cho `Zalo OA`, `ZNS`, `Google Calendar`, `EMR`, va `DICOM / PACS`, va `OpsControlCenterService` da render cung mot lop provider-health thay vi page/command tu dien giai runtime drift theo tung cach rieng
+    - da mo rong them `IntegrationProviderRuntimeGate` sang inbound `Web Lead API`, `EMR internal API`, va `Zalo webhook`, de `ValidateWebLeadToken` / `ValidateInternalEmrToken` / `ZaloWebhookController` dung chung ingress gate thay vi tu doc runtime setting rieng
     - da mo rong `IntegrationOperationalReadModelService` sang lane `popups:prune` va `photos:prune`, de popup log retention va patient photo retention candidate query duoc dung lai boi command thay vi moi lenh tu query rieng
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
@@ -404,6 +406,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong lane nay bang `IntegrationProviderHealthReadModelService`, de `OpsControlCenterService`, `IntegrationSettings` (readiness notification + snapshot section), `zns:run-campaigns`, `zns:sync-automation-events`, `google-calendar:sync-events`, `emr:sync-events`, va `ZnsCampaignRunnerService` dung chung contract readiness / runtime-error message cho provider thay vi tu noi suy raw setting rieng le
     - da mo rong them publisher-side runtime guard cho `ZnsAutomationEventPublisher`, `GoogleCalendarSyncEventPublisher`, va `EmrSyncEventPublisher`, de control-plane khong tiep tuc sinh backlog outbox/event moi khi provider dang enabled nhung chua day du credential/runtime settings
     - da bo sung `IntegrationProviderRuntimeGate`, de `emr:sync-events`, `google-calendar:sync-events`, `zns:sync-automation-events`, `zns:run-campaigns`, `ZnsCampaignRunnerService`, va cac publisher `EMR / Google Calendar / ZNS` dung chung contract `skip / fail / ready` thay vi tu lap lai runtime gate rieng
+    - da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress cung dung contract `skip / fail / ready` cho `enabled/token/secret configured`
     - da bo sung `IntegrationProviderActionService`, de cac action `test connection / readiness / config-url` tren `IntegrationSettings` dung chung contract ket qua va message cho `EMR`, `Google Calendar`, `Zalo OA`, va `ZNS` thay vi page logic tu format rieng tung nut
     - da mo rong `IntegrationProviderActionService` sang `DICOM / PACS` va `Web Lead API`, de `IntegrationSettings` dung cung readiness notification contract cho tat ca provider card first-class thay vi chi cover `Zalo OA` va `ZNS`
     - da mo rong tiep lane `secret rotation / revoke` bang `expiredGraceRotationSummary()` trong `IntegrationOperationalReadModelService`, de `integrations:revoke-rotated-secrets` preview expired keys qua cung reader voi OPS va Integration Settings, thay vi command tu ngầm doc trang thai grace tu write-side service

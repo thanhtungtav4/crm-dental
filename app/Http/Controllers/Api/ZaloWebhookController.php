@@ -5,20 +5,32 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ZaloWebhookEvent;
 use App\Services\IntegrationOperationalPayloadSanitizer;
+use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\IntegrationSecretRotationService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class ZaloWebhookController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __construct(
+        protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
+        protected IntegrationOperationalPayloadSanitizer $integrationOperationalPayloadSanitizer,
+        protected IntegrationSecretRotationService $integrationSecretRotationService,
+    ) {}
+
+    public function __invoke(Request $request): Response
     {
-        if (! ClinicRuntimeSettings::boolean('zalo.enabled', false)) {
+        $runtimeStatus = $request->isMethod('post')
+            ? $this->integrationProviderRuntimeGate->zaloWebhookDeliveryStatus()
+            : $this->integrationProviderRuntimeGate->zaloWebhookVerifyStatus();
+
+        if ($runtimeStatus['state'] !== 'ready') {
             return response()->json([
                 'ok' => false,
-                'message' => 'Zalo OA integration chưa bật.',
+                'message' => $runtimeStatus['message'],
             ], 503);
         }
 
@@ -57,7 +69,7 @@ class ZaloWebhookController extends Controller
                 'event_name' => $eventName !== '' ? $eventName : null,
                 'event_id' => $eventId !== '' ? $eventId : null,
                 'oa_id' => $oaId !== '' ? $oaId : null,
-                'payload' => app(IntegrationOperationalPayloadSanitizer::class)->sanitizeZaloWebhookPayload($payload),
+                'payload' => $this->integrationOperationalPayloadSanitizer->sanitizeZaloWebhookPayload($payload),
                 'received_at' => now(),
                 'processed_at' => now(),
             ],
@@ -122,7 +134,7 @@ class ZaloWebhookController extends Controller
         if (
             $verifyToken !== ''
             && $expectedToken !== ''
-            && app(IntegrationSecretRotationService::class)->matches('zalo.webhook_token', $verifyToken)
+            && $this->integrationSecretRotationService->matches('zalo.webhook_token', $verifyToken)
         ) {
             return null;
         }
@@ -136,12 +148,6 @@ class ZaloWebhookController extends Controller
     protected function rejectInvalidWebhookSignature(Request $request): ?JsonResponse
     {
         $secret = trim((string) ClinicRuntimeSettings::get('zalo.app_secret', ''));
-        if ($secret === '') {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Webhook signature verification misconfigured.',
-            ], 503);
-        }
 
         $signature = trim((string) (
             $request->header('x-zalo-signature')
