@@ -162,46 +162,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedTabCounters;
         }
 
-        $this->record->loadCount([
-            'treatmentPlans',
-            'invoices',
-            'appointments',
-            'notes',
-            'clinicalNotes',
-            'examSessions',
-            'photos',
-            'prescriptions',
-            'payments',
-            'branchLogs',
-            'factoryOrders',
-            'materialIssueNotes',
-        ]);
-
-        $materialCount = TreatmentMaterial::query()
-            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $this->record->id))
-            ->count();
-
-        $factoryOrdersCount = (int) ($this->record->factory_orders_count ?? 0);
-        $materialIssueNotesCount = (int) ($this->record->material_issue_notes_count ?? 0);
-
-        $this->cachedTabCounters = [
-            'treatment_plans' => (int) ($this->record->treatment_plans_count ?? 0),
-            'invoices' => (int) ($this->record->invoices_count ?? 0),
-            'appointments' => (int) ($this->record->appointments_count ?? 0),
-            'notes' => (int) ($this->record->notes_count ?? 0),
-            'clinical_notes' => (int) ($this->record->clinical_notes_count ?? 0),
-            'exam_sessions' => (int) ($this->record->exam_sessions_count ?? 0),
-            'photos' => (int) ($this->record->photos_count ?? 0),
-            'prescriptions' => (int) ($this->record->prescriptions_count ?? 0),
-            'payments' => (int) ($this->record->payments_count ?? 0),
-            'materials' => $materialCount + $factoryOrdersCount + $materialIssueNotesCount,
-            'activity' => (int) (($this->record->appointments_count ?? 0)
-                + ($this->record->treatment_plans_count ?? 0)
-                + ($this->record->invoices_count ?? 0)
-                + ($this->record->payments_count ?? 0)
-                + ($this->record->notes_count ?? 0)
-                + ($this->record->branch_logs_count ?? 0)),
-        ];
+        $this->cachedTabCounters = app(PatientOverviewReadModelService::class)->tabCounters($this->record);
 
         return $this->cachedTabCounters;
     }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use Illuminate\Support\Carbon;
 
@@ -136,6 +137,72 @@ class PatientOverviewReadModelService
             'balance_amount' => $balanceAmount,
             'balance_is_positive' => $balanceAmount >= 0,
             'latest_invoice_id' => $latestInvoiceId,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     treatment_plans:int,
+     *     invoices:int,
+     *     appointments:int,
+     *     notes:int,
+     *     clinical_notes:int,
+     *     exam_sessions:int,
+     *     photos:int,
+     *     prescriptions:int,
+     *     payments:int,
+     *     materials:int,
+     *     activity:int
+     * }
+     */
+    public function tabCounters(Patient $patient): array
+    {
+        $countedPatient = Patient::query()
+            ->withCount([
+                'treatmentPlans',
+                'invoices',
+                'appointments',
+                'notes',
+                'clinicalNotes',
+                'examSessions',
+                'photos',
+                'prescriptions',
+                'payments',
+                'branchLogs',
+                'factoryOrders',
+                'materialIssueNotes',
+            ])
+            ->findOrFail($patient->getKey());
+
+        $materialCount = TreatmentMaterial::query()
+            ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $patient->id))
+            ->count();
+
+        $factoryOrdersCount = (int) ($countedPatient->factory_orders_count ?? 0);
+        $materialIssueNotesCount = (int) ($countedPatient->material_issue_notes_count ?? 0);
+        $appointmentsCount = (int) ($countedPatient->appointments_count ?? 0);
+        $treatmentPlansCount = (int) ($countedPatient->treatment_plans_count ?? 0);
+        $invoicesCount = (int) ($countedPatient->invoices_count ?? 0);
+        $paymentsCount = (int) ($countedPatient->payments_count ?? 0);
+        $notesCount = (int) ($countedPatient->notes_count ?? 0);
+
+        return [
+            'treatment_plans' => $treatmentPlansCount,
+            'invoices' => $invoicesCount,
+            'appointments' => $appointmentsCount,
+            'notes' => $notesCount,
+            'clinical_notes' => (int) ($countedPatient->clinical_notes_count ?? 0),
+            'exam_sessions' => (int) ($countedPatient->exam_sessions_count ?? 0),
+            'photos' => (int) ($countedPatient->photos_count ?? 0),
+            'prescriptions' => (int) ($countedPatient->prescriptions_count ?? 0),
+            'payments' => $paymentsCount,
+            'materials' => $materialCount + $factoryOrdersCount + $materialIssueNotesCount,
+            'activity' => $appointmentsCount
+                + $treatmentPlansCount
+                + $invoicesCount
+                + $paymentsCount
+                + $notesCount
+                + (int) ($countedPatient->branch_logs_count ?? 0),
         ];
     }
 }
