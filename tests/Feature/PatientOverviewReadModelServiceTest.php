@@ -14,6 +14,7 @@ use App\Models\MaterialIssueNote;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\PlanItem;
+use App\Models\Prescription;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
@@ -530,4 +531,122 @@ it('builds patient workspace lab material surfaces through the shared read model
     expect($page->getMaterialUsagesProperty()->pluck('id')->all())->toBe([$usage->id])
         ->and($page->getFactoryOrdersProperty()->pluck('id')->all())->toBe([$factoryOrder->id])
         ->and($page->getMaterialIssueNotesProperty()->pluck('id')->all())->toBe([$issueNote->id]);
+});
+
+it('builds latest printable forms through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
+    $doctor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctor->assignRole('Doctor');
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'email' => $customer->email,
+    ]);
+
+    $completedPlan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'status' => TreatmentPlan::STATUS_COMPLETED,
+    ]);
+
+    $prescriptionIds = collect();
+
+    foreach (range(1, 6) as $index) {
+        $prescription = Prescription::factory()->create([
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'branch_id' => $branch->id,
+            'created_at' => now()->subMinutes(10 - $index),
+            'updated_at' => now()->subMinutes(10 - $index),
+        ]);
+
+        $prescriptionIds->push($prescription->id);
+    }
+
+    $invoiceIds = collect();
+
+    foreach (range(1, 6) as $index) {
+        $invoice = createPatientOverviewInvoice($patient, $doctor, $manager, $completedPlan, [
+            'invoice_no' => sprintf('INV-FORM-%03d', $index),
+            'status' => Invoice::STATUS_ISSUED,
+            'total_amount' => 500000 + ($index * 10000),
+            'paid_amount' => 0,
+            'issued_at' => now()->subDays(7 - $index),
+            'created_at' => now()->subMinutes(10 - $index),
+            'updated_at' => now()->subMinutes(10 - $index),
+        ]);
+
+        $invoiceIds->push($invoice->id);
+    }
+
+    $otherCustomer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $otherPatient = Patient::factory()->create([
+        'customer_id' => $otherCustomer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $otherCustomer->full_name,
+        'phone' => $otherCustomer->phone,
+        'email' => $otherCustomer->email,
+    ]);
+
+    Prescription::factory()->create([
+        'patient_id' => $otherPatient->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $branch->id,
+    ]);
+
+    createPatientOverviewInvoice($otherPatient, $doctor, $manager, null, [
+        'invoice_no' => 'INV-FORM-OTHER',
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 999999,
+        'paid_amount' => 0,
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+
+    $latestPrescriptions = $service->latestPrescriptions($patient);
+    $latestInvoices = $service->latestInvoices($patient);
+
+    expect($latestPrescriptions)->toHaveCount(5)
+        ->and($latestPrescriptions->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all());
+
+    expect($latestInvoices)->toHaveCount(5)
+        ->and($latestInvoices->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
+
+    $page = new class extends ViewPatient
+    {
+        public function forceRecord(Patient $patient): void
+        {
+            $this->record = $patient;
+        }
+    };
+
+    $page->forceRecord($patient->fresh());
+
+    expect($page->getLatestPrescriptionsProperty()->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
+        ->and($page->getLatestInvoicesProperty()->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
 });

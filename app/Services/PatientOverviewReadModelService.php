@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\FactoryOrder;
+use App\Models\Invoice;
 use App\Models\MaterialIssueNote;
 use App\Models\Patient;
+use App\Models\Prescription;
 use App\Models\TreatmentMaterial;
 use App\Models\TreatmentPlan;
 use Illuminate\Support\Carbon;
@@ -266,5 +268,39 @@ class PatientOverviewReadModelService
             ->latest('created_at')
             ->limit(100)
             ->get();
+    }
+
+    /**
+     * @return Collection<int, Prescription>
+     */
+    public function latestPrescriptions(Patient $patient): Collection
+    {
+        return $patient->prescriptions()
+            ->latest('created_at')
+            ->limit(5)
+            ->get([
+                'id',
+                'patient_id',
+                'prescription_code',
+                'treatment_date',
+                'created_at',
+            ]);
+    }
+
+    /**
+     * @return Collection<int, Invoice>
+     */
+    public function latestInvoices(Patient $patient): Collection
+    {
+        return $patient->invoices()
+            ->latest('created_at')
+            ->limit(5)
+            ->get([
+                'id',
+                'patient_id',
+                'invoice_no',
+                'issued_at',
+                'created_at',
+            ]);
     }
 }

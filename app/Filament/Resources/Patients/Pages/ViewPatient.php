@@ -362,10 +362,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedLatestPrescriptions;
         }
 
-        $this->cachedLatestPrescriptions = $this->record->prescriptions()
-            ->latest('created_at')
-            ->limit(5)
-            ->get();
+        $this->cachedLatestPrescriptions = app(PatientOverviewReadModelService::class)->latestPrescriptions($this->record);
 
         return $this->cachedLatestPrescriptions;
     }
@@ -376,10 +373,7 @@ class ViewPatient extends ViewRecord
             return $this->cachedLatestInvoices;
         }
 
-        $this->cachedLatestInvoices = $this->record->invoices()
-            ->latest('created_at')
-            ->limit(5)
-            ->get();
+        $this->cachedLatestInvoices = app(PatientOverviewReadModelService::class)->latestInvoices($this->record);
 
         return $this->cachedLatestInvoices;
     }
