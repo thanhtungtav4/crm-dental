@@ -242,6 +242,42 @@ it('validates required zalo fields when enabling zalo oa', function (): void {
         ]);
 });
 
+it('validates conversation inbox runtime fields when enabling zalo oa inbox', function (): void {
+    actingAsZaloIntegrationSettingsAdmin();
+
+    Livewire::test(IntegrationSettings::class)
+        ->set('settings.zalo_enabled', true)
+        ->set('settings.zalo_oa_id', 'oa_001')
+        ->set('settings.zalo_app_id', 'app_001')
+        ->set('settings.zalo_app_secret', 'secret_001')
+        ->set('settings.zalo_webhook_token', 'secure-token-12345678901234567890')
+        ->set('settings.zalo_access_token', '')
+        ->set('settings.zalo_inbox_default_branch_code', 'MISSING-BRANCH')
+        ->set('settings.zalo_inbox_polling_seconds', 99)
+        ->call('save')
+        ->assertHasErrors([
+            'settings.zalo_access_token',
+            'settings.zalo_inbox_default_branch_code',
+            'settings.zalo_inbox_polling_seconds',
+        ]);
+});
+
+it('exposes conversation inbox runtime fields in zalo integration settings', function (): void {
+    $page = app(IntegrationSettings::class);
+    $providers = collect($page->getProviders());
+    $zaloProvider = $providers->firstWhere('group', 'zalo');
+
+    expect($zaloProvider)->not->toBeNull();
+
+    $zaloFields = collect($zaloProvider['fields'] ?? [])
+        ->keyBy('key');
+
+    expect($zaloFields->has('zalo.access_token'))->toBeTrue()
+        ->and($zaloFields->has('zalo.send_endpoint'))->toBeTrue()
+        ->and($zaloFields->has('zalo.inbox_default_branch_code'))->toBeTrue()
+        ->and($zaloFields->has('zalo.inbox_polling_seconds'))->toBeTrue();
+});
+
 it('validates zns tokens and templates when zns is enabled', function (): void {
     actingAsZaloIntegrationSettingsAdmin();
 

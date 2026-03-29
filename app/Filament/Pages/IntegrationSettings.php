@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Branch;
 use App\Models\ClinicSetting;
 use App\Models\ClinicSettingLog;
 use App\Models\User;
@@ -106,10 +107,14 @@ class IntegrationSettings extends Page
                     ['state' => 'zalo_oa_id', 'key' => 'zalo.oa_id', 'label' => 'OA ID', 'type' => 'text', 'default' => '', 'sort_order' => 20],
                     ['state' => 'zalo_app_id', 'key' => 'zalo.app_id', 'label' => 'App ID', 'type' => 'text', 'default' => '', 'sort_order' => 30],
                     ['state' => 'zalo_app_secret', 'key' => 'zalo.app_secret', 'label' => 'App Secret', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 40],
+                    ['state' => 'zalo_access_token', 'key' => 'zalo.access_token', 'label' => 'Access Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 45],
                     ['state' => 'zalo_webhook_token', 'key' => 'zalo.webhook_token', 'label' => 'Webhook Verify Token', 'type' => 'text', 'default' => '', 'is_secret' => true, 'sort_order' => 50],
                     ['state' => 'zalo_webhook_token_grace_minutes', 'key' => 'zalo.webhook_token_grace_minutes', 'label' => 'Grace window webhook token cũ (phút)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookTokenGraceMinutes(), 'sort_order' => 51],
                     ['state' => 'zalo_webhook_rate_limit_per_minute', 'key' => 'zalo.webhook_rate_limit_per_minute', 'label' => 'Giới hạn webhook/phút', 'type' => 'integer', 'default' => 120, 'sort_order' => 55],
                     ['state' => 'zalo_webhook_retention_days', 'key' => 'zalo.webhook_retention_days', 'label' => 'Giữ webhook Zalo (ngày)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloWebhookRetentionDays(), 'sort_order' => 56],
+                    ['state' => 'zalo_send_endpoint', 'key' => 'zalo.send_endpoint', 'label' => 'Zalo OA send endpoint', 'type' => 'url', 'default' => ClinicRuntimeSettings::zaloSendEndpoint(), 'sort_order' => 57],
+                    ['state' => 'zalo_inbox_default_branch_code', 'key' => 'zalo.inbox_default_branch_code', 'label' => 'Chi nhánh mặc định cho inbox Zalo', 'type' => 'text', 'default' => ClinicRuntimeSettings::zaloInboxDefaultBranchCode(), 'sort_order' => 58],
+                    ['state' => 'zalo_inbox_polling_seconds', 'key' => 'zalo.inbox_polling_seconds', 'label' => 'Chu kỳ polling inbox (giây)', 'type' => 'integer', 'default' => ClinicRuntimeSettings::zaloInboxPollingSeconds(), 'sort_order' => 59],
                 ],
             ],
             [
@@ -1552,11 +1557,33 @@ class IntegrationSettings extends Page
             }
 
             $webhookToken = trim((string) data_get($validated, 'settings.zalo_webhook_token', ''));
+            $accessToken = trim((string) data_get($validated, 'settings.zalo_access_token', ''));
+            $sendEndpoint = trim((string) data_get($validated, 'settings.zalo_send_endpoint', ''));
+            $defaultBranchCode = trim((string) data_get($validated, 'settings.zalo_inbox_default_branch_code', ''));
+            $pollingSeconds = data_get($validated, 'settings.zalo_inbox_polling_seconds');
 
             if ($webhookToken === '') {
                 $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token là bắt buộc khi bật Zalo OA.';
             } elseif (mb_strlen($webhookToken) < 24) {
                 $errors['settings.zalo_webhook_token'] = 'Webhook Verify Token cần tối thiểu 24 ký tự.';
+            }
+
+            if ($accessToken === '') {
+                $errors['settings.zalo_access_token'] = 'Access Token là bắt buộc khi bật Zalo OA inbox.';
+            }
+
+            if ($sendEndpoint === '') {
+                $errors['settings.zalo_send_endpoint'] = 'Zalo OA send endpoint là bắt buộc khi bật Zalo OA inbox.';
+            }
+
+            if ($defaultBranchCode === '') {
+                $errors['settings.zalo_inbox_default_branch_code'] = 'Chi nhánh mặc định cho inbox Zalo là bắt buộc.';
+            } elseif (! Branch::query()->where('code', $defaultBranchCode)->where('active', true)->exists()) {
+                $errors['settings.zalo_inbox_default_branch_code'] = 'Chi nhánh mặc định của inbox Zalo không hợp lệ hoặc không còn hoạt động.';
+            }
+
+            if (! is_numeric($pollingSeconds) || (int) $pollingSeconds < 1 || (int) $pollingSeconds > 30) {
+                $errors['settings.zalo_inbox_polling_seconds'] = 'Chu kỳ polling inbox phải nằm trong khoảng 1-30 giây.';
             }
         }
 

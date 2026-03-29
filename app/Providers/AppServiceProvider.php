@@ -37,6 +37,10 @@ use App\Observers\TreatmentPlanObserver;
 use App\Observers\TreatmentSessionAuditObserver;
 use App\Observers\TreatmentSessionObserver;
 use App\Policies\FirewallIpPolicy;
+use App\Services\InboundMessageNormalizer;
+use App\Services\OutboundMessageClient;
+use App\Services\ZaloInboundMessageNormalizer;
+use App\Services\ZaloOaMessageClient;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action as FilamentAction;
 use Filament\Infolists\Components\TextEntry;
@@ -56,7 +60,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(InboundMessageNormalizer::class, ZaloInboundMessageNormalizer::class);
+        $this->app->bind(OutboundMessageClient::class, ZaloOaMessageClient::class);
     }
 
     /**

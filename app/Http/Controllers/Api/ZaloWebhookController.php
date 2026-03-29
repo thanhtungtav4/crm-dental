@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ZaloWebhookEvent;
+use App\Services\InboundMessageNormalizer;
 use App\Services\IntegrationOperationalPayloadSanitizer;
 use App\Services\IntegrationProviderRuntimeGate;
 use App\Services\IntegrationSecretRotationService;
@@ -12,10 +13,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class ZaloWebhookController extends Controller
 {
     public function __construct(
+        protected InboundMessageNormalizer $inboundMessageNormalizer,
         protected IntegrationProviderRuntimeGate $integrationProviderRuntimeGate,
         protected IntegrationOperationalPayloadSanitizer $integrationOperationalPayloadSanitizer,
         protected IntegrationSecretRotationService $integrationSecretRotationService,
@@ -83,6 +86,17 @@ class ZaloWebhookController extends Controller
             'event_fingerprint' => $eventFingerprint,
             'duplicate' => $isDuplicate,
         ]);
+
+        try {
+            $this->inboundMessageNormalizer->normalize($event, $payload);
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            logger()->warning('zalo.webhook.normalize_failed', [
+                'event_fingerprint' => $eventFingerprint,
+                'error' => $throwable->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'ok' => true,

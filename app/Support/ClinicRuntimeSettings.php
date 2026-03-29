@@ -489,6 +489,35 @@ class ClinicRuntimeSettings
         );
     }
 
+    public static function zaloAccessToken(): string
+    {
+        return trim((string) static::get('zalo.access_token', ''));
+    }
+
+    public static function zaloSendEndpoint(): string
+    {
+        return trim((string) static::get(
+            'zalo.send_endpoint',
+            'https://openapi.zalo.me/v3.0/oa/message/cs',
+        ));
+    }
+
+    public static function zaloInboxDefaultBranchCode(): string
+    {
+        return trim((string) static::get('zalo.inbox_default_branch_code', ''));
+    }
+
+    public static function zaloInboxPollingSeconds(): int
+    {
+        return max(
+            1,
+            min(
+                30,
+                static::integer('zalo.inbox_polling_seconds', 3),
+            ),
+        );
+    }
+
     public static function znsSendEndpoint(): string
     {
         $endpoint = trim((string) static::get(
