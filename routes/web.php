@@ -4,12 +4,17 @@ use App\Http\Controllers\ClinicalMediaController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Http\Controllers\PaymentReceiptController;
 use App\Http\Controllers\PrescriptionController;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 
 Route::passkeys();
 
 Route::get('/', function () {
-    return view('welcome');
+    $adminPanel = Filament::getPanel('admin');
+
+    return redirect(auth()->check()
+        ? $adminPanel->getUrl()
+        : $adminPanel->getLoginUrl());
 });
 
 // Serve favicon explicitly if the web server isn’t serving public assets.

@@ -49,6 +49,7 @@
                                 @disabled($isLocked)
                                 class="crm-btn crm-btn-outline h-7 w-7 p-0 text-gray-500 disabled:opacity-50"
                                 title="{{ $isLocked ? 'Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.' : 'Sửa ngày khám' }}"
+                                aria-label="{{ $isLocked ? 'Ngày khám đã khóa, không thể chỉnh sửa' : 'Sửa ngày khám' }}"
                             >
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 20h9" />
@@ -76,6 +77,7 @@
                                 class="crm-btn crm-btn-outline h-8 w-8 p-0 text-gray-600 disabled:opacity-50"
                                 style="width: 2rem; height: 2rem; min-width: 2rem; padding: 0;"
                                 title="{{ $isLocked ? 'Ngày khám đã có tiến trình điều trị nên không thể xóa được.' : 'Xóa phiếu khám' }}"
+                                aria-label="{{ $isLocked ? 'Ngày khám đã khóa, không thể xóa' : 'Xóa phiếu khám' }}"
                             >
                                 <svg class="h-4 w-4" style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7h10z"/>

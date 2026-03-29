@@ -459,6 +459,18 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   color: var(--crm-muted);
   padding: 4px 2px 8px;
   white-space: nowrap;
+  border-radius: 10px;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crm-top-tab:hover {
+  color: var(--crm-text-body);
+  background: var(--crm-primary-50);
+}
+
+.crm-top-tab:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-top-tab > span:first-child {
@@ -467,6 +479,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-top-tab.is-active {
   color: var(--crm-primary);
+  background: var(--crm-primary-50);
 }
 
 .crm-top-tab.is-active::after {
@@ -645,12 +658,17 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   border: 1px solid #dbe2ee;
   background: #ffffff;
   color: #475467;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crm-copy-icon-btn:hover {
   border-color: #c3cfdf;
   color: #1d4ed8;
+}
+
+.crm-copy-icon-btn:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-copy-icon-btn svg {
@@ -1773,6 +1791,19 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   font-size: 13px;
   font-weight: 600;
   color: #374151;
+  border-radius: 8px;
+  padding: 2px 4px;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crm-session-toggle:hover {
+  color: var(--crm-text-strong);
+  background: var(--crm-surface-muted);
+}
+
+.crm-session-toggle:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-session-caret {
@@ -1799,6 +1830,12 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   padding: 6px 12px;
   line-height: 1;
   border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crm-btn:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-btn-md {
@@ -2794,13 +2831,18 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   border-radius: 6px;
   color: var(--crm-muted);
   margin-right: 4px;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .crm-table-icon-btn:hover {
   border-color: var(--crm-table-icon-border-hover);
   background: var(--crm-table-icon-bg-hover);
   color: var(--crm-btn-muted-text);
+}
+
+.crm-table-icon-btn:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-table-icon-btn.is-disabled {

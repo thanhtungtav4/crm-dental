@@ -129,12 +129,13 @@
                                 ]) }}"
                                    class="crm-table-icon-btn"
                                    title="Sửa hạng mục"
+                                   aria-label="Sửa hạng mục kế hoạch điều trị"
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
                                     </svg>
                                 </a>
-                                <button type="button" disabled class="crm-table-icon-btn is-disabled">
+                                <button type="button" disabled class="crm-table-icon-btn is-disabled" aria-label="Xóa hạng mục kế hoạch điều trị">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7h10z" />
                                     </svg>
