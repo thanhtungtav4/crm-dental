@@ -122,17 +122,9 @@ class PatientInsightReportReadModelService
         ?string $until,
         ?string $riskLevel = null,
     ): array {
-        $summary = $this->riskSummary($branchIds, $from, $until, $riskLevel);
-
-        return [
-            ['label' => 'Tổng profile', 'value' => number_format($summary['total'])],
-            ['label' => 'Risk cao', 'value' => number_format($summary['high'])],
-            ['label' => 'Risk trung bình', 'value' => number_format($summary['medium'])],
-            ['label' => 'Risk thấp', 'value' => number_format($summary['low'])],
-            ['label' => 'Avg no-show risk', 'value' => number_format($summary['average_no_show'], 2)],
-            ['label' => 'Avg churn risk', 'value' => number_format($summary['average_churn'], 2)],
-            ['label' => 'Ticket can thiệp đang mở', 'value' => number_format($summary['active_intervention_tickets'])],
-        ];
+        return PatientRiskProfile::summaryStatsPayload(
+            $this->riskSummary($branchIds, $from, $until, $riskLevel)
+        );
     }
 
     /**

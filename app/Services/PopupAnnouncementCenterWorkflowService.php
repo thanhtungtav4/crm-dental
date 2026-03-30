@@ -5,6 +5,14 @@ namespace App\Services;
 use App\Models\PopupAnnouncementDelivery;
 use App\Support\ClinicRuntimeSettings;
 
+/**
+ * @phpstan-import-type PopupAnnouncementCenterPayload from PopupAnnouncementCenterReadModelService
+ *
+ * @phpstan-type PopupAnnouncementCenterActiveState array{
+ *     delivery_id:int,
+ *     announcement:PopupAnnouncementCenterPayload
+ * }
+ */
 class PopupAnnouncementCenterWorkflowService
 {
     public function __construct(
@@ -12,20 +20,7 @@ class PopupAnnouncementCenterWorkflowService
         protected PopupAnnouncementDeliveryWorkflowService $popupAnnouncementDeliveryWorkflowService,
     ) {}
 
-    /**
-     * @return array{
-     *     delivery_id:int,
-     *     announcement:array{
-     *         code:?string,
-     *         title:string,
-     *         message:string,
-     *         priority:?string,
-     *         require_ack:bool,
-     *         starts_at:?string,
-     *         ends_at:?string
-     *     }
-     * }|null
-     */
+    /** @return PopupAnnouncementCenterActiveState|null */
     public function refreshForUser(int $userId): ?array
     {
         if (! ClinicRuntimeSettings::popupAnnouncementsEnabled()) {
@@ -42,20 +37,7 @@ class PopupAnnouncementCenterWorkflowService
         return $this->activeStateFromDelivery($delivery);
     }
 
-    /**
-     * @return array{
-     *     delivery_id:int,
-     *     announcement:array{
-     *         code:?string,
-     *         title:string,
-     *         message:string,
-     *         priority:?string,
-     *         require_ack:bool,
-     *         starts_at:?string,
-     *         ends_at:?string
-     *     }
-     * }|null
-     */
+    /** @return PopupAnnouncementCenterActiveState|null */
     public function acknowledgeForUser(int $userId, int $deliveryId): ?array
     {
         $delivery = $this->resolveActiveDeliveryForUser($userId, $deliveryId);
@@ -68,20 +50,7 @@ class PopupAnnouncementCenterWorkflowService
         return $this->refreshForUser($userId);
     }
 
-    /**
-     * @return array{
-     *     delivery_id:int,
-     *     announcement:array{
-     *         code:?string,
-     *         title:string,
-     *         message:string,
-     *         priority:?string,
-     *         require_ack:bool,
-     *         starts_at:?string,
-     *         ends_at:?string
-     *     }
-     * }|null
-     */
+    /** @return PopupAnnouncementCenterActiveState|null */
     public function dismissForUser(int $userId, int $deliveryId): ?array
     {
         $delivery = $this->resolveActiveDeliveryForUser($userId, $deliveryId);
@@ -99,20 +68,7 @@ class PopupAnnouncementCenterWorkflowService
         return $this->popupAnnouncementCenterReadModelService->activeDeliveryForUser($userId, $deliveryId);
     }
 
-    /**
-     * @return array{
-     *     delivery_id:int,
-     *     announcement:array{
-     *         code:?string,
-     *         title:string,
-     *         message:string,
-     *         priority:?string,
-     *         require_ack:bool,
-     *         starts_at:?string,
-     *         ends_at:?string
-     *     }
-     * }|null
-     */
+    /** @return PopupAnnouncementCenterActiveState|null */
     protected function activeStateFromDelivery(PopupAnnouncementDelivery $delivery): ?array
     {
         $announcement = $this->popupAnnouncementCenterReadModelService->announcementPayload($delivery);

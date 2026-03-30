@@ -47,3 +47,16 @@ it('organizes popup announcement form into operator friendly sections', function
         ->toContain('->html()')
         ->toContain('->prose()');
 });
+
+it('renders popup center badges and close action from payload state', function (): void {
+    $popupCenterView = File::get(resource_path('views/livewire/popup-announcement-center.blade.php'));
+
+    expect($popupCenterView)
+        ->toContain('wire:poll.visible.')
+        ->toContain("\$activeAnnouncement['mode_classes']")
+        ->toContain("\$activeAnnouncement['close_action']['method']")
+        ->toContain("\$activeAnnouncement['close_action']['target']")
+        ->toContain("\$activeAnnouncement['primary_action']['color']")
+        ->toContain("\$activeAnnouncement['primary_action']['method']")
+        ->toContain("\$activeAnnouncement['primary_action']['target']");
+});

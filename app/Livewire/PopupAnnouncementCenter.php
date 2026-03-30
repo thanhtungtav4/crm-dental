@@ -7,8 +7,16 @@ use App\Support\ClinicRuntimeSettings;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
+/**
+ * @phpstan-type PopupAnnouncementCenterActiveState array{
+ *     delivery_id:int,
+ *     announcement:array<string, mixed>
+ * }
+ */
 class PopupAnnouncementCenter extends Component
 {
+    protected PopupAnnouncementCenterWorkflowService $popupAnnouncementCenterWorkflowService;
+
     public ?int $activeDeliveryId = null;
 
     /**
@@ -18,6 +26,11 @@ class PopupAnnouncementCenter extends Component
 
     public int $pollingSeconds = 10;
 
+    public function boot(PopupAnnouncementCenterWorkflowService $popupAnnouncementCenterWorkflowService): void
+    {
+        $this->popupAnnouncementCenterWorkflowService = $popupAnnouncementCenterWorkflowService;
+    }
+
     public function mount(): void
     {
         $this->pollingSeconds = ClinicRuntimeSettings::popupAnnouncementsPollingSeconds();
@@ -26,64 +39,38 @@ class PopupAnnouncementCenter extends Component
 
     public function refreshPending(): void
     {
-        $userId = $this->activeUserId();
-
-        if ($userId === null) {
-            $this->resetActiveState();
-
-            return;
-        }
-
-        $this->applyActiveState(
-            app(PopupAnnouncementCenterWorkflowService::class)->refreshForUser($userId),
+        $this->transitionForCurrentUser(
+            fn (int $userId, ?int $deliveryId): ?array => $this->popupAnnouncementCenterWorkflowService->refreshForUser($userId),
         );
     }
 
     public function acknowledge(): void
     {
-        $userId = $this->activeUserId();
-
-        if ($userId === null || $this->activeDeliveryId === null) {
-            $this->resetActiveState();
-
-            return;
-        }
-
-        $this->applyActiveState(
-            app(PopupAnnouncementCenterWorkflowService::class)
-                ->acknowledgeForUser($userId, $this->activeDeliveryId),
+        $this->transitionForActiveDelivery(
+            fn (int $userId, int $deliveryId): ?array => $this->popupAnnouncementCenterWorkflowService
+                ->acknowledgeForUser($userId, $deliveryId),
         );
     }
 
     public function dismiss(): void
     {
-        $userId = $this->activeUserId();
-
-        if ($userId === null || $this->activeDeliveryId === null) {
-            $this->resetActiveState();
-
-            return;
-        }
-
-        $this->applyActiveState(
-            app(PopupAnnouncementCenterWorkflowService::class)
-                ->dismissForUser($userId, $this->activeDeliveryId),
+        $this->transitionForActiveDelivery(
+            fn (int $userId, int $deliveryId): ?array => $this->popupAnnouncementCenterWorkflowService
+                ->dismissForUser($userId, $deliveryId),
         );
     }
 
     public function render(): View
     {
-        return view('livewire.popup-announcement-center', [
-            'pollingSeconds' => max(5, min(60, $this->pollingSeconds)),
-        ]);
+        return view('livewire.popup-announcement-center');
     }
 
-    /**
-     * @param  array{
-     *     delivery_id:int,
-     *     announcement:array<string, mixed>
-     * }|null  $activeState
-     */
+    public function getPollingIntervalProperty(): int
+    {
+        return max(5, min(60, $this->pollingSeconds));
+    }
+
+    /** @param  PopupAnnouncementCenterActiveState|null  $activeState */
     protected function applyActiveState(?array $activeState): void
     {
         if ($activeState === null) {
@@ -104,6 +91,31 @@ class PopupAnnouncementCenter extends Component
 
     protected function activeUserId(): ?int
     {
-        return auth()->check() ? (int) auth()->id() : null;
+        return auth()->id() !== null ? (int) auth()->id() : null;
+    }
+
+    /** @param  callable(int, int): (PopupAnnouncementCenterActiveState|null)  $resolver */
+    protected function transitionForActiveDelivery(callable $resolver): void
+    {
+        $this->transitionForCurrentUser(
+            fn (int $userId, ?int $deliveryId): ?array => $deliveryId === null
+                ? null
+                : $resolver($userId, $deliveryId),
+            requiresActiveDelivery: true,
+        );
+    }
+
+    /** @param  callable(int, ?int): (PopupAnnouncementCenterActiveState|null)  $resolver */
+    protected function transitionForCurrentUser(callable $resolver, bool $requiresActiveDelivery = false): void
+    {
+        $userId = $this->activeUserId();
+
+        if ($userId === null || ($requiresActiveDelivery && $this->activeDeliveryId === null)) {
+            $this->resetActiveState();
+
+            return;
+        }
+
+        $this->applyActiveState($resolver($userId, $this->activeDeliveryId));
     }
 }

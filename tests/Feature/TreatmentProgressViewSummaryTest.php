@@ -90,6 +90,10 @@ it('builds treatment progress totals by day and by session for exam treatment ta
     $serviceDaySummaries = $service->treatmentProgressDaySummaries($patient->fresh());
     $serviceSessions = $service->treatmentProgress($patient->fresh());
     $summary = $service->treatmentProgressSummary($serviceSessions, $serviceDaySummaries);
+    $panel = $service->treatmentProgressPanelPayload($patient->fresh(), $doctor, route('filament.admin.resources.patients.view', [
+        'record' => $patient,
+        'tab' => 'exam-treatment',
+    ]), $serviceSessions, $serviceDaySummaries);
 
     $daySummaries = $page->getTreatmentProgressDaySummariesProperty();
     $sessions = $page->getTreatmentProgressProperty();
@@ -102,12 +106,43 @@ it('builds treatment progress totals by day and by session for exam treatment ta
             'total_amount' => 2000000.0,
             'total_amount_formatted' => '2.000.000',
         ])
+        ->and($panel)->toMatchArray([
+            'section_title' => 'Tiến trình điều trị',
+            'card_title' => 'Tiến trình điều trị',
+            'sessions_count' => 3,
+            'days_count' => 2,
+            'has_day_summaries' => true,
+            'summary_badge' => '2 ngày · 3 phiên',
+            'total_amount_text' => 'Tổng chi phí phiên: 2.000.000đ',
+            'empty_text' => 'Chưa có tiến trình điều trị cho bệnh nhân này.',
+            'primary_action' => [
+                'label' => 'Thêm ngày điều trị',
+                'url' => route('filament.admin.resources.treatment-sessions.create', [
+                    'patient_id' => $patient->id,
+                    'return_url' => route('filament.admin.resources.patients.view', [
+                        'record' => $patient,
+                        'tab' => 'exam-treatment',
+                    ]),
+                ]),
+                'button_class' => 'crm-btn-primary',
+            ],
+        ])
         ->and($sessions)->toHaveCount(3)
-        ->and($page->getTreatmentProgressCountProperty())->toBe(3)
+        ->and($sessions->first())->toMatchArray([
+            'edit_action_label' => 'Chỉnh sửa phiên điều trị',
+            'edit_action_placeholder' => '-',
+        ])
+        ->and($sessions->first()['edit_action'])->toMatchArray([
+            'url' => $sessions->first()['edit_url'],
+            'label' => 'Chỉnh sửa phiên điều trị',
+            'icon' => 'heroicon-o-pencil-square',
+            'button_class' => 'crm-table-icon-btn',
+        ])
+        ->and((int) ($page->getTreatmentProgressPanelProperty()['sessions_count'] ?? 0))->toBe(3)
         ->and($daySummaries)->toHaveCount(2)
-        ->and($page->getTreatmentProgressDayCountProperty())->toBe(2)
-        ->and($page->getTreatmentProgressTotalAmountProperty())->toEqualWithDelta(2000000.0, 0.01)
-        ->and($page->getTreatmentProgressTotalAmountFormattedProperty())->toBe('2.000.000')
+        ->and((int) ($page->getTreatmentProgressPanelProperty()['days_count'] ?? 0))->toBe(2)
+        ->and((float) ($page->getTreatmentProgressPanelProperty()['total_amount'] ?? 0))->toEqualWithDelta(2000000.0, 0.01)
+        ->and((string) ($page->getTreatmentProgressPanelProperty()['total_amount_formatted'] ?? '0'))->toBe('2.000.000')
         ->and((float) ($daySummaries->first()['day_total_amount'] ?? 0))->toEqualWithDelta(800000.0, 0.01)
         ->and((int) ($daySummaries->first()['sessions_count'] ?? 0))->toBe(1)
         ->and((float) ($daySummaries->last()['day_total_amount'] ?? 0))->toEqualWithDelta(1200000.0, 0.01)

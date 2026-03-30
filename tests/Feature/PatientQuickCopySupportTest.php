@@ -26,16 +26,31 @@ it('auto enables copyable for patient code and phone columns and entries', funct
 
 it('renders quick copy controls on patient profile header and phone card', function (): void {
     $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
+    $partialPath = resource_path('views/filament/resources/patients/pages/partials/copy-button.blade.php');
+    $infoCardPartialPath = resource_path('views/filament/resources/patients/pages/partials/info-card.blade.php');
     $cssPath = resource_path('css/filament/admin/theme.css');
 
     $blade = File::get($bladePath);
+    $partial = File::get($partialPath);
+    $infoCardPartial = File::get($infoCardPartialPath);
     $css = File::get($cssPath);
 
     expect($blade)
-        ->toContain("copyToClipboard(@js(\$this->record->patient_code), 'Mã bệnh nhân')")
-        ->toContain("copyToClipboard(@js(\$this->record->phone), 'Số điện thoại')")
-        ->toContain('class="crm-copy-toast"')
-        ->toContain('class="crm-copy-icon-btn is-light"');
+        ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
+        ->toContain("@include('filament.resources.patients.pages.partials.info-card'")
+        ->toContain('class="crm-copy-toast"');
+
+    expect($partial)
+        ->toContain('copyToClipboard(@js($copyValue), @js($copyLabel))')
+        ->toContain('class="{{ $buttonClass }}"')
+        ->toContain('title="{{ $actionLabel }}"')
+        ->toContain('aria-label="{{ $actionLabel }}"')
+        ->toContain('heroicon-o-square-2-stack');
+
+    expect($infoCardPartial)
+        ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
+        ->toContain("copyValue' => \$card['copy_value']")
+        ->toContain("copyLabel' => \$card['copy_label']");
 
     expect($css)
         ->toContain('.crm-copy-icon-btn {')

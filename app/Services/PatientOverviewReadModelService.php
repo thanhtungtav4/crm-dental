@@ -30,20 +30,31 @@ class PatientOverviewReadModelService
      *     gender_label:?string,
      *     gender_badge_class:?string,
      *     patient_code:?string,
+     *     patient_code_copy_label:?string,
+     *     patient_code_copy_action_label:?string,
      *     phone:?string,
-     *     phone_href:?string
+     *     phone_href:?string,
+     *     phone_copy_label:?string,
+     *     phone_copy_action_label:?string
      * }
      */
     public function identityHeaderPayload(Patient $patient): array
     {
+        $patientCode = filled($patient->patient_code) ? (string) $patient->patient_code : null;
+        $phone = filled($patient->phone) ? (string) $patient->phone : null;
+
         return [
             'avatar_initials' => $this->patientInitials((string) $patient->full_name),
             'full_name' => (string) $patient->full_name,
             'gender_label' => $this->patientGenderLabel($patient->gender),
             'gender_badge_class' => $this->patientGenderBadgeClass($patient->gender),
-            'patient_code' => filled($patient->patient_code) ? (string) $patient->patient_code : null,
-            'phone' => filled($patient->phone) ? (string) $patient->phone : null,
-            'phone_href' => filled($patient->phone) ? 'tel:'.$patient->phone : null,
+            'patient_code' => $patientCode,
+            'patient_code_copy_label' => $patientCode !== null ? 'Mã bệnh nhân' : null,
+            'patient_code_copy_action_label' => $patientCode !== null ? 'Sao chép mã bệnh nhân' : null,
+            'phone' => $phone,
+            'phone_href' => $phone !== null ? 'tel:'.$phone : null,
+            'phone_copy_label' => $phone !== null ? 'Số điện thoại' : null,
+            'phone_copy_action_label' => $phone !== null ? 'Sao chép số điện thoại' : null,
         ];
     }
 
@@ -56,22 +67,155 @@ class PatientOverviewReadModelService
      *     birthday_label:?string,
      *     age_label:?string,
      *     branch_name:string,
-     *     address:?string
+     *     address:?string,
+     *     cards:array<int, array{
+     *         key:string,
+     *         label:string,
+     *         icon:string,
+     *         card_class:string,
+     *         value:string,
+     *         href:?string,
+     *         copy_value:?string,
+     *         copy_label:?string,
+     *         copy_action_label:?string,
+     *         meta:?string,
+     *         is_muted:bool,
+     *         is_truncate:bool,
+     *         title:?string
+     *     }>,
+     *     address_card:?array{
+     *         label:string,
+     *         icon:string,
+     *         value:string
+     *     }
      * }
      */
     public function basicInfoGridPayload(Patient $patient): array
     {
         $birthday = filled($patient->birthday) ? Carbon::parse($patient->birthday) : null;
+        $phone = filled($patient->phone) ? (string) $patient->phone : null;
+        $email = filled($patient->email) ? (string) $patient->email : null;
+        $address = filled($patient->address) ? (string) $patient->address : null;
+        $birthdayLabel = $birthday?->format('d/m/Y');
+        $ageLabel = $birthday?->age !== null ? sprintf('(%d tuổi)', $birthday->age) : null;
+        $branchName = $patient->branch?->name ?? 'Chưa phân bổ';
 
         return [
-            'phone' => filled($patient->phone) ? (string) $patient->phone : null,
-            'phone_href' => filled($patient->phone) ? 'tel:'.$patient->phone : null,
-            'email' => filled($patient->email) ? (string) $patient->email : null,
-            'email_href' => filled($patient->email) ? 'mailto:'.$patient->email : null,
-            'birthday_label' => $birthday?->format('d/m/Y'),
-            'age_label' => $birthday?->age !== null ? sprintf('(%d tuổi)', $birthday->age) : null,
-            'branch_name' => $patient->branch?->name ?? 'Chưa phân bổ',
-            'address' => filled($patient->address) ? (string) $patient->address : null,
+            'phone' => $phone,
+            'phone_href' => $phone !== null ? 'tel:'.$phone : null,
+            'email' => $email,
+            'email_href' => $email !== null ? 'mailto:'.$email : null,
+            'birthday_label' => $birthdayLabel,
+            'age_label' => $ageLabel,
+            'branch_name' => $branchName,
+            'address' => $address,
+            'cards' => [
+                [
+                    'key' => 'phone',
+                    'label' => 'Điện thoại',
+                    'icon' => 'heroicon-o-phone',
+                    'card_class' => 'is-phone',
+                    'value' => $phone ?? 'Chưa có',
+                    'href' => $phone !== null ? 'tel:'.$phone : null,
+                    'copy_value' => $phone,
+                    'copy_label' => $phone !== null ? 'Số điện thoại' : null,
+                    'copy_action_label' => $phone !== null ? 'Sao chép số điện thoại' : null,
+                    'meta' => null,
+                    'is_muted' => $phone === null,
+                    'is_truncate' => false,
+                    'title' => null,
+                ],
+                [
+                    'key' => 'email',
+                    'label' => 'Email',
+                    'icon' => 'heroicon-o-envelope',
+                    'card_class' => 'is-email',
+                    'value' => $email ?? 'Chưa có',
+                    'href' => $email !== null ? 'mailto:'.$email : null,
+                    'copy_value' => null,
+                    'copy_label' => null,
+                    'copy_action_label' => null,
+                    'meta' => null,
+                    'is_muted' => $email === null,
+                    'is_truncate' => true,
+                    'title' => $email,
+                ],
+                [
+                    'key' => 'birthday',
+                    'label' => 'Ngày sinh',
+                    'icon' => 'heroicon-o-calendar-days',
+                    'card_class' => 'is-birthday',
+                    'value' => $birthdayLabel ?? 'Chưa có',
+                    'href' => null,
+                    'copy_value' => null,
+                    'copy_label' => null,
+                    'copy_action_label' => null,
+                    'meta' => $ageLabel,
+                    'is_muted' => $birthdayLabel === null,
+                    'is_truncate' => false,
+                    'title' => null,
+                ],
+                [
+                    'key' => 'branch',
+                    'label' => 'Chi nhánh',
+                    'icon' => 'heroicon-o-building-office-2',
+                    'card_class' => 'is-branch',
+                    'value' => $branchName,
+                    'href' => null,
+                    'copy_value' => null,
+                    'copy_label' => null,
+                    'copy_action_label' => null,
+                    'meta' => null,
+                    'is_muted' => false,
+                    'is_truncate' => false,
+                    'title' => null,
+                ],
+            ],
+            'address_card' => $address !== null
+                ? [
+                    'label' => 'Địa chỉ',
+                    'icon' => 'heroicon-o-map-pin',
+                    'value' => $address,
+                ]
+                : null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     contacts:array{
+     *         title:string,
+     *         description:string
+     *     },
+     *     activity_log:array{
+     *         title:string,
+     *         description:string,
+     *         action:array{
+     *             label:string,
+     *             tab:string,
+     *             button_class:string
+     *         }
+     *     },
+     *     empty_state_text:string
+     * }
+     */
+    public function basicInfoPanelsPayload(): array
+    {
+        return [
+            'contacts' => [
+                'title' => 'Người liên hệ',
+                'description' => 'Tách danh sách người liên hệ để lễ tân/CSKH thao tác nhanh theo từng bệnh nhân.',
+            ],
+            'activity_log' => [
+                'title' => 'Lịch sử thao tác',
+                'description' => 'Xem timeline cập nhật ở tab chuyên biệt để tránh trùng lặp nội dung.',
+                'action' => [
+                    'label' => 'Mở lịch sử thao tác',
+                    'tab' => 'activity-log',
+                    'button_class' => 'crm-btn crm-btn-primary crm-btn-md',
+                ],
+            ],
+            'empty_state_text' => 'Không thể tải dữ liệu bệnh nhân',
         ];
     }
 
@@ -246,9 +390,14 @@ class PatientOverviewReadModelService
      *     can_view_invoices:bool,
      *     can_view_payments:bool,
      *     can_create_payment:bool,
+     *     title:string,
      *     metrics:array<int, array{label:string,value:string,value_class:?string}>,
-     *     primary_payment_action:?array{label:string,url:string,style:string},
-     *     secondary_payment_action:?array{label:string,url:string,style:string}
+     *     balance_text:string,
+     *     actions:array<int, array{label:string,url:string,style:string,button_class:string}>,
+     *     sections:array<int, array{key:string,title:string}>,
+     *     sections_by_key:array<string, array{key:string,title:string}>,
+     *     primary_payment_action:?array{label:string,url:string,style:string,button_class:string},
+     *     secondary_payment_action:?array{label:string,url:string,style:string,button_class:string}
      * }
      */
     public function paymentPanelPayload(Patient $patient, ?User $authUser): array
@@ -256,11 +405,43 @@ class PatientOverviewReadModelService
         $summary = $this->paymentSummary($patient);
         $capabilities = $this->workspaceCapabilities($authUser);
         $canCreatePayment = $capabilities['create_payment'] && filled($summary['create_payment_url']);
+        $sections = array_values(array_filter([
+            $capabilities['invoice_forms']
+                ? [
+                    'key' => 'invoices',
+                    'title' => 'HÓA ĐƠN ĐIỀU TRỊ',
+                ]
+                : null,
+            $capabilities['payments']
+                ? [
+                    'key' => 'payments',
+                    'title' => 'DANH SÁCH PHIẾU THU - HOÀN ỨNG',
+                ]
+                : null,
+        ]));
+        $primaryPaymentAction = $canCreatePayment
+            ? [
+                'label' => 'Phiếu thu',
+                'url' => $summary['create_payment_url'],
+                'style' => 'primary',
+                'button_class' => $this->buttonClassForStyle('primary'),
+            ]
+            : null;
+        $secondaryPaymentAction = $canCreatePayment
+            ? [
+                'label' => 'Thanh toán',
+                'url' => $summary['create_payment_url'],
+                'style' => 'outline',
+                'button_class' => $this->buttonClassForStyle('outline'),
+            ]
+            : null;
 
         return [
             'summary' => $summary,
+            'title' => 'Thông tin thanh toán',
             'balance_class' => $summary['balance_is_positive'] ? 'is-positive' : 'is-negative',
             'balance_amount_formatted' => (string) $summary['balance_amount_formatted'],
+            'balance_text' => 'Số dư:',
             'can_view_invoices' => $capabilities['invoice_forms'],
             'can_view_payments' => $capabilities['payments'],
             'can_create_payment' => $canCreatePayment,
@@ -291,20 +472,16 @@ class PatientOverviewReadModelService
                     'value_class' => 'is-negative',
                 ],
             ],
-            'primary_payment_action' => $canCreatePayment
-                ? [
-                    'label' => 'Phiếu thu',
-                    'url' => $summary['create_payment_url'],
-                    'style' => 'primary',
-                ]
-                : null,
-            'secondary_payment_action' => $canCreatePayment
-                ? [
-                    'label' => 'Thanh toán',
-                    'url' => $summary['create_payment_url'],
-                    'style' => 'outline',
-                ]
-                : null,
+            'actions' => array_values(array_filter([
+                $primaryPaymentAction,
+                $secondaryPaymentAction,
+            ])),
+            'sections' => $sections,
+            'sections_by_key' => collect($sections)
+                ->keyBy('key')
+                ->all(),
+            'primary_payment_action' => $primaryPaymentAction,
+            'secondary_payment_action' => $secondaryPaymentAction,
         ];
     }
 
@@ -481,10 +658,10 @@ class PatientOverviewReadModelService
 
     /**
      * @return array{
-     *     create_treatment_plan:array{label:string,url:string,visible:bool},
-     *     create_invoice:array{label:string,url:string,visible:bool},
-     *     create_appointment:array{label:string,url:string,visible:bool},
-     *     medical_record:array{label:string,url:?string,visible:bool,mode:?string,record_id:?int}
+     *     create_treatment_plan:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     create_invoice:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     create_appointment:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     medical_record:array{label:string,url:?string,visible:bool,mode:?string,record_id:?int,icon:string,color:string,open_in_new_tab:bool}
      * }
      */
     public function workspaceHeaderActions(
@@ -507,6 +684,9 @@ class PatientOverviewReadModelService
                     'return_url' => $workspaceReturnUrl,
                 ]),
                 'visible' => $capabilities['create_treatment_plan'],
+                'icon' => 'heroicon-o-clipboard-document-list',
+                'color' => 'success',
+                'open_in_new_tab' => true,
             ],
             'create_invoice' => [
                 'label' => 'Tạo hóa đơn',
@@ -514,6 +694,9 @@ class PatientOverviewReadModelService
                     'patient_id' => $patient->id,
                 ]),
                 'visible' => $capabilities['create_invoice'],
+                'icon' => 'heroicon-o-document-text',
+                'color' => 'warning',
+                'open_in_new_tab' => true,
             ],
             'create_appointment' => [
                 'label' => 'Đặt lịch hẹn',
@@ -521,6 +704,9 @@ class PatientOverviewReadModelService
                     'patient_id' => $patient->id,
                 ]),
                 'visible' => $capabilities['create_appointment'],
+                'icon' => 'heroicon-o-calendar',
+                'color' => 'info',
+                'open_in_new_tab' => true,
             ],
             'medical_record' => [
                 'label' => $medicalRecordAction['label'] ?? 'Mở bệnh án điện tử',
@@ -528,6 +714,9 @@ class PatientOverviewReadModelService
                 'visible' => $medicalRecordAction !== null,
                 'mode' => $medicalRecordAction['mode'] ?? null,
                 'record_id' => $medicalRecordAction['record_id'] ?? null,
+                'icon' => 'heroicon-o-clipboard-document-check',
+                'color' => 'primary',
+                'open_in_new_tab' => false,
             ],
         ];
     }
@@ -547,32 +736,122 @@ class PatientOverviewReadModelService
      *         id:int,
      *         title:string,
      *         print_url:string
+     *     }>,
+     *     title:string,
+     *     description:string,
+     *     sections:array<int, array{
+     *         key:string,
+     *         title:string,
+     *         links:Collection<int, array{
+     *             id:int,
+     *             title:string,
+     *             url:string,
+     *             action_label:string,
+     *             target:string
+     *         }>,
+     *         items:Collection<int, array{
+     *             record:Prescription|Invoice,
+     *             id:int,
+     *             title:string,
+     *             print_url:string
+     *         }>,
+     *         empty_text:string,
+     *         action_label:string
+     *     }>,
+     *     sections_by_key:array<string, array{
+     *         key:string,
+     *         title:string,
+     *         items:Collection<int, array{
+     *             record:Prescription|Invoice,
+     *             id:int,
+     *             title:string,
+     *             print_url:string
+     *         }>,
+     *         empty_text:string,
+     *         action_label:string
      *     }>
      * }
      */
     public function formsPanelPayload(Patient $patient, ?User $authUser): array
     {
         $capabilities = $this->workspaceCapabilities($authUser);
+        $prescriptions = $capabilities['prescriptions']
+            ? $this->latestPrescriptions($patient)
+            : collect();
+        $invoices = $capabilities['invoice_forms']
+            ? $this->latestInvoices($patient)
+            : collect();
+        $sections = array_values(array_filter([
+            $capabilities['prescriptions']
+                ? [
+                    'key' => 'prescriptions',
+                    'title' => 'Đơn thuốc gần nhất',
+                    'links' => $prescriptions
+                        ->map(fn (array $item): array => [
+                            'id' => $item['id'],
+                            'title' => $item['title'],
+                            'url' => $item['print_url'],
+                            'action_label' => 'In',
+                            'target' => '_blank',
+                        ])
+                        ->values(),
+                    'items' => $prescriptions,
+                    'empty_text' => 'Chưa có đơn thuốc để in.',
+                    'action_label' => 'In',
+                ]
+                : null,
+            $capabilities['invoice_forms']
+                ? [
+                    'key' => 'invoices',
+                    'title' => 'Hóa đơn gần nhất',
+                    'links' => $invoices
+                        ->map(fn (array $item): array => [
+                            'id' => $item['id'],
+                            'title' => $item['title'],
+                            'url' => $item['print_url'],
+                            'action_label' => 'In',
+                            'target' => '_blank',
+                        ])
+                        ->values(),
+                    'items' => $invoices,
+                    'empty_text' => 'Chưa có hóa đơn để in.',
+                    'action_label' => 'In',
+                ]
+                : null,
+        ]));
 
         return [
             'can_view_prescriptions' => $capabilities['prescriptions'],
             'can_view_invoices' => $capabilities['invoice_forms'],
-            'prescriptions' => $capabilities['prescriptions']
-                ? $this->latestPrescriptions($patient)
-                : collect(),
-            'invoices' => $capabilities['invoice_forms']
-                ? $this->latestInvoices($patient)
-                : collect(),
+            'prescriptions' => $prescriptions,
+            'invoices' => $invoices,
+            'title' => 'Biểu mẫu & tài liệu',
+            'description' => 'Truy cập nhanh biểu mẫu in theo hồ sơ bệnh nhân (đơn thuốc, hóa đơn, phiếu thu).',
+            'sections' => $sections,
+            'sections_by_key' => collect($sections)
+                ->keyBy('key')
+                ->all(),
         ];
     }
 
     /**
      * @return array{
+     *     section_title:string,
+     *     card_title:string,
      *     create_treatment_session_url:?string,
      *     sessions_count:int,
      *     days_count:int,
+     *     has_day_summaries:bool,
      *     total_amount:float,
-     *     total_amount_formatted:string
+     *     total_amount_formatted:string,
+     *     summary_badge:string,
+     *     total_amount_text:string,
+     *     empty_text:string,
+     *     primary_action:?array{
+     *         label:string,
+     *         url:string,
+     *         button_class:string
+     *     }
      * }
      */
     public function treatmentProgressPanelPayload(
@@ -586,18 +865,36 @@ class PatientOverviewReadModelService
             $treatmentProgress ?? collect(),
             $treatmentProgressDaySummaries,
         );
+        $createTreatmentSessionUrl = $authUser instanceof User
+            ? route('filament.admin.resources.treatment-sessions.create', [
+                'patient_id' => $patient->id,
+                'return_url' => $workspaceReturnUrl,
+            ])
+            : null;
+        $sessionsCount = (int) ($summary['sessions_count'] ?? 0);
+        $daysCount = (int) ($summary['days_count'] ?? 0);
+        $totalAmount = (float) ($summary['total_amount'] ?? 0);
+        $totalAmountFormatted = (string) ($summary['total_amount_formatted'] ?? '0');
 
         return [
-            'create_treatment_session_url' => $authUser instanceof User
-                ? route('filament.admin.resources.treatment-sessions.create', [
-                    'patient_id' => $patient->id,
-                    'return_url' => $workspaceReturnUrl,
-                ])
+            'section_title' => 'Tiến trình điều trị',
+            'card_title' => 'Tiến trình điều trị',
+            'create_treatment_session_url' => $createTreatmentSessionUrl,
+            'sessions_count' => $sessionsCount,
+            'days_count' => $daysCount,
+            'has_day_summaries' => $daysCount > 0,
+            'total_amount' => $totalAmount,
+            'total_amount_formatted' => $totalAmountFormatted,
+            'summary_badge' => sprintf('%d ngày · %d phiên', $daysCount, $sessionsCount),
+            'total_amount_text' => 'Tổng chi phí phiên: '.$totalAmountFormatted.'đ',
+            'empty_text' => 'Chưa có tiến trình điều trị cho bệnh nhân này.',
+            'primary_action' => $createTreatmentSessionUrl !== null
+                ? [
+                    'label' => 'Thêm ngày điều trị',
+                    'url' => $createTreatmentSessionUrl,
+                    'button_class' => $this->buttonClassForStyle('primary'),
+                ]
                 : null,
-            'sessions_count' => (int) ($summary['sessions_count'] ?? 0),
-            'days_count' => (int) ($summary['days_count'] ?? 0),
-            'total_amount' => (float) ($summary['total_amount'] ?? 0),
-            'total_amount_formatted' => (string) ($summary['total_amount_formatted'] ?? '0'),
         ];
     }
 
@@ -619,7 +916,13 @@ class PatientOverviewReadModelService
      *     items_count:int,
      *     items_count_formatted:string,
      *     detail_url:?string,
-     *     detail_action_label:string
+     *     detail_action_label:string,
+     *     detail_action_class:string,
+     *     detail_action:array{
+     *         url:?string,
+     *         label:string,
+     *         class:string
+     *     }
      * }>
      */
     public function factoryOrders(Patient $patient, ?User $authUser = null): Collection
@@ -643,6 +946,14 @@ class PatientOverviewReadModelService
                 'notes',
             ])
             ->map(function (FactoryOrder $order) use ($authUser, $canAccessFactoryOrders): array {
+                $detailUrl = $canAccessFactoryOrders && $authUser?->can('update', $order)
+                    ? route('filament.admin.resources.factory-orders.edit', ['record' => $order->id])
+                    : null;
+                $detailActionLabel = $detailUrl !== null ? 'Chi tiết' : 'Không có quyền';
+                $detailActionClass = $detailUrl !== null
+                    ? 'text-sm font-medium text-primary-600 hover:underline'
+                    : 'text-sm text-gray-500';
+
                 return [
                     'record' => $order,
                     'id' => $order->id,
@@ -659,12 +970,14 @@ class PatientOverviewReadModelService
                     'notes' => $order->notes,
                     'items_count' => (int) ($order->items_count ?? 0),
                     'items_count_formatted' => number_format((int) ($order->items_count ?? 0), 0, ',', '.'),
-                    'detail_url' => $canAccessFactoryOrders && $authUser?->can('update', $order)
-                        ? route('filament.admin.resources.factory-orders.edit', ['record' => $order->id])
-                        : null,
-                    'detail_action_label' => $canAccessFactoryOrders && $authUser?->can('update', $order)
-                        ? 'Chi tiết'
-                        : 'Không có quyền',
+                    'detail_url' => $detailUrl,
+                    'detail_action_label' => $detailActionLabel,
+                    'detail_action_class' => $detailActionClass,
+                    'detail_action' => [
+                        'url' => $detailUrl,
+                        'label' => $detailActionLabel,
+                        'class' => $detailActionClass,
+                    ],
                 ];
             });
     }
@@ -687,7 +1000,13 @@ class PatientOverviewReadModelService
      *     total_cost:float,
      *     total_cost_formatted:string,
      *     detail_url:?string,
-     *     detail_action_label:string
+     *     detail_action_label:string,
+     *     detail_action_class:string,
+     *     detail_action:array{
+     *         url:?string,
+     *         label:string,
+     *         class:string
+     *     }
      * }>
      */
     public function materialIssueNotes(Patient $patient, ?User $authUser = null): Collection
@@ -712,6 +1031,13 @@ class PatientOverviewReadModelService
             ])
             ->map(function (MaterialIssueNote $note) use ($canAccessMaterialIssueNotes): array {
                 $totalCost = (float) ($note->total_cost ?? 0);
+                $detailUrl = $canAccessMaterialIssueNotes
+                    ? route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id])
+                    : null;
+                $detailActionLabel = $detailUrl !== null ? 'Chi tiết' : 'Không có quyền';
+                $detailActionClass = $detailUrl !== null
+                    ? 'text-sm font-medium text-primary-600 hover:underline'
+                    : 'text-sm text-gray-500';
 
                 return [
                     'record' => $note,
@@ -729,12 +1055,14 @@ class PatientOverviewReadModelService
                     'items_count_formatted' => number_format((int) ($note->items_count ?? 0), 0, ',', '.'),
                     'total_cost' => $totalCost,
                     'total_cost_formatted' => $this->formatMoney($totalCost),
-                    'detail_url' => $canAccessMaterialIssueNotes
-                        ? route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id])
-                        : null,
-                    'detail_action_label' => $canAccessMaterialIssueNotes
-                        ? 'Chi tiết'
-                        : 'Không có quyền',
+                    'detail_url' => $detailUrl,
+                    'detail_action_label' => $detailActionLabel,
+                    'detail_action_class' => $detailActionClass,
+                    'detail_action' => [
+                        'url' => $detailUrl,
+                        'label' => $detailActionLabel,
+                        'class' => $detailActionClass,
+                    ],
                 ];
             });
     }
@@ -746,6 +1074,7 @@ class PatientOverviewReadModelService
      *     created_at:?Carbon,
      *     created_at_formatted:string,
      *     treatment_session_id:?int,
+     *     treatment_session_label:string,
      *     material_name:string,
      *     quantity:float,
      *     quantity_formatted:string,
@@ -775,6 +1104,9 @@ class PatientOverviewReadModelService
                     'created_at' => $usage->created_at,
                     'created_at_formatted' => $usage->created_at?->format('d/m/Y H:i') ?? '-',
                     'treatment_session_id' => $usage->treatment_session_id ? (int) $usage->treatment_session_id : null,
+                    'treatment_session_label' => $usage->treatment_session_id !== null
+                        ? '#'.$usage->treatment_session_id
+                        : '-',
                     'material_name' => $usage->material?->name ?? 'N/A',
                     'quantity' => $quantity,
                     'quantity_formatted' => $this->formatMoney($quantity),
@@ -791,27 +1123,103 @@ class PatientOverviewReadModelService
      * @return array{
      *     create_factory_order_url:?string,
      *     create_material_issue_note_url:?string,
-     *     create_treatment_material_url:?string
+     *     create_treatment_material_url:?string,
+     *     sections:array<int, array{
+     *         key:string,
+     *         title:string,
+     *         description:string,
+     *         empty_text:string,
+     *         action:?array{
+     *             label:string,
+     *             url:string,
+     *             style:string,
+     *             button_class:string
+     *         }
+     *     }>,
+     *     sections_by_key:array<string, array{
+     *         key:string,
+     *         title:string,
+     *         description:string,
+     *         empty_text:string,
+     *         action:?array{
+     *             label:string,
+     *             url:string,
+     *             style:string,
+     *             button_class:string
+     *         }
+     *     }>
      * }
      */
     public function labMaterialsPanelPayload(Patient $patient, ?User $authUser): array
     {
+        $createFactoryOrderUrl = FactoryOrderResource::canAccess() && $authUser?->can('create', FactoryOrder::class)
+            ? route('filament.admin.resources.factory-orders.create', [
+                'patient_id' => $patient->id,
+                'branch_id' => $patient->first_branch_id,
+            ])
+            : null;
+        $createMaterialIssueNoteUrl = MaterialIssueNoteResource::canAccess()
+            ? route('filament.admin.resources.material-issue-notes.create', [
+                'patient_id' => $patient->id,
+                'branch_id' => $patient->first_branch_id,
+            ])
+            : null;
+        $createTreatmentMaterialUrl = TreatmentMaterialResource::canAccess()
+            ? route('filament.admin.resources.treatment-materials.create')
+            : null;
+        $sections = [
+            [
+                'key' => 'factory_orders',
+                'title' => 'Xưởng/Labo',
+                'description' => 'Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.',
+                'empty_text' => 'Chưa có lệnh labo cho bệnh nhân này.',
+                'action' => $createFactoryOrderUrl !== null
+                    ? [
+                        'label' => 'Tạo lệnh labo',
+                        'url' => $createFactoryOrderUrl,
+                        'style' => 'primary',
+                        'button_class' => $this->buttonClassForStyle('primary'),
+                    ]
+                    : null,
+            ],
+            [
+                'key' => 'material_issue_notes',
+                'title' => 'Phiếu xuất vật tư',
+                'description' => 'Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.',
+                'empty_text' => 'Chưa có phiếu xuất vật tư cho bệnh nhân này.',
+                'action' => $createMaterialIssueNoteUrl !== null
+                    ? [
+                        'label' => 'Tạo phiếu xuất',
+                        'url' => $createMaterialIssueNoteUrl,
+                        'style' => 'primary',
+                        'button_class' => $this->buttonClassForStyle('primary'),
+                    ]
+                    : null,
+            ],
+            [
+                'key' => 'treatment_materials',
+                'title' => 'Vật tư đã dùng trong phiên điều trị',
+                'description' => 'Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.',
+                'empty_text' => 'Chưa có dữ liệu vật tư cho bệnh nhân này.',
+                'action' => $createTreatmentMaterialUrl !== null
+                    ? [
+                        'label' => 'Thêm vật tư phiên',
+                        'url' => $createTreatmentMaterialUrl,
+                        'style' => 'outline',
+                        'button_class' => $this->buttonClassForStyle('outline'),
+                    ]
+                    : null,
+            ],
+        ];
+
         return [
-            'create_factory_order_url' => FactoryOrderResource::canAccess() && $authUser?->can('create', FactoryOrder::class)
-                ? route('filament.admin.resources.factory-orders.create', [
-                    'patient_id' => $patient->id,
-                    'branch_id' => $patient->first_branch_id,
-                ])
-                : null,
-            'create_material_issue_note_url' => MaterialIssueNoteResource::canAccess()
-                ? route('filament.admin.resources.material-issue-notes.create', [
-                    'patient_id' => $patient->id,
-                    'branch_id' => $patient->first_branch_id,
-                ])
-                : null,
-            'create_treatment_material_url' => TreatmentMaterialResource::canAccess()
-                ? route('filament.admin.resources.treatment-materials.create')
-                : null,
+            'create_factory_order_url' => $createFactoryOrderUrl,
+            'create_material_issue_note_url' => $createMaterialIssueNoteUrl,
+            'create_treatment_material_url' => $createTreatmentMaterialUrl,
+            'sections' => $sections,
+            'sections_by_key' => collect($sections)
+                ->keyBy('key')
+                ->all(),
         ];
     }
 
@@ -954,7 +1362,15 @@ class PatientOverviewReadModelService
      *     total_amount_formatted:string,
      *     status_label:string,
      *     status_class:string,
-     *     edit_url:?string
+     *     edit_url:?string,
+     *     edit_action_label:string,
+     *     edit_action:?array{
+     *         url:string,
+     *         label:string,
+     *         icon:string,
+     *         button_class:string
+     *     },
+     *     edit_action_placeholder:string
      * }>
      */
     public function treatmentProgress(Patient $patient, string $workspaceReturnUrl = ''): Collection
@@ -994,6 +1410,12 @@ class PatientOverviewReadModelService
                 $sessionPrice = (float) ($progressItem->unit_price ?? 0);
                 $sessionLineTotal = (float) ($progressItem->total_amount ?? ($sessionQty * $sessionPrice));
                 $sessionId = $progressItem->treatment_session_id ? (int) $progressItem->treatment_session_id : null;
+                $editUrl = $sessionId
+                    ? route('filament.admin.resources.treatment-sessions.edit', [
+                        'record' => $sessionId,
+                        'return_url' => $workspaceReturnUrl,
+                    ])
+                    : null;
 
                 return [
                     'session_id' => $progressItem->id,
@@ -1010,12 +1432,17 @@ class PatientOverviewReadModelService
                     'total_amount_formatted' => $this->formatMoney($sessionLineTotal),
                     'status_label' => $statusLabel,
                     'status_class' => $statusClass,
-                    'edit_url' => $sessionId
-                        ? route('filament.admin.resources.treatment-sessions.edit', [
-                            'record' => $sessionId,
-                            'return_url' => $workspaceReturnUrl,
-                        ])
+                    'edit_url' => $editUrl,
+                    'edit_action_label' => 'Chỉnh sửa phiên điều trị',
+                    'edit_action' => $editUrl !== null
+                        ? [
+                            'url' => $editUrl,
+                            'label' => 'Chỉnh sửa phiên điều trị',
+                            'icon' => 'heroicon-o-pencil-square',
+                            'button_class' => 'crm-table-icon-btn',
+                        ]
                         : null,
+                    'edit_action_placeholder' => '-',
                 ];
             });
     }
@@ -1086,6 +1513,13 @@ class PatientOverviewReadModelService
     protected function formatMoney(float|int|string|null $value): string
     {
         return number_format((float) $value, 0, ',', '.');
+    }
+
+    protected function buttonClassForStyle(string $style): string
+    {
+        return $style === 'outline'
+            ? 'crm-btn-outline'
+            : 'crm-btn-primary';
     }
 
     protected function factoryOrderStatusLabel(string $status): string

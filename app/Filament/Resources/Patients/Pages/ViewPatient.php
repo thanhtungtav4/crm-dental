@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
+use App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager;
+use App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager;
 use App\Models\User;
 use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
@@ -27,6 +29,10 @@ class ViewPatient extends ViewRecord
 
     protected ?array $cachedBasicInfoGrid = null;
 
+    protected ?array $cachedBasicInfoPanels = null;
+
+    protected ?array $cachedRenderedTabs = null;
+
     protected ?Collection $cachedTreatmentProgress = null;
 
     protected ?Collection $cachedTreatmentProgressDaySummaries = null;
@@ -37,13 +43,19 @@ class ViewPatient extends ViewRecord
 
     protected ?array $cachedLabMaterialsPanel = null;
 
+    protected ?array $cachedLabMaterialSections = null;
+
     protected ?Collection $cachedFactoryOrders = null;
 
     protected ?Collection $cachedMaterialIssueNotes = null;
 
     protected ?array $cachedPaymentPanel = null;
 
+    protected ?array $cachedRenderedPaymentBlocks = null;
+
     protected ?array $cachedFormsPanel = null;
+
+    protected ?array $cachedRenderedFormSections = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -143,6 +155,51 @@ class ViewPatient extends ViewRecord
         return $this->cachedBasicInfoGrid;
     }
 
+    public function getBasicInfoPanelsProperty(): array
+    {
+        if ($this->cachedBasicInfoPanels !== null) {
+            return $this->cachedBasicInfoPanels;
+        }
+
+        $this->cachedBasicInfoPanels = app(PatientOverviewReadModelService::class)->basicInfoPanelsPayload();
+
+        return $this->cachedBasicInfoPanels;
+    }
+
+    public function getRenderedTabsProperty(): array
+    {
+        if ($this->cachedRenderedTabs !== null) {
+            return $this->cachedRenderedTabs;
+        }
+
+        $this->cachedRenderedTabs = collect($this->tabs)
+            ->map(function (array $tab): array {
+                $isActive = $this->activeTab === $tab['id'];
+
+                return [
+                    ...$tab,
+                    'button_id' => 'patient-workspace-tab-'.$tab['id'],
+                    'panel_id' => 'patient-workspace-panel-'.$tab['id'],
+                    'aria_selected' => $isActive ? 'true' : 'false',
+                    'tabindex' => $isActive ? '0' : '-1',
+                    'button_class' => $isActive ? 'crm-top-tab is-active' : 'crm-top-tab',
+                ];
+            })
+            ->all();
+
+        return $this->cachedRenderedTabs;
+    }
+
+    public function getActivePanelIdProperty(): string
+    {
+        return 'patient-workspace-panel-'.$this->activeTab;
+    }
+
+    public function getActiveTabButtonIdProperty(): string
+    {
+        return 'patient-workspace-tab-'.$this->activeTab;
+    }
+
     public function getTreatmentProgressProperty(): Collection
     {
         if ($this->cachedTreatmentProgress !== null) {
@@ -155,11 +212,6 @@ class ViewPatient extends ViewRecord
         return $this->cachedTreatmentProgress;
     }
 
-    public function getTreatmentProgressCountProperty(): int
-    {
-        return (int) ($this->treatmentProgressPanel['sessions_count'] ?? 0);
-    }
-
     public function getTreatmentProgressDaySummariesProperty(): Collection
     {
         if ($this->cachedTreatmentProgressDaySummaries !== null) {
@@ -170,31 +222,6 @@ class ViewPatient extends ViewRecord
             ->treatmentProgressDaySummaries($this->record);
 
         return $this->cachedTreatmentProgressDaySummaries;
-    }
-
-    public function getTreatmentProgressDayCountProperty(): int
-    {
-        return (int) ($this->treatmentProgressPanel['days_count'] ?? 0);
-    }
-
-    public function getTreatmentProgressTotalAmountProperty(): float
-    {
-        return (float) ($this->treatmentProgressPanel['total_amount'] ?? 0);
-    }
-
-    public function getTreatmentProgressTotalAmountFormattedProperty(): string
-    {
-        return (string) ($this->treatmentProgressPanel['total_amount_formatted'] ?? '0');
-    }
-
-    public function getTreatmentProgressSummaryProperty(): array
-    {
-        return [
-            'sessions_count' => (int) ($this->treatmentProgressPanel['sessions_count'] ?? 0),
-            'days_count' => (int) ($this->treatmentProgressPanel['days_count'] ?? 0),
-            'total_amount' => (float) ($this->treatmentProgressPanel['total_amount'] ?? 0),
-            'total_amount_formatted' => (string) ($this->treatmentProgressPanel['total_amount_formatted'] ?? '0'),
-        ];
     }
 
     public function getTreatmentProgressPanelProperty(): array
@@ -270,9 +297,15 @@ class ViewPatient extends ViewRecord
         return $this->cachedLabMaterialsPanel;
     }
 
-    public function getPaymentSummaryProperty(): array
+    public function getLabMaterialSectionsProperty(): array
     {
-        return (array) ($this->paymentPanel['summary'] ?? []);
+        if ($this->cachedLabMaterialSections !== null) {
+            return $this->cachedLabMaterialSections;
+        }
+
+        $this->cachedLabMaterialSections = $this->labMaterialsPanel['sections_by_key'] ?? [];
+
+        return $this->cachedLabMaterialSections;
     }
 
     public function getPaymentPanelProperty(): array
@@ -303,6 +336,48 @@ class ViewPatient extends ViewRecord
         return $this->cachedFormsPanel;
     }
 
+    public function getRenderedFormSectionsProperty(): array
+    {
+        if ($this->cachedRenderedFormSections !== null) {
+            return $this->cachedRenderedFormSections;
+        }
+
+        $this->cachedRenderedFormSections = array_values($this->formsPanel['sections'] ?? []);
+
+        return $this->cachedRenderedFormSections;
+    }
+
+    public function getRenderedPaymentBlocksProperty(): array
+    {
+        if ($this->cachedRenderedPaymentBlocks !== null) {
+            return $this->cachedRenderedPaymentBlocks;
+        }
+
+        $this->cachedRenderedPaymentBlocks = collect($this->paymentPanel['sections'] ?? [])
+            ->map(function (array $section): ?array {
+                $relationManager = match ($section['key'] ?? null) {
+                    'invoices' => InvoicesRelationManager::class,
+                    'payments' => PatientPaymentsRelationManager::class,
+                    default => null,
+                };
+
+                if ($relationManager === null) {
+                    return null;
+                }
+
+                return [
+                    'key' => $section['key'],
+                    'title' => $section['title'],
+                    'relation_manager' => $relationManager,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        return $this->cachedRenderedPaymentBlocks;
+    }
+
     public function setActiveTab(string $tab): void
     {
         if (! in_array($tab, $this->visibleWorkspaceTabIds(), true)) {
@@ -311,6 +386,7 @@ class ViewPatient extends ViewRecord
 
         $this->activeTab = $tab;
         $this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($tab);
+        $this->cachedRenderedTabs = null;
     }
 
     protected function visibleWorkspaceTabIds(): array
@@ -339,36 +415,10 @@ class ViewPatient extends ViewRecord
         );
 
         return [
-            Action::make('createTreatmentPlan')
-                ->label((string) ($headerActions['create_treatment_plan']['label'] ?? 'Tạo kế hoạch điều trị'))
-                ->icon('heroicon-o-clipboard-document-list')
-                ->color('success')
-                ->visible(fn (): bool => (bool) ($headerActions['create_treatment_plan']['visible'] ?? false))
-                ->url(fn (): string => (string) ($headerActions['create_treatment_plan']['url'] ?? ''))
-                ->openUrlInNewTab(),
-
-            Action::make('createInvoice')
-                ->label((string) ($headerActions['create_invoice']['label'] ?? 'Tạo hóa đơn'))
-                ->icon('heroicon-o-document-text')
-                ->color('warning')
-                ->visible(fn (): bool => (bool) ($headerActions['create_invoice']['visible'] ?? false))
-                ->url(fn (): string => (string) ($headerActions['create_invoice']['url'] ?? ''))
-                ->openUrlInNewTab(),
-
-            Action::make('createAppointment')
-                ->label((string) ($headerActions['create_appointment']['label'] ?? 'Đặt lịch hẹn'))
-                ->icon('heroicon-o-calendar')
-                ->color('info')
-                ->visible(fn (): bool => (bool) ($headerActions['create_appointment']['visible'] ?? false))
-                ->url(fn (): string => (string) ($headerActions['create_appointment']['url'] ?? ''))
-                ->openUrlInNewTab(),
-
-            Action::make('medicalRecord')
-                ->label(fn (): string => (string) ($headerActions['medical_record']['label'] ?? 'Mở bệnh án điện tử'))
-                ->icon('heroicon-o-clipboard-document-check')
-                ->color('primary')
-                ->url(fn (): ?string => $headerActions['medical_record']['url'] ?? null)
-                ->visible(fn (): bool => (bool) ($headerActions['medical_record']['visible'] ?? false)),
+            $this->workspaceHeaderAction('createTreatmentPlan', $headerActions['create_treatment_plan']),
+            $this->workspaceHeaderAction('createInvoice', $headerActions['create_invoice']),
+            $this->workspaceHeaderAction('createAppointment', $headerActions['create_appointment']),
+            $this->workspaceHeaderAction('medicalRecord', $headerActions['medical_record']),
 
             Actions\EditAction::make()
                 ->label('Chỉnh sửa')
@@ -378,6 +428,32 @@ class ViewPatient extends ViewRecord
                 ->label('Xóa')
                 ->icon('heroicon-o-trash'),
         ];
+    }
+
+    /**
+     * @param  array{
+     *     label:string,
+     *     url:?string,
+     *     visible:bool,
+     *     icon:string,
+     *     color:string,
+     *     open_in_new_tab:bool
+     * }  $config
+     */
+    protected function workspaceHeaderAction(string $name, array $config): Action
+    {
+        $action = Action::make($name)
+            ->label($config['label'])
+            ->icon($config['icon'])
+            ->color($config['color'])
+            ->visible(fn (): bool => $config['visible'])
+            ->url(fn (): ?string => $config['url']);
+
+        if ($config['open_in_new_tab']) {
+            $action->openUrlInNewTab();
+        }
+
+        return $action;
     }
 
     protected function currentUser(): ?User

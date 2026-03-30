@@ -70,6 +70,17 @@ class PatientRiskProfile extends Model
         return static::levelOptions()[$level ?? ''] ?? 'Không xác định';
     }
 
+    /**
+     * @return array{label:string,color:string}
+     */
+    public static function levelBadgePayload(?string $level): array
+    {
+        return [
+            'label' => static::levelLabel($level),
+            'color' => static::levelColor($level),
+        ];
+    }
+
     public static function levelColor(?string $level): string
     {
         return match ($level) {
@@ -77,5 +88,40 @@ class PatientRiskProfile extends Model
             self::LEVEL_MEDIUM => 'warning',
             default => 'success',
         };
+    }
+
+    public static function formatScore(float|int|string|null $score): string
+    {
+        return number_format((float) $score, 2);
+    }
+
+    public static function formatCount(int|float|string|null $count): string
+    {
+        return number_format((float) $count, 0, ',', '.');
+    }
+
+    /**
+     * @param  array{
+     *     total:int,
+     *     high:int,
+     *     medium:int,
+     *     low:int,
+     *     average_no_show:float,
+     *     average_churn:float,
+     *     active_intervention_tickets:int
+     * }  $summary
+     * @return array<int, array{label:string, value:string}>
+     */
+    public static function summaryStatsPayload(array $summary): array
+    {
+        return [
+            ['label' => 'Tổng profile', 'value' => static::formatCount($summary['total'])],
+            ['label' => 'Risk cao', 'value' => static::formatCount($summary['high'])],
+            ['label' => 'Risk trung bình', 'value' => static::formatCount($summary['medium'])],
+            ['label' => 'Risk thấp', 'value' => static::formatCount($summary['low'])],
+            ['label' => 'Avg no-show risk', 'value' => static::formatScore($summary['average_no_show'])],
+            ['label' => 'Avg churn risk', 'value' => static::formatScore($summary['average_churn'])],
+            ['label' => 'Ticket can thiệp đang mở', 'value' => static::formatCount($summary['active_intervention_tickets'])],
+        ];
     }
 }

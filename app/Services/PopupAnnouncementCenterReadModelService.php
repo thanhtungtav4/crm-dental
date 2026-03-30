@@ -5,6 +5,42 @@ namespace App\Services;
 use App\Models\PopupAnnouncement;
 use App\Models\PopupAnnouncementDelivery;
 
+/**
+ * @phpstan-type PopupAnnouncementCenterAction array{
+ *     label:string,
+ *     method:string,
+ *     color:string,
+ *     target:string
+ * }
+ * @phpstan-type PopupAnnouncementCenterCloseAction array{
+ *     label:string,
+ *     method:string,
+ *     target:string
+ * }
+ * @phpstan-type PopupAnnouncementCenterPayload array{
+ *     code:?string,
+ *     title:string,
+ *     message:string,
+ *     priority:?string,
+ *     priority_label:string,
+ *     priority_classes:string,
+ *     require_ack:bool,
+ *     mode_label:string,
+ *     mode_classes:string,
+ *     intro_text:string,
+ *     footer_text:string,
+ *     can_dismiss:bool,
+ *     primary_action:PopupAnnouncementCenterAction,
+ *     close_action:?PopupAnnouncementCenterCloseAction,
+ *     dialog_id:string,
+ *     title_id:string,
+ *     meta_id:string,
+ *     body_id:string,
+ *     meta_text:string,
+ *     starts_at:?string,
+ *     ends_at:?string
+ * }
+ */
 class PopupAnnouncementCenterReadModelService
 {
     public function pendingDeliveryForUser(int $userId): ?PopupAnnouncementDelivery
@@ -45,29 +81,7 @@ class PopupAnnouncementCenterReadModelService
         return $delivery instanceof PopupAnnouncementDelivery ? $delivery : null;
     }
 
-    /**
-     * @return array{
-     *     code:?string,
-     *     title:string,
-     *     message:string,
-     *     priority:?string,
-     *     priority_label:string,
-     *     priority_classes:string,
-     *     require_ack:bool,
-     *     mode_label:string,
-     *     intro_text:string,
-     *     footer_text:string,
-     *     can_dismiss:bool,
-     *     primary_action_label:string,
-     *     primary_action_method:string,
-     *     primary_action_color:string,
-     *     primary_action_target:string,
-     *     dialog_id:string,
-     *     meta_text:string,
-     *     starts_at:?string,
-     *     ends_at:?string
-     * }|null
-     */
+    /** @return PopupAnnouncementCenterPayload|null */
     public function announcementPayload(PopupAnnouncementDelivery $delivery): ?array
     {
         $announcement = $delivery->announcement;
@@ -78,6 +92,10 @@ class PopupAnnouncementCenterReadModelService
 
         $priority = $announcement->priority ?: PopupAnnouncement::PRIORITY_INFO;
         $requiresAck = (bool) $announcement->require_ack;
+        $dialogId = 'popup-announcement-'.$delivery->id;
+        $startsAt = optional($announcement->starts_at)?->format('d/m/Y H:i');
+        $endsAt = optional($announcement->ends_at)?->format('d/m/Y H:i');
+        $dialogAttributes = $this->dialogAttributes($dialogId);
 
         return [
             'code' => $announcement->code,
@@ -88,6 +106,7 @@ class PopupAnnouncementCenterReadModelService
             'priority_classes' => $this->priorityClasses($priority),
             'require_ack' => $requiresAck,
             'mode_label' => $requiresAck ? 'Cần xác nhận' : 'Đọc & đóng',
+            'mode_classes' => $this->modeClasses($requiresAck),
             'intro_text' => $requiresAck
                 ? 'Cần xác nhận đã đọc trước khi tiếp tục thao tác.'
                 : 'Bạn có thể đóng popup khi đã nắm thông tin quan trọng này.',
@@ -95,18 +114,62 @@ class PopupAnnouncementCenterReadModelService
                 ? 'Popup sẽ chỉ biến mất sau khi bạn xác nhận đã đọc.'
                 : 'Popup này chỉ hiển thị một lần để tránh gây nhiễu thao tác.',
             'can_dismiss' => ! $requiresAck,
-            'primary_action_label' => $requiresAck ? 'Tôi đã đọc' : 'Đóng thông báo',
-            'primary_action_method' => $requiresAck ? 'acknowledge' : 'dismiss',
-            'primary_action_color' => $requiresAck ? 'primary' : 'gray',
-            'primary_action_target' => $requiresAck ? 'acknowledge' : 'dismiss',
-            'dialog_id' => 'popup-announcement-'.$delivery->id,
+            'primary_action' => $this->primaryActionPayload($requiresAck),
+            'close_action' => $this->closeActionPayload($requiresAck),
+            'dialog_id' => $dialogAttributes['dialog_id'],
+            'title_id' => $dialogAttributes['title_id'],
+            'meta_id' => $dialogAttributes['meta_id'],
+            'body_id' => $dialogAttributes['body_id'],
             'meta_text' => $this->metaText(
                 code: $announcement->code,
-                startsAt: optional($announcement->starts_at)?->format('d/m/Y H:i'),
-                endsAt: optional($announcement->ends_at)?->format('d/m/Y H:i'),
+                startsAt: $startsAt,
+                endsAt: $endsAt,
             ),
-            'starts_at' => optional($announcement->starts_at)?->format('d/m/Y H:i'),
-            'ends_at' => optional($announcement->ends_at)?->format('d/m/Y H:i'),
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+        ];
+    }
+
+    /** @return PopupAnnouncementCenterAction */
+    protected function primaryActionPayload(bool $requiresAck): array
+    {
+        return [
+            'label' => $requiresAck ? 'Tôi đã đọc' : 'Đóng thông báo',
+            'method' => $requiresAck ? 'acknowledge' : 'dismiss',
+            'color' => $requiresAck ? 'primary' : 'gray',
+            'target' => $requiresAck ? 'acknowledge' : 'dismiss',
+        ];
+    }
+
+    /** @return PopupAnnouncementCenterCloseAction|null */
+    protected function closeActionPayload(bool $requiresAck): ?array
+    {
+        if ($requiresAck) {
+            return null;
+        }
+
+        return [
+            'label' => 'Đóng thông báo',
+            'method' => 'dismiss',
+            'target' => 'dismiss',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     dialog_id:string,
+     *     title_id:string,
+     *     meta_id:string,
+     *     body_id:string
+     * }
+     */
+    protected function dialogAttributes(string $dialogId): array
+    {
+        return [
+            'dialog_id' => $dialogId,
+            'title_id' => $dialogId.'-title',
+            'meta_id' => $dialogId.'-meta',
+            'body_id' => $dialogId.'-body',
         ];
     }
 
@@ -128,6 +191,15 @@ class PopupAnnouncementCenterReadModelService
             PopupAnnouncement::PRIORITY_DANGER => 'border-rose-200 bg-rose-50 text-rose-700',
             default => 'border-blue-200 bg-blue-50 text-blue-700',
         };
+    }
+
+    protected function modeClasses(bool $requiresAck): string
+    {
+        if ($requiresAck) {
+            return 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-200';
+        }
+
+        return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300';
     }
 
     protected function metaText(?string $code, ?string $startsAt, ?string $endsAt): string

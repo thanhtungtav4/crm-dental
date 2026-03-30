@@ -50,10 +50,10 @@ class RiskScoringDashboard extends BaseReportPage
                 ->searchable(),
             TextColumn::make('no_show_risk_score')
                 ->label('No-show risk')
-                ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
+                ->formatStateUsing(fn ($state) => PatientRiskProfile::formatScore($state)),
             TextColumn::make('churn_risk_score')
                 ->label('Churn risk')
-                ->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
+                ->formatStateUsing(fn ($state) => PatientRiskProfile::formatScore($state)),
             TextColumn::make('risk_level')
                 ->label('Mức độ')
                 ->badge()

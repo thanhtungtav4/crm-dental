@@ -124,18 +124,12 @@
                             <div class="crm-copy-inline-row">
                                 <p class="crm-patient-code">{{ $this->identityHeader['patient_code'] }}</p>
                                 @if($this->identityHeader['patient_code'])
-                                    <button
-                                        type="button"
-                                        class="crm-copy-icon-btn is-light"
-                                        x-on:click.prevent="copyToClipboard(@js($this->identityHeader['patient_code']), 'Mã bệnh nhân')"
-                                        title="Sao chép mã bệnh nhân"
-                                        aria-label="Sao chép mã bệnh nhân"
-                                    >
-                                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
-                                            <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
-                                        </svg>
-                                    </button>
+                                    @include('filament.resources.patients.pages.partials.copy-button', [
+                                        'buttonClass' => 'crm-copy-icon-btn is-light',
+                                        'copyValue' => $this->identityHeader['patient_code'],
+                                        'copyLabel' => $this->identityHeader['patient_code_copy_label'],
+                                        'actionLabel' => $this->identityHeader['patient_code_copy_action_label'],
+                                    ])
                                 @endif
                             </div>
                             @if($this->identityHeader['phone'])
@@ -147,18 +141,12 @@
                                         </svg>
                                         <span class="crm-patient-phone-chip-text" style="color: #ffffff;">{{ $this->identityHeader['phone'] }}</span>
                                     </a>
-                                    <button
-                                        type="button"
-                                        class="crm-copy-icon-btn is-light"
-                                        x-on:click.prevent="copyToClipboard(@js($this->identityHeader['phone']), 'Số điện thoại')"
-                                        title="Sao chép số điện thoại"
-                                        aria-label="Sao chép số điện thoại"
-                                    >
-                                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
-                                            <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
-                                        </svg>
-                                    </button>
+                                    @include('filament.resources.patients.pages.partials.copy-button', [
+                                        'buttonClass' => 'crm-copy-icon-btn is-light',
+                                        'copyValue' => $this->identityHeader['phone'],
+                                        'copyLabel' => $this->identityHeader['phone_copy_label'],
+                                        'actionLabel' => $this->identityHeader['phone_copy_action_label'],
+                                    ])
                                 </div>
                             @endif
                         </div>
@@ -167,114 +155,20 @@
                 {{-- Info Grid with Cards --}}
                 <div class="crm-patient-overview-body">
                     <div class="crm-patient-info-grid">
-                        {{-- Phone Card --}}
-                        <div class="crm-patient-info-card is-phone">
-                            <div class="crm-patient-info-card-head">
-                                <div class="crm-patient-info-icon">
-                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                    </svg>
-                                </div>
-                                <span class="crm-patient-info-label">Điện thoại</span>
-                            </div>
-                            <p class="crm-patient-info-value">
-                                @if($this->basicInfoGrid['phone'])
-                                    <span class="crm-copy-value-row">
-                                        <a href="{{ $this->basicInfoGrid['phone_href'] }}"
-                                            class="crm-patient-info-link">{{ $this->basicInfoGrid['phone'] }}</a>
-                                        <button
-                                            type="button"
-                                            class="crm-copy-icon-btn"
-                                            x-on:click.prevent="copyToClipboard(@js($this->basicInfoGrid['phone']), 'Số điện thoại')"
-                                            title="Sao chép số điện thoại"
-                                            aria-label="Sao chép số điện thoại"
-                                        >
-                                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path d="M3 4.75A1.75 1.75 0 014.75 3h6.5A1.75 1.75 0 0113 4.75v1.5a.75.75 0 01-1.5 0v-1.5a.25.25 0 00-.25-.25h-6.5a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.5a.75.75 0 010 1.5h-1.5A1.75 1.75 0 013 14.25v-9.5z" />
-                                                <path d="M7 6.75A1.75 1.75 0 018.75 5h6.5A1.75 1.75 0 0117 6.75v8.5A1.75 1.75 0 0115.25 17h-6.5A1.75 1.75 0 017 15.25v-8.5zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25h-6.5z" />
-                                            </svg>
-                                        </button>
-                                    </span>
-                                @else
-                                    <span class="crm-patient-info-muted">Chưa có</span>
-                                @endif
-                            </p>
-                        </div>
-                        {{-- Email Card --}}
-                        <div class="crm-patient-info-card is-email">
-                            <div class="crm-patient-info-card-head">
-                                <div class="crm-patient-info-icon">
-                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                    </svg>
-                                </div>
-                                <span class="crm-patient-info-label">Email</span>
-                            </div>
-                            <p class="crm-patient-info-value is-truncate" title="{{ $this->basicInfoGrid['email'] }}">
-                                @if($this->basicInfoGrid['email'])
-                                    <a href="{{ $this->basicInfoGrid['email_href'] }}"
-                                        class="crm-patient-info-link">{{ $this->basicInfoGrid['email'] }}</a>
-                                @else
-                                    <span class="crm-patient-info-muted">Chưa có</span>
-                                @endif
-                            </p>
-                        </div>
-                        {{-- Birthday Card --}}
-                        <div class="crm-patient-info-card is-birthday">
-                            <div class="crm-patient-info-card-head">
-                                <div class="crm-patient-info-icon">
-                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <span class="crm-patient-info-label">Ngày sinh</span>
-                            </div>
-                            <p class="crm-patient-info-value">
-                                @if($this->basicInfoGrid['birthday_label'])
-                                    {{ $this->basicInfoGrid['birthday_label'] }}
-                                    <span class="crm-patient-info-age">{{ $this->basicInfoGrid['age_label'] }}</span>
-                                @else
-                                    <span class="crm-patient-info-muted">Chưa có</span>
-                                @endif
-                            </p>
-                        </div>
-                        {{-- Branch Card --}}
-                        <div class="crm-patient-info-card is-branch">
-                            <div class="crm-patient-info-card-head">
-                                <div class="crm-patient-info-icon">
-                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <span class="crm-patient-info-label">Chi nhánh</span>
-                            </div>
-                            <p class="crm-patient-info-value is-branch">
-                                {{ $this->basicInfoGrid['branch_name'] }}
-                            </p>
-                        </div>
+                        @foreach($this->basicInfoGrid['cards'] as $card)
+                            @include('filament.resources.patients.pages.partials.info-card', ['card' => $card])
+                        @endforeach
                     </div>
-                    @if($this->basicInfoGrid['address'])
-                        {{-- Address Card --}}
+                    @if($this->basicInfoGrid['address_card'])
                         <div class="crm-patient-address-card is-address">
                             <div class="crm-patient-info-card-head">
                                 <div class="crm-patient-info-icon">
-                                    <svg class="crm-patient-info-icon-svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
+                                    <x-filament::icon :icon="$this->basicInfoGrid['address_card']['icon']" class="crm-patient-info-icon-svg" />
                                 </div>
-                                <span class="crm-patient-info-label">Địa chỉ</span>
+                                <span class="crm-patient-info-label">{{ $this->basicInfoGrid['address_card']['label'] }}</span>
                             </div>
                             <p class="crm-patient-address-value">
-                                {{ $this->basicInfoGrid['address'] }}</p>
+                                {{ $this->basicInfoGrid['address_card']['value'] }}</p>
                         </div>
                     @endif
                 </div>
@@ -285,17 +179,16 @@
         <div class="crm-section-block">
             <div class="crm-top-tabs-shell">
                 <nav x-ref="topTabs" class="crm-top-tabs crm-top-tabs-nav" role="tablist" aria-label="Khu vực làm việc hồ sơ bệnh nhân">
-                    @foreach($this->tabs as $tab)
-                        @php($isActiveTab = $activeTab === $tab['id'])
+                    @foreach($this->renderedTabs as $tab)
                         <button
                             type="button"
-                            id="patient-workspace-tab-{{ $tab['id'] }}"
+                            id="{{ $tab['button_id'] }}"
                             wire:click="setActiveTab('{{ $tab['id'] }}')"
                             role="tab"
-                            aria-selected="{{ $isActiveTab ? 'true' : 'false' }}"
-                            aria-controls="patient-workspace-panel-{{ $tab['id'] }}"
-                            tabindex="{{ $isActiveTab ? '0' : '-1' }}"
-                            class="crm-top-tab {{ $activeTab === $tab['id'] ? 'is-active' : '' }}"
+                            aria-selected="{{ $tab['aria_selected'] }}"
+                            aria-controls="{{ $tab['panel_id'] }}"
+                            tabindex="{{ $tab['tabindex'] }}"
+                            class="{{ $tab['button_class'] }}"
                         >
                             <span>{{ $tab['label'] }}</span>
                             @if($tab['count'] !== null)
@@ -309,9 +202,9 @@
 
             {{-- Tab Content --}}
             <div
-                id="patient-workspace-panel-{{ $activeTab }}"
+                id="{{ $this->activePanelId }}"
                 role="tabpanel"
-                aria-labelledby="patient-workspace-tab-{{ $activeTab }}"
+                aria-labelledby="{{ $this->activeTabButtonId }}"
                 tabindex="0"
             >
                 @if($activeTab === 'basic-info')
@@ -322,12 +215,11 @@
                             </div>
 
                             <div class="crm-feature-card">
-                                <div class="crm-feature-card-head">
-                                    <div>
-                                        <h3 class="crm-feature-card-title">Người liên hệ</h3>
-                                        <p class="crm-feature-card-description">Tách danh sách người liên hệ để lễ tân/CSKH thao tác nhanh theo từng bệnh nhân.</p>
-                                    </div>
-                                </div>
+                                @include('filament.resources.patients.pages.partials.section-header', [
+                                    'title' => $this->basicInfoPanels['contacts']['title'],
+                                    'description' => $this->basicInfoPanels['contacts']['description'],
+                                    'action' => null,
+                                ])
                                 <div class="mt-4">
                                     @livewire(\App\Filament\Resources\Patients\RelationManagers\ContactsRelationManager::class, [
                                         'ownerRecord' => $this->record,
@@ -339,19 +231,19 @@
                             <div class="crm-history-card">
                                 <div class="crm-history-card-inner">
                                     <div>
-                                        <h3 class="crm-history-card-title">Lịch sử thao tác</h3>
-                                        <p class="crm-history-card-description">Xem timeline cập nhật ở tab chuyên biệt để tránh trùng lặp nội dung.</p>
+                                        <h3 class="crm-history-card-title">{{ $this->basicInfoPanels['activity_log']['title'] }}</h3>
+                                        <p class="crm-history-card-description">{{ $this->basicInfoPanels['activity_log']['description'] }}</p>
                                     </div>
                                     <button type="button"
-                                        wire:click="setActiveTab('activity-log')"
-                                        class="crm-btn crm-btn-primary crm-btn-md">
-                                        Mở lịch sử thao tác
+                                        wire:click="setActiveTab('{{ $this->basicInfoPanels['activity_log']['action']['tab'] }}')"
+                                        class="{{ $this->basicInfoPanels['activity_log']['action']['button_class'] }}">
+                                        {{ $this->basicInfoPanels['activity_log']['action']['label'] }}
                                     </button>
                                 </div>
                             </div>
                         @else
                             <div class="crm-empty-inline">
-                                <p>Không thể tải dữ liệu bệnh nhân</p>
+                                <p>{{ $this->basicInfoPanels['empty_state_text'] }}</p>
                             </div>
                         @endif
                     </div>
@@ -363,28 +255,28 @@
 
                         <div class="crm-treatment-progress-stack">
                             <div class="crm-treatment-progress-head">
-                                <h3 class="crm-section-label">Tiến trình điều trị</h3>
-                                <span class="crm-section-badge">{{ $this->treatmentProgressPanel['days_count'] }} ngày · {{ $this->treatmentProgressPanel['sessions_count'] }} phiên</span>
+                                <h3 class="crm-section-label">{{ $this->treatmentProgressPanel['section_title'] }}</h3>
+                                <span class="crm-section-badge">{{ $this->treatmentProgressPanel['summary_badge'] }}</span>
                             </div>
 
                             <div class="crm-treatment-card">
                                 <div class="crm-treatment-subhead">
-                                    <div class="crm-treatment-subhead-title">Tiến trình điều trị</div>
+                                    <div class="crm-treatment-subhead-title">{{ $this->treatmentProgressPanel['card_title'] }}</div>
                                     <div class="crm-treatment-subhead-actions">
-                                        <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressPanel['total_amount_formatted'] }}đ</span>
-                                        @if($this->treatmentProgressPanel['create_treatment_session_url'])
+                                        <span class="crm-treatment-subhead-count">{{ $this->treatmentProgressPanel['total_amount_text'] }}</span>
+                                        @if($this->treatmentProgressPanel['primary_action'])
                                             <a
-                                                href="{{ $this->treatmentProgressPanel['create_treatment_session_url'] }}"
-                                                class="crm-btn crm-btn-primary crm-btn-md"
+                                                href="{{ $this->treatmentProgressPanel['primary_action']['url'] }}"
+                                                class="crm-btn {{ $this->treatmentProgressPanel['primary_action']['button_class'] }} crm-btn-md"
                                                 style="color: #ffffff;"
                                             >
-                                                Thêm ngày điều trị
+                                                {{ $this->treatmentProgressPanel['primary_action']['label'] }}
                                             </a>
                                         @endif
                                     </div>
                                 </div>
 
-                                @if($this->treatmentProgressPanel['days_count'] > 0)
+                                @if($this->treatmentProgressPanel['has_day_summaries'])
                                     <div class="crm-treatment-table-wrap">
                                         <table class="crm-treatment-table">
                                             <thead>
@@ -444,21 +336,24 @@
                                                         </span>
                                                     </td>
                                                     <td class="is-center">
-                                                        @if($session['edit_url'])
-                                                            <a href="{{ $session['edit_url'] }}" class="crm-table-icon-btn" title="Chỉnh sửa phiên điều trị" aria-label="Chỉnh sửa phiên điều trị">
-                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="crm-icon-14">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                                                </svg>
+                                                        @if($session['edit_action'])
+                                                            <a
+                                                                href="{{ $session['edit_action']['url'] }}"
+                                                                class="{{ $session['edit_action']['button_class'] }}"
+                                                                title="{{ $session['edit_action']['label'] }}"
+                                                                aria-label="{{ $session['edit_action']['label'] }}"
+                                                            >
+                                                                <x-filament::icon :icon="$session['edit_action']['icon']" class="crm-icon-14" />
                                                             </a>
                                                         @else
-                                                            <span class="text-xs text-gray-400">-</span>
+                                                            <span class="text-xs text-gray-400">{{ $session['edit_action_placeholder'] }}</span>
                                                         @endif
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
                                                     <td colspan="11" class="crm-treatment-empty">
-                                                        Chưa có tiến trình điều trị cho bệnh nhân này.
+                                                        {{ $this->treatmentProgressPanel['empty_text'] }}
                                                     </td>
                                                 </tr>
                                             @endforelse
@@ -484,21 +379,15 @@
                     </div>
                 @elseif($activeTab === 'lab-materials')
                     <div class="crm-pane-stack" wire:key="patient-{{ $this->record->id }}-lab-materials">
+                        @php($factoryOrdersSection = $this->labMaterialSections['factory_orders'])
                         <div class="crm-feature-card">
-                                <div class="crm-feature-card-head">
-                                    <div>
-                                        <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
-                                        <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
-                                    </div>
-                                @if($this->labMaterialsPanel['create_factory_order_url'])
-                                        <a
-                                            href="{{ $this->labMaterialsPanel['create_factory_order_url'] }}"
-                                            class="crm-btn crm-btn-primary crm-btn-md"
-                                            style="color: #ffffff;">
-                                            Tạo lệnh labo
-                                        </a>
-                                @endif
-                            </div>
+                            @include('filament.resources.patients.pages.partials.section-header', [
+                                'title' => $factoryOrdersSection['title'],
+                                'description' => $factoryOrdersSection['description'],
+                                'action' => $factoryOrdersSection['action'] === null
+                                    ? null
+                                    : [...$factoryOrdersSection['action'], 'style' => 'color: #ffffff;'],
+                            ])
                         </div>
 
                         <div class="crm-feature-table-card">
@@ -529,22 +418,17 @@
                                                 </td>
                                                 <td>{{ $order['items_count_formatted'] }}</td>
                                                 <td>
-                                                    @if($order['detail_url'])
-                                                            <a
-                                                                href="{{ $order['detail_url'] }}"
-                                                            class="text-sm font-medium text-primary-600 hover:underline"
-                                                            >
-                                                                {{ $order['detail_action_label'] }}
-                                                            </a>
-                                                    @else
-                                                        <span class="text-sm text-gray-500">{{ $order['detail_action_label'] }}</span>
-                                                    @endif
+                                                    @include('filament.resources.patients.pages.partials.detail-action', [
+                                                        'url' => $order['detail_action']['url'],
+                                                        'actionClass' => $order['detail_action']['class'],
+                                                        'label' => $order['detail_action']['label'],
+                                                    ])
                                                 </td>
                                             </tr>
-                                        @empty
+                                            @empty
                                             <tr>
                                                 <td colspan="7" class="crm-feature-table-empty">
-                                                    Chưa có lệnh labo cho bệnh nhân này.
+                                                    {{ $factoryOrdersSection['empty_text'] }}
                                                 </td>
                                             </tr>
                                         @endforelse
@@ -553,22 +437,15 @@
                             </div>
                         </div>
 
+                        @php($materialIssueNotesSection = $this->labMaterialSections['material_issue_notes'])
                         <div class="crm-feature-card">
-                                <div class="crm-feature-card-head">
-                                    <div>
-                                        <h3 class="crm-feature-card-title">Phiếu xuất vật tư</h3>
-                                        <p class="crm-feature-card-description">Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.</p>
-                                    </div>
-                                @if($this->labMaterialsPanel['create_material_issue_note_url'])
-                                    <a
-                                        href="{{ $this->labMaterialsPanel['create_material_issue_note_url'] }}"
-                                        class="crm-btn crm-btn-primary crm-btn-md"
-                                        style="color: #ffffff;"
-                                    >
-                                        Tạo phiếu xuất
-                                    </a>
-                                @endif
-                            </div>
+                            @include('filament.resources.patients.pages.partials.section-header', [
+                                'title' => $materialIssueNotesSection['title'],
+                                'description' => $materialIssueNotesSection['description'],
+                                'action' => $materialIssueNotesSection['action'] === null
+                                    ? null
+                                    : [...$materialIssueNotesSection['action'], 'style' => 'color: #ffffff;'],
+                            ])
                         </div>
 
                         <div class="crm-feature-table-card">
@@ -599,22 +476,17 @@
                                                 <td class="is-emphasis">{{ $note['total_cost_formatted'] }}đ</td>
                                                 <td>{{ $note['reason'] ?: '-' }}</td>
                                                 <td>
-                                                    @if($note['detail_url'])
-                                                        <a
-                                                            href="{{ $note['detail_url'] }}"
-                                                            class="text-sm font-medium text-primary-600 hover:underline"
-                                                        >
-                                                            {{ $note['detail_action_label'] }}
-                                                        </a>
-                                                    @else
-                                                        <span class="text-sm text-gray-500">{{ $note['detail_action_label'] }}</span>
-                                                    @endif
+                                                    @include('filament.resources.patients.pages.partials.detail-action', [
+                                                        'url' => $note['detail_action']['url'],
+                                                        'actionClass' => $note['detail_action']['class'],
+                                                        'label' => $note['detail_action']['label'],
+                                                    ])
                                                 </td>
                                             </tr>
                                         @empty
                                             <tr>
                                                 <td colspan="7" class="crm-feature-table-empty">
-                                                    Chưa có phiếu xuất vật tư cho bệnh nhân này.
+                                                    {{ $materialIssueNotesSection['empty_text'] }}
                                                 </td>
                                             </tr>
                                         @endforelse
@@ -623,19 +495,13 @@
                             </div>
                         </div>
 
+                        @php($treatmentMaterialsSection = $this->labMaterialSections['treatment_materials'])
                         <div class="crm-feature-card">
-                                <div class="crm-feature-card-head">
-                                    <div>
-                                        <h3 class="crm-feature-card-title">Vật tư đã dùng trong phiên điều trị</h3>
-                                        <p class="crm-feature-card-description">Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.</p>
-                                    </div>
-                                @if($this->labMaterialsPanel['create_treatment_material_url'])
-                                    <a href="{{ $this->labMaterialsPanel['create_treatment_material_url'] }}"
-                                        class="crm-btn crm-btn-outline crm-btn-md">
-                                        Thêm vật tư phiên
-                                    </a>
-                                @endif
-                            </div>
+                            @include('filament.resources.patients.pages.partials.section-header', [
+                                'title' => $treatmentMaterialsSection['title'],
+                                'description' => $treatmentMaterialsSection['description'],
+                                'action' => $treatmentMaterialsSection['action'],
+                            ])
                         </div>
 
                         <div class="crm-feature-table-card">
@@ -656,7 +522,7 @@
                                         @forelse($this->materialUsages as $usage)
                                             <tr>
                                                 <td>{{ $usage['created_at_formatted'] }}</td>
-                                                <td>#{{ $usage['treatment_session_id'] ?? '-' }}</td>
+                                                <td>{{ $usage['treatment_session_label'] }}</td>
                                                 <td class="is-emphasis">{{ $usage['material_name'] }}</td>
                                                 <td>{{ $usage['quantity_formatted'] }}</td>
                                                 <td>{{ $usage['unit_cost_formatted'] }}đ</td>
@@ -666,7 +532,7 @@
                                         @empty
                                             <tr>
                                                 <td colspan="7" class="crm-feature-table-empty">
-                                                    Chưa có dữ liệu vật tư cho bệnh nhân này.
+                                                    {{ $treatmentMaterialsSection['empty_text'] }}
                                                 </td>
                                             </tr>
                                         @endforelse
@@ -686,24 +552,22 @@
                     <div class="crm-payment-tab" wire:key="patient-{{ $this->record->id }}-payments">
                         <div class="crm-payment-summary">
                             <div class="crm-payment-summary-head">
-                                <h3 class="crm-payment-summary-title">Thông tin thanh toán</h3>
+                                <h3 class="crm-payment-summary-title">{{ $this->paymentPanel['title'] }}</h3>
                                 <div class="crm-payment-summary-actions">
                                     <div class="crm-payment-balance">
-                                        Số dư:
+                                        {{ $this->paymentPanel['balance_text'] }}
                                         <strong class="{{ $this->paymentPanel['balance_class'] }}">
                                             {{ $this->paymentPanel['balance_amount_formatted'] }}đ
                                         </strong>
                                     </div>
-                                    @if($this->paymentPanel['primary_payment_action'])
-                                        <a href="{{ $this->paymentPanel['primary_payment_action']['url'] }}" class="crm-btn crm-btn-primary crm-btn-md">
-                                            {{ $this->paymentPanel['primary_payment_action']['label'] }}
+                                    @foreach($this->paymentPanel['actions'] as $action)
+                                        <a
+                                            href="{{ $action['url'] }}"
+                                            class="crm-btn {{ $action['button_class'] }} crm-btn-md"
+                                        >
+                                            {{ $action['label'] }}
                                         </a>
-                                    @endif
-                                    @if($this->paymentPanel['secondary_payment_action'])
-                                        <a href="{{ $this->paymentPanel['secondary_payment_action']['url'] }}" class="crm-btn crm-btn-outline crm-btn-md">
-                                            {{ $this->paymentPanel['secondary_payment_action']['label'] }}
-                                        </a>
-                                    @endif
+                                    @endforeach
                                 </div>
                             </div>
 
@@ -717,74 +581,46 @@
                             </div>
                         </div>
 
-                        @if($this->paymentPanel['can_view_invoices'])
+                        @foreach($this->renderedPaymentBlocks as $block)
                             <div class="crm-payment-block">
-                                <div class="crm-payment-block-title">HÓA ĐƠN ĐIỀU TRỊ</div>
-                                @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
+                                <div class="crm-payment-block-title">{{ $block['title'] }}</div>
+                                @livewire($block['relation_manager'], [
                                     'ownerRecord' => $this->record,
                                     'pageClass' => static::class,
-                                ])
+                                ], key('patient-' . $this->record->id . '-payment-block-' . $block['key']))
                             </div>
-                        @endif
-
-                        @if($this->paymentPanel['can_view_payments'])
-                            <div class="crm-payment-block">
-                                <div class="crm-payment-block-title">DANH SÁCH PHIẾU THU - HOÀN ỨNG</div>
-                                @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class, [
-                                    'ownerRecord' => $this->record,
-                                    'pageClass' => static::class,
-                                ])
-                            </div>
-                        @endif
+                        @endforeach
                     </div>
                 @elseif($activeTab === 'forms')
                     <div class="crm-pane-stack" wire:key="patient-{{ $this->record->id }}-forms">
                         <div class="crm-feature-card">
-                            <h3 class="crm-feature-card-title">Biểu mẫu & tài liệu</h3>
-                            <p class="crm-feature-card-description">
-                                Truy cập nhanh biểu mẫu in theo hồ sơ bệnh nhân (đơn thuốc, hóa đơn, phiếu thu).
-                            </p>
+                            @include('filament.resources.patients.pages.partials.section-header', [
+                                'title' => $this->formsPanel['title'],
+                                'description' => $this->formsPanel['description'],
+                                'action' => null,
+                            ])
                         </div>
 
                         <div class="crm-forms-grid">
-                            @if($this->formsPanel['can_view_prescriptions'])
+                            @foreach($this->renderedFormSections as $section)
                                 <div class="crm-feature-card">
-                                    <h4 class="crm-feature-subtitle">Đơn thuốc gần nhất</h4>
+                                    <h4 class="crm-feature-subtitle">{{ $section['title'] }}</h4>
                                     <div class="crm-link-list">
-                                        @forelse($this->formsPanel['prescriptions'] as $prescription)
-                                            <a href="{{ $prescription['print_url'] }}"
-                                                target="_blank"
+                                        @forelse($section['links'] as $link)
+                                            <a href="{{ $link['url'] }}"
+                                                target="{{ $link['target'] }}"
                                                 class="crm-link-list-item">
                                                 <span class="crm-link-list-item-text">
-                                                    {{ $prescription['title'] }}
+                                                    {{ $link['title'] }}
                                                 </span>
-                                                <span class="crm-link-list-item-action">In</span>
+                                                <span class="crm-link-list-item-action">{{ $link['action_label'] }}</span>
                                             </a>
                                         @empty
-                                            <p class="crm-link-list-empty">Chưa có đơn thuốc để in.</p>
+                                            <p class="crm-link-list-empty">{{ $section['empty_text'] }}</p>
                                         @endforelse
                                     </div>
                                 </div>
-                            @endif
-                            @if($this->formsPanel['can_view_invoices'])
-                                <div class="crm-feature-card">
-                                    <h4 class="crm-feature-subtitle">Hóa đơn gần nhất</h4>
-                                    <div class="crm-link-list">
-                                        @forelse($this->formsPanel['invoices'] as $invoice)
-                                            <a href="{{ $invoice['print_url'] }}"
-                                                target="_blank"
-                                                class="crm-link-list-item">
-                                                <span class="crm-link-list-item-text">
-                                                    {{ $invoice['title'] }}
-                                                </span>
-                                                <span class="crm-link-list-item-action">In</span>
-                                            </a>
-                                        @empty
-                                            <p class="crm-link-list-empty">Chưa có hóa đơn để in.</p>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            @endif
+                            @endforeach
                         </div>
                     </div>
                 @elseif($activeTab === 'care')

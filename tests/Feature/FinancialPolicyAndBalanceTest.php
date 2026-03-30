@@ -96,7 +96,7 @@ it('keeps patient payment summary must pay aligned to invoice total_amount', fun
     };
 
     $page->forceRecord($patient->fresh());
-    $summary = $page->getPaymentSummaryProperty();
+    $summary = $page->getPaymentPanelProperty()['summary'] ?? [];
 
     expect((float) ($summary['must_pay_amount'] ?? 0))->toEqualWithDelta(800000.00, 0.01)
         ->and((float) ($summary['total_discount_amount'] ?? 0))->toEqualWithDelta(200000.00, 0.01);
