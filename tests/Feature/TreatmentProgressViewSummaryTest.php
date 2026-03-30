@@ -89,12 +89,19 @@ it('builds treatment progress totals by day and by session for exam treatment ta
     $service = app(PatientOverviewReadModelService::class);
     $serviceDaySummaries = $service->treatmentProgressDaySummaries($patient->fresh());
     $serviceSessions = $service->treatmentProgress($patient->fresh());
+    $summary = $service->treatmentProgressSummary($serviceSessions, $serviceDaySummaries);
 
     $daySummaries = $page->getTreatmentProgressDaySummariesProperty();
     $sessions = $page->getTreatmentProgressProperty();
 
     expect($serviceSessions->pluck('session_id')->all())->toBe($sessions->pluck('session_id')->all())
         ->and($serviceDaySummaries->pluck('progress_date')->all())->toBe($daySummaries->pluck('progress_date')->all())
+        ->and($summary)->toMatchArray([
+            'sessions_count' => 3,
+            'days_count' => 2,
+            'total_amount' => 2000000.0,
+            'total_amount_formatted' => '2.000.000',
+        ])
         ->and($sessions)->toHaveCount(3)
         ->and($page->getTreatmentProgressCountProperty())->toBe(3)
         ->and($daySummaries)->toHaveCount(2)

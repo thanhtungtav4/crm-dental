@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
+use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
 use App\Filament\Resources\PatientMedicalRecords\PatientMedicalRecordResource;
+use App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource;
 use App\Models\Appointment;
 use App\Models\FactoryOrder;
 use App\Models\Invoice;
@@ -20,6 +23,58 @@ use Illuminate\Support\Collection;
 
 class PatientOverviewReadModelService
 {
+    /**
+     * @return array{
+     *     avatar_initials:string,
+     *     full_name:string,
+     *     gender_label:?string,
+     *     gender_badge_class:?string,
+     *     patient_code:?string,
+     *     phone:?string,
+     *     phone_href:?string
+     * }
+     */
+    public function identityHeaderPayload(Patient $patient): array
+    {
+        return [
+            'avatar_initials' => $this->patientInitials((string) $patient->full_name),
+            'full_name' => (string) $patient->full_name,
+            'gender_label' => $this->patientGenderLabel($patient->gender),
+            'gender_badge_class' => $this->patientGenderBadgeClass($patient->gender),
+            'patient_code' => filled($patient->patient_code) ? (string) $patient->patient_code : null,
+            'phone' => filled($patient->phone) ? (string) $patient->phone : null,
+            'phone_href' => filled($patient->phone) ? 'tel:'.$patient->phone : null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     phone:?string,
+     *     phone_href:?string,
+     *     email:?string,
+     *     email_href:?string,
+     *     birthday_label:?string,
+     *     age_label:?string,
+     *     branch_name:string,
+     *     address:?string
+     * }
+     */
+    public function basicInfoGridPayload(Patient $patient): array
+    {
+        $birthday = filled($patient->birthday) ? Carbon::parse($patient->birthday) : null;
+
+        return [
+            'phone' => filled($patient->phone) ? (string) $patient->phone : null,
+            'phone_href' => filled($patient->phone) ? 'tel:'.$patient->phone : null,
+            'email' => filled($patient->email) ? (string) $patient->email : null,
+            'email_href' => filled($patient->email) ? 'mailto:'.$patient->email : null,
+            'birthday_label' => $birthday?->format('d/m/Y'),
+            'age_label' => $birthday?->age !== null ? sprintf('(%d tuổi)', $birthday->age) : null,
+            'branch_name' => $patient->branch?->name ?? 'Chưa phân bổ',
+            'address' => filled($patient->address) ? (string) $patient->address : null,
+        ];
+    }
+
     /**
      * @return array{
      *     treatment_plans_count:int,
@@ -164,6 +219,92 @@ class PatientOverviewReadModelService
                 'filament.admin.resources.payments.create',
                 $latestInvoiceId ? ['invoice_id' => $latestInvoiceId] : []
             ),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     summary:array{
+     *         total_treatment_amount:float,
+     *         total_treatment_amount_formatted:string,
+     *         total_discount_amount:float,
+     *         total_discount_amount_formatted:string,
+     *         must_pay_amount:float,
+     *         must_pay_amount_formatted:string,
+     *         net_collected_amount:float,
+     *         net_collected_amount_formatted:string,
+     *         remaining_amount:float,
+     *         remaining_amount_formatted:string,
+     *         balance_amount:float,
+     *         balance_amount_formatted:string,
+     *         balance_is_positive:bool,
+     *         latest_invoice_id:?int,
+     *         create_payment_url:string
+     *     },
+     *     balance_class:string,
+     *     balance_amount_formatted:string,
+     *     can_view_invoices:bool,
+     *     can_view_payments:bool,
+     *     can_create_payment:bool,
+     *     metrics:array<int, array{label:string,value:string,value_class:?string}>,
+     *     primary_payment_action:?array{label:string,url:string,style:string},
+     *     secondary_payment_action:?array{label:string,url:string,style:string}
+     * }
+     */
+    public function paymentPanelPayload(Patient $patient, ?User $authUser): array
+    {
+        $summary = $this->paymentSummary($patient);
+        $capabilities = $this->workspaceCapabilities($authUser);
+        $canCreatePayment = $capabilities['create_payment'] && filled($summary['create_payment_url']);
+
+        return [
+            'summary' => $summary,
+            'balance_class' => $summary['balance_is_positive'] ? 'is-positive' : 'is-negative',
+            'balance_amount_formatted' => (string) $summary['balance_amount_formatted'],
+            'can_view_invoices' => $capabilities['invoice_forms'],
+            'can_view_payments' => $capabilities['payments'],
+            'can_create_payment' => $canCreatePayment,
+            'metrics' => [
+                [
+                    'label' => 'Tổng tiền điều trị',
+                    'value' => (string) $summary['total_treatment_amount_formatted'],
+                    'value_class' => null,
+                ],
+                [
+                    'label' => 'Giảm giá',
+                    'value' => (string) $summary['total_discount_amount_formatted'],
+                    'value_class' => null,
+                ],
+                [
+                    'label' => 'Phải thanh toán',
+                    'value' => (string) $summary['must_pay_amount_formatted'],
+                    'value_class' => null,
+                ],
+                [
+                    'label' => 'Đã thu',
+                    'value' => (string) $summary['net_collected_amount_formatted'],
+                    'value_class' => 'is-positive',
+                ],
+                [
+                    'label' => 'Còn lại',
+                    'value' => (string) $summary['remaining_amount_formatted'],
+                    'value_class' => 'is-negative',
+                ],
+            ],
+            'primary_payment_action' => $canCreatePayment
+                ? [
+                    'label' => 'Phiếu thu',
+                    'url' => $summary['create_payment_url'],
+                    'style' => 'primary',
+                ]
+                : null,
+            'secondary_payment_action' => $canCreatePayment
+                ? [
+                    'label' => 'Thanh toán',
+                    'url' => $summary['create_payment_url'],
+                    'style' => 'outline',
+                ]
+                : null,
         ];
     }
 
@@ -392,10 +533,99 @@ class PatientOverviewReadModelService
     }
 
     /**
-     * @return Collection<int, FactoryOrder>
+     * @return array{
+     *     can_view_prescriptions:bool,
+     *     can_view_invoices:bool,
+     *     prescriptions:Collection<int, array{
+     *         record:Prescription,
+     *         id:int,
+     *         title:string,
+     *         print_url:string
+     *     }>,
+     *     invoices:Collection<int, array{
+     *         record:Invoice,
+     *         id:int,
+     *         title:string,
+     *         print_url:string
+     *     }>
+     * }
      */
-    public function factoryOrders(Patient $patient): Collection
+    public function formsPanelPayload(Patient $patient, ?User $authUser): array
     {
+        $capabilities = $this->workspaceCapabilities($authUser);
+
+        return [
+            'can_view_prescriptions' => $capabilities['prescriptions'],
+            'can_view_invoices' => $capabilities['invoice_forms'],
+            'prescriptions' => $capabilities['prescriptions']
+                ? $this->latestPrescriptions($patient)
+                : collect(),
+            'invoices' => $capabilities['invoice_forms']
+                ? $this->latestInvoices($patient)
+                : collect(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     create_treatment_session_url:?string,
+     *     sessions_count:int,
+     *     days_count:int,
+     *     total_amount:float,
+     *     total_amount_formatted:string
+     * }
+     */
+    public function treatmentProgressPanelPayload(
+        Patient $patient,
+        ?User $authUser,
+        string $workspaceReturnUrl = '',
+        ?Collection $treatmentProgress = null,
+        ?Collection $treatmentProgressDaySummaries = null,
+    ): array {
+        $summary = $this->treatmentProgressSummary(
+            $treatmentProgress ?? collect(),
+            $treatmentProgressDaySummaries,
+        );
+
+        return [
+            'create_treatment_session_url' => $authUser instanceof User
+                ? route('filament.admin.resources.treatment-sessions.create', [
+                    'patient_id' => $patient->id,
+                    'return_url' => $workspaceReturnUrl,
+                ])
+                : null,
+            'sessions_count' => (int) ($summary['sessions_count'] ?? 0),
+            'days_count' => (int) ($summary['days_count'] ?? 0),
+            'total_amount' => (float) ($summary['total_amount'] ?? 0),
+            'total_amount_formatted' => (string) ($summary['total_amount_formatted'] ?? '0'),
+        ];
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     record:FactoryOrder,
+     *     id:int,
+     *     order_no:string,
+     *     status:string,
+     *     status_label:string,
+     *     status_class:string,
+     *     priority:string,
+     *     ordered_at:?Carbon,
+     *     ordered_at_formatted:string,
+     *     due_at:?Carbon,
+     *     due_at_formatted:string,
+     *     delivered_at:?Carbon,
+     *     notes:?string,
+     *     items_count:int,
+     *     items_count_formatted:string,
+     *     detail_url:?string,
+     *     detail_action_label:string
+     * }>
+     */
+    public function factoryOrders(Patient $patient, ?User $authUser = null): Collection
+    {
+        $canAccessFactoryOrders = FactoryOrderResource::canAccess();
+
         return $patient->factoryOrders()
             ->withCount('items')
             ->latest('ordered_at')
@@ -411,14 +641,59 @@ class PatientOverviewReadModelService
                 'due_at',
                 'delivered_at',
                 'notes',
-            ]);
+            ])
+            ->map(function (FactoryOrder $order) use ($authUser, $canAccessFactoryOrders): array {
+                return [
+                    'record' => $order,
+                    'id' => $order->id,
+                    'order_no' => (string) $order->order_no,
+                    'status' => (string) $order->status,
+                    'status_label' => $this->factoryOrderStatusLabel((string) $order->status),
+                    'status_class' => $this->factoryOrderStatusClass((string) $order->status),
+                    'priority' => (string) $order->priority,
+                    'ordered_at' => $order->ordered_at,
+                    'ordered_at_formatted' => $order->ordered_at?->format('d/m/Y H:i') ?? '-',
+                    'due_at' => $order->due_at,
+                    'due_at_formatted' => $order->due_at?->format('d/m/Y H:i') ?? '-',
+                    'delivered_at' => $order->delivered_at,
+                    'notes' => $order->notes,
+                    'items_count' => (int) ($order->items_count ?? 0),
+                    'items_count_formatted' => number_format((int) ($order->items_count ?? 0), 0, ',', '.'),
+                    'detail_url' => $canAccessFactoryOrders && $authUser?->can('update', $order)
+                        ? route('filament.admin.resources.factory-orders.edit', ['record' => $order->id])
+                        : null,
+                    'detail_action_label' => $canAccessFactoryOrders && $authUser?->can('update', $order)
+                        ? 'Chi tiết'
+                        : 'Không có quyền',
+                ];
+            });
     }
 
     /**
-     * @return Collection<int, MaterialIssueNote>
+     * @return Collection<int, array{
+     *     record:MaterialIssueNote,
+     *     id:int,
+     *     note_no:string,
+     *     status:string,
+     *     status_label:string,
+     *     status_class:string,
+     *     issued_at:?Carbon,
+     *     issued_at_formatted:string,
+     *     posted_at:?Carbon,
+     *     reason:?string,
+     *     notes:?string,
+     *     items_count:int,
+     *     items_count_formatted:string,
+     *     total_cost:float,
+     *     total_cost_formatted:string,
+     *     detail_url:?string,
+     *     detail_action_label:string
+     * }>
      */
-    public function materialIssueNotes(Patient $patient): Collection
+    public function materialIssueNotes(Patient $patient, ?User $authUser = null): Collection
     {
+        $canAccessMaterialIssueNotes = MaterialIssueNoteResource::canAccess();
+
         return $patient->materialIssueNotes()
             ->withCount('items')
             ->withSum('items as total_cost', 'total_cost')
@@ -434,24 +709,119 @@ class PatientOverviewReadModelService
                 'posted_at',
                 'reason',
                 'notes',
-            ]);
+            ])
+            ->map(function (MaterialIssueNote $note) use ($canAccessMaterialIssueNotes): array {
+                $totalCost = (float) ($note->total_cost ?? 0);
+
+                return [
+                    'record' => $note,
+                    'id' => $note->id,
+                    'note_no' => (string) $note->note_no,
+                    'status' => (string) $note->status,
+                    'status_label' => $this->materialIssueStatusLabel((string) $note->status),
+                    'status_class' => $this->materialIssueStatusClass((string) $note->status),
+                    'issued_at' => $note->issued_at,
+                    'issued_at_formatted' => $note->issued_at?->format('d/m/Y H:i') ?? '-',
+                    'posted_at' => $note->posted_at,
+                    'reason' => $note->reason,
+                    'notes' => $note->notes,
+                    'items_count' => (int) ($note->items_count ?? 0),
+                    'items_count_formatted' => number_format((int) ($note->items_count ?? 0), 0, ',', '.'),
+                    'total_cost' => $totalCost,
+                    'total_cost_formatted' => $this->formatMoney($totalCost),
+                    'detail_url' => $canAccessMaterialIssueNotes
+                        ? route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id])
+                        : null,
+                    'detail_action_label' => $canAccessMaterialIssueNotes
+                        ? 'Chi tiết'
+                        : 'Không có quyền',
+                ];
+            });
     }
 
     /**
-     * @return Collection<int, TreatmentMaterial>
+     * @return Collection<int, array{
+     *     record:TreatmentMaterial,
+     *     id:int,
+     *     created_at:?Carbon,
+     *     created_at_formatted:string,
+     *     treatment_session_id:?int,
+     *     material_name:string,
+     *     quantity:float,
+     *     quantity_formatted:string,
+     *     unit_cost:float,
+     *     unit_cost_formatted:string,
+     *     total_cost:float,
+     *     total_cost_formatted:string,
+     *     user_name:string
+     * }>
      */
-    public function materialUsages(Patient $patient): Collection
+    public function materialUsages(Patient $patient, ?User $authUser = null): Collection
     {
         return TreatmentMaterial::query()
             ->with(['session', 'material', 'user'])
             ->whereHas('session.treatmentPlan', fn ($query) => $query->where('patient_id', $patient->id))
             ->latest('created_at')
             ->limit(100)
-            ->get();
+            ->get()
+            ->map(function (TreatmentMaterial $usage): array {
+                $quantity = (float) $usage->quantity;
+                $totalCost = (float) $usage->cost;
+                $unitCost = round($totalCost / max($quantity, 1), 2);
+
+                return [
+                    'record' => $usage,
+                    'id' => $usage->id,
+                    'created_at' => $usage->created_at,
+                    'created_at_formatted' => $usage->created_at?->format('d/m/Y H:i') ?? '-',
+                    'treatment_session_id' => $usage->treatment_session_id ? (int) $usage->treatment_session_id : null,
+                    'material_name' => $usage->material?->name ?? 'N/A',
+                    'quantity' => $quantity,
+                    'quantity_formatted' => $this->formatMoney($quantity),
+                    'unit_cost' => $unitCost,
+                    'unit_cost_formatted' => $this->formatMoney($unitCost),
+                    'total_cost' => $totalCost,
+                    'total_cost_formatted' => $this->formatMoney($totalCost),
+                    'user_name' => $usage->user?->name ?? 'N/A',
+                ];
+            });
     }
 
     /**
-     * @return Collection<int, Prescription>
+     * @return array{
+     *     create_factory_order_url:?string,
+     *     create_material_issue_note_url:?string,
+     *     create_treatment_material_url:?string
+     * }
+     */
+    public function labMaterialsPanelPayload(Patient $patient, ?User $authUser): array
+    {
+        return [
+            'create_factory_order_url' => FactoryOrderResource::canAccess() && $authUser?->can('create', FactoryOrder::class)
+                ? route('filament.admin.resources.factory-orders.create', [
+                    'patient_id' => $patient->id,
+                    'branch_id' => $patient->first_branch_id,
+                ])
+                : null,
+            'create_material_issue_note_url' => MaterialIssueNoteResource::canAccess()
+                ? route('filament.admin.resources.material-issue-notes.create', [
+                    'patient_id' => $patient->id,
+                    'branch_id' => $patient->first_branch_id,
+                ])
+                : null,
+            'create_treatment_material_url' => TreatmentMaterialResource::canAccess()
+                ? route('filament.admin.resources.treatment-materials.create')
+                : null,
+        ];
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     record:Prescription,
+     *     id:int,
+     *     title:string,
+     *     print_url:string
+     * }>
      */
     public function latestPrescriptions(Patient $patient): Collection
     {
@@ -464,11 +834,28 @@ class PatientOverviewReadModelService
                 'prescription_code',
                 'treatment_date',
                 'created_at',
-            ]);
+            ])
+            ->map(function (Prescription $prescription): array {
+                return [
+                    'record' => $prescription,
+                    'id' => $prescription->id,
+                    'title' => sprintf(
+                        '%s - %s',
+                        $prescription->prescription_code,
+                        $prescription->treatment_date?->format('d/m/Y') ?? '-',
+                    ),
+                    'print_url' => route('prescriptions.print', $prescription),
+                ];
+            });
     }
 
     /**
-     * @return Collection<int, Invoice>
+     * @return Collection<int, array{
+     *     record:Invoice,
+     *     id:int,
+     *     title:string,
+     *     print_url:string
+     * }>
      */
     public function latestInvoices(Patient $patient): Collection
     {
@@ -481,7 +868,19 @@ class PatientOverviewReadModelService
                 'invoice_no',
                 'issued_at',
                 'created_at',
-            ]);
+            ])
+            ->map(function (Invoice $invoice): array {
+                return [
+                    'record' => $invoice,
+                    'id' => $invoice->id,
+                    'title' => sprintf(
+                        '#%s - %s',
+                        $invoice->invoice_no,
+                        $invoice->issued_at?->format('d/m/Y') ?? $invoice->created_at?->format('d/m/Y'),
+                    ),
+                    'print_url' => route('invoices.print', $invoice),
+                ];
+            });
     }
 
     /**
@@ -657,8 +1056,105 @@ class PatientOverviewReadModelService
             });
     }
 
+    /**
+     * @param  Collection<int, array<string, mixed>>  $treatmentProgress
+     * @param  Collection<int, array<string, mixed>>|null  $treatmentProgressDaySummaries
+     * @return array{
+     *     sessions_count:int,
+     *     days_count:int,
+     *     total_amount:float,
+     *     total_amount_formatted:string
+     * }
+     */
+    public function treatmentProgressSummary(
+        Collection $treatmentProgress,
+        ?Collection $treatmentProgressDaySummaries = null,
+    ): array {
+        $totalAmount = round(
+            (float) $treatmentProgress->sum(fn (array $session): float => (float) ($session['total_amount'] ?? 0)),
+            2,
+        );
+
+        return [
+            'sessions_count' => $treatmentProgress->count(),
+            'days_count' => $treatmentProgressDaySummaries?->count() ?? 0,
+            'total_amount' => $totalAmount,
+            'total_amount_formatted' => $this->formatMoney($totalAmount),
+        ];
+    }
+
     protected function formatMoney(float|int|string|null $value): string
     {
         return number_format((float) $value, 0, ',', '.');
+    }
+
+    protected function factoryOrderStatusLabel(string $status): string
+    {
+        return match ($status) {
+            FactoryOrder::STATUS_ORDERED => 'Đã đặt',
+            FactoryOrder::STATUS_IN_PROGRESS => 'Đang làm',
+            FactoryOrder::STATUS_DELIVERED => 'Đã giao',
+            FactoryOrder::STATUS_CANCELLED => 'Đã hủy',
+            default => 'Nháp',
+        };
+    }
+
+    protected function factoryOrderStatusClass(string $status): string
+    {
+        return match ($status) {
+            FactoryOrder::STATUS_DELIVERED => 'is-completed',
+            FactoryOrder::STATUS_ORDERED, FactoryOrder::STATUS_IN_PROGRESS => 'is-progress',
+            default => 'is-default',
+        };
+    }
+
+    protected function materialIssueStatusLabel(string $status): string
+    {
+        return match ($status) {
+            MaterialIssueNote::STATUS_POSTED => 'Đã xuất kho',
+            MaterialIssueNote::STATUS_CANCELLED => 'Đã hủy',
+            default => 'Nháp',
+        };
+    }
+
+    protected function materialIssueStatusClass(string $status): string
+    {
+        return match ($status) {
+            MaterialIssueNote::STATUS_POSTED => 'is-completed',
+            default => 'is-default',
+        };
+    }
+
+    protected function patientInitials(string $fullName): string
+    {
+        $name = trim($fullName);
+
+        if ($name === '') {
+            return '?';
+        }
+
+        $parts = preg_split('/\s+/', $name) ?: [];
+        $first = mb_substr($parts[0] ?? '', 0, 1);
+        $last = mb_substr($parts[count($parts) - 1] ?? '', 0, 1);
+
+        return mb_strtoupper($first.$last);
+    }
+
+    protected function patientGenderLabel(?string $gender): ?string
+    {
+        return match ($gender) {
+            'male' => 'Nam',
+            'female' => 'Nữ',
+            default => null,
+        };
+    }
+
+    protected function patientGenderBadgeClass(?string $gender): ?string
+    {
+        return match ($gender) {
+            'male' => 'is-male',
+            'female' => 'is-female',
+            default => null,
+        };
     }
 }

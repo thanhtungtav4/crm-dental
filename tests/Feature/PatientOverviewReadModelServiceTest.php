@@ -23,6 +23,8 @@ use App\Services\PatientOverviewReadModelService;
 use App\Services\TreatmentMaterialUsageService;
 use Illuminate\Support\Carbon;
 
+use function Pest\Laravel\actingAs;
+
 if (! function_exists('createPatientOverviewInvoice')) {
     function createPatientOverviewInvoice(
         Patient $patient,
@@ -237,6 +239,100 @@ it('summarizes patient overview metrics through a shared read model', function (
     Carbon::setTestNow();
 });
 
+it('builds patient identity header payload through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'full_name' => 'Nguyen Van An',
+        'phone' => '0909123456',
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'gender' => 'male',
+        'patient_code' => 'BN-000123',
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+    $payload = $service->identityHeaderPayload($patient);
+
+    expect($payload)->toMatchArray([
+        'avatar_initials' => 'NA',
+        'full_name' => 'Nguyen Van An',
+        'gender_label' => 'Nam',
+        'gender_badge_class' => 'is-male',
+        'patient_code' => 'BN-000123',
+        'phone' => '0909123456',
+        'phone_href' => 'tel:0909123456',
+    ]);
+
+    $page = new class extends ViewPatient
+    {
+        public function forceRecord(Patient $patient): void
+        {
+            $this->record = $patient;
+        }
+    };
+
+    $page->forceRecord($patient->fresh());
+
+    expect($page->getIdentityHeaderProperty())->toMatchArray($payload);
+});
+
+it('builds patient basic info grid payload through the shared read model', function (): void {
+    $branch = Branch::factory()->create([
+        'name' => 'Chi nhánh Q1',
+    ]);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+        'full_name' => 'Tran Thi Binh',
+        'phone' => '0911222333',
+        'email' => 'binh@example.test',
+        'address' => '123 Nguyen Hue, Quan 1',
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'full_name' => $customer->full_name,
+        'phone' => $customer->phone,
+        'email' => $customer->email,
+        'address' => $customer->address,
+        'birthday' => '1996-04-01',
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+    $payload = $service->basicInfoGridPayload($patient->fresh('branch'));
+
+    expect($payload)->toMatchArray([
+        'phone' => '0911222333',
+        'phone_href' => 'tel:0911222333',
+        'email' => 'binh@example.test',
+        'email_href' => 'mailto:binh@example.test',
+        'birthday_label' => '01/04/1996',
+        'age_label' => '('.\Carbon\Carbon::parse('1996-04-01')->age.' tuổi)',
+        'branch_name' => 'Chi nhánh Q1',
+        'address' => '123 Nguyen Hue, Quan 1',
+    ]);
+
+    $page = new class extends ViewPatient
+    {
+        public function forceRecord(Patient $patient): void
+        {
+            $this->record = $patient;
+        }
+    };
+
+    $page->forceRecord($patient->fresh('branch'));
+
+    expect($page->getBasicInfoGridProperty())->toMatchArray($payload);
+});
+
 it('summarizes patient payment balances through the shared read model', function (): void {
     $branch = Branch::factory()->create();
 
@@ -304,6 +400,7 @@ it('summarizes patient payment balances through the shared read model', function
     ]);
 
     $summary = app(PatientOverviewReadModelService::class)->paymentSummary($patient);
+    $panel = app(PatientOverviewReadModelService::class)->paymentPanelPayload($patient, $manager);
 
     expect($summary)->toMatchArray([
         'total_treatment_amount' => 3500000.0,
@@ -324,6 +421,59 @@ it('summarizes patient payment balances through the shared read model', function
             'invoice_id' => $latestInvoice->id,
         ]),
     ]);
+
+    expect($panel['summary'])->toMatchArray($summary)
+        ->and($panel['balance_class'])->toBe('is-negative')
+        ->and($panel['balance_amount_formatted'])->toBe('-2.200.000')
+        ->and($panel['can_view_invoices'])->toBeBool()
+        ->and($panel['can_view_payments'])->toBeBool()
+        ->and($panel['can_create_payment'])->toBeBool()
+        ->and($panel['metrics'])->toBe([
+            [
+                'label' => 'Tổng tiền điều trị',
+                'value' => '3.500.000',
+                'value_class' => null,
+            ],
+            [
+                'label' => 'Giảm giá',
+                'value' => '100.000',
+                'value_class' => null,
+            ],
+            [
+                'label' => 'Phải thanh toán',
+                'value' => '3.500.000',
+                'value_class' => null,
+            ],
+            [
+                'label' => 'Đã thu',
+                'value' => '1.300.000',
+                'value_class' => 'is-positive',
+            ],
+            [
+                'label' => 'Còn lại',
+                'value' => '2.200.000',
+                'value_class' => 'is-negative',
+            ],
+        ]);
+
+    if ($panel['can_create_payment']) {
+        expect($panel['primary_payment_action'])->toMatchArray([
+            'label' => 'Phiếu thu',
+            'url' => route('filament.admin.resources.payments.create', [
+                'invoice_id' => $latestInvoice->id,
+            ]),
+            'style' => 'primary',
+        ])->and($panel['secondary_payment_action'])->toMatchArray([
+            'label' => 'Thanh toán',
+            'url' => route('filament.admin.resources.payments.create', [
+                'invoice_id' => $latestInvoice->id,
+            ]),
+            'style' => 'outline',
+        ]);
+    } else {
+        expect($panel['primary_payment_action'])->toBeNull()
+            ->and($panel['secondary_payment_action'])->toBeNull();
+    }
 });
 
 it('builds patient workspace lab material surfaces through the shared read model', function (): void {
@@ -510,23 +660,70 @@ it('builds patient workspace lab material surfaces through the shared read model
 
     $service = app(PatientOverviewReadModelService::class);
 
-    $materialUsages = $service->materialUsages($patient);
-    $factoryOrders = $service->factoryOrders($patient);
-    $materialIssueNotes = $service->materialIssueNotes($patient);
+    $materialUsages = $service->materialUsages($patient, $admin);
+    $factoryOrders = $service->factoryOrders($patient, $admin);
+    $materialIssueNotes = $service->materialIssueNotes($patient, $admin);
+    $panel = $service->labMaterialsPanelPayload($patient, $admin);
 
     expect($materialUsages)->toHaveCount(1)
         ->and($materialUsages->pluck('id')->all())->toBe([$usage->id])
-        ->and($materialUsages->first()?->material?->id)->toBe($material->id)
-        ->and($materialUsages->first()?->user?->id)->toBe($admin->id);
+        ->and($materialUsages->first()['record']->is($usage))->toBeTrue()
+        ->and($materialUsages->first())->toMatchArray([
+            'id' => $usage->id,
+            'treatment_session_id' => $session->id,
+            'material_name' => $material->name,
+            'quantity_formatted' => '2',
+            'unit_cost_formatted' => '125.000',
+            'total_cost_formatted' => '250.000',
+            'user_name' => $admin->name,
+        ]);
 
     expect($factoryOrders)->toHaveCount(1)
         ->and($factoryOrders->pluck('id')->all())->toBe([$factoryOrder->id])
-        ->and((int) ($factoryOrders->first()?->items_count ?? 0))->toBe(1);
+        ->and($factoryOrders->first()['record']->is($factoryOrder))->toBeTrue()
+        ->and($factoryOrders->first())->toMatchArray([
+            'id' => $factoryOrder->id,
+            'order_no' => $factoryOrder->order_no,
+            'status' => FactoryOrder::STATUS_DRAFT,
+            'status_label' => 'Nháp',
+            'status_class' => 'is-default',
+            'ordered_at_formatted' => $factoryOrder->ordered_at?->format('d/m/Y H:i') ?? '-',
+            'due_at_formatted' => $factoryOrder->due_at?->format('d/m/Y H:i') ?? '-',
+            'items_count' => 1,
+            'items_count_formatted' => '1',
+            'detail_url' => route('filament.admin.resources.factory-orders.edit', ['record' => $factoryOrder->id]),
+            'detail_action_label' => 'Chi tiết',
+        ]);
 
     expect($materialIssueNotes)->toHaveCount(1)
         ->and($materialIssueNotes->pluck('id')->all())->toBe([$issueNote->id])
-        ->and((int) ($materialIssueNotes->first()?->items_count ?? 0))->toBe(1)
-        ->and((float) ($materialIssueNotes->first()?->total_cost ?? 0))->toEqualWithDelta(125000.0, 0.01);
+        ->and($materialIssueNotes->first()['record']->is($issueNote))->toBeTrue()
+        ->and($materialIssueNotes->first())->toMatchArray([
+            'id' => $issueNote->id,
+            'note_no' => $issueNote->note_no,
+            'status' => MaterialIssueNote::STATUS_DRAFT,
+            'status_label' => 'Nháp',
+            'status_class' => 'is-default',
+            'issued_at_formatted' => $issueNote->issued_at?->format('d/m/Y H:i') ?? '-',
+            'items_count' => 1,
+            'items_count_formatted' => '1',
+            'total_cost_formatted' => '125.000',
+            'detail_url' => route('filament.admin.resources.material-issue-notes.edit', ['record' => $issueNote->id]),
+            'detail_action_label' => 'Chi tiết',
+        ])
+        ->and((float) ($materialIssueNotes->first()['total_cost'] ?? 0))->toEqualWithDelta(125000.0, 0.01);
+
+    expect($panel)->toMatchArray([
+        'create_factory_order_url' => route('filament.admin.resources.factory-orders.create', [
+            'patient_id' => $patient->id,
+            'branch_id' => $patient->first_branch_id,
+        ]),
+        'create_material_issue_note_url' => route('filament.admin.resources.material-issue-notes.create', [
+            'patient_id' => $patient->id,
+            'branch_id' => $patient->first_branch_id,
+        ]),
+        'create_treatment_material_url' => route('filament.admin.resources.treatment-materials.create'),
+    ]);
 
     $page = new class extends ViewPatient
     {
@@ -588,6 +785,8 @@ it('builds latest printable forms through the shared read model', function (): v
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'branch_id' => $branch->id,
+            'prescription_code' => sprintf('RX-FORM-%03d', $index),
+            'treatment_date' => now()->subDays(7 - $index)->toDateString(),
             'created_at' => now()->subMinutes(10 - $index),
             'updated_at' => now()->subMinutes(10 - $index),
         ]);
@@ -627,6 +826,7 @@ it('builds latest printable forms through the shared read model', function (): v
         'patient_id' => $otherPatient->id,
         'doctor_id' => $doctor->id,
         'branch_id' => $branch->id,
+        'prescription_code' => 'RX-FORM-OTHER',
     ]);
 
     createPatientOverviewInvoice($otherPatient, $doctor, $manager, null, [
@@ -640,12 +840,30 @@ it('builds latest printable forms through the shared read model', function (): v
 
     $latestPrescriptions = $service->latestPrescriptions($patient);
     $latestInvoices = $service->latestInvoices($patient);
+    $formsPanel = $service->formsPanelPayload($patient, $admin);
 
     expect($latestPrescriptions)->toHaveCount(5)
-        ->and($latestPrescriptions->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all());
+        ->and($latestPrescriptions->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
+        ->and($latestPrescriptions->first())->toMatchArray([
+            'id' => $prescriptionIds->last(),
+            'title' => 'RX-FORM-006 - '.now()->subDays(1)->format('d/m/Y'),
+            'print_url' => route('prescriptions.print', $latestPrescriptions->first()['record']),
+        ]);
 
     expect($latestInvoices)->toHaveCount(5)
-        ->and($latestInvoices->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
+        ->and($latestInvoices->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all())
+        ->and($latestInvoices->first())->toMatchArray([
+            'id' => $invoiceIds->last(),
+            'title' => '#INV-FORM-006 - '.now()->subDay()->format('d/m/Y'),
+            'print_url' => route('invoices.print', $latestInvoices->first()['record']),
+        ]);
+
+    expect($formsPanel)->toMatchArray([
+        'can_view_prescriptions' => true,
+        'can_view_invoices' => true,
+    ])
+        ->and($formsPanel['prescriptions']->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
+        ->and($formsPanel['invoices']->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
 
     $page = new class extends ViewPatient
     {
@@ -657,8 +875,74 @@ it('builds latest printable forms through the shared read model', function (): v
 
     $page->forceRecord($patient->fresh());
 
-    expect($page->getLatestPrescriptionsProperty()->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
-        ->and($page->getLatestInvoicesProperty()->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
+    expect($page->getFormsPanelProperty())->toMatchArray([
+        'can_view_prescriptions' => true,
+        'can_view_invoices' => true,
+    ])
+        ->and($page->getFormsPanelProperty()['prescriptions']->pluck('id')->all())->toBe($prescriptionIds->reverse()->take(5)->values()->all())
+        ->and($page->getFormsPanelProperty()['invoices']->pluck('id')->all())->toBe($invoiceIds->reverse()->take(5)->values()->all());
+});
+
+it('builds treatment progress panel actions through the shared read model', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    $workspaceReturnUrl = route('filament.admin.resources.patients.view', [
+        'record' => $patient->id,
+        'tab' => 'exam-treatment',
+    ]);
+
+    $service = app(PatientOverviewReadModelService::class);
+    $panel = $service->treatmentProgressPanelPayload(
+        $patient,
+        $admin,
+        $workspaceReturnUrl,
+        collect(),
+        collect(),
+    );
+
+    expect($panel)->toMatchArray([
+        'create_treatment_session_url' => route('filament.admin.resources.treatment-sessions.create', [
+            'patient_id' => $patient->id,
+            'return_url' => $workspaceReturnUrl,
+        ]),
+        'sessions_count' => 0,
+        'days_count' => 0,
+        'total_amount' => 0.0,
+        'total_amount_formatted' => '0',
+    ]);
+
+    $page = new class extends ViewPatient
+    {
+        public function forceRecord(Patient $patient): void
+        {
+            $this->record = $patient;
+        }
+
+        public function forceWorkspaceReturnUrl(string $url): void
+        {
+            $this->workspaceReturnUrl = $url;
+        }
+    };
+
+    $page->forceRecord($patient->fresh());
+    $page->forceWorkspaceReturnUrl($workspaceReturnUrl);
+    actingAs($admin);
+
+    expect($page->getTreatmentProgressPanelProperty())->toMatchArray($panel);
 });
 
 it('builds patient medical record actions through the shared read model', function (): void {

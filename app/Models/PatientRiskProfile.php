@@ -52,4 +52,30 @@ class PatientRiskProfile extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function levelOptions(): array
+    {
+        return [
+            self::LEVEL_LOW => 'Thấp',
+            self::LEVEL_MEDIUM => 'Trung bình',
+            self::LEVEL_HIGH => 'Cao',
+        ];
+    }
+
+    public static function levelLabel(?string $level): string
+    {
+        return static::levelOptions()[$level ?? ''] ?? 'Không xác định';
+    }
+
+    public static function levelColor(?string $level): string
+    {
+        return match ($level) {
+            self::LEVEL_HIGH => 'danger',
+            self::LEVEL_MEDIUM => 'warning',
+            default => 'success',
+        };
+    }
 }

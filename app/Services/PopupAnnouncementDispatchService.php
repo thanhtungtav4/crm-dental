@@ -14,6 +14,7 @@ class PopupAnnouncementDispatchService
 {
     public function __construct(
         private readonly PopupAnnouncementWorkflowService $workflowService,
+        private readonly PopupAnnouncementDeliveryWorkflowService $deliveryWorkflowService,
     ) {}
 
     /**
@@ -209,17 +210,8 @@ class PopupAnnouncementDispatchService
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
 
-        $deliveries = PopupAnnouncementDelivery::query()
-            ->whereIn('popup_announcement_id', $expiredAnnouncementIds)
-            ->whereIn('status', [
-                PopupAnnouncementDelivery::STATUS_PENDING,
-                PopupAnnouncementDelivery::STATUS_SEEN,
-            ])
-            ->update([
-                'status' => PopupAnnouncementDelivery::STATUS_EXPIRED,
-                'expired_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $deliveries = $this->deliveryWorkflowService
+            ->expireActiveDeliveriesForAnnouncements($expiredAnnouncementIds);
 
         foreach ($expiredAnnouncements as $announcement) {
             $this->workflowService->expire($announcement);

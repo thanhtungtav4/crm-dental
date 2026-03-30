@@ -114,6 +114,29 @@ class PatientInsightReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function riskSummaryStatsPayload(
+        ?array $branchIds,
+        ?string $from,
+        ?string $until,
+        ?string $riskLevel = null,
+    ): array {
+        $summary = $this->riskSummary($branchIds, $from, $until, $riskLevel);
+
+        return [
+            ['label' => 'Tổng profile', 'value' => number_format($summary['total'])],
+            ['label' => 'Risk cao', 'value' => number_format($summary['high'])],
+            ['label' => 'Risk trung bình', 'value' => number_format($summary['medium'])],
+            ['label' => 'Risk thấp', 'value' => number_format($summary['low'])],
+            ['label' => 'Avg no-show risk', 'value' => number_format($summary['average_no_show'], 2)],
+            ['label' => 'Avg churn risk', 'value' => number_format($summary['average_churn'], 2)],
+            ['label' => 'Ticket can thiệp đang mở', 'value' => number_format($summary['active_intervention_tickets'])],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     protected function applyDirectBranchScope(Builder $query, ?array $branchIds, string $column): Builder
     {

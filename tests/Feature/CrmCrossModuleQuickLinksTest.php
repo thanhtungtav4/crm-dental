@@ -11,7 +11,13 @@ it('wires customer and appointment lists to related profile pages', function ():
     expect($customersTable)
         ->toContain("PatientResource::getUrl('view'")
         ->toContain("CustomerResource::getUrl('edit'")
-        ->toContain("'tab' => 'basic-info'");
+        ->toContain("'tab' => 'basic-info'")
+        ->toContain('PatientAppointmentActionReadModelService::class')
+        ->toContain('->hasActiveAppointments($record->patient)')
+        ->toContain('->activeAppointmentOptions($record->patient)')
+        ->toContain('SharedSchemas::activeAppointmentSelectionField')
+        ->toContain('PatientAppointmentQuickActionService::class')
+        ->toContain('SharedSchemas::appointmentQuickActionFields');
 
     expect($appointmentsTable)
         ->toContain("PatientResource::getUrl('view'")
@@ -29,7 +35,10 @@ it('shows linked visual counters on patient list for core crm flow', function ()
         ->toContain("TextColumn::make('invoices_count')")
         ->toContain("'tab' => 'appointments'")
         ->toContain("'tab' => 'exam-treatment'")
-        ->toContain("'tab' => 'payments'");
+        ->toContain("'tab' => 'payments'")
+        ->toContain('SharedSchemas::activeAppointmentSelectionField')
+        ->toContain('PatientAppointmentQuickActionService::class')
+        ->toContain('SharedSchemas::appointmentQuickActionFields');
 });
 
 it('links invoice, payment, and treatment plan screens back to patient context', function (): void {

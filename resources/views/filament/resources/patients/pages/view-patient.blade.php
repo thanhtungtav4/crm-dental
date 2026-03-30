@@ -110,26 +110,24 @@
                     <div class="crm-patient-overview-header-inner">
                         {{-- Avatar --}}
                         <div class="crm-patient-avatar">
-                            {{ strtoupper(substr($this->record->full_name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $this->record->full_name)[count(explode(' ', $this->record->full_name)) - 1] ?? '', 0, 1)) }}
+                            {{ $this->identityHeader['avatar_initials'] }}
                         </div>
                         {{-- Name & Basic Info --}}
                         <div class="crm-patient-identity">
                             <div class="crm-patient-identity-row">
                                 <h2 class="crm-patient-name">
-                                    {{ $this->record->full_name }}</h2>
-                                @if($this->record->gender === 'male')
-                                    <span class="crm-patient-gender-badge is-male">Nam</span>
-                                @elseif($this->record->gender === 'female')
-                                    <span class="crm-patient-gender-badge is-female">Nữ</span>
+                                    {{ $this->identityHeader['full_name'] }}</h2>
+                                @if($this->identityHeader['gender_label'])
+                                    <span class="crm-patient-gender-badge {{ $this->identityHeader['gender_badge_class'] }}">{{ $this->identityHeader['gender_label'] }}</span>
                                 @endif
                             </div>
                             <div class="crm-copy-inline-row">
-                                <p class="crm-patient-code">{{ $this->record->patient_code }}</p>
-                                @if($this->record->patient_code)
+                                <p class="crm-patient-code">{{ $this->identityHeader['patient_code'] }}</p>
+                                @if($this->identityHeader['patient_code'])
                                     <button
                                         type="button"
                                         class="crm-copy-icon-btn is-light"
-                                        x-on:click.prevent="copyToClipboard(@js($this->record->patient_code), 'Mã bệnh nhân')"
+                                        x-on:click.prevent="copyToClipboard(@js($this->identityHeader['patient_code']), 'Mã bệnh nhân')"
                                         title="Sao chép mã bệnh nhân"
                                         aria-label="Sao chép mã bệnh nhân"
                                     >
@@ -140,19 +138,19 @@
                                     </button>
                                 @endif
                             </div>
-                            @if($this->record->phone)
+                            @if($this->identityHeader['phone'])
                                 <div class="crm-copy-inline-row">
-                                    <a href="tel:{{ $this->record->phone }}" class="crm-patient-phone-chip" style="color: #ffffff;">
+                                    <a href="{{ $this->identityHeader['phone_href'] }}" class="crm-patient-phone-chip" style="color: #ffffff;">
                                         <svg class="crm-patient-phone-chip-icon" fill="currentColor" viewBox="0 0 20 20">
                                             <path
                                                 d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                         </svg>
-                                        <span class="crm-patient-phone-chip-text" style="color: #ffffff;">{{ $this->record->phone }}</span>
+                                        <span class="crm-patient-phone-chip-text" style="color: #ffffff;">{{ $this->identityHeader['phone'] }}</span>
                                     </a>
                                     <button
                                         type="button"
                                         class="crm-copy-icon-btn is-light"
-                                        x-on:click.prevent="copyToClipboard(@js($this->record->phone), 'Số điện thoại')"
+                                        x-on:click.prevent="copyToClipboard(@js($this->identityHeader['phone']), 'Số điện thoại')"
                                         title="Sao chép số điện thoại"
                                         aria-label="Sao chép số điện thoại"
                                     >
@@ -181,14 +179,14 @@
                                 <span class="crm-patient-info-label">Điện thoại</span>
                             </div>
                             <p class="crm-patient-info-value">
-                                @if($this->record->phone)
+                                @if($this->basicInfoGrid['phone'])
                                     <span class="crm-copy-value-row">
-                                        <a href="tel:{{ $this->record->phone }}"
-                                            class="crm-patient-info-link">{{ $this->record->phone }}</a>
+                                        <a href="{{ $this->basicInfoGrid['phone_href'] }}"
+                                            class="crm-patient-info-link">{{ $this->basicInfoGrid['phone'] }}</a>
                                         <button
                                             type="button"
                                             class="crm-copy-icon-btn"
-                                            x-on:click.prevent="copyToClipboard(@js($this->record->phone), 'Số điện thoại')"
+                                            x-on:click.prevent="copyToClipboard(@js($this->basicInfoGrid['phone']), 'Số điện thoại')"
                                             title="Sao chép số điện thoại"
                                             aria-label="Sao chép số điện thoại"
                                         >
@@ -215,10 +213,10 @@
                                 </div>
                                 <span class="crm-patient-info-label">Email</span>
                             </div>
-                            <p class="crm-patient-info-value is-truncate" title="{{ $this->record->email }}">
-                                @if($this->record->email)
-                                    <a href="mailto:{{ $this->record->email }}"
-                                        class="crm-patient-info-link">{{ $this->record->email }}</a>
+                            <p class="crm-patient-info-value is-truncate" title="{{ $this->basicInfoGrid['email'] }}">
+                                @if($this->basicInfoGrid['email'])
+                                    <a href="{{ $this->basicInfoGrid['email_href'] }}"
+                                        class="crm-patient-info-link">{{ $this->basicInfoGrid['email'] }}</a>
                                 @else
                                     <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
@@ -237,10 +235,9 @@
                                 <span class="crm-patient-info-label">Ngày sinh</span>
                             </div>
                             <p class="crm-patient-info-value">
-                                @if($this->record->birthday)
-                                    {{ \Carbon\Carbon::parse($this->record->birthday)->format('d/m/Y') }}
-                                    <span class="crm-patient-info-age">({{ \Carbon\Carbon::parse($this->record->birthday)->age }}
-                                        tuổi)</span>
+                                @if($this->basicInfoGrid['birthday_label'])
+                                    {{ $this->basicInfoGrid['birthday_label'] }}
+                                    <span class="crm-patient-info-age">{{ $this->basicInfoGrid['age_label'] }}</span>
                                 @else
                                     <span class="crm-patient-info-muted">Chưa có</span>
                                 @endif
@@ -259,11 +256,11 @@
                                 <span class="crm-patient-info-label">Chi nhánh</span>
                             </div>
                             <p class="crm-patient-info-value is-branch">
-                                {{ $this->record->branch?->name ?? 'Chưa phân bổ' }}
+                                {{ $this->basicInfoGrid['branch_name'] }}
                             </p>
                         </div>
                     </div>
-                    @if($this->record->address)
+                    @if($this->basicInfoGrid['address'])
                         {{-- Address Card --}}
                         <div class="crm-patient-address-card is-address">
                             <div class="crm-patient-info-card-head">
@@ -277,7 +274,7 @@
                                 <span class="crm-patient-info-label">Địa chỉ</span>
                             </div>
                             <p class="crm-patient-address-value">
-                                {{ $this->record->address }}</p>
+                                {{ $this->basicInfoGrid['address'] }}</p>
                         </div>
                     @endif
                 </div>
@@ -367,27 +364,27 @@
                         <div class="crm-treatment-progress-stack">
                             <div class="crm-treatment-progress-head">
                                 <h3 class="crm-section-label">Tiến trình điều trị</h3>
-                                <span class="crm-section-badge">{{ $this->treatmentProgressDayCount }} ngày · {{ $this->treatmentProgressCount }} phiên</span>
+                                <span class="crm-section-badge">{{ $this->treatmentProgressPanel['days_count'] }} ngày · {{ $this->treatmentProgressPanel['sessions_count'] }} phiên</span>
                             </div>
 
                             <div class="crm-treatment-card">
                                 <div class="crm-treatment-subhead">
                                     <div class="crm-treatment-subhead-title">Tiến trình điều trị</div>
                                     <div class="crm-treatment-subhead-actions">
-                                        <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressTotalAmountFormatted }}đ</span>
-                                        <a href="{{ route('filament.admin.resources.treatment-sessions.create', [
-                                            'patient_id' => $this->record->id,
-                                            'return_url' => $this->workspaceReturnUrl,
-                                        ]) }}"
-                                           class="crm-btn crm-btn-primary crm-btn-md"
-                                           style="color: #ffffff;"
-                                        >
-                                            Thêm ngày điều trị
-                                        </a>
+                                        <span class="crm-treatment-subhead-count">Tổng chi phí phiên: {{ $this->treatmentProgressPanel['total_amount_formatted'] }}đ</span>
+                                        @if($this->treatmentProgressPanel['create_treatment_session_url'])
+                                            <a
+                                                href="{{ $this->treatmentProgressPanel['create_treatment_session_url'] }}"
+                                                class="crm-btn crm-btn-primary crm-btn-md"
+                                                style="color: #ffffff;"
+                                            >
+                                                Thêm ngày điều trị
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
 
-                                @if($this->treatmentProgressDayCount > 0)
+                                @if($this->treatmentProgressPanel['days_count'] > 0)
                                     <div class="crm-treatment-table-wrap">
                                         <table class="crm-treatment-table">
                                             <thead>
@@ -493,15 +490,13 @@
                                         <h3 class="crm-feature-card-title">Xưởng/Labo</h3>
                                         <p class="crm-feature-card-description">Theo dõi lệnh labo theo hồ sơ bệnh nhân và tiến độ giao hàng.</p>
                                     </div>
-                                @if(\App\Filament\Resources\FactoryOrders\FactoryOrderResource::canAccess())
-                                    @can('create', \App\Models\FactoryOrder::class)
+                                @if($this->labMaterialsPanel['create_factory_order_url'])
                                         <a
-                                            href="{{ route('filament.admin.resources.factory-orders.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                            href="{{ $this->labMaterialsPanel['create_factory_order_url'] }}"
                                             class="crm-btn crm-btn-primary crm-btn-md"
                                             style="color: #ffffff;">
                                             Tạo lệnh labo
                                         </a>
-                                    @endcan
                                 @endif
                             </div>
                         </div>
@@ -524,41 +519,25 @@
                                         @forelse($this->factoryOrders as $order)
                                             <tr>
                                                 <td class="is-emphasis">{{ $order->order_no }}</td>
-                                                <td>{{ $order->ordered_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                                <td>{{ $order->due_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                                <td>{{ strtoupper((string) $order->priority) }}</td>
+                                                <td>{{ $order['ordered_at_formatted'] }}</td>
+                                                <td>{{ $order['due_at_formatted'] }}</td>
+                                                <td>{{ strtoupper((string) $order['priority']) }}</td>
                                                 <td>
-                                                    <span
-                                                        class="crm-treatment-status-badge {{ match ($order->status) {
-                                                            \App\Models\FactoryOrder::STATUS_DELIVERED => 'is-completed',
-                                                            \App\Models\FactoryOrder::STATUS_ORDERED, \App\Models\FactoryOrder::STATUS_IN_PROGRESS => 'is-progress',
-                                                            default => 'is-default',
-                                                        } }}"
-                                                    >
-                                                        {{ match ($order->status) {
-                                                            \App\Models\FactoryOrder::STATUS_ORDERED => 'Đã đặt',
-                                                            \App\Models\FactoryOrder::STATUS_IN_PROGRESS => 'Đang làm',
-                                                            \App\Models\FactoryOrder::STATUS_DELIVERED => 'Đã giao',
-                                                            \App\Models\FactoryOrder::STATUS_CANCELLED => 'Đã hủy',
-                                                            default => 'Nháp',
-                                                        } }}
+                                                    <span class="crm-treatment-status-badge {{ $order['status_class'] }}">
+                                                        {{ $order['status_label'] }}
                                                     </span>
                                                 </td>
-                                                <td>{{ number_format((int) ($order->items_count ?? 0), 0, ',', '.') }}</td>
+                                                <td>{{ $order['items_count_formatted'] }}</td>
                                                 <td>
-                                                    @if(\App\Filament\Resources\FactoryOrders\FactoryOrderResource::canAccess())
-                                                        @can('update', $order)
+                                                    @if($order['detail_url'])
                                                             <a
-                                                                href="{{ route('filament.admin.resources.factory-orders.edit', ['record' => $order->id]) }}"
-                                                                class="text-sm font-medium text-primary-600 hover:underline"
+                                                                href="{{ $order['detail_url'] }}"
+                                                            class="text-sm font-medium text-primary-600 hover:underline"
                                                             >
-                                                                Chi tiết
+                                                                {{ $order['detail_action_label'] }}
                                                             </a>
-                                                        @else
-                                                            <span class="text-sm text-gray-500">Khong co quyen</span>
-                                                        @endcan
                                                     @else
-                                                        <span class="text-sm text-gray-500">Khong co quyen</span>
+                                                        <span class="text-sm text-gray-500">{{ $order['detail_action_label'] }}</span>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -580,9 +559,9 @@
                                         <h3 class="crm-feature-card-title">Phiếu xuất vật tư</h3>
                                         <p class="crm-feature-card-description">Xuất kho theo bệnh nhân, đồng bộ tồn kho và chi phí vật tư.</p>
                                     </div>
-                                @if(\App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource::canAccess())
+                                @if($this->labMaterialsPanel['create_material_issue_note_url'])
                                     <a
-                                        href="{{ route('filament.admin.resources.material-issue-notes.create', ['patient_id' => $this->record->id, 'branch_id' => $this->record->first_branch_id]) }}"
+                                        href="{{ $this->labMaterialsPanel['create_material_issue_note_url'] }}"
                                         class="crm-btn crm-btn-primary crm-btn-md"
                                         style="color: #ffffff;"
                                     >
@@ -610,34 +589,25 @@
                                         @forelse($this->materialIssueNotes as $note)
                                             <tr>
                                                 <td class="is-emphasis">{{ $note->note_no }}</td>
-                                                <td>{{ $note->issued_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                                <td>{{ $note['issued_at_formatted'] }}</td>
                                                 <td>
-                                                    <span
-                                                        class="crm-treatment-status-badge {{ match ($note->status) {
-                                                            \App\Models\MaterialIssueNote::STATUS_POSTED => 'is-completed',
-                                                            default => 'is-default',
-                                                        } }}"
-                                                    >
-                                                        {{ match ($note->status) {
-                                                            \App\Models\MaterialIssueNote::STATUS_POSTED => 'Đã xuất kho',
-                                                            \App\Models\MaterialIssueNote::STATUS_CANCELLED => 'Đã hủy',
-                                                            default => 'Nháp',
-                                                        } }}
+                                                    <span class="crm-treatment-status-badge {{ $note['status_class'] }}">
+                                                        {{ $note['status_label'] }}
                                                     </span>
                                                 </td>
-                                                <td>{{ number_format((int) ($note->items_count ?? 0), 0, ',', '.') }}</td>
-                                                <td class="is-emphasis">{{ number_format((float) ($note->total_cost ?? 0), 0, ',', '.') }}đ</td>
-                                                <td>{{ $note->reason ?: '-' }}</td>
+                                                <td>{{ $note['items_count_formatted'] }}</td>
+                                                <td class="is-emphasis">{{ $note['total_cost_formatted'] }}đ</td>
+                                                <td>{{ $note['reason'] ?: '-' }}</td>
                                                 <td>
-                                                    @if(\App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource::canAccess())
+                                                    @if($note['detail_url'])
                                                         <a
-                                                            href="{{ route('filament.admin.resources.material-issue-notes.edit', ['record' => $note->id]) }}"
+                                                            href="{{ $note['detail_url'] }}"
                                                             class="text-sm font-medium text-primary-600 hover:underline"
                                                         >
-                                                            Chi tiết
+                                                            {{ $note['detail_action_label'] }}
                                                         </a>
                                                     @else
-                                                        <span class="text-sm text-gray-500">Khong co quyen</span>
+                                                        <span class="text-sm text-gray-500">{{ $note['detail_action_label'] }}</span>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -659,8 +629,8 @@
                                         <h3 class="crm-feature-card-title">Vật tư đã dùng trong phiên điều trị</h3>
                                         <p class="crm-feature-card-description">Đối soát vật tư đã sử dụng trực tiếp theo từng phiên điều trị.</p>
                                     </div>
-                                @if(\App\Filament\Resources\TreatmentMaterials\TreatmentMaterialResource::canAccess())
-                                    <a href="{{ route('filament.admin.resources.treatment-materials.create') }}"
+                                @if($this->labMaterialsPanel['create_treatment_material_url'])
+                                    <a href="{{ $this->labMaterialsPanel['create_treatment_material_url'] }}"
                                         class="crm-btn crm-btn-outline crm-btn-md">
                                         Thêm vật tư phiên
                                     </a>
@@ -685,13 +655,13 @@
                                     <tbody>
                                         @forelse($this->materialUsages as $usage)
                                             <tr>
-                                                <td>{{ $usage->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                                <td>#{{ $usage->treatment_session_id ?? '-' }}</td>
-                                                <td class="is-emphasis">{{ $usage->material?->name ?? 'N/A' }}</td>
-                                                <td>{{ number_format((float) $usage->quantity, 0, ',', '.') }}</td>
-                                                <td>{{ number_format((float) $usage->cost, 0, ',', '.') }}đ</td>
-                                                <td class="is-emphasis">{{ number_format((float) $usage->quantity * (float) $usage->cost, 0, ',', '.') }}đ</td>
-                                                <td>{{ $usage->user?->name ?? 'N/A' }}</td>
+                                                <td>{{ $usage['created_at_formatted'] }}</td>
+                                                <td>#{{ $usage['treatment_session_id'] ?? '-' }}</td>
+                                                <td class="is-emphasis">{{ $usage['material_name'] }}</td>
+                                                <td>{{ $usage['quantity_formatted'] }}</td>
+                                                <td>{{ $usage['unit_cost_formatted'] }}đ</td>
+                                                <td class="is-emphasis">{{ $usage['total_cost_formatted'] }}đ</td>
+                                                <td>{{ $usage['user_name'] }}</td>
                                             </tr>
                                         @empty
                                             <tr>
@@ -720,46 +690,34 @@
                                 <div class="crm-payment-summary-actions">
                                     <div class="crm-payment-balance">
                                         Số dư:
-                                        <strong class="{{ $this->paymentSummary['balance_is_positive'] ? 'is-positive' : 'is-negative' }}">
-                                            {{ $this->paymentSummary['balance_amount_formatted'] }}đ
+                                        <strong class="{{ $this->paymentPanel['balance_class'] }}">
+                                            {{ $this->paymentPanel['balance_amount_formatted'] }}đ
                                         </strong>
                                     </div>
-                                    @if((auth()->user()?->can('create', \App\Models\Payment::class) ?? false) && filled($this->paymentSummary['create_payment_url']))
-                                        <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-primary crm-btn-md">
-                                            Phiếu thu
+                                    @if($this->paymentPanel['primary_payment_action'])
+                                        <a href="{{ $this->paymentPanel['primary_payment_action']['url'] }}" class="crm-btn crm-btn-primary crm-btn-md">
+                                            {{ $this->paymentPanel['primary_payment_action']['label'] }}
                                         </a>
-                                        <a href="{{ $this->paymentSummary['create_payment_url'] }}" class="crm-btn crm-btn-outline crm-btn-md">
-                                            Thanh toán
+                                    @endif
+                                    @if($this->paymentPanel['secondary_payment_action'])
+                                        <a href="{{ $this->paymentPanel['secondary_payment_action']['url'] }}" class="crm-btn crm-btn-outline crm-btn-md">
+                                            {{ $this->paymentPanel['secondary_payment_action']['label'] }}
                                         </a>
                                     @endif
                                 </div>
                             </div>
 
                             <div class="crm-payment-metrics">
-                                <div class="crm-payment-metric">
-                                    <span>Tổng tiền điều trị</span>
-                                    <strong>{{ $this->paymentSummary['total_treatment_amount_formatted'] }}</strong>
-                                </div>
-                                <div class="crm-payment-metric">
-                                    <span>Giảm giá</span>
-                                    <strong>{{ $this->paymentSummary['total_discount_amount_formatted'] }}</strong>
-                                </div>
-                                <div class="crm-payment-metric">
-                                    <span>Phải thanh toán</span>
-                                    <strong>{{ $this->paymentSummary['must_pay_amount_formatted'] }}</strong>
-                                </div>
-                                <div class="crm-payment-metric">
-                                    <span>Đã thu</span>
-                                    <strong class="is-positive">{{ $this->paymentSummary['net_collected_amount_formatted'] }}</strong>
-                                </div>
-                                <div class="crm-payment-metric">
-                                    <span>Còn lại</span>
-                                    <strong class="is-negative">{{ $this->paymentSummary['remaining_amount_formatted'] }}</strong>
-                                </div>
+                                @foreach($this->paymentPanel['metrics'] as $metric)
+                                    <div class="crm-payment-metric">
+                                        <span>{{ $metric['label'] }}</span>
+                                        <strong @class([$metric['value_class']])>{{ $metric['value'] }}</strong>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
 
-                        @if(auth()->user()?->can('viewAny', \App\Models\Invoice::class) ?? false)
+                        @if($this->paymentPanel['can_view_invoices'])
                             <div class="crm-payment-block">
                                 <div class="crm-payment-block-title">HÓA ĐƠN ĐIỀU TRỊ</div>
                                 @livewire(\App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class, [
@@ -769,7 +727,7 @@
                             </div>
                         @endif
 
-                        @if(auth()->user()?->can('viewAny', \App\Models\Payment::class) ?? false)
+                        @if($this->paymentPanel['can_view_payments'])
                             <div class="crm-payment-block">
                                 <div class="crm-payment-block-title">DANH SÁCH PHIẾU THU - HOÀN ỨNG</div>
                                 @livewire(\App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class, [
@@ -789,16 +747,16 @@
                         </div>
 
                         <div class="crm-forms-grid">
-                            @if(auth()->user()?->can('viewAny', \App\Models\Prescription::class) ?? false)
+                            @if($this->formsPanel['can_view_prescriptions'])
                                 <div class="crm-feature-card">
                                     <h4 class="crm-feature-subtitle">Đơn thuốc gần nhất</h4>
                                     <div class="crm-link-list">
-                                        @forelse($this->latestPrescriptions as $prescription)
-                                            <a href="{{ route('prescriptions.print', $prescription) }}"
+                                        @forelse($this->formsPanel['prescriptions'] as $prescription)
+                                            <a href="{{ $prescription['print_url'] }}"
                                                 target="_blank"
                                                 class="crm-link-list-item">
                                                 <span class="crm-link-list-item-text">
-                                                    {{ $prescription->prescription_code }} - {{ $prescription->treatment_date?->format('d/m/Y') ?? '-' }}
+                                                    {{ $prescription['title'] }}
                                                 </span>
                                                 <span class="crm-link-list-item-action">In</span>
                                             </a>
@@ -808,16 +766,16 @@
                                     </div>
                                 </div>
                             @endif
-                            @if(auth()->user()?->can('viewAny', \App\Models\Invoice::class) ?? false)
+                            @if($this->formsPanel['can_view_invoices'])
                                 <div class="crm-feature-card">
                                     <h4 class="crm-feature-subtitle">Hóa đơn gần nhất</h4>
                                     <div class="crm-link-list">
-                                        @forelse($this->latestInvoices as $invoice)
-                                            <a href="{{ route('invoices.print', $invoice) }}"
+                                        @forelse($this->formsPanel['invoices'] as $invoice)
+                                            <a href="{{ $invoice['print_url'] }}"
                                                 target="_blank"
                                                 class="crm-link-list-item">
                                                 <span class="crm-link-list-item-text">
-                                                    #{{ $invoice->invoice_no }} - {{ $invoice->issued_at?->format('d/m/Y') ?? $invoice->created_at?->format('d/m/Y') }}
+                                                    {{ $invoice['title'] }}
                                                 </span>
                                                 <span class="crm-link-list-item-action">In</span>
                                             </a>

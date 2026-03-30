@@ -89,6 +89,16 @@ it('summarizes patient and risk insights within selected branches', function ():
             'average_no_show' => 72.0,
             'average_churn' => 41.0,
             'active_intervention_tickets' => 1,
+        ])
+        ->and($service->riskSummaryStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng profile', 'value' => '1'],
+            ['label' => 'Risk cao', 'value' => '1'],
+            ['label' => 'Risk trung bình', 'value' => '0'],
+            ['label' => 'Risk thấp', 'value' => '0'],
+            ['label' => 'Avg no-show risk', 'value' => '72.00'],
+            ['label' => 'Avg churn risk', 'value' => '41.00'],
+            ['label' => 'Ticket can thiệp đang mở', 'value' => '1'],
         ]);
 });
 
@@ -108,5 +118,14 @@ it('returns empty patient and risk readers for inaccessible branch selections', 
             'average_no_show' => 0.0,
             'average_churn' => 0.0,
             'active_intervention_tickets' => 0,
+        ])
+        ->and($service->riskSummaryStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng profile', 'value' => '0'],
+            ['label' => 'Risk cao', 'value' => '0'],
+            ['label' => 'Risk trung bình', 'value' => '0'],
+            ['label' => 'Risk thấp', 'value' => '0'],
+            ['label' => 'Avg no-show risk', 'value' => '0.00'],
+            ['label' => 'Avg churn risk', 'value' => '0.00'],
+            ['label' => 'Ticket can thiệp đang mở', 'value' => '0'],
         ]);
 });

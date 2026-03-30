@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
+use App\Models\User;
 use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions;
@@ -20,21 +21,29 @@ class ViewPatient extends ViewRecord
 
     protected ?array $cachedTabCounters = null;
 
+    protected ?User $cachedAuthUser = null;
+
+    protected ?array $cachedIdentityHeader = null;
+
+    protected ?array $cachedBasicInfoGrid = null;
+
     protected ?Collection $cachedTreatmentProgress = null;
 
     protected ?Collection $cachedTreatmentProgressDaySummaries = null;
 
+    protected ?array $cachedTreatmentProgressPanel = null;
+
     protected ?Collection $cachedMaterialUsages = null;
+
+    protected ?array $cachedLabMaterialsPanel = null;
 
     protected ?Collection $cachedFactoryOrders = null;
 
     protected ?Collection $cachedMaterialIssueNotes = null;
 
-    protected ?array $cachedPaymentSummary = null;
+    protected ?array $cachedPaymentPanel = null;
 
-    protected ?Collection $cachedLatestPrescriptions = null;
-
-    protected ?Collection $cachedLatestInvoices = null;
+    protected ?array $cachedFormsPanel = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -98,7 +107,7 @@ class ViewPatient extends ViewRecord
 
     public function getTabsProperty(): array
     {
-        return app(PatientOverviewReadModelService::class)->workspaceTabs($this->record, auth()->user());
+        return app(PatientOverviewReadModelService::class)->workspaceTabs($this->record, $this->currentUser());
     }
 
     public function getTabCountersProperty(): array
@@ -110,6 +119,28 @@ class ViewPatient extends ViewRecord
         $this->cachedTabCounters = app(PatientOverviewReadModelService::class)->tabCounters($this->record);
 
         return $this->cachedTabCounters;
+    }
+
+    public function getIdentityHeaderProperty(): array
+    {
+        if ($this->cachedIdentityHeader !== null) {
+            return $this->cachedIdentityHeader;
+        }
+
+        $this->cachedIdentityHeader = app(PatientOverviewReadModelService::class)->identityHeaderPayload($this->record);
+
+        return $this->cachedIdentityHeader;
+    }
+
+    public function getBasicInfoGridProperty(): array
+    {
+        if ($this->cachedBasicInfoGrid !== null) {
+            return $this->cachedBasicInfoGrid;
+        }
+
+        $this->cachedBasicInfoGrid = app(PatientOverviewReadModelService::class)->basicInfoGridPayload($this->record);
+
+        return $this->cachedBasicInfoGrid;
     }
 
     public function getTreatmentProgressProperty(): Collection
@@ -126,7 +157,7 @@ class ViewPatient extends ViewRecord
 
     public function getTreatmentProgressCountProperty(): int
     {
-        return $this->treatmentProgress->count();
+        return (int) ($this->treatmentProgressPanel['sessions_count'] ?? 0);
     }
 
     public function getTreatmentProgressDaySummariesProperty(): Collection
@@ -143,18 +174,44 @@ class ViewPatient extends ViewRecord
 
     public function getTreatmentProgressDayCountProperty(): int
     {
-        return $this->treatmentProgressDaySummaries->count();
+        return (int) ($this->treatmentProgressPanel['days_count'] ?? 0);
     }
 
     public function getTreatmentProgressTotalAmountProperty(): float
     {
-        return $this->treatmentProgress
-            ->sum(fn (array $session): float => (float) ($session['total_amount'] ?? 0));
+        return (float) ($this->treatmentProgressPanel['total_amount'] ?? 0);
     }
 
     public function getTreatmentProgressTotalAmountFormattedProperty(): string
     {
-        return $this->formatMoney($this->treatmentProgressTotalAmount);
+        return (string) ($this->treatmentProgressPanel['total_amount_formatted'] ?? '0');
+    }
+
+    public function getTreatmentProgressSummaryProperty(): array
+    {
+        return [
+            'sessions_count' => (int) ($this->treatmentProgressPanel['sessions_count'] ?? 0),
+            'days_count' => (int) ($this->treatmentProgressPanel['days_count'] ?? 0),
+            'total_amount' => (float) ($this->treatmentProgressPanel['total_amount'] ?? 0),
+            'total_amount_formatted' => (string) ($this->treatmentProgressPanel['total_amount_formatted'] ?? '0'),
+        ];
+    }
+
+    public function getTreatmentProgressPanelProperty(): array
+    {
+        if ($this->cachedTreatmentProgressPanel !== null) {
+            return $this->cachedTreatmentProgressPanel;
+        }
+
+        $this->cachedTreatmentProgressPanel = app(PatientOverviewReadModelService::class)->treatmentProgressPanelPayload(
+            $this->record,
+            $this->currentUser(),
+            $this->workspaceReturnUrl,
+            $this->treatmentProgress,
+            $this->treatmentProgressDaySummaries,
+        );
+
+        return $this->cachedTreatmentProgressPanel;
     }
 
     public function getMaterialUsagesProperty(): Collection
@@ -163,7 +220,10 @@ class ViewPatient extends ViewRecord
             return $this->cachedMaterialUsages;
         }
 
-        $this->cachedMaterialUsages = app(PatientOverviewReadModelService::class)->materialUsages($this->record);
+        $this->cachedMaterialUsages = app(PatientOverviewReadModelService::class)->materialUsages(
+            $this->record,
+            $this->currentUser(),
+        );
 
         return $this->cachedMaterialUsages;
     }
@@ -174,7 +234,10 @@ class ViewPatient extends ViewRecord
             return $this->cachedFactoryOrders;
         }
 
-        $this->cachedFactoryOrders = app(PatientOverviewReadModelService::class)->factoryOrders($this->record);
+        $this->cachedFactoryOrders = app(PatientOverviewReadModelService::class)->factoryOrders(
+            $this->record,
+            $this->currentUser(),
+        );
 
         return $this->cachedFactoryOrders;
     }
@@ -185,42 +248,59 @@ class ViewPatient extends ViewRecord
             return $this->cachedMaterialIssueNotes;
         }
 
-        $this->cachedMaterialIssueNotes = app(PatientOverviewReadModelService::class)->materialIssueNotes($this->record);
+        $this->cachedMaterialIssueNotes = app(PatientOverviewReadModelService::class)->materialIssueNotes(
+            $this->record,
+            $this->currentUser(),
+        );
 
         return $this->cachedMaterialIssueNotes;
     }
 
+    public function getLabMaterialsPanelProperty(): array
+    {
+        if ($this->cachedLabMaterialsPanel !== null) {
+            return $this->cachedLabMaterialsPanel;
+        }
+
+        $this->cachedLabMaterialsPanel = app(PatientOverviewReadModelService::class)->labMaterialsPanelPayload(
+            $this->record,
+            $this->currentUser(),
+        );
+
+        return $this->cachedLabMaterialsPanel;
+    }
+
     public function getPaymentSummaryProperty(): array
     {
-        if ($this->cachedPaymentSummary !== null) {
-            return $this->cachedPaymentSummary;
-        }
-
-        $this->cachedPaymentSummary = app(PatientOverviewReadModelService::class)->paymentSummary($this->record);
-
-        return $this->cachedPaymentSummary;
+        return (array) ($this->paymentPanel['summary'] ?? []);
     }
 
-    public function getLatestPrescriptionsProperty(): Collection
+    public function getPaymentPanelProperty(): array
     {
-        if ($this->cachedLatestPrescriptions !== null) {
-            return $this->cachedLatestPrescriptions;
+        if ($this->cachedPaymentPanel !== null) {
+            return $this->cachedPaymentPanel;
         }
 
-        $this->cachedLatestPrescriptions = app(PatientOverviewReadModelService::class)->latestPrescriptions($this->record);
+        $this->cachedPaymentPanel = app(PatientOverviewReadModelService::class)->paymentPanelPayload(
+            $this->record,
+            $this->currentUser(),
+        );
 
-        return $this->cachedLatestPrescriptions;
+        return $this->cachedPaymentPanel;
     }
 
-    public function getLatestInvoicesProperty(): Collection
+    public function getFormsPanelProperty(): array
     {
-        if ($this->cachedLatestInvoices !== null) {
-            return $this->cachedLatestInvoices;
+        if ($this->cachedFormsPanel !== null) {
+            return $this->cachedFormsPanel;
         }
 
-        $this->cachedLatestInvoices = app(PatientOverviewReadModelService::class)->latestInvoices($this->record);
+        $this->cachedFormsPanel = app(PatientOverviewReadModelService::class)->formsPanelPayload(
+            $this->record,
+            $this->currentUser(),
+        );
 
-        return $this->cachedLatestInvoices;
+        return $this->cachedFormsPanel;
     }
 
     public function setActiveTab(string $tab): void
@@ -254,7 +334,7 @@ class ViewPatient extends ViewRecord
     {
         $headerActions = app(PatientOverviewReadModelService::class)->workspaceHeaderActions(
             $this->record,
-            auth()->user(),
+            $this->currentUser(),
             $this->workspaceReturnUrl,
         );
 
@@ -300,8 +380,16 @@ class ViewPatient extends ViewRecord
         ];
     }
 
-    protected function formatMoney(float|int|string|null $value): string
+    protected function currentUser(): ?User
     {
-        return number_format((float) $value, 0, ',', '.');
+        if ($this->cachedAuthUser !== null) {
+            return $this->cachedAuthUser;
+        }
+
+        $authUser = auth()->user();
+
+        $this->cachedAuthUser = $authUser instanceof User ? $authUser : null;
+
+        return $this->cachedAuthUser;
     }
 }
