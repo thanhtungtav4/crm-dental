@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\Customer;
 use App\Models\User;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
@@ -28,6 +29,249 @@ it('allows admin manager and cskh personas to access the conversation inbox page
     'manager' => 'Manager',
     'cskh' => 'CSKH',
 ]);
+
+it('renders the conversation inbox shell from a shared inbox view state', function (): void {
+    $blade = File::get(resource_path('views/filament/pages/conversation-inbox.blade.php'));
+    $inboxStatCardPartial = File::get(resource_path('views/filament/pages/partials/conversation-inbox-stat-card.blade.php'));
+    $conversationQueuePanelPartial = File::get(resource_path('views/filament/pages/partials/conversation-queue-panel.blade.php'));
+    $conversationSummaryCardPartial = File::get(resource_path('views/filament/pages/partials/conversation-summary-card.blade.php'));
+    $conversationSelectedHeaderPartial = File::get(resource_path('views/filament/pages/partials/conversation-selected-header.blade.php'));
+    $conversationHandoffFormPartial = File::get(resource_path('views/filament/pages/partials/conversation-handoff-form.blade.php'));
+    $conversationThreadPanelPartial = File::get(resource_path('views/filament/pages/partials/conversation-thread-panel.blade.php'));
+    $conversationListItemPartial = File::get(resource_path('views/filament/pages/partials/conversation-list-item.blade.php'));
+    $conversationLeadModalPartial = File::get(resource_path('views/filament/pages/partials/conversation-lead-modal.blade.php'));
+    $pageShellPartial = File::get(resource_path('views/filament/pages/partials/conversation-inbox-page-shell.blade.php'));
+    $schemaNoticePartial = File::get(resource_path('views/filament/pages/partials/conversation-inbox-schema-notice.blade.php'));
+    $readyShellPartial = File::get(resource_path('views/filament/pages/partials/conversation-inbox-ready-shell.blade.php'));
+    $detailPanelPartial = File::get(resource_path('views/filament/pages/partials/conversation-detail-panel.blade.php'));
+
+    expect($blade)
+        ->not->toContain('@php')
+        ->toContain("@include('filament.pages.partials.conversation-inbox-page-shell', [")
+        ->toContain("'viewState' => \$this->inboxViewState,")
+        ->toContain("'showLeadModal' => \$showLeadModal,")
+        ->not->toContain('match ($conversation->handoffPriorityValue())')
+        ->not->toContain('match ($selectedConversation->handoffStatusValue())')
+        ->not->toContain('$isActiveTab = $this->inboxTab === $tabValue');
+
+    expect($pageShellPartial)
+        ->toContain("\$pagePanel = \$viewState['page_panel'];")
+        ->toContain("@if (! \$viewState['is_schema_ready'])")
+        ->toContain("@include('filament.pages.partials.conversation-inbox-schema-notice', [")
+        ->toContain("'schemaNotice' => \$viewState['schema_notice']")
+        ->toContain("@include('filament.pages.partials.conversation-inbox-ready-shell', [")
+        ->toContain("'viewState' => \$viewState,")
+        ->toContain("'pagePanel' => \$pagePanel,")
+        ->toContain("@if(\$showLeadModal && \$pagePanel['detail_panel']['conversation'])")
+        ->toContain("@include('filament.pages.partials.conversation-lead-modal', [")
+        ->toContain("'leadModalView' => \$pagePanel['lead_modal_view']");
+
+    expect($schemaNoticePartial)
+        ->toContain(":heading=\"\$schemaNotice['heading']\"")
+        ->toContain(":description=\"\$schemaNotice['description']\"")
+        ->toContain("{{ \$schemaNotice['message'] }}");
+
+    expect($readyShellPartial)
+        ->toContain("wire:poll.{{ \$viewState['polling_interval_seconds'] }}s=\"refreshInbox\"")
+        ->toContain("@include('filament.pages.partials.conversation-queue-panel', [")
+        ->toContain("'queuePanel' => \$pagePanel['queue_panel']")
+        ->toContain("@include('filament.pages.partials.conversation-detail-panel', [")
+        ->toContain("'detailPanel' => \$pagePanel['detail_panel']");
+
+    expect($detailPanelPartial)
+        ->toContain(":heading=\"\$detailPanel['heading']\"")
+        ->toContain(":description=\"\$detailPanel['description']\"")
+        ->toContain("@if(\$detailPanel['conversation'])")
+        ->toContain("@include('filament.pages.partials.conversation-selected-header', [")
+        ->toContain("'summaryCards' => \$detailPanel['selected_conversation_view']['summary_cards']")
+        ->toContain("@include('filament.pages.partials.conversation-handoff-form', [")
+        ->toContain("'handoffPanel' => \$detailPanel['selected_conversation_view']['handoff_panel']")
+        ->toContain("@include('filament.pages.partials.conversation-thread-panel', [")
+        ->toContain("'threadPanel' => \$detailPanel['selected_conversation_view']['thread_panel']")
+        ->toContain("{{ \$detailPanel['empty_state_text'] }}");
+
+    expect($inboxStatCardPartial)
+        ->toContain("{{ \$card['label'] }}")
+        ->toContain("{{ \$card['count'] }}")
+        ->toContain("{{ \$card['description'] }}");
+
+    expect($conversationQueuePanelPartial)
+        ->toContain('@props([')
+        ->toContain("{{ \$queuePanel['search_label'] }}")
+        ->toContain("{{ \$queuePanel['search_placeholder'] }}")
+        ->toContain("@foreach(\$queuePanel['inbox_stat_cards'] as \$card)")
+        ->toContain("@foreach(\$queuePanel['rendered_inbox_tabs'] as \$tab)")
+        ->toContain("@foreach(\$queuePanel['provider_filter_options'] as \$providerValue => \$providerLabel)")
+        ->toContain("@forelse(\$queuePanel['conversation_rows'] as \$conversationRow)")
+        ->toContain("{{ \$queuePanel['results_text'] }}")
+        ->toContain("{{ \$queuePanel['empty_state_text'] }}");
+
+    expect($conversationSummaryCardPartial)
+        ->toContain("{{ \$card['label'] }}")
+        ->toContain("{{ \$card['value'] }}");
+
+    expect($conversationSelectedHeaderPartial)
+        ->toContain('@props([')
+        ->toContain('$conversation->providerBadgeClasses()')
+        ->toContain('$conversation->handoffStatusBadgeClasses()')
+        ->toContain('$conversation->handoffPriorityBadgeClasses()')
+        ->toContain('@foreach($summaryCards as $card)')
+        ->toContain("@include('filament.pages.partials.conversation-summary-card', ['card' => \$card])");
+
+    expect($conversationHandoffFormPartial)
+        ->toContain('@props([')
+        ->toContain("{{ \$handoffPanel['summary_heading'] }}")
+        ->toContain("{{ \$handoffPanel['summary_description'] }}")
+        ->toContain("@foreach(\$handoffPanel['status_options'] as \$statusValue => \$statusLabel)")
+        ->toContain("@foreach(\$handoffPanel['priority_options'] as \$priorityValue => \$priorityLabel)");
+
+    expect($conversationThreadPanelPartial)
+        ->toContain('@props([')
+        ->toContain('@forelse($messages as $message)')
+        ->toContain("{{ \$threadPanel['description'] }}")
+        ->toContain("{{ \$composerPanel['submit_label'] }}");
+
+    expect($conversationListItemPartial)
+        ->toContain("wire:key=\"conversation-{{ \$conversationRow['id'] }}\"")
+        ->toContain("{{ \$conversationRow['provider_label'] }}")
+        ->toContain("{{ \$conversationRow['handoff_status_label'] }}")
+        ->toContain("{{ \$conversationRow['handoff_priority_label'] }}")
+        ->toContain("{{ \$conversationRow['preview'] }}");
+
+    expect($conversationLeadModalPartial)
+        ->toContain("{{ \$leadModalView['heading'] }}")
+        ->toContain("{{ \$leadModalView['description'] }}")
+        ->toContain("@foreach(\$leadModalView['branch_options'] as \$branchId => \$branchLabel)")
+        ->toContain("@foreach(\$leadModalView['assignee_options'] as \$staffId => \$staffLabel)")
+        ->toContain("@foreach(\$leadModalView['summary_cards'] as \$card)")
+        ->toContain("{{ \$leadModalView['submit_label'] }}");
+});
+
+it('formats conversation handoff badge classes through the model presentation helpers', function (): void {
+    $conversation = new Conversation([
+        'handoff_priority' => Conversation::PRIORITY_URGENT,
+        'handoff_status' => Conversation::HANDOFF_STATUS_WAITING_CUSTOMER,
+    ]);
+
+    expect($conversation->handoffPriorityBadgeClasses())->toContain('border-danger-200')
+        ->and($conversation->handoffStatusBadgeClasses())->toContain('border-warning-200');
+});
+
+it('formats conversation provider badge classes through the model presentation helper', function (): void {
+    $zaloConversation = new Conversation([
+        'provider' => Conversation::PROVIDER_ZALO,
+    ]);
+
+    $facebookConversation = new Conversation([
+        'provider' => Conversation::PROVIDER_FACEBOOK,
+    ]);
+
+    expect($zaloConversation->providerBadgeClasses())->toContain('border-sky-200')
+        ->and($facebookConversation->providerBadgeClasses())->toContain('border-indigo-200');
+});
+
+it('exposes inbox summary cards and provider filter options through the shared view state', function (): void {
+    $branch = Branch::factory()->create();
+
+    $user = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $user->assignRole('CSKH');
+
+    $page = new ConversationInbox;
+    $page->search = '';
+    $page->providerFilter = 'all';
+    $page->inboxTab = 'all';
+    $page->visibleMessageLimit = 30;
+
+    test()->actingAs($user);
+
+    $viewState = $page->inboxViewState();
+    $pagePanel = $viewState['page_panel'];
+
+    expect($pagePanel['queue_panel']['provider_filter_options'])
+        ->toBe([
+            'all' => 'Tất cả',
+            'zalo' => 'Zalo OA',
+            'facebook' => 'Facebook Messenger',
+        ])
+        ->and($viewState['schema_notice'])->toMatchArray([
+            'heading' => 'Inbox hội thoại chưa sẵn sàng',
+            'description' => 'Trang này sẽ tự hoạt động lại sau khi schema hội thoại được cài đặt đầy đủ.',
+        ])
+        ->and($pagePanel['detail_panel'])->toMatchArray([
+            'heading' => 'Chi tiết hội thoại',
+            'description' => 'Phản hồi trực tiếp, gắn lead vào đúng conversation và tiếp tục giữ luồng tin nhắn về sau.',
+            'empty_state_text' => 'Chọn một hội thoại ở cột bên trái để xem thread chi tiết.',
+        ])
+        ->and($pagePanel['queue_panel']['inbox_stat_cards'])->toHaveCount(4)
+        ->and(collect($pagePanel['queue_panel']['inbox_stat_cards'])->pluck('key')->all())
+        ->toBe(['unread', 'due', 'unclaimed', 'unbound'])
+        ->and(collect($pagePanel['queue_panel']['rendered_inbox_tabs'])->pluck('key')->all())
+        ->toBe(['all', 'priority', 'due', 'unbound', 'mine'])
+        ->and($pagePanel['queue_panel']['conversation_rows'])->toBeArray()
+        ->and($pagePanel['queue_panel']['heading'])->toBe('Queue hội thoại')
+        ->and($pagePanel['detail_panel']['selected_conversation_view']['summary_cards'])->toBe([])
+        ->and($pagePanel['detail_panel']['selected_conversation_view']['messages'])->toBe([])
+        ->and($pagePanel['detail_panel']['selected_conversation_view']['thread_panel']['show_load_older_messages'])->toBeFalse()
+        ->and($pagePanel['detail_panel']['selected_conversation_view']['composer_panel']['submit_label'])->toBe('Gửi phản hồi')
+        ->and($pagePanel['lead_modal_view']['heading'])->toBe('Tạo lead từ hội thoại')
+        ->and($pagePanel['lead_modal_view']['summary_cards'])->toHaveCount(3);
+});
+
+it('builds selected conversation render state from the shared inbox view state', function (): void {
+    $branch = Branch::factory()->create();
+
+    $user = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $user->assignRole('CSKH');
+
+    $customer = Customer::factory()->create();
+
+    $conversation = Conversation::factory()->create([
+        'branch_id' => $branch->id,
+        'customer_id' => $customer->id,
+        'assigned_to' => $user->id,
+        'handoff_priority' => Conversation::PRIORITY_HIGH,
+        'handoff_status' => Conversation::HANDOFF_STATUS_WAITING_CUSTOMER,
+        'handoff_summary' => 'Khach muon duoc goi lai.',
+        'handoff_updated_by' => $user->id,
+        'handoff_updated_at' => now(),
+    ]);
+
+    ConversationMessage::factory()->create([
+        'conversation_id' => $conversation->id,
+        'direction' => ConversationMessage::DIRECTION_INBOUND,
+        'status' => ConversationMessage::STATUS_RECEIVED,
+        'body' => 'Cho minh xin lich hen som nhat.',
+        'message_at' => now()->subMinutes(5),
+    ]);
+
+    test()->actingAs($user);
+
+    $page = new ConversationInbox;
+    $page->selectedConversationId = $conversation->id;
+    $page->visibleMessageLimit = 30;
+
+    $viewState = $page->inboxViewState();
+    $pagePanel = $viewState['page_panel'];
+    $selectedConversationView = $pagePanel['detail_panel']['selected_conversation_view'];
+
+    expect($selectedConversationView['summary_cards'])->toHaveCount(3)
+        ->and($selectedConversationView['customer_edit_url'])->toBeString()
+        ->and($selectedConversationView['handoff_panel']['updated_by_name'])->toBe($user->name)
+        ->and($selectedConversationView['messages'])->toHaveCount(1)
+        ->and($selectedConversationView['messages'][0]['sender_label'])->toBe('Khách')
+        ->and($selectedConversationView['messages'][0]['status_label'])->toBe('Đã nhận')
+        ->and($selectedConversationView['thread_panel']['heading'])->toBe('Thread hội thoại')
+        ->and($selectedConversationView['composer_panel']['label'])->toBe('Phản hồi từ CRM')
+        ->and($selectedConversationView['assignee_options'])->toBeArray()
+        ->and($pagePanel['queue_panel']['conversation_rows'])->toHaveCount(1)
+        ->and($pagePanel['queue_panel']['conversation_rows'][0]['display_name'])->toBe($conversation->displayName())
+        ->and($pagePanel['queue_panel']['conversation_rows'][0]['provider_label'])->toBe($conversation->providerLabel())
+        ->and($pagePanel['queue_panel']['results_text'])->toContain('1 hội thoại');
+});
 
 it('blocks doctor persona from accessing the conversation inbox page', function (): void {
     $branch = Branch::factory()->create();

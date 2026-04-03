@@ -8,11 +8,20 @@ use Illuminate\Support\Facades\File;
 
 it('keeps patient context when opening plan item edit from treatment plan list', function (): void {
     $bladePath = resource_path('views/livewire/patient-treatment-plan-section.blade.php');
+    $componentPath = app_path('Livewire/PatientTreatmentPlanSection.php');
+    $listSectionPath = resource_path('views/livewire/partials/patient-treatment-plan/list-section.blade.php');
     $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $listSection = File::get($listSectionPath);
 
     expect($blade)
-        ->toContain("'return_url' => \$returnUrl")
-        ->toContain("'patient_id' => \$patientId");
+        ->toContain("@include('livewire.partials.patient-treatment-plan.list-section'")
+        ->and($listSection)
+        ->toContain("{{ \$row['edit_url'] }}")
+        ->and($component)
+        ->toContain("route('filament.admin.resources.plan-items.edit'")
+        ->toContain("'return_url' => \$this->returnUrl")
+        ->toContain("'patient_id' => \$this->patientId");
 });
 
 it('captures return url once at mount to avoid livewire internal endpoint redirect', function (): void {
@@ -21,6 +30,45 @@ it('captures return url once at mount to avoid livewire internal endpoint redire
 
     expect($component)->toContain("public string \$returnUrl = '';")
         ->and($component)->toContain('$this->returnUrl = request()->fullUrl();');
+});
+
+it('renders treatment plan section rows from prepared view state payloads', function (): void {
+    $bladePath = resource_path('views/livewire/patient-treatment-plan-section.blade.php');
+    $componentPath = app_path('Livewire/PatientTreatmentPlanSection.php');
+    $listSectionPath = resource_path('views/livewire/partials/patient-treatment-plan/list-section.blade.php');
+    $planModalPath = resource_path('views/livewire/partials/patient-treatment-plan/plan-modal.blade.php');
+    $procedureModalPath = resource_path('views/livewire/partials/patient-treatment-plan/procedure-modal.blade.php');
+    $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $listSection = File::get($listSectionPath);
+    $planModal = File::get($planModalPath);
+    $procedureModal = File::get($procedureModalPath);
+
+    expect($blade)
+        ->not->toContain('@php')
+        ->toContain("@include('livewire.partials.patient-treatment-plan.list-section'")
+        ->toContain("@include('livewire.partials.patient-treatment-plan.plan-modal'")
+        ->toContain("@include('livewire.partials.patient-treatment-plan.procedure-modal'")
+        ->and($listSection)
+        ->toContain("{{ \$viewState['plan_count'] }} hồ sơ")
+        ->toContain("@forelse(\$viewState['plan_rows'] as \$row)")
+        ->toContain("href=\"{{ \$row['plan_url'] }}\"")
+        ->toContain("{{ \$row['edit_url'] }}")
+        ->toContain("@foreach(\$viewState['summary_panels'] as \$panel)")
+        ->and($planModal)
+        ->toContain('@if($isVisible)')
+        ->toContain("@forelse(\$viewState['draft_rows'] as \$row)")
+        ->toContain("wire:model=\"draftItems.{{ \$row['index'] }}.diagnosis_ids\"")
+        ->and($procedureModal)
+        ->toContain('@if($isVisible)')
+        ->toContain('wire:click="selectCategory(null)"')
+        ->toContain("@forelse(\$viewState['service_rows'] as \$service)")
+        ->and($component)
+        ->toContain("'viewState' => \$this->buildViewState(\$sectionData)")
+        ->toContain('protected function buildViewState(array $sectionData): array')
+        ->toContain('protected function planRows(Collection $planItems, Collection $diagnosisMap): array')
+        ->toContain('protected function draftRows(array $diagnosisDetails): array')
+        ->toContain('protected function serviceRows(Collection $services): array');
 });
 
 it('exposes detailed fields in plan item edit form for treatment workflow', function (): void {
@@ -139,37 +187,37 @@ it('rejects livewire internal endpoint as return url for treatment session edit 
 
 it('provides treatment session edit link from patient exam treatment progress table', function (): void {
     $pageClassPath = app_path('Services/PatientOverviewReadModelService.php');
-    $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
+    $bladePath = resource_path('views/filament/resources/patients/pages/partials/treatment-progress-panel.blade.php');
 
     $pageClass = File::get($pageClassPath);
     $blade = File::get($bladePath);
 
     expect($pageClass)
-        ->toContain("'edit_url' => \$sessionId")
+        ->toContain('$editUrl = $sessionId')
         ->toContain("route('filament.admin.resources.treatment-sessions.edit'")
         ->toContain("'return_url' => \$workspaceReturnUrl");
 
     expect($blade)
-        ->toContain("{{ \$session['edit_url'] }}")
-        ->toContain("@if(\$session['edit_url'])")
-        ->toContain('Chỉnh sửa phiên điều trị');
+        ->toContain("@if(\$session['edit_action'])")
+        ->toContain("href=\"{{ \$session['edit_action']['url'] }}\"")
+        ->toContain("title=\"{{ \$session['edit_action']['label'] }}\"");
 });
 
 it('captures exam-treatment workspace url once and reuses it for create and edit session links', function (): void {
     $pageClassPath = app_path('Filament/Resources/Patients/Pages/ViewPatient.php');
-    $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
+    $readModelPath = app_path('Services/PatientOverviewReadModelService.php');
 
     $pageClass = File::get($pageClassPath);
-    $blade = File::get($bladePath);
+    $readModel = File::get($readModelPath);
 
     expect($pageClass)
         ->toContain("public string \$workspaceReturnUrl = '';")
         ->toContain('$this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($this->activeTab);')
-        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+        ->toContain('$this->workspaceReturnUrl,');
 
-    expect($blade)
+    expect($readModel)
         ->toContain("route('filament.admin.resources.treatment-sessions.create', [")
-        ->toContain("'return_url' => \$this->workspaceReturnUrl");
+        ->toContain("'return_url' => \$workspaceReturnUrl");
 });
 
 it('supports safe return url redirect for treatment plan create page', function (): void {
@@ -201,12 +249,22 @@ it('supports safe return url redirect for treatment session create page', functi
 
 it('shows treatment plan link in patient treatment list to avoid plan item flow confusion', function (): void {
     $bladePath = resource_path('views/livewire/patient-treatment-plan-section.blade.php');
+    $componentPath = app_path('Livewire/PatientTreatmentPlanSection.php');
+    $listSectionPath = resource_path('views/livewire/partials/patient-treatment-plan/list-section.blade.php');
     $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $listSection = File::get($listSectionPath);
 
     expect($blade)
+        ->toContain("@include('livewire.partials.patient-treatment-plan.list-section'");
+
+    expect($listSection)
         ->toContain('<th>Kế hoạch</th>')
-        ->toContain("route('filament.admin.resources.treatment-plans.edit'")
+        ->toContain("href=\"{{ \$row['plan_url'] }}\"")
         ->toContain('title="Sửa hạng mục"');
+
+    expect($component)
+        ->toContain("route('filament.admin.resources.treatment-plans.edit'");
 });
 
 it('adds quick action from treatment plan and session edit pages back to patient exam-treatment', function (): void {

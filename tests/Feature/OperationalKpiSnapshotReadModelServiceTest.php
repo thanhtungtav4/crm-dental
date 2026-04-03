@@ -45,6 +45,7 @@ it('returns latest snapshot date with visible-branch fallback and snapshot count
         $snapshotDate = $service->latestSnapshotDate($visibleBranchIds);
         $snapshots = $service->snapshotsForDate($snapshotDate, $visibleBranchIds, ['id', 'branch_scope_id', 'sla_status']);
         $counts = $service->snapshotCounts($snapshots, $visibleBranchIds);
+        $cards = collect($service->renderedSnapshotCountCards($counts))->keyBy('key');
 
         expect($snapshotDate)->toBe('2026-03-27')
             ->and($counts)->toBe([
@@ -52,6 +53,16 @@ it('returns latest snapshot date with visible-branch fallback and snapshot count
                 'late' => 1,
                 'stale' => 0,
                 'missing' => 1,
+            ])
+            ->and($cards->get('on_time'))->toMatchArray([
+                'label' => 'On Time',
+                'value' => 1,
+                'badge_label' => '1',
+            ])
+            ->and($cards->get('missing'))->toMatchArray([
+                'label' => 'Missing',
+                'value' => 1,
+                'badge_label' => '1',
             ])
             ->and($service->latestSnapshotDate([]))->toBe('2026-03-27');
     } finally {

@@ -8,14 +8,14 @@ use App\Models\PopupAnnouncementDelivery;
 /**
  * @phpstan-type PopupAnnouncementCenterAction array{
  *     label:string,
- *     method:string,
+ *     wire_click:string,
  *     color:string,
- *     target:string
+ *     wire_target:string
  * }
  * @phpstan-type PopupAnnouncementCenterCloseAction array{
  *     label:string,
- *     method:string,
- *     target:string
+ *     wire_click:string,
+ *     wire_target:string
  * }
  * @phpstan-type PopupAnnouncementCenterPayload array{
  *     code:?string,
@@ -33,6 +33,7 @@ use App\Models\PopupAnnouncementDelivery;
  *     primary_action:PopupAnnouncementCenterAction,
  *     close_action:?PopupAnnouncementCenterCloseAction,
  *     dialog_id:string,
+ *     dialog_aria_describedby:string,
  *     title_id:string,
  *     meta_id:string,
  *     body_id:string,
@@ -40,9 +41,26 @@ use App\Models\PopupAnnouncementDelivery;
  *     starts_at:?string,
  *     ends_at:?string
  * }
+ * @phpstan-type PopupAnnouncementCenterViewState array{
+ *     announcement:?PopupAnnouncementCenterPayload,
+ *     has_announcement:bool,
+ *     polling_interval:int,
+ *     aria_live:string
+ * }
  */
 class PopupAnnouncementCenterReadModelService
 {
+    /** @return PopupAnnouncementCenterViewState */
+    public function centerViewState(?array $announcement, int $pollingInterval): array
+    {
+        return [
+            'announcement' => $announcement,
+            'has_announcement' => $announcement !== null,
+            'polling_interval' => max(5, min(60, $pollingInterval)),
+            'aria_live' => 'polite',
+        ];
+    }
+
     public function pendingDeliveryForUser(int $userId): ?PopupAnnouncementDelivery
     {
         $delivery = PopupAnnouncementDelivery::query()
@@ -117,6 +135,7 @@ class PopupAnnouncementCenterReadModelService
             'primary_action' => $this->primaryActionPayload($requiresAck),
             'close_action' => $this->closeActionPayload($requiresAck),
             'dialog_id' => $dialogAttributes['dialog_id'],
+            'dialog_aria_describedby' => $dialogAttributes['aria_describedby'],
             'title_id' => $dialogAttributes['title_id'],
             'meta_id' => $dialogAttributes['meta_id'],
             'body_id' => $dialogAttributes['body_id'],
@@ -135,9 +154,9 @@ class PopupAnnouncementCenterReadModelService
     {
         return [
             'label' => $requiresAck ? 'Tôi đã đọc' : 'Đóng thông báo',
-            'method' => $requiresAck ? 'acknowledge' : 'dismiss',
+            'wire_click' => $requiresAck ? 'acknowledge' : 'dismiss',
             'color' => $requiresAck ? 'primary' : 'gray',
-            'target' => $requiresAck ? 'acknowledge' : 'dismiss',
+            'wire_target' => $requiresAck ? 'acknowledge' : 'dismiss',
         ];
     }
 
@@ -150,14 +169,15 @@ class PopupAnnouncementCenterReadModelService
 
         return [
             'label' => 'Đóng thông báo',
-            'method' => 'dismiss',
-            'target' => 'dismiss',
+            'wire_click' => 'dismiss',
+            'wire_target' => 'dismiss',
         ];
     }
 
     /**
      * @return array{
      *     dialog_id:string,
+     *     aria_describedby:string,
      *     title_id:string,
      *     meta_id:string,
      *     body_id:string
@@ -167,6 +187,7 @@ class PopupAnnouncementCenterReadModelService
     {
         return [
             'dialog_id' => $dialogId,
+            'aria_describedby' => $dialogId.'-meta '.$dialogId.'-body',
             'title_id' => $dialogId.'-title',
             'meta_id' => $dialogId.'-meta',
             'body_id' => $dialogId.'-body',

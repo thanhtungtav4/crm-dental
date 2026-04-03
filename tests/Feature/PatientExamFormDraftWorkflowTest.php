@@ -8,6 +8,28 @@ use Livewire\Livewire;
 
 use function Pest\Laravel\seed;
 
+it('renders the upgraded patient exam form controls for session creation and autosave feedback', function (): void {
+    seed(LocalDemoDataSeeder::class);
+
+    $doctor = User::query()
+        ->where('email', 'doctor.q1@demo.ident.test')
+        ->firstOrFail();
+
+    $patient = Patient::query()
+        ->where('patient_code', 'PAT-QA-TRT-001')
+        ->firstOrFail();
+
+    Livewire::actingAs($doctor)
+        ->test(PatientExamForm::class, ['patient' => $patient])
+        ->call('createSession')
+        ->assertSee('Ngày khám mới')
+        ->assertSee('Thêm phiếu khám')
+        ->assertSee('Đang đồng bộ dữ liệu...')
+        ->assertSee('Bác sĩ điều trị')
+        ->assertSee('Clinical evidence completeness')
+        ->assertSee('Chọn nhiều');
+});
+
 it('does not persist a blank clinical note when opening a new exam session', function (): void {
     seed(LocalDemoDataSeeder::class);
 

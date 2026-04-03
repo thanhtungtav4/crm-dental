@@ -50,13 +50,26 @@ it('organizes popup announcement form into operator friendly sections', function
 
 it('renders popup center badges and close action from payload state', function (): void {
     $popupCenterView = File::get(resource_path('views/livewire/popup-announcement-center.blade.php'));
+    $shellPartial = File::get(resource_path('views/livewire/partials/popup-announcement-center-shell.blade.php'));
+    $dialogPartial = File::get(resource_path('views/livewire/partials/popup-announcement-dialog.blade.php'));
 
     expect($popupCenterView)
-        ->toContain('wire:poll.visible.')
-        ->toContain("\$activeAnnouncement['mode_classes']")
-        ->toContain("\$activeAnnouncement['close_action']['method']")
-        ->toContain("\$activeAnnouncement['close_action']['target']")
-        ->toContain("\$activeAnnouncement['primary_action']['color']")
-        ->toContain("\$activeAnnouncement['primary_action']['method']")
-        ->toContain("\$activeAnnouncement['primary_action']['target']");
+        ->not->toContain('@php($viewState = $this->viewState)')
+        ->toContain("@include('livewire.partials.popup-announcement-center-shell'")
+        ->toContain("'viewState' => \$this->viewState");
+
+    expect($shellPartial)
+        ->toContain("wire:poll.visible.{{ \$viewState['polling_interval'] }}s=\"refreshPending\"")
+        ->toContain("aria-live=\"{{ \$viewState['aria_live'] }}\"")
+        ->toContain("@if(\$viewState['has_announcement'])")
+        ->toContain("@include('livewire.partials.popup-announcement-dialog'");
+
+    expect($dialogPartial)
+        ->toContain("\$announcement['mode_classes']")
+        ->toContain("\$announcement['dialog_aria_describedby']")
+        ->toContain("\$announcement['close_action']['wire_click']")
+        ->toContain("\$announcement['close_action']['wire_target']")
+        ->toContain("\$announcement['primary_action']['color']")
+        ->toContain("\$announcement['primary_action']['wire_click']")
+        ->toContain("\$announcement['primary_action']['wire_target']");
 });

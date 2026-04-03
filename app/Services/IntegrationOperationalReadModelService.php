@@ -13,6 +13,7 @@ use App\Models\PopupAnnouncementDelivery;
 use App\Models\WebLeadEmailDelivery;
 use App\Models\WebLeadIngestion;
 use App\Models\ZaloWebhookEvent;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -142,6 +143,33 @@ class IntegrationOperationalReadModelService
 
     /**
      * @return Collection<int, array{
+     *     key:string,
+     *     display_name:string,
+     *     grace_expires_at_label:string,
+     *     remaining_minutes_label:string,
+     *     rotation_reason:?string
+     * }>
+     */
+    public function renderedActiveGraceRotations(): Collection
+    {
+        return $this->activeGraceRotations()
+            ->map(function (array $rotation): array {
+                return [
+                    'key' => (string) $rotation['key'],
+                    'display_name' => (string) $rotation['display_name'],
+                    'grace_expires_at_label' => \Illuminate\Support\Carbon::parse((string) $rotation['grace_expires_at'])
+                        ->format('d/m/Y H:i'),
+                    'remaining_minutes_label' => 'Còn lại khoảng '.((int) $rotation['remaining_minutes']).' phút.',
+                    'rotation_reason' => filled($rotation['rotation_reason'] ?? null)
+                        ? (string) $rotation['rotation_reason']
+                        : null,
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, array{
      *     key: string,
      *     display_name: string,
      *     grace_expires_at: string,
@@ -151,6 +179,127 @@ class IntegrationOperationalReadModelService
     public function expiredGraceRotations(): Collection
     {
         return $this->integrationSecretRotationService->expiredGraceRotations();
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     key:string,
+     *     display_name:string,
+     *     grace_expires_at_label:string,
+     *     expired_minutes_label:string
+     * }>
+     */
+    public function renderedExpiredGraceRotations(): Collection
+    {
+        return $this->expiredGraceRotations()
+            ->map(function (array $rotation): array {
+                return [
+                    'key' => (string) $rotation['key'],
+                    'display_name' => (string) $rotation['display_name'],
+                    'grace_expires_at_label' => \Illuminate\Support\Carbon::parse((string) $rotation['grace_expires_at'])
+                        ->format('d/m/Y H:i'),
+                    'expired_minutes_label' => 'Quá hạn '.((int) $rotation['expired_minutes']).' phút.',
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * @return array<int, array{
+     *     label:string,
+     *     retention_days:int,
+     *     total:int,
+     *     description:string,
+     *     tone:string
+     * }>
+     */
+    public function retentionCandidates(): array
+    {
+        return [
+            $this->retentionCandidate(
+                label: 'Web lead ingestion',
+                retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
+                total: $this->webLeadIngestionRetentionCandidateCount(
+                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
+                ),
+                description: 'Lead ingestion log quá hạn retention.',
+            ),
+            $this->retentionCandidate(
+                label: 'Web lead internal email deliveries',
+                retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
+                total: $this->webLeadTerminalEmailRetentionCandidateCount(
+                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
+                ),
+                description: 'Delivery log email nội bộ đã terminal và quá hạn review window.',
+            ),
+            $this->retentionCandidate(
+                label: 'Zalo webhook',
+                retentionDays: ClinicRuntimeSettings::zaloWebhookRetentionDays(),
+                total: $this->zaloWebhookRetentionCandidateCount(
+                    ClinicRuntimeSettings::zaloWebhookRetentionDays()
+                ),
+                description: 'Webhook inbound đã quá hạn retention.',
+            ),
+            $this->retentionCandidate(
+                label: 'EMR outbox',
+                retentionDays: ClinicRuntimeSettings::emrOperationalRetentionDays(),
+                total: $this->emrRetentionCandidateCount(
+                    ClinicRuntimeSettings::emrOperationalRetentionDays()
+                ),
+                description: 'EMR log + event đã đồng bộ xong và đủ điều kiện prune.',
+            ),
+            $this->retentionCandidate(
+                label: 'Clinical media temporary',
+                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(ClinicalMediaAsset::RETENTION_TEMPORARY),
+                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
+                    ? $this->clinicalMediaRetentionCandidateCount(
+                        ClinicalMediaAsset::RETENTION_TEMPORARY,
+                        ClinicRuntimeSettings::clinicalMediaRetentionDays(ClinicalMediaAsset::RETENTION_TEMPORARY)
+                    )
+                    : 0,
+                description: 'Clinical media retention class temporary đã đủ điều kiện prune.',
+            ),
+            $this->retentionCandidate(
+                label: 'Clinical media operational',
+                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL),
+                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
+                    ? $this->clinicalMediaRetentionCandidateCount(
+                        ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
+                        ClinicRuntimeSettings::clinicalMediaRetentionDays(ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL)
+                    )
+                    : 0,
+                description: 'Clinical media retention class clinical_operational đã đủ điều kiện prune.',
+            ),
+            $this->retentionCandidate(
+                label: 'Google Calendar outbox',
+                retentionDays: ClinicRuntimeSettings::googleCalendarOperationalRetentionDays(),
+                total: $this->googleCalendarRetentionCandidateCount(
+                    ClinicRuntimeSettings::googleCalendarOperationalRetentionDays()
+                ),
+                description: 'Google Calendar log + event đã đủ điều kiện prune.',
+            ),
+            $this->retentionCandidate(
+                label: 'Popup announcement logs',
+                retentionDays: ClinicRuntimeSettings::popupAnnouncementRetentionDays(),
+                total: $this->popupDeliveryRetentionCandidateCount(
+                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
+                ) + $this->popupAnnouncementRetentionCandidateCount(
+                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
+                ),
+                description: 'Popup delivery và announcement log đã quá hạn retention.',
+            ),
+            $this->retentionCandidate(
+                label: 'Patient photos',
+                retentionDays: ClinicRuntimeSettings::patientPhotoRetentionDays(),
+                total: ClinicRuntimeSettings::patientPhotoRetentionEnabled()
+                    ? $this->patientPhotoRetentionCandidateCount(
+                        ClinicRuntimeSettings::patientPhotoRetentionDays(),
+                        ClinicRuntimeSettings::patientPhotoRetentionIncludeXray()
+                    )
+                    : 0,
+                description: 'Ảnh bệnh nhân đã quá hạn retention theo runtime setting hiện tại.',
+            ),
+        ];
     }
 
     /**
@@ -345,5 +494,29 @@ class IntegrationOperationalReadModelService
         }
 
         return $types;
+    }
+
+    /**
+     * @return array{
+     *     label:string,
+     *     retention_days:int,
+     *     total:int,
+     *     description:string,
+     *     tone:string
+     * }
+     */
+    protected function retentionCandidate(
+        string $label,
+        int $retentionDays,
+        int $total,
+        string $description,
+    ): array {
+        return [
+            'label' => $label,
+            'retention_days' => $retentionDays,
+            'total' => $total,
+            'description' => $description,
+            'tone' => $total > 0 ? 'warning' : 'success',
+        ];
     }
 }

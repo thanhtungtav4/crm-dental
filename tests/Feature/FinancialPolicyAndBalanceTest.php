@@ -1,9 +1,9 @@
 <?php
 
-use App\Filament\Resources\Patients\Pages\ViewPatient;
 use App\Models\ClinicSetting;
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Services\PatientOverviewReadModelService;
 use Illuminate\Validation\ValidationException;
 
 it('enforces overpay policy and allows when policy enabled', function () {
@@ -87,16 +87,8 @@ it('keeps patient payment summary must pay aligned to invoice total_amount', fun
         'paid_amount' => 0,
     ]);
 
-    $page = new class extends ViewPatient
-    {
-        public function forceRecord(Patient $patient): void
-        {
-            $this->record = $patient;
-        }
-    };
-
-    $page->forceRecord($patient->fresh());
-    $summary = $page->getPaymentPanelProperty()['summary'] ?? [];
+    $summary = app(PatientOverviewReadModelService::class)
+        ->paymentPanelPayload($patient->fresh(), null)['summary'] ?? [];
 
     expect((float) ($summary['must_pay_amount'] ?? 0))->toEqualWithDelta(800000.00, 0.01)
         ->and((float) ($summary['total_discount_amount'] ?? 0))->toEqualWithDelta(200000.00, 0.01);

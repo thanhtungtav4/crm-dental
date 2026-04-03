@@ -76,3 +76,59 @@ it('allows admin to schedule appointments from the patient table through the qui
         ->get(AppointmentResource::getUrl('edit', ['record' => $appointment]))
         ->assertOk();
 });
+
+it('lets staff narrow the patient list by status and assigned doctor before acting', function (): void {
+    $branch = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $admin->assignRole('Admin');
+
+    $doctorA = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctorA->assignRole('Doctor');
+
+    $doctorB = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $doctorB->assignRole('Doctor');
+
+    foreach ([$doctorA, $doctorB] as $doctor) {
+        DoctorBranchAssignment::query()->create([
+            'user_id' => $doctor->id,
+            'branch_id' => $branch->id,
+            'is_active' => true,
+            'is_primary' => true,
+            'assigned_from' => now()->subDay()->toDateString(),
+            'assigned_until' => null,
+        ]);
+    }
+
+    $activePatient = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctorA->id,
+        'status' => 'active',
+    ]);
+
+    $inactivePatient = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+        'primary_doctor_id' => $doctorB->id,
+        'status' => 'inactive',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(ListPatients::class)
+        ->assertTableFilterExists('first_branch_id')
+        ->assertTableFilterExists('primary_doctor_id')
+        ->assertTableFilterExists('owner_staff_id')
+        ->assertTableFilterExists('status')
+        ->filterTable('status', 'active')
+        ->assertCanSeeTableRecords([$activePatient])
+        ->assertCanNotSeeTableRecords([$inactivePatient])
+        ->resetTableFilters()
+        ->filterTable('primary_doctor_id', $doctorA->id)
+        ->assertCanSeeTableRecords([$activePatient])
+        ->assertCanNotSeeTableRecords([$inactivePatient]);
+});

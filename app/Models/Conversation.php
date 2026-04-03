@@ -161,6 +161,15 @@ class Conversation extends Model
         return $this->providerEnum()?->label() ?? strtoupper((string) $this->provider);
     }
 
+    public function providerBadgeClasses(): string
+    {
+        return match ($this->provider) {
+            self::PROVIDER_ZALO => 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200',
+            self::PROVIDER_FACEBOOK => 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-200',
+            default => 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
+        };
+    }
+
     /**
      * @return array<string, string>
      */
@@ -177,6 +186,16 @@ class Conversation extends Model
     public function handoffPriorityLabel(): string
     {
         return static::handoffPriorityOptions()[$this->handoffPriorityValue()] ?? 'Bình thường';
+    }
+
+    public function handoffPriorityBadgeClasses(): string
+    {
+        return match ($this->handoffPriorityValue()) {
+            self::PRIORITY_LOW => 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
+            self::PRIORITY_HIGH => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+            self::PRIORITY_URGENT => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-200',
+            default => 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-900/60 dark:bg-primary-950/30 dark:text-primary-200',
+        };
     }
 
     public function handoffPriorityValue(): string
@@ -205,6 +224,17 @@ class Conversation extends Model
     public function handoffStatusLabel(): string
     {
         return static::handoffStatusOptions()[$this->handoffStatusValue()] ?? 'Mới vào';
+    }
+
+    public function handoffStatusBadgeClasses(): string
+    {
+        return match ($this->handoffStatusValue()) {
+            self::HANDOFF_STATUS_CONSULTING => 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-900/60 dark:bg-primary-950/30 dark:text-primary-200',
+            self::HANDOFF_STATUS_QUOTED => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+            self::HANDOFF_STATUS_WAITING_CUSTOMER => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+            self::HANDOFF_STATUS_FOLLOW_UP => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-200',
+            default => 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
+        };
     }
 
     public function handoffStatusValue(): string

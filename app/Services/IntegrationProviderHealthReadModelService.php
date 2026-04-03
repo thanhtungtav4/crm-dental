@@ -9,6 +9,24 @@ use RuntimeException;
 
 class IntegrationProviderHealthReadModelService
 {
+    /**
+     * @return array<int, array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     status_badge:array{label:string, classes:string},
+     *     summary_badge:array{label:string, classes:string},
+     *     issue_badge:?array{label:string, classes:string},
+     *     meta_preview:array<int, array{label:string, value:int|string}>,
+     *     status_message:?string,
+     *     status_message_classes:?string
+     * }>
+     */
+    public function snapshotCards(): array
+    {
+        return array_map(fn (array $card): array => $this->snapshotCard($card), $this->cards());
+    }
+
     public function __construct(
         protected DicomReadinessService $dicomReadinessService,
         protected EmrIntegrationService $emrIntegrationService,
@@ -92,6 +110,83 @@ class IntegrationProviderHealthReadModelService
             'dicom' => $this->dicomCard(),
             'web_lead' => $this->webLeadCard(),
             default => throw new InvalidArgumentException("Unsupported integration provider [{$key}]."),
+        };
+    }
+
+    /**
+     * @param  array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     enabled:bool,
+     *     tone:string,
+     *     status:string,
+     *     score:int,
+     *     issues:array<int, string>,
+     *     recommendations:array<int, string>,
+     *     meta:array<int, array{label:string, value:int|string}>,
+     *     issue_count:int,
+     *     recommendation_count:int,
+     *     runtime_error_message:?string,
+     *     webhook_url:?string
+     * } $card
+     * @return array{
+     *     key:string,
+     *     label:string,
+     *     description:string,
+     *     status_badge:array{label:string, classes:string},
+     *     summary_badge:array{label:string, classes:string},
+     *     issue_badge:?array{label:string, classes:string},
+     *     meta_preview:array<int, array{label:string, value:int|string}>,
+     *     status_message:?string,
+     *     status_message_classes:?string
+     * }
+     */
+    protected function snapshotCard(array $card): array
+    {
+        $toneClasses = $this->toneClasses((string) ($card['tone'] ?? 'info'));
+        $runtimeErrorMessage = $card['runtime_error_message'] ?? null;
+        $issues = $card['issues'] ?? [];
+
+        return [
+            'key' => $card['key'],
+            'label' => $card['label'],
+            'description' => $card['description'],
+            'status_badge' => [
+                'label' => $card['status'],
+                'classes' => $toneClasses,
+            ],
+            'summary_badge' => [
+                'label' => ($card['enabled'] ?? false)
+                    ? 'Score '.($card['score'] ?? 0).'/100'
+                    : 'Runtime disabled',
+                'classes' => $toneClasses,
+            ],
+            'issue_badge' => ((int) ($card['issue_count'] ?? 0)) > 0
+                ? [
+                    'label' => ((int) $card['issue_count']).' issue',
+                    'classes' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+                ]
+                : null,
+            'meta_preview' => array_slice($card['meta'] ?? [], 0, 2),
+            'status_message' => filled($runtimeErrorMessage)
+                ? (string) $runtimeErrorMessage
+                : ($issues[0] ?? null),
+            'status_message_classes' => filled($runtimeErrorMessage)
+                ? 'border-danger-200 bg-danger-50 text-danger-900 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100'
+                : (! empty($issues)
+                    ? 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300'
+                    : null),
+        ];
+    }
+
+    protected function toneClasses(string $tone): string
+    {
+        return match ($tone) {
+            'success' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+            'warning' => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+            'danger' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+            default => 'border-info-200 bg-info-50 text-info-700 dark:border-info-900/60 dark:bg-info-950/30 dark:text-info-200',
         };
     }
 

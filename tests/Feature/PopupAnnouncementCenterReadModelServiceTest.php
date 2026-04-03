@@ -10,6 +10,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('returns the next pending delivery and formats its announcement payload', function (): void {
+    $expiredStartAt = now()->subDay();
+    $expiredEndsAt = now()->subMinute();
+    $pendingStartsAt = now()->subMinute();
+    $pendingEndsAt = now()->addHour();
+
     ClinicSetting::setValue('popup.enabled', true, [
         'group' => 'popup',
         'value_type' => 'boolean',
@@ -25,9 +30,9 @@ it('returns the next pending delivery and formats its announcement payload', fun
         'target_role_names' => ['CSKH'],
         'target_branch_ids' => [],
         'require_ack' => false,
-        'starts_at' => now()->subDay(),
-        'ends_at' => now()->subMinute(),
-        'published_at' => now()->subDay(),
+        'starts_at' => $expiredStartAt,
+        'ends_at' => $expiredEndsAt,
+        'published_at' => $expiredStartAt,
     ]);
 
     PopupAnnouncementDelivery::query()->create([
@@ -45,9 +50,9 @@ it('returns the next pending delivery and formats its announcement payload', fun
         'target_role_names' => ['CSKH'],
         'target_branch_ids' => [],
         'require_ack' => true,
-        'starts_at' => now()->subMinute(),
-        'ends_at' => now()->addHour(),
-        'published_at' => now()->subMinute(),
+        'starts_at' => $pendingStartsAt,
+        'ends_at' => $pendingEndsAt,
+        'published_at' => $pendingStartsAt,
     ]);
 
     $delivery = PopupAnnouncementDelivery::query()->create([
@@ -77,16 +82,17 @@ it('returns the next pending delivery and formats its announcement payload', fun
             'can_dismiss' => false,
             'primary_action' => [
                 'label' => 'Tôi đã đọc',
-                'method' => 'acknowledge',
+                'wire_click' => 'acknowledge',
                 'color' => 'primary',
-                'target' => 'acknowledge',
+                'wire_target' => 'acknowledge',
             ],
             'close_action' => null,
             'dialog_id' => 'popup-announcement-'.$delivery->id,
+            'dialog_aria_describedby' => 'popup-announcement-'.$delivery->id.'-meta popup-announcement-'.$delivery->id.'-body',
             'title_id' => 'popup-announcement-'.$delivery->id.'-title',
             'meta_id' => 'popup-announcement-'.$delivery->id.'-meta',
             'body_id' => 'popup-announcement-'.$delivery->id.'-body',
-            'meta_text' => 'Mã: OPS-001 · Bắt đầu: '.now()->subMinute()->format('d/m/Y H:i').' · Kết thúc: '.now()->addHour()->format('d/m/Y H:i'),
+            'meta_text' => 'Mã: OPS-001 · Bắt đầu: '.$pendingStartsAt->format('d/m/Y H:i').' · Kết thúc: '.$pendingEndsAt->format('d/m/Y H:i'),
         ]);
 });
 
@@ -127,19 +133,43 @@ it('formats dismissable popup presentation fields for the center view', function
         'can_dismiss' => true,
         'primary_action' => [
             'label' => 'Đóng thông báo',
-            'method' => 'dismiss',
+            'wire_click' => 'dismiss',
             'color' => 'gray',
-            'target' => 'dismiss',
+            'wire_target' => 'dismiss',
         ],
         'close_action' => [
             'label' => 'Đóng thông báo',
-            'method' => 'dismiss',
-            'target' => 'dismiss',
+            'wire_click' => 'dismiss',
+            'wire_target' => 'dismiss',
         ],
         'dialog_id' => 'popup-announcement-'.$delivery->id,
+        'dialog_aria_describedby' => 'popup-announcement-'.$delivery->id.'-meta popup-announcement-'.$delivery->id.'-body',
         'title_id' => 'popup-announcement-'.$delivery->id.'-title',
         'meta_id' => 'popup-announcement-'.$delivery->id.'-meta',
         'body_id' => 'popup-announcement-'.$delivery->id.'-body',
         'meta_text' => 'Mã: OPS-002 · Bắt đầu: '.now()->subMinute()->format('d/m/Y H:i'),
+    ]);
+});
+
+it('builds popup center view state from announcement payload and polling interval', function (): void {
+    $service = app(PopupAnnouncementCenterReadModelService::class);
+
+    expect($service->centerViewState(null, 2))->toBe([
+        'announcement' => null,
+        'has_announcement' => false,
+        'polling_interval' => 5,
+        'aria_live' => 'polite',
+    ]);
+
+    $announcement = [
+        'dialog_id' => 'popup-announcement-10',
+        'title' => 'Thông báo nội bộ',
+    ];
+
+    expect($service->centerViewState($announcement, 90))->toBe([
+        'announcement' => $announcement,
+        'has_announcement' => true,
+        'polling_interval' => 60,
+        'aria_live' => 'polite',
     ]);
 });

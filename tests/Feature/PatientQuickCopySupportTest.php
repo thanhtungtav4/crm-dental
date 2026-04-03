@@ -28,17 +28,20 @@ it('renders quick copy controls on patient profile header and phone card', funct
     $bladePath = resource_path('views/filament/resources/patients/pages/view-patient.blade.php');
     $partialPath = resource_path('views/filament/resources/patients/pages/partials/copy-button.blade.php');
     $infoCardPartialPath = resource_path('views/filament/resources/patients/pages/partials/info-card.blade.php');
+    $overviewCardPartialPath = resource_path('views/filament/resources/patients/pages/partials/patient-overview-card.blade.php');
     $cssPath = resource_path('css/filament/admin/theme.css');
 
     $blade = File::get($bladePath);
     $partial = File::get($partialPath);
     $infoCardPartial = File::get($infoCardPartialPath);
+    $overviewCardPartial = File::get($overviewCardPartialPath);
     $css = File::get($cssPath);
 
     expect($blade)
-        ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
-        ->toContain("@include('filament.resources.patients.pages.partials.info-card'")
-        ->toContain('class="crm-copy-toast"');
+        ->toContain("@include('filament.resources.patients.pages.partials.patient-overview-card'")
+        ->toContain("'overviewCard' => \$this->workspaceViewState['overview_card'] ?? []")
+        ->toContain('class="crm-copy-toast"')
+        ->toContain("x-data=\"@include('filament.resources.patients.pages.partials.workspace-shell-state')\"");
 
     expect($partial)
         ->toContain('copyToClipboard(@js($copyValue), @js($copyLabel))')
@@ -51,6 +54,10 @@ it('renders quick copy controls on patient profile header and phone card', funct
         ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
         ->toContain("copyValue' => \$card['copy_value']")
         ->toContain("copyLabel' => \$card['copy_label']");
+
+    expect($overviewCardPartial)
+        ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
+        ->toContain("@include('filament.resources.patients.pages.partials.info-card'");
 
     expect($css)
         ->toContain('.crm-copy-icon-btn {')

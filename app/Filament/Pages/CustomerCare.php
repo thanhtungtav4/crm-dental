@@ -28,6 +28,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Livewire\Attributes\Computed;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerCare extends Page implements HasTable
@@ -71,6 +72,115 @@ class CustomerCare extends Page implements HasTable
     public function getTitle(): string
     {
         return $this->getHeading();
+    }
+
+    /**
+     * @return array{
+     *   sla_summary:array{
+     *     total_open:int,
+     *     overdue:int,
+     *     due_today:int,
+     *     unassigned:int,
+     *     owned_by_me:int,
+     *     priority_no_show:int,
+     *     priority_recall:int,
+     *     priority_follow_up:int,
+     *     by_channel:array<int, array{label:string,total:int}>,
+     *     by_branch:array<int, array{label:string,total:int}>,
+     *     by_staff:array<int, array{label:string,total:int}>
+     *   },
+     *   page_panel:array{
+     *     overview_panel:array{
+     *       summary_cards:list<array{
+     *         key:string,
+     *         label:string,
+     *         count:int,
+     *         card_class:string,
+     *         label_class:string,
+     *         value_class:string
+     *       }>,
+     *       breakdown_sections:list<array{
+     *         key:string,
+     *         heading:string,
+     *         rows:array<int, array{label:string,total:int}>,
+     *         empty_text:string
+     *       }>
+     *     },
+     *     tabs_panel:array{
+     *       rendered_tabs:list<array{
+     *         key:string,
+     *         label:string,
+     *         button_id:string,
+     *         panel_id:string,
+     *         is_active:bool,
+     *         tab_index:string,
+     *         button_class:string
+     *       }>,
+     *       active_tab_button_id:string,
+     *       active_panel_id:string
+     *     },
+     *     active_tab_view:array{
+     *       panel_id:string,
+     *       labelled_by:string
+     *     }
+     *   }
+     * }
+     */
+    #[Computed]
+    public function careViewState(): array
+    {
+        $activeTab = $this->activeTab;
+
+        return [
+            'sla_summary' => $this->slaSummary(),
+            'page_panel' => $this->pagePanel($activeTab),
+        ];
+    }
+
+    /**
+     * @return array{
+     *   overview_panel:array{
+     *     summary_cards:list<array{
+     *       key:string,
+     *       label:string,
+     *       count:int,
+     *       card_class:string,
+     *       label_class:string,
+     *       value_class:string
+     *     }>,
+     *     breakdown_sections:list<array{
+     *       key:string,
+     *       heading:string,
+     *       rows:array<int, array{label:string,total:int}>,
+     *       empty_text:string
+     *     }>
+     *   },
+     *   tabs_panel:array{
+     *     rendered_tabs:list<array{
+     *       key:string,
+     *       label:string,
+     *       button_id:string,
+     *       panel_id:string,
+     *       is_active:bool,
+     *       tab_index:string,
+     *       button_class:string
+     *     }>,
+     *     active_tab_button_id:string,
+     *     active_panel_id:string
+     *   },
+     *   active_tab_view:array{
+     *     panel_id:string,
+     *     labelled_by:string
+     *   }
+     * }
+     */
+    protected function pagePanel(string $activeTab): array
+    {
+        return [
+            'overview_panel' => $this->overviewPanel(),
+            'tabs_panel' => $this->tabsPanel($activeTab),
+            'active_tab_view' => $this->activeTabView($activeTab),
+        ];
     }
 
     public function mount(): void
@@ -128,13 +238,252 @@ class CustomerCare extends Page implements HasTable
      *   by_staff:array<int, array{label:string,total:int}>
      * }
      */
-    public function getSlaSummaryProperty(): array
+    #[Computed]
+    public function slaSummary(): array
     {
         return app(CustomerCareSlaReadModelService::class)->summary(
             baseQuery: $this->baseCareTicketQuery(),
             authUser: auth()->user(),
             careChannelOptions: $this->getCareChannelOptions(),
         );
+    }
+
+    /**
+     * @return list<array{
+     *   key:string,
+     *   label:string,
+     *   count:int,
+     *   count_label:string,
+     *   card_class:string,
+     *   label_class:string,
+     *   value_class:string
+     * }>
+     */
+    protected function slaSummaryCards(): array
+    {
+        $summary = $this->slaSummary();
+
+        return [
+            [
+                'key' => 'total_open',
+                'label' => 'Ticket đang mở',
+                'count' => $summary['total_open'],
+                'count_label' => $this->formatCareCount($summary['total_open']),
+                'card_class' => 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/60',
+                'label_class' => 'text-gray-500',
+                'value_class' => '',
+            ],
+            [
+                'key' => 'overdue',
+                'label' => 'Quá hạn SLA',
+                'count' => $summary['overdue'],
+                'count_label' => $this->formatCareCount($summary['overdue']),
+                'card_class' => 'border-rose-200 bg-rose-50 dark:border-rose-400/30 dark:bg-rose-500/10',
+                'label_class' => 'text-rose-700 dark:text-rose-300',
+                'value_class' => 'text-rose-700 dark:text-rose-300',
+            ],
+            [
+                'key' => 'due_today',
+                'label' => 'Đến hạn hôm nay',
+                'count' => $summary['due_today'],
+                'count_label' => $this->formatCareCount($summary['due_today']),
+                'card_class' => 'border-amber-200 bg-amber-50 dark:border-amber-400/30 dark:bg-amber-500/10',
+                'label_class' => 'text-amber-700 dark:text-amber-300',
+                'value_class' => 'text-amber-700 dark:text-amber-300',
+            ],
+            [
+                'key' => 'unassigned',
+                'label' => 'Chưa phân công',
+                'count' => $summary['unassigned'],
+                'count_label' => $this->formatCareCount($summary['unassigned']),
+                'card_class' => 'border-slate-200 bg-slate-50 dark:border-slate-400/30 dark:bg-slate-500/10',
+                'label_class' => 'text-slate-700 dark:text-slate-300',
+                'value_class' => 'text-slate-700 dark:text-slate-300',
+            ],
+            [
+                'key' => 'owned_by_me',
+                'label' => 'Đang do tôi phụ trách',
+                'count' => $summary['owned_by_me'],
+                'count_label' => $this->formatCareCount($summary['owned_by_me']),
+                'card_class' => 'border-indigo-200 bg-indigo-50 dark:border-indigo-400/30 dark:bg-indigo-500/10',
+                'label_class' => 'text-indigo-700 dark:text-indigo-300',
+                'value_class' => 'text-indigo-700 dark:text-indigo-300',
+            ],
+            [
+                'key' => 'priority_no_show',
+                'label' => 'Queue No-show',
+                'count' => $summary['priority_no_show'],
+                'count_label' => $this->formatCareCount($summary['priority_no_show']),
+                'card_class' => 'border-blue-200 bg-blue-50 dark:border-blue-400/30 dark:bg-blue-500/10',
+                'label_class' => 'text-blue-700 dark:text-blue-300',
+                'value_class' => 'text-blue-700 dark:text-blue-300',
+            ],
+            [
+                'key' => 'priority_recall',
+                'label' => 'Queue Recall',
+                'count' => $summary['priority_recall'],
+                'count_label' => $this->formatCareCount($summary['priority_recall']),
+                'card_class' => 'border-violet-200 bg-violet-50 dark:border-violet-400/30 dark:bg-violet-500/10',
+                'label_class' => 'text-violet-700 dark:text-violet-300',
+                'value_class' => 'text-violet-700 dark:text-violet-300',
+            ],
+            [
+                'key' => 'priority_follow_up',
+                'label' => 'Queue Follow-up',
+                'count' => $summary['priority_follow_up'],
+                'count_label' => $this->formatCareCount($summary['priority_follow_up']),
+                'card_class' => 'border-emerald-200 bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-500/10',
+                'label_class' => 'text-emerald-700 dark:text-emerald-300',
+                'value_class' => 'text-emerald-700 dark:text-emerald-300',
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{
+     *   key:string,
+     *   heading:string,
+     *   rows:array<int, array{label:string,total:int,total_label:string}>,
+     *   empty_text:string
+     * }>
+     */
+    protected function slaBreakdownSections(): array
+    {
+        $summary = $this->slaSummary();
+
+        return [
+            [
+                'key' => 'channel',
+                'heading' => 'Theo kênh',
+                'rows' => $this->renderBreakdownRows($summary['by_channel']),
+                'empty_text' => 'Chưa có dữ liệu.',
+            ],
+            [
+                'key' => 'branch',
+                'heading' => 'Theo chi nhánh',
+                'rows' => $this->renderBreakdownRows($summary['by_branch']),
+                'empty_text' => 'Chưa có dữ liệu.',
+            ],
+            [
+                'key' => 'staff',
+                'heading' => 'Theo nhân viên',
+                'rows' => $this->renderBreakdownRows($summary['by_staff']),
+                'empty_text' => 'Chưa có dữ liệu.',
+            ],
+        ];
+    }
+
+    protected function formatCareCount(int $count): string
+    {
+        return number_format($count);
+    }
+
+    /**
+     * @param  array<int, array{label:string,total:int}>  $rows
+     * @return array<int, array{label:string,total:int,total_label:string}>
+     */
+    protected function renderBreakdownRows(array $rows): array
+    {
+        return array_map(function (array $row): array {
+            return [
+                ...$row,
+                'total_label' => $this->formatCareCount((int) ($row['total'] ?? 0)),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * @return list<array{
+     *   key:string,
+     *   label:string,
+     *   button_id:string,
+     *   panel_id:string,
+     *   is_active:bool,
+     *   tab_index:string,
+     *   button_class:string
+     * }>
+     */
+    protected function renderedTabs(): array
+    {
+        return collect($this->getTabs())
+            ->map(function (string $label, string $key): array {
+                $isActive = $this->activeTab === $key;
+
+                return [
+                    'key' => $key,
+                    'label' => $label,
+                    'button_id' => 'customer-care-tab-'.$key,
+                    'panel_id' => 'customer-care-panel-'.$key,
+                    'is_active' => $isActive,
+                    'tab_index' => $isActive ? '0' : '-1',
+                    'button_class' => $isActive
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *   summary_cards:list<array{
+     *     key:string,
+     *     label:string,
+     *     count:int,
+     *     card_class:string,
+     *     label_class:string,
+     *     value_class:string
+     *   }>,
+     *   breakdown_sections:list<array{
+     *     key:string,
+     *     heading:string,
+     *     rows:array<int, array{label:string,total:int}>,
+     *     empty_text:string
+     *   }>
+     * }
+     */
+    protected function overviewPanel(): array
+    {
+        return [
+            'summary_cards' => $this->slaSummaryCards(),
+            'breakdown_sections' => $this->slaBreakdownSections(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *   rendered_tabs:list<array{
+     *     key:string,
+     *     label:string,
+     *     button_id:string,
+     *     panel_id:string,
+     *     is_active:bool,
+     *     tab_index:string,
+     *     button_class:string
+     *   }>,
+     *   active_tab_button_id:string,
+     *   active_panel_id:string
+     * }
+     */
+    protected function tabsPanel(string $activeTab): array
+    {
+        return [
+            'rendered_tabs' => $this->renderedTabs(),
+            'active_tab_button_id' => 'customer-care-tab-'.$activeTab,
+            'active_panel_id' => 'customer-care-panel-'.$activeTab,
+        ];
+    }
+
+    /**
+     * @return array{panel_id:string,labelled_by:string}
+     */
+    protected function activeTabView(string $activeTab): array
+    {
+        return [
+            'panel_id' => 'customer-care-panel-'.$activeTab,
+            'labelled_by' => 'customer-care-tab-'.$activeTab,
+        ];
     }
 
     protected function getTableQuery(): Builder

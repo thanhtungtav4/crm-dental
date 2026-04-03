@@ -105,6 +105,53 @@ it('marks web lead provider as degraded when inbound token or internal mail runt
         ->and(collect($card['issues'])->contains(fn (string $message): bool => str_contains($message, 'SMTP host')))->toBeTrue();
 });
 
+it('builds provider health snapshot cards with presentation payloads', function (): void {
+    configureIntegrationProviderHealth('zalo.enabled', true, 'boolean', 'zalo');
+    configureIntegrationProviderHealth('zalo.oa_id', 'oa-provider-health', 'text', 'zalo');
+    configureIntegrationProviderHealth('zalo.app_id', 'app-provider-health', 'text', 'zalo');
+    configureIntegrationProviderHealth('zalo.app_secret', 'secret-provider-health', 'text', 'zalo', isSecret: true);
+    configureIntegrationProviderHealth('zalo.webhook_token', 'secure-token-provider-health-1234567890', 'text', 'zalo', isSecret: true);
+
+    configureIntegrationProviderHealth('zns.enabled', true, 'boolean', 'zns');
+    configureIntegrationProviderHealth('zns.access_token', '', 'text', 'zns', isSecret: true);
+    configureIntegrationProviderHealth('zns.refresh_token', 'zns-refresh-token', 'text', 'zns', isSecret: true);
+    configureIntegrationProviderHealth('zns.send_endpoint', 'https://business.openapi.zalo.me/message/template', 'text', 'zns');
+
+    $cards = collect(app(IntegrationProviderHealthReadModelService::class)->snapshotCards())->keyBy('key');
+
+    expect($cards->get('zalo_oa'))->toMatchArray([
+        'label' => 'Zalo OA',
+        'status_badge' => [
+            'label' => 'Healthy',
+            'classes' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+        ],
+        'summary_badge' => [
+            'label' => 'Score 100/100',
+            'classes' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+        ],
+        'issue_badge' => null,
+        'status_message' => null,
+    ])
+        ->and($cards->get('zalo_oa')['meta_preview'][0]['label'])->toBe('Webhook URL')
+        ->and($cards->get('zns'))->toMatchArray([
+            'label' => 'ZNS',
+            'status_badge' => [
+                'label' => 'Needs configuration',
+                'classes' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+            ],
+            'summary_badge' => [
+                'label' => 'Score 60/100',
+                'classes' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+            ],
+            'issue_badge' => [
+                'label' => '2 issue',
+                'classes' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+            ],
+            'status_message' => 'Thiếu ZNS access token.',
+            'status_message_classes' => 'border-danger-200 bg-danger-50 text-danger-900 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+        ]);
+});
+
 function configureIntegrationProviderHealth(
     string $key,
     array|bool|int|string $value,

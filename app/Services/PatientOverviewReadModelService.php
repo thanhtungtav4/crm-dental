@@ -25,6 +25,61 @@ class PatientOverviewReadModelService
 {
     /**
      * @return array{
+     *     identity_header:array{
+     *         avatar_initials:string,
+     *         full_name:string,
+     *         gender_label:?string,
+     *         gender_badge_class:?string,
+     *         patient_code:?string,
+     *         patient_code_copy_label:?string,
+     *         patient_code_copy_action_label:?string,
+     *         phone:?string,
+     *         phone_href:?string,
+     *         phone_copy_label:?string,
+     *         phone_copy_action_label:?string
+     *     },
+     *     basic_info_grid:array{
+     *         phone:?string,
+     *         phone_href:?string,
+     *         email:?string,
+     *         email_href:?string,
+     *         birthday_label:?string,
+     *         age_label:?string,
+     *         branch_name:string,
+     *         address:?string,
+     *         cards:array<int, array{
+     *             key:string,
+     *             label:string,
+     *             icon:string,
+     *             card_class:string,
+     *             value:string,
+     *             href:?string,
+     *             copy_value:?string,
+     *             copy_label:?string,
+     *             copy_action_label:?string,
+     *             meta:?string,
+     *             is_muted:bool,
+     *             is_truncate:bool,
+     *             title:?string
+     *         }>,
+     *         address_card:?array{
+     *             label:string,
+     *             icon:string,
+     *             value:string
+     *         }
+     *     }
+     * }
+     */
+    public function overviewCardPayload(Patient $patient): array
+    {
+        return [
+            'identity_header' => $this->identityHeaderPayload($patient),
+            'basic_info_grid' => $this->basicInfoGridPayload($patient),
+        ];
+    }
+
+    /**
+     * @return array{
      *     avatar_initials:string,
      *     full_name:string,
      *     gender_label:?string,
@@ -216,6 +271,50 @@ class PatientOverviewReadModelService
                 ],
             ],
             'empty_state_text' => 'Không thể tải dữ liệu bệnh nhân',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     contacts_panel:array{
+     *         title:string,
+     *         description:string
+     *     },
+     *     contacts_section:array{
+     *         title:string,
+     *         description:string
+     *     },
+     *     activity_log_panel:array{
+     *         title:string,
+     *         description:string,
+     *         action:array{
+     *             label:string,
+     *             tab:string,
+     *             button_class:string
+     *         }
+     *     },
+     *     activity_log_prompt:array{
+     *         title:string,
+     *         description:string,
+     *         action:array{
+     *             label:string,
+     *             tab:string,
+     *             button_class:string
+     *         }
+     *     },
+     *     empty_state_text:string
+     * }
+     */
+    public function renderedBasicInfoPanels(): array
+    {
+        $panels = $this->basicInfoPanelsPayload();
+
+        return [
+            'contacts_panel' => $panels['contacts'],
+            'contacts_section' => $panels['contacts'],
+            'activity_log_panel' => $panels['activity_log'],
+            'activity_log_prompt' => $panels['activity_log'],
+            'empty_state_text' => $panels['empty_state_text'],
         ];
     }
 
@@ -487,6 +586,53 @@ class PatientOverviewReadModelService
 
     /**
      * @return array{
+     *     title:string,
+     *     balance_text:string,
+     *     balance_class:string,
+     *     balance_amount_formatted:string,
+     *     actions:array<int, array{label:string,url:string,style:string,button_class:string}>,
+     *     metrics:array<int, array{label:string,value:string,value_class:?string}>,
+     *     blocks:array<int, array{key:string,title:string,relation_manager:string}>
+     * }
+     */
+    public function renderedPaymentPanel(Patient $patient, ?User $authUser): array
+    {
+        $panel = $this->paymentPanelPayload($patient, $authUser);
+        $blocks = collect($panel['sections'] ?? [])
+            ->map(function (array $section): ?array {
+                $relationManager = match ($section['key'] ?? null) {
+                    'invoices' => \App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager::class,
+                    'payments' => \App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager::class,
+                    default => null,
+                };
+
+                if ($relationManager === null) {
+                    return null;
+                }
+
+                return [
+                    'key' => $section['key'],
+                    'title' => $section['title'],
+                    'relation_manager' => $relationManager,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        return [
+            'title' => $panel['title'] ?? '',
+            'balance_text' => $panel['balance_text'] ?? '',
+            'balance_class' => $panel['balance_class'] ?? '',
+            'balance_amount_formatted' => $panel['balance_amount_formatted'] ?? '0',
+            'actions' => $panel['actions'] ?? [],
+            'metrics' => $panel['metrics'] ?? [],
+            'blocks' => $blocks,
+        ];
+    }
+
+    /**
+     * @return array{
      *     treatment_plans:int,
      *     invoices:int,
      *     appointments:int,
@@ -658,10 +804,11 @@ class PatientOverviewReadModelService
 
     /**
      * @return array{
-     *     create_treatment_plan:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
-     *     create_invoice:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
-     *     create_appointment:array{label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
-     *     medical_record:array{label:string,url:?string,visible:bool,mode:?string,record_id:?int,icon:string,color:string,open_in_new_tab:bool}
+     *     items:array<int, array{name:string,label:string,url:?string,visible:bool,icon:string,color:string,open_in_new_tab:bool,mode?:?string,record_id?:?int}>,
+     *     create_treatment_plan:array{name:string,label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     create_invoice:array{name:string,label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     create_appointment:array{name:string,label:string,url:string,visible:bool,icon:string,color:string,open_in_new_tab:bool},
+     *     medical_record:array{name:string,label:string,url:?string,visible:bool,mode:?string,record_id:?int,icon:string,color:string,open_in_new_tab:bool}
      * }
      */
     public function workspaceHeaderActions(
@@ -676,8 +823,9 @@ class PatientOverviewReadModelService
             includePatientContextOnEditUrl: true,
         );
 
-        return [
+        $actions = [
             'create_treatment_plan' => [
+                'name' => 'createTreatmentPlan',
                 'label' => 'Tạo kế hoạch điều trị',
                 'url' => route('filament.admin.resources.treatment-plans.create', [
                     'patient_id' => $patient->id,
@@ -689,6 +837,7 @@ class PatientOverviewReadModelService
                 'open_in_new_tab' => true,
             ],
             'create_invoice' => [
+                'name' => 'createInvoice',
                 'label' => 'Tạo hóa đơn',
                 'url' => route('filament.admin.resources.invoices.create', [
                     'patient_id' => $patient->id,
@@ -699,6 +848,7 @@ class PatientOverviewReadModelService
                 'open_in_new_tab' => true,
             ],
             'create_appointment' => [
+                'name' => 'createAppointment',
                 'label' => 'Đặt lịch hẹn',
                 'url' => route('filament.admin.resources.appointments.create', [
                     'patient_id' => $patient->id,
@@ -709,6 +859,7 @@ class PatientOverviewReadModelService
                 'open_in_new_tab' => true,
             ],
             'medical_record' => [
+                'name' => 'medicalRecord',
                 'label' => $medicalRecordAction['label'] ?? 'Mở bệnh án điện tử',
                 'url' => $medicalRecordAction['url'] ?? null,
                 'visible' => $medicalRecordAction !== null,
@@ -718,6 +869,11 @@ class PatientOverviewReadModelService
                 'color' => 'primary',
                 'open_in_new_tab' => false,
             ],
+        ];
+
+        return [
+            'items' => array_values($actions),
+            ...$actions,
         ];
     }
 
@@ -836,6 +992,42 @@ class PatientOverviewReadModelService
 
     /**
      * @return array{
+     *     title:string,
+     *     description:string,
+     *     sections:array<int, array{
+     *         key:string,
+     *         title:string,
+     *         links:Collection<int, array{
+     *             id:int,
+     *             title:string,
+     *             url:string,
+     *             action_label:string,
+     *             target:string
+     *         }>,
+     *         items:Collection<int, array{
+     *             record:Prescription|Invoice,
+     *             id:int,
+     *             title:string,
+     *             print_url:string
+     *         }>,
+     *         empty_text:string,
+     *         action_label:string
+     *     }>
+     * }
+     */
+    public function renderedFormsPanel(Patient $patient, ?User $authUser): array
+    {
+        $panel = $this->formsPanelPayload($patient, $authUser);
+
+        return [
+            'title' => $panel['title'] ?? '',
+            'description' => $panel['description'] ?? '',
+            'sections' => array_values($panel['sections'] ?? []),
+        ];
+    }
+
+    /**
+     * @return array{
      *     section_title:string,
      *     card_title:string,
      *     create_treatment_session_url:?string,
@@ -895,6 +1087,56 @@ class PatientOverviewReadModelService
                     'button_class' => $this->buttonClassForStyle('primary'),
                 ]
                 : null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     section_title:string,
+     *     summary_badge:string,
+     *     card_title:string,
+     *     total_amount_text:string,
+     *     primary_action:?array{
+     *         label:string,
+     *         url:string,
+     *         button_class:string
+     *     },
+     *     has_day_summaries:bool,
+     *     day_summaries:Collection<int, array{
+     *         progress_date:string,
+     *         sessions_count:int,
+     *         day_total_amount_formatted:string,
+     *         status_label:string
+     *     }>,
+     *     rows:Collection<int, array<string, mixed>>,
+     *     empty_text:string
+     * }
+     */
+    public function renderedTreatmentProgressPanel(
+        Patient $patient,
+        ?User $authUser,
+        string $workspaceReturnUrl = '',
+    ): array {
+        $treatmentProgress = $this->treatmentProgress($patient, $workspaceReturnUrl);
+        $daySummaries = $this->treatmentProgressDaySummaries($patient);
+        $panel = $this->treatmentProgressPanelPayload(
+            $patient,
+            $authUser,
+            $workspaceReturnUrl,
+            $treatmentProgress,
+            $daySummaries,
+        );
+
+        return [
+            'section_title' => $panel['section_title'] ?? '',
+            'summary_badge' => $panel['summary_badge'] ?? '',
+            'card_title' => $panel['card_title'] ?? '',
+            'total_amount_text' => $panel['total_amount_text'] ?? '',
+            'primary_action' => $panel['primary_action'] ?? null,
+            'has_day_summaries' => (bool) ($panel['has_day_summaries'] ?? false),
+            'day_summaries' => $daySummaries,
+            'rows' => $treatmentProgress,
+            'empty_text' => $panel['empty_text'] ?? '',
         ];
     }
 
@@ -1220,6 +1462,293 @@ class PatientOverviewReadModelService
             'sections_by_key' => collect($sections)
                 ->keyBy('key')
                 ->all(),
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     key:string,
+     *     title:string,
+     *     description:string,
+     *     empty_text:string,
+     *     action:?array{
+     *         label:string,
+     *         url:string,
+     *         style:string,
+     *         button_class:string
+     *     },
+     *     table:array{
+     *         columns:array<int, array{label:string}>,
+     *         rows:array<int, array{
+     *             cells:array<int, array{
+     *                 type:string,
+     *                 value?:string,
+     *                 td_class?:string,
+     *                 badge_class?:string,
+     *                 url?:?string,
+     *                 action_class?:string,
+     *                 label?:string
+     *             }>
+     *         }>,
+     *         empty_colspan:int,
+     *         empty_text:string
+     *     }
+     * }>
+     */
+    public function renderedLabMaterialSections(Patient $patient, ?User $authUser): array
+    {
+        $panel = $this->labMaterialsPanelPayload($patient, $authUser);
+        $sectionMap = $panel['sections_by_key'] ?? [];
+        $factoryOrders = $this->factoryOrders($patient, $authUser);
+        $materialIssueNotes = $this->materialIssueNotes($patient, $authUser);
+        $materialUsages = $this->materialUsages($patient, $authUser);
+
+        return [
+            $this->renderLabMaterialSection(
+                section: $sectionMap['factory_orders'] ?? [],
+                columns: [
+                    ['label' => 'Mã lệnh'],
+                    ['label' => 'Ngày đặt'],
+                    ['label' => 'Hẹn trả'],
+                    ['label' => 'Ưu tiên'],
+                    ['label' => 'Trạng thái'],
+                    ['label' => 'Số item'],
+                    ['label' => 'Thao tác'],
+                ],
+                rows: $factoryOrders
+                    ->map(fn (array $order): array => [
+                        'cells' => [
+                            ['type' => 'text', 'value' => $order['order_no'], 'td_class' => 'is-emphasis'],
+                            ['type' => 'text', 'value' => $order['ordered_at_formatted']],
+                            ['type' => 'text', 'value' => $order['due_at_formatted']],
+                            ['type' => 'text', 'value' => strtoupper((string) $order['priority'])],
+                            [
+                                'type' => 'badge',
+                                'value' => $order['status_label'],
+                                'badge_class' => 'crm-treatment-status-badge '.$order['status_class'],
+                            ],
+                            ['type' => 'text', 'value' => $order['items_count_formatted']],
+                            [
+                                'type' => 'action',
+                                'url' => $order['detail_action']['url'],
+                                'action_class' => $order['detail_action']['class'],
+                                'label' => $order['detail_action']['label'],
+                            ],
+                        ],
+                    ])
+                    ->all(),
+            ),
+            $this->renderLabMaterialSection(
+                section: $sectionMap['material_issue_notes'] ?? [],
+                columns: [
+                    ['label' => 'Mã phiếu'],
+                    ['label' => 'Ngày xuất'],
+                    ['label' => 'Trạng thái'],
+                    ['label' => 'Số vật tư'],
+                    ['label' => 'Tổng chi phí'],
+                    ['label' => 'Lý do'],
+                    ['label' => 'Thao tác'],
+                ],
+                rows: $materialIssueNotes
+                    ->map(fn (array $note): array => [
+                        'cells' => [
+                            ['type' => 'text', 'value' => $note['note_no'], 'td_class' => 'is-emphasis'],
+                            ['type' => 'text', 'value' => $note['issued_at_formatted']],
+                            [
+                                'type' => 'badge',
+                                'value' => $note['status_label'],
+                                'badge_class' => 'crm-treatment-status-badge '.$note['status_class'],
+                            ],
+                            ['type' => 'text', 'value' => $note['items_count_formatted']],
+                            ['type' => 'text', 'value' => $note['total_cost_formatted'].'đ', 'td_class' => 'is-emphasis'],
+                            ['type' => 'text', 'value' => $note['reason'] ?: '-'],
+                            [
+                                'type' => 'action',
+                                'url' => $note['detail_action']['url'],
+                                'action_class' => $note['detail_action']['class'],
+                                'label' => $note['detail_action']['label'],
+                            ],
+                        ],
+                    ])
+                    ->all(),
+            ),
+            $this->renderLabMaterialSection(
+                section: $sectionMap['treatment_materials'] ?? [],
+                columns: [
+                    ['label' => 'Ngày xuất'],
+                    ['label' => 'Phiên điều trị'],
+                    ['label' => 'Tên vật tư'],
+                    ['label' => 'Số lượng'],
+                    ['label' => 'Đơn giá'],
+                    ['label' => 'Tổng tiền'],
+                    ['label' => 'Người xuất'],
+                ],
+                rows: $materialUsages
+                    ->map(fn (array $usage): array => [
+                        'cells' => [
+                            ['type' => 'text', 'value' => $usage['created_at_formatted']],
+                            ['type' => 'text', 'value' => $usage['treatment_session_label']],
+                            ['type' => 'text', 'value' => $usage['material_name'], 'td_class' => 'is-emphasis'],
+                            ['type' => 'text', 'value' => $usage['quantity_formatted']],
+                            ['type' => 'text', 'value' => $usage['unit_cost_formatted'].'đ'],
+                            ['type' => 'text', 'value' => $usage['total_cost_formatted'].'đ', 'td_class' => 'is-emphasis'],
+                            ['type' => 'text', 'value' => $usage['user_name']],
+                        ],
+                    ])
+                    ->all(),
+            ),
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     key?:string,
+     *     title?:string,
+     *     description?:string,
+     *     empty_text?:string,
+     *     action?:?array{
+     *         label:string,
+     *         url:string,
+     *         style:string,
+     *         button_class:string
+     *     }
+     * }  $section
+     * @param  array<int, array{label:string}>  $columns
+     * @param  array<int, array{
+     *     cells:array<int, array{
+     *         type:string,
+     *         value?:string,
+     *         td_class?:string,
+     *         badge_class?:string,
+     *         url?:?string,
+     *         action_class?:string,
+     *         label?:string
+     *     }>
+     * }>  $rows
+     * @return array{
+     *     key:string,
+     *     title:string,
+     *     description:string,
+     *     empty_text:string,
+     *     action:?array{
+     *         label:string,
+     *         url:string,
+     *         style:string,
+     *         button_class:string
+     *     },
+     *     table:array{
+     *         columns:array<int, array{label:string}>,
+     *         rows:array<int, array{
+     *             cells:array<int, array{
+     *                 type:string,
+     *                 value?:string,
+     *                 td_class?:string,
+     *                 badge_class?:string,
+     *                 url?:?string,
+     *                 action_class?:string,
+     *                 label?:string
+     *             }>
+     *         }>,
+     *         empty_colspan:int,
+     *         empty_text:string
+     *     }
+     * }
+     */
+    protected function renderLabMaterialSection(array $section, array $columns, array $rows): array
+    {
+        return [
+            'key' => (string) ($section['key'] ?? ''),
+            'title' => (string) ($section['title'] ?? ''),
+            'description' => (string) ($section['description'] ?? ''),
+            'empty_text' => (string) ($section['empty_text'] ?? ''),
+            'action' => $section['action'] === null
+                ? null
+                : [...$section['action'], 'style' => 'color: #ffffff;'],
+            'table' => [
+                'columns' => $columns,
+                'rows' => $rows,
+                'empty_colspan' => count($columns),
+                'empty_text' => (string) ($section['empty_text'] ?? ''),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<int, array{id:string,label:string,count:?int}>  $tabs
+     * @return array<int, array{
+     *     id:string,
+     *     label:string,
+     *     count:?int,
+     *     button_id:string,
+     *     panel_id:string,
+     *     aria_selected:string,
+     *     tabindex:string,
+     *     button_class:string
+     * }>
+     */
+    public function renderedWorkspaceTabs(array $tabs, string $activeTab): array
+    {
+        return collect($tabs)
+            ->map(function (array $tab) use ($activeTab): array {
+                $isActive = $activeTab === $tab['id'];
+
+                return [
+                    ...$tab,
+                    'button_id' => 'patient-workspace-tab-'.$tab['id'],
+                    'panel_id' => 'patient-workspace-panel-'.$tab['id'],
+                    'aria_selected' => $isActive ? 'true' : 'false',
+                    'tabindex' => $isActive ? '0' : '-1',
+                    'button_class' => $isActive ? 'crm-top-tab is-active' : 'crm-top-tab',
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *     overview_card:array<string, mixed>,
+     *     basic_info_panels:array<string, mixed>,
+     *     tabs:array<int, array{id:string,label:string,count:?int}>,
+     *     rendered_tabs:array<int, array<string, mixed>>,
+     *     active_panel_id:string,
+     *     active_tab_button_id:string,
+     *     header_actions:array{
+     *         items:array<int, array<string, mixed>>,
+     *         create_treatment_plan:array<string, mixed>,
+     *         create_invoice:array<string, mixed>,
+     *         create_appointment:array<string, mixed>,
+     *         medical_record:array<string, mixed>
+     *     },
+     *     rendered_treatment_progress_panel:array<string, mixed>,
+     *     rendered_lab_material_sections:array<int, array<string, mixed>>,
+     *     rendered_payment_panel:array<string, mixed>,
+     *     rendered_forms_panel:array<string, mixed>
+     * }
+     */
+    public function workspaceViewState(
+        Patient $patient,
+        ?User $authUser,
+        string $activeTab = 'basic-info',
+        string $workspaceReturnUrl = '',
+    ): array {
+        $tabs = $this->workspaceTabs($patient, $authUser);
+
+        return [
+            'overview_card' => $this->overviewCardPayload($patient),
+            'basic_info_panels' => $this->renderedBasicInfoPanels(),
+            'tabs' => $tabs,
+            'rendered_tabs' => $this->renderedWorkspaceTabs($tabs, $activeTab),
+            'active_panel_id' => 'patient-workspace-panel-'.$activeTab,
+            'active_tab_button_id' => 'patient-workspace-tab-'.$activeTab,
+            'header_actions' => $this->workspaceHeaderActions($patient, $authUser, $workspaceReturnUrl),
+            'rendered_treatment_progress_panel' => $this->renderedTreatmentProgressPanel(
+                $patient,
+                $authUser,
+                $workspaceReturnUrl,
+            ),
+            'rendered_lab_material_sections' => $this->renderedLabMaterialSections($patient, $authUser),
+            'rendered_payment_panel' => $this->renderedPaymentPanel($patient, $authUser),
+            'rendered_forms_panel' => $this->renderedFormsPanel($patient, $authUser),
         ];
     }
 

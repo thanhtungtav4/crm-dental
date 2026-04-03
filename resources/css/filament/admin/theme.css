@@ -230,7 +230,7 @@
 
 .fi-body {
   font-family: var(--crm-font-sans);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--crm-text);
   background: var(--crm-bg);
@@ -293,8 +293,9 @@ h4 {
 .fi-btn {
   border-radius: 8px;
   font-weight: 600;
-  font-size: 13px;
-  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 10px 16px;
 }
 
 .fi-btn:not(.fi-outlined).fi-color.fi-color-primary,
@@ -335,7 +336,7 @@ input[type='search'],
 input[type='password'],
 textarea,
 select {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--crm-text);
 }
 
@@ -346,8 +347,9 @@ select {
 }
 
 .fi-tabs .fi-tabs-item {
-  font-size: 13px;
-  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 10px 16px;
 }
 
 .crm-tabs {
@@ -378,7 +380,7 @@ select {
 }
 
 .fi-ta-table tbody td {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .fi-breadcrumbs {
@@ -396,6 +398,42 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   background: var(--crm-surface);
   padding: 12px 16px 10px;
   box-shadow: none;
+}
+
+.crm-top-tabs-mobile {
+  display: none;
+}
+
+.crm-top-tabs-mobile-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--crm-muted);
+}
+
+.crm-top-tabs-mobile-field {
+  position: relative;
+}
+
+.crm-top-tabs-select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--crm-text-strong);
+  box-shadow: var(--crm-shadow-soft);
+}
+
+.crm-top-tabs-select:focus-visible {
+  outline: 2px solid var(--crm-primary);
+  outline-offset: 2px;
 }
 
 .crm-section-block {
@@ -454,10 +492,11 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   flex: 0 0 auto;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  min-height: 40px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--crm-muted);
-  padding: 4px 2px 8px;
+  padding: 8px 10px 10px;
   white-space: nowrap;
   border-radius: 10px;
   transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
@@ -497,11 +536,11 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   background: var(--crm-tab-count-bg);
   color: var(--crm-tab-count-text);
@@ -1759,12 +1798,98 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   border-radius: 8px;
 }
 
+.crm-exam-header-card {
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--crm-surface) 0%, var(--crm-surface-muted) 100%);
+  padding: 16px;
+}
+
 .crm-exam-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.crm-exam-header-copy {
+  display: flex;
+  min-width: min(100%, 360px);
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crm-exam-header-description {
+  margin: 0;
+  color: var(--crm-text-body);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.crm-exam-create-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.crm-exam-date-field {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crm-exam-date-label {
+  color: var(--crm-text-body);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.crm-exam-date-input {
+  min-height: 40px;
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--crm-text);
+  background: var(--crm-surface-elevated);
+}
+
+.crm-exam-date-input-sm {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.crm-exam-status-stack {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+}
+
+.crm-exam-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.crm-exam-status-pill.is-loading {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--crm-primary);
+}
+
+.crm-exam-status-pill.is-saved {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
 }
 
 .crm-exam-session {
@@ -1777,6 +1902,7 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-session-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1788,11 +1914,12 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  min-height: 40px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
   border-radius: 8px;
-  padding: 2px 4px;
+  padding: 8px 10px;
   transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1820,14 +1947,58 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   transform: rotate(90deg);
 }
 
+.crm-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-session-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.crm-session-badge.is-active {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--crm-primary);
+}
+
+.crm-session-badge.is-locked {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.crm-session-edit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  background: var(--crm-surface-elevated);
+  padding: 12px 16px;
+  color: var(--crm-text-body);
+}
+
+.crm-session-inline-hint {
+  color: var(--crm-muted);
+  font-size: 12px;
+}
+
 .crm-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 12px;
-  padding: 6px 12px;
+  font-size: 13px;
+  padding: 8px 14px;
   line-height: 1;
   border: 1px solid transparent;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
@@ -1839,17 +2010,24 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 }
 
 .crm-btn-md {
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 16px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .crm-btn-sm {
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 36px;
+  padding: 0 12px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.crm-btn-icon {
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
 }
 
 .crm-btn-primary {
@@ -1886,6 +2064,73 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 
 .crm-exam-section-body {
   padding: 10px 0 16px;
+}
+
+.crm-exam-section-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.crm-section-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--crm-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--crm-surface-elevated);
+  color: var(--crm-text-body);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.crm-field-card {
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  background: var(--crm-surface-elevated);
+  padding: 14px;
+}
+
+.crm-field-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.crm-field-label {
+  color: var(--crm-text-strong);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.crm-field-helper {
+  margin: 0;
+  color: var(--crm-text-body);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.crm-doctor-input {
+  min-height: 42px;
+  padding-right: 2.75rem;
+}
+
+.crm-doctor-clear-btn {
+  right: 0.5rem;
+  top: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  transform: translateY(-50%);
+}
+
+.crm-doctor-dropdown {
+  overscroll-behavior: contain;
 }
 
 .crm-tooth-chart {
@@ -1954,8 +2199,8 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 .crm-selection-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid var(--crm-border);
   border-radius: 7px;
   background: var(--crm-surface-elevated);
@@ -1965,6 +2210,15 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
 }
 
 @media (max-width: 640px) {
+  .crm-exam-create-bar {
+    justify-content: stretch;
+  }
+
+  .crm-exam-date-field,
+  .crm-exam-status-stack {
+    width: 100%;
+  }
+
   .crm-tooth-toolbar {
     justify-content: flex-start;
   }
@@ -1976,6 +2230,11 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   .crm-dentition-option {
     flex: 1;
     min-width: 0;
+  }
+
+  .crm-session-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
@@ -2305,6 +2564,33 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   color: #f3f4f6;
 }
 
+.dark .crm-exam-header-card,
+.dark .crm-field-card,
+.dark .crm-session-edit-bar {
+  background: var(--crm-surface-elevated);
+}
+
+.dark .crm-exam-status-pill.is-saved {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+}
+
+.dark .crm-session-badge.is-active {
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
+}
+
+.dark .crm-session-badge.is-locked {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fde68a;
+}
+
+.dark .crm-exam-date-input {
+  border-color: #4b5563;
+  background: #111827;
+  color: #f3f4f6;
+}
+
 .dark .crm-tooth-number {
   color: var(--crm-muted);
 }
@@ -2397,6 +2683,19 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
   min-height: auto;
   border-radius: 8px;
   padding: 8px 10px;
+}
+
+.crm-upload-dropzone {
+  line-height: 1.5;
+}
+
+.crm-upload-status {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--crm-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .crm-other-diagnosis-tag-remove {
@@ -3564,26 +3863,12 @@ a:not(.fi-btn):not(.fi-icon-btn):not(.crm-btn):not(.crm-patient-phone-chip):not(
     border-radius: 999px;
   }
 
-  .crm-top-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--crm-scroll-thumb) transparent;
+  .crm-top-tabs-mobile {
+    display: block;
   }
 
-  .crm-top-tabs::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .crm-top-tabs::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .crm-top-tabs::-webkit-scrollbar-thumb {
-    background: var(--crm-scroll-thumb);
-    border-radius: 999px;
+  .crm-top-tabs-desktop {
+    display: none;
   }
 
   .crm-top-tabs-shell {

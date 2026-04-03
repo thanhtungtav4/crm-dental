@@ -28,6 +28,20 @@ class IntegrationProviderActionService
     }
 
     /**
+     * @return array{title:string,body:string,status:string}
+     */
+    public function emrConnectionNotification(): array
+    {
+        $report = $this->emrConnectionReport();
+
+        return $this->notificationPayload(
+            title: $report['title'],
+            body: $report['body'],
+            status: $report['success'] ? 'success' : 'danger',
+        );
+    }
+
+    /**
      * @return array{success:bool,title:string,body:string,account_email:?string}
      */
     public function googleCalendarConnectionReport(): array
@@ -48,6 +62,23 @@ class IntegrationProviderActionService
             'account_email' => filled($result['account_email'] ?? null)
                 ? (string) $result['account_email']
                 : null,
+        ];
+    }
+
+    /**
+     * @return array{title:string,body:string,status:string,account_email:?string}
+     */
+    public function googleCalendarConnectionNotification(): array
+    {
+        $report = $this->googleCalendarConnectionReport();
+
+        return [
+            ...$this->notificationPayload(
+                title: $report['title'],
+                body: $report['body'],
+                status: $report['success'] ? 'success' : 'danger',
+            ),
+            'account_email' => $report['account_email'],
         ];
     }
 
@@ -76,6 +107,23 @@ class IntegrationProviderActionService
     }
 
     /**
+     * @return array{title:string,body:string,status:string,score:int}
+     */
+    public function readinessNotification(string $providerKey): array
+    {
+        $report = $this->readinessReport($providerKey);
+
+        return [
+            ...$this->notificationPayload(
+                title: $report['title'],
+                body: $report['body'],
+                status: $report['success'] ? 'success' : 'warning',
+            ),
+            'score' => $report['score'],
+        ];
+    }
+
+    /**
      * @return array{success:bool,message:string,url:?string}
      */
     public function emrConfigUrlReport(): array
@@ -86,6 +134,18 @@ class IntegrationProviderActionService
             'success' => ($result['success'] ?? false) === true && filled($result['url'] ?? null),
             'message' => (string) ($result['message'] ?? 'EMR chưa trả về URL cấu hình hợp lệ.'),
             'url' => filled($result['url'] ?? null) ? (string) $result['url'] : null,
+        ];
+    }
+
+    /**
+     * @return array{title:string,body:string,status:string}
+     */
+    protected function notificationPayload(string $title, string $body, string $status): array
+    {
+        return [
+            'title' => $title,
+            'body' => $body,
+            'status' => $status,
         ];
     }
 

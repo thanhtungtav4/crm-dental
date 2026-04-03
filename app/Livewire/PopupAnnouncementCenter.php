@@ -2,9 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Services\PopupAnnouncementCenterReadModelService;
 use App\Services\PopupAnnouncementCenterWorkflowService;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
@@ -17,6 +19,8 @@ class PopupAnnouncementCenter extends Component
 {
     protected PopupAnnouncementCenterWorkflowService $popupAnnouncementCenterWorkflowService;
 
+    protected PopupAnnouncementCenterReadModelService $popupAnnouncementCenterReadModelService;
+
     public ?int $activeDeliveryId = null;
 
     /**
@@ -26,9 +30,12 @@ class PopupAnnouncementCenter extends Component
 
     public int $pollingSeconds = 10;
 
-    public function boot(PopupAnnouncementCenterWorkflowService $popupAnnouncementCenterWorkflowService): void
-    {
+    public function boot(
+        PopupAnnouncementCenterWorkflowService $popupAnnouncementCenterWorkflowService,
+        PopupAnnouncementCenterReadModelService $popupAnnouncementCenterReadModelService,
+    ): void {
         $this->popupAnnouncementCenterWorkflowService = $popupAnnouncementCenterWorkflowService;
+        $this->popupAnnouncementCenterReadModelService = $popupAnnouncementCenterReadModelService;
     }
 
     public function mount(): void
@@ -65,9 +72,13 @@ class PopupAnnouncementCenter extends Component
         return view('livewire.popup-announcement-center');
     }
 
-    public function getPollingIntervalProperty(): int
+    #[Computed]
+    public function viewState(): array
     {
-        return max(5, min(60, $this->pollingSeconds));
+        return $this->popupAnnouncementCenterReadModelService->centerViewState(
+            $this->activeAnnouncement,
+            $this->pollingSeconds,
+        );
     }
 
     /** @param  PopupAnnouncementCenterActiveState|null  $activeState */

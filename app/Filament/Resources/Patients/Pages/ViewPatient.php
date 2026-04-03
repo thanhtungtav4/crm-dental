@@ -3,15 +3,13 @@
 namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
-use App\Filament\Resources\Patients\RelationManagers\InvoicesRelationManager;
-use App\Filament\Resources\Patients\RelationManagers\PatientPaymentsRelationManager;
 use App\Models\User;
 use App\Services\PatientOverviewReadModelService;
 use App\Services\PhiAccessAuditService;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
 
 class ViewPatient extends ViewRecord
 {
@@ -21,41 +19,7 @@ class ViewPatient extends ViewRecord
 
     public string $workspaceReturnUrl = '';
 
-    protected ?array $cachedTabCounters = null;
-
     protected ?User $cachedAuthUser = null;
-
-    protected ?array $cachedIdentityHeader = null;
-
-    protected ?array $cachedBasicInfoGrid = null;
-
-    protected ?array $cachedBasicInfoPanels = null;
-
-    protected ?array $cachedRenderedTabs = null;
-
-    protected ?Collection $cachedTreatmentProgress = null;
-
-    protected ?Collection $cachedTreatmentProgressDaySummaries = null;
-
-    protected ?array $cachedTreatmentProgressPanel = null;
-
-    protected ?Collection $cachedMaterialUsages = null;
-
-    protected ?array $cachedLabMaterialsPanel = null;
-
-    protected ?array $cachedLabMaterialSections = null;
-
-    protected ?Collection $cachedFactoryOrders = null;
-
-    protected ?Collection $cachedMaterialIssueNotes = null;
-
-    protected ?array $cachedPaymentPanel = null;
-
-    protected ?array $cachedRenderedPaymentBlocks = null;
-
-    protected ?array $cachedFormsPanel = null;
-
-    protected ?array $cachedRenderedFormSections = null;
 
     /**
      * Tabs rendered in the custom patient workspace view.
@@ -117,265 +81,129 @@ class ViewPatient extends ViewRecord
         return 'Hồ sơ: '.$this->record->full_name;
     }
 
-    public function getTabsProperty(): array
+    #[Computed]
+    public function workspaceViewState(): array
     {
-        return app(PatientOverviewReadModelService::class)->workspaceTabs($this->record, $this->currentUser());
+        return app(PatientOverviewReadModelService::class)
+            ->workspaceViewState(
+                $this->record,
+                $this->currentUser(),
+                $this->activeTab,
+                $this->workspaceReturnUrl,
+            );
     }
 
-    public function getTabCountersProperty(): array
+    /**
+     * @return array{partial:string,data:array<string,mixed>}
+     */
+    #[Computed]
+    public function activeWorkspaceTabView(): array
     {
-        if ($this->cachedTabCounters !== null) {
-            return $this->cachedTabCounters;
-        }
+        $workspace = $this->workspaceViewState();
 
-        $this->cachedTabCounters = app(PatientOverviewReadModelService::class)->tabCounters($this->record);
-
-        return $this->cachedTabCounters;
-    }
-
-    public function getIdentityHeaderProperty(): array
-    {
-        if ($this->cachedIdentityHeader !== null) {
-            return $this->cachedIdentityHeader;
-        }
-
-        $this->cachedIdentityHeader = app(PatientOverviewReadModelService::class)->identityHeaderPayload($this->record);
-
-        return $this->cachedIdentityHeader;
-    }
-
-    public function getBasicInfoGridProperty(): array
-    {
-        if ($this->cachedBasicInfoGrid !== null) {
-            return $this->cachedBasicInfoGrid;
-        }
-
-        $this->cachedBasicInfoGrid = app(PatientOverviewReadModelService::class)->basicInfoGridPayload($this->record);
-
-        return $this->cachedBasicInfoGrid;
-    }
-
-    public function getBasicInfoPanelsProperty(): array
-    {
-        if ($this->cachedBasicInfoPanels !== null) {
-            return $this->cachedBasicInfoPanels;
-        }
-
-        $this->cachedBasicInfoPanels = app(PatientOverviewReadModelService::class)->basicInfoPanelsPayload();
-
-        return $this->cachedBasicInfoPanels;
-    }
-
-    public function getRenderedTabsProperty(): array
-    {
-        if ($this->cachedRenderedTabs !== null) {
-            return $this->cachedRenderedTabs;
-        }
-
-        $this->cachedRenderedTabs = collect($this->tabs)
-            ->map(function (array $tab): array {
-                $isActive = $this->activeTab === $tab['id'];
-
-                return [
-                    ...$tab,
-                    'button_id' => 'patient-workspace-tab-'.$tab['id'],
-                    'panel_id' => 'patient-workspace-panel-'.$tab['id'],
-                    'aria_selected' => $isActive ? 'true' : 'false',
-                    'tabindex' => $isActive ? '0' : '-1',
-                    'button_class' => $isActive ? 'crm-top-tab is-active' : 'crm-top-tab',
-                ];
-            })
-            ->all();
-
-        return $this->cachedRenderedTabs;
-    }
-
-    public function getActivePanelIdProperty(): string
-    {
-        return 'patient-workspace-panel-'.$this->activeTab;
-    }
-
-    public function getActiveTabButtonIdProperty(): string
-    {
-        return 'patient-workspace-tab-'.$this->activeTab;
-    }
-
-    public function getTreatmentProgressProperty(): Collection
-    {
-        if ($this->cachedTreatmentProgress !== null) {
-            return $this->cachedTreatmentProgress;
-        }
-
-        $this->cachedTreatmentProgress = app(PatientOverviewReadModelService::class)
-            ->treatmentProgress($this->record, $this->workspaceReturnUrl);
-
-        return $this->cachedTreatmentProgress;
-    }
-
-    public function getTreatmentProgressDaySummariesProperty(): Collection
-    {
-        if ($this->cachedTreatmentProgressDaySummaries !== null) {
-            return $this->cachedTreatmentProgressDaySummaries;
-        }
-
-        $this->cachedTreatmentProgressDaySummaries = app(PatientOverviewReadModelService::class)
-            ->treatmentProgressDaySummaries($this->record);
-
-        return $this->cachedTreatmentProgressDaySummaries;
-    }
-
-    public function getTreatmentProgressPanelProperty(): array
-    {
-        if ($this->cachedTreatmentProgressPanel !== null) {
-            return $this->cachedTreatmentProgressPanel;
-        }
-
-        $this->cachedTreatmentProgressPanel = app(PatientOverviewReadModelService::class)->treatmentProgressPanelPayload(
-            $this->record,
-            $this->currentUser(),
-            $this->workspaceReturnUrl,
-            $this->treatmentProgress,
-            $this->treatmentProgressDaySummaries,
-        );
-
-        return $this->cachedTreatmentProgressPanel;
-    }
-
-    public function getMaterialUsagesProperty(): Collection
-    {
-        if ($this->cachedMaterialUsages !== null) {
-            return $this->cachedMaterialUsages;
-        }
-
-        $this->cachedMaterialUsages = app(PatientOverviewReadModelService::class)->materialUsages(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedMaterialUsages;
-    }
-
-    public function getFactoryOrdersProperty(): Collection
-    {
-        if ($this->cachedFactoryOrders !== null) {
-            return $this->cachedFactoryOrders;
-        }
-
-        $this->cachedFactoryOrders = app(PatientOverviewReadModelService::class)->factoryOrders(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedFactoryOrders;
-    }
-
-    public function getMaterialIssueNotesProperty(): Collection
-    {
-        if ($this->cachedMaterialIssueNotes !== null) {
-            return $this->cachedMaterialIssueNotes;
-        }
-
-        $this->cachedMaterialIssueNotes = app(PatientOverviewReadModelService::class)->materialIssueNotes(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedMaterialIssueNotes;
-    }
-
-    public function getLabMaterialsPanelProperty(): array
-    {
-        if ($this->cachedLabMaterialsPanel !== null) {
-            return $this->cachedLabMaterialsPanel;
-        }
-
-        $this->cachedLabMaterialsPanel = app(PatientOverviewReadModelService::class)->labMaterialsPanelPayload(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedLabMaterialsPanel;
-    }
-
-    public function getLabMaterialSectionsProperty(): array
-    {
-        if ($this->cachedLabMaterialSections !== null) {
-            return $this->cachedLabMaterialSections;
-        }
-
-        $this->cachedLabMaterialSections = $this->labMaterialsPanel['sections_by_key'] ?? [];
-
-        return $this->cachedLabMaterialSections;
-    }
-
-    public function getPaymentPanelProperty(): array
-    {
-        if ($this->cachedPaymentPanel !== null) {
-            return $this->cachedPaymentPanel;
-        }
-
-        $this->cachedPaymentPanel = app(PatientOverviewReadModelService::class)->paymentPanelPayload(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedPaymentPanel;
-    }
-
-    public function getFormsPanelProperty(): array
-    {
-        if ($this->cachedFormsPanel !== null) {
-            return $this->cachedFormsPanel;
-        }
-
-        $this->cachedFormsPanel = app(PatientOverviewReadModelService::class)->formsPanelPayload(
-            $this->record,
-            $this->currentUser(),
-        );
-
-        return $this->cachedFormsPanel;
-    }
-
-    public function getRenderedFormSectionsProperty(): array
-    {
-        if ($this->cachedRenderedFormSections !== null) {
-            return $this->cachedRenderedFormSections;
-        }
-
-        $this->cachedRenderedFormSections = array_values($this->formsPanel['sections'] ?? []);
-
-        return $this->cachedRenderedFormSections;
-    }
-
-    public function getRenderedPaymentBlocksProperty(): array
-    {
-        if ($this->cachedRenderedPaymentBlocks !== null) {
-            return $this->cachedRenderedPaymentBlocks;
-        }
-
-        $this->cachedRenderedPaymentBlocks = collect($this->paymentPanel['sections'] ?? [])
-            ->map(function (array $section): ?array {
-                $relationManager = match ($section['key'] ?? null) {
-                    'invoices' => InvoicesRelationManager::class,
-                    'payments' => PatientPaymentsRelationManager::class,
-                    default => null,
-                };
-
-                if ($relationManager === null) {
-                    return null;
-                }
-
-                return [
-                    'key' => $section['key'],
-                    'title' => $section['title'],
-                    'relation_manager' => $relationManager,
-                ];
-            })
-            ->filter()
-            ->values()
-            ->all();
-
-        return $this->cachedRenderedPaymentBlocks;
+        return match ($this->activeTab) {
+            'basic-info' => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.basic-info-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'basicInfoPanels' => $workspace['basic_info_panels'] ?? [],
+                ],
+            ],
+            'exam-treatment' => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.exam-treatment-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'renderedTreatmentProgressPanel' => $workspace['rendered_treatment_progress_panel'] ?? [],
+                ],
+            ],
+            'prescriptions' => [
+                'partial' => 'filament.resources.patients.pages.partials.livewire-tab-panel',
+                'data' => [
+                    'component' => \App\Filament\Resources\Patients\RelationManagers\PrescriptionsRelationManager::class,
+                    'parameters' => [
+                        'ownerRecord' => $this->record,
+                        'pageClass' => static::class,
+                    ],
+                    'wireKey' => 'patient-'.$this->record->id.'-prescriptions',
+                    'wrapperClass' => 'crm-rel-tab crm-rel-tab-prescriptions',
+                ],
+            ],
+            'photos' => [
+                'partial' => 'filament.resources.patients.pages.partials.livewire-tab-panel',
+                'data' => [
+                    'component' => \App\Filament\Resources\Patients\RelationManagers\PatientPhotosRelationManager::class,
+                    'parameters' => [
+                        'ownerRecord' => $this->record,
+                        'pageClass' => static::class,
+                    ],
+                    'wireKey' => 'patient-'.$this->record->id.'-photos',
+                    'wrapperClass' => 'crm-rel-tab crm-rel-tab-photos',
+                ],
+            ],
+            'lab-materials' => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.lab-materials-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'renderedLabMaterialSections' => $workspace['rendered_lab_material_sections'] ?? [],
+                ],
+            ],
+            'appointments' => [
+                'partial' => 'filament.resources.patients.pages.partials.livewire-tab-panel',
+                'data' => [
+                    'component' => \App\Filament\Resources\Patients\RelationManagers\AppointmentsRelationManager::class,
+                    'parameters' => [
+                        'ownerRecord' => $this->record,
+                        'pageClass' => static::class,
+                    ],
+                    'wireKey' => 'patient-'.$this->record->id.'-appointments',
+                    'wrapperClass' => 'crm-rel-tab crm-rel-tab-appointments',
+                ],
+            ],
+            'payments' => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.payments-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'renderedPaymentPanel' => $workspace['rendered_payment_panel'] ?? [],
+                ],
+            ],
+            'forms' => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.forms-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'renderedFormsPanel' => $workspace['rendered_forms_panel'] ?? [],
+                ],
+            ],
+            'care' => [
+                'partial' => 'filament.resources.patients.pages.partials.livewire-tab-panel',
+                'data' => [
+                    'component' => \App\Filament\Resources\Patients\Relations\PatientNotesRelationManager::class,
+                    'parameters' => [
+                        'ownerRecord' => $this->record,
+                        'pageClass' => static::class,
+                    ],
+                    'wireKey' => 'patient-'.$this->record->id.'-care',
+                    'wrapperClass' => 'crm-care-tab',
+                    'innerWrapperClass' => 'crm-care-manager',
+                ],
+            ],
+            'activity-log' => [
+                'partial' => 'filament.resources.patients.pages.partials.livewire-tab-panel',
+                'data' => [
+                    'component' => \App\Filament\Resources\Patients\Widgets\PatientActivityTimelineWidget::class,
+                    'parameters' => [
+                        'record' => $this->record,
+                    ],
+                    'wireKey' => 'patient-'.$this->record->id.'-activity-log',
+                ],
+            ],
+            default => [
+                'partial' => 'filament.resources.patients.pages.partials.tabs.basic-info-tab',
+                'data' => [
+                    'record' => $this->record,
+                    'basicInfoPanels' => $workspace['basic_info_panels'] ?? [],
+                ],
+            ],
+        };
     }
 
     public function setActiveTab(string $tab): void
@@ -386,12 +214,13 @@ class ViewPatient extends ViewRecord
 
         $this->activeTab = $tab;
         $this->workspaceReturnUrl = $this->buildWorkspaceReturnUrl($tab);
-        $this->cachedRenderedTabs = null;
+        unset($this->workspaceViewState);
+        unset($this->activeWorkspaceTabView);
     }
 
     protected function visibleWorkspaceTabIds(): array
     {
-        return collect($this->getTabsProperty())
+        return collect($this->workspaceViewState()['tabs'] ?? [])
             ->pluck('id')
             ->filter(fn (mixed $id): bool => is_string($id) && in_array($id, $this->workspaceTabs, true))
             ->values()
@@ -408,17 +237,12 @@ class ViewPatient extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        $headerActions = app(PatientOverviewReadModelService::class)->workspaceHeaderActions(
-            $this->record,
-            $this->currentUser(),
-            $this->workspaceReturnUrl,
-        );
+        $headerActions = $this->workspaceViewState()['header_actions'] ?? ['items' => []];
 
         return [
-            $this->workspaceHeaderAction('createTreatmentPlan', $headerActions['create_treatment_plan']),
-            $this->workspaceHeaderAction('createInvoice', $headerActions['create_invoice']),
-            $this->workspaceHeaderAction('createAppointment', $headerActions['create_appointment']),
-            $this->workspaceHeaderAction('medicalRecord', $headerActions['medical_record']),
+            ...collect($headerActions['items'])
+                ->map(fn (array $config): Action => $this->workspaceHeaderAction($config['name'], $config))
+                ->all(),
 
             Actions\EditAction::make()
                 ->label('Chỉnh sửa')

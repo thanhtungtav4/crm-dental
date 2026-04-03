@@ -89,13 +89,30 @@ it('computes zns backlog summary cards from automation, delivery, and campaign s
 
     $summaryCards = collect(app(ZnsOperationalReadModelService::class)->summaryCards())
         ->keyBy('label');
+    $dashboardCards = collect(app(ZnsOperationalReadModelService::class)->dashboardSummaryCards())
+        ->keyBy('key');
 
     expect($summaryCards->get('Automation pending')['value'])->toBe(1)
         ->and($summaryCards->get('Automation retry due')['value'])->toBe(1)
         ->and($summaryCards->get('Automation dead-letter')['value'])->toBe(1)
         ->and($summaryCards->get('Delivery retry due')['value'])->toBe(1)
         ->and($summaryCards->get('Delivery terminal failed')['value'])->toBe(1)
-        ->and($summaryCards->get('Campaign failed')['value'])->toBe(1);
+        ->and($summaryCards->get('Campaign failed')['value'])->toBe(1)
+        ->and($dashboardCards->get('automation_pending'))->toMatchArray([
+            'label' => 'Automation chờ xử lý',
+            'value' => 1,
+            'value_label' => '1',
+        ])
+        ->and($dashboardCards->get('campaigns_running'))->toMatchArray([
+            'label' => 'Campaign đang chạy',
+            'value' => 0,
+            'value_label' => '0',
+        ])
+        ->and($dashboardCards->get('campaigns_failed'))->toMatchArray([
+            'label' => 'Campaign failed',
+            'value' => 1,
+            'value_label' => '1',
+        ]);
 });
 
 it('computes zns retention candidates from terminal automation and delivery states', function (): void {
@@ -246,10 +263,27 @@ it('computes zns retention candidates from terminal automation and delivery stat
     ]);
 
     $service = app(ZnsOperationalReadModelService::class);
+    $retentionCandidates = collect($service->retentionCandidates())->keyBy('label');
+    $retentionDays = \App\Support\ClinicRuntimeSettings::znsOperationalRetentionDays();
 
     expect($service->automationRetentionCandidateCount(5))->toBe(2)
         ->and($service->automationLogRetentionCandidateCount(5))->toBe(1)
-        ->and($service->deliveryRetentionCandidateCount(5))->toBe(3);
+        ->and($service->deliveryRetentionCandidateCount(5))->toBe(3)
+        ->and($retentionCandidates->get('ZNS automation logs'))->toMatchArray([
+            'retention_days' => $retentionDays,
+            'total' => $service->automationLogRetentionCandidateCount($retentionDays),
+            'tone' => $service->automationLogRetentionCandidateCount($retentionDays) > 0 ? 'warning' : 'success',
+        ])
+        ->and($retentionCandidates->get('ZNS automation events'))->toMatchArray([
+            'retention_days' => $retentionDays,
+            'total' => $service->automationRetentionCandidateCount($retentionDays),
+            'tone' => $service->automationRetentionCandidateCount($retentionDays) > 0 ? 'warning' : 'success',
+        ])
+        ->and($retentionCandidates->get('ZNS deliveries'))->toMatchArray([
+            'retention_days' => $retentionDays,
+            'total' => $service->deliveryRetentionCandidateCount($retentionDays),
+            'tone' => $service->deliveryRetentionCandidateCount($retentionDays) > 0 ? 'warning' : 'success',
+        ]);
 });
 
 it('supports scoped dead-letter counts by zns event type', function (): void {

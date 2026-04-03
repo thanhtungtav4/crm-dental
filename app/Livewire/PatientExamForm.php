@@ -520,12 +520,12 @@ class PatientExamForm extends Component
         $this->dispatch('saved');
     }
 
-    public function getExaminingDoctorNameProperty(): string
+    protected function examiningDoctorName(): string
     {
         return $this->patientExamDoctorReadModelService()->name($this->examining_doctor_id);
     }
 
-    public function getTreatingDoctorNameProperty(): string
+    protected function treatingDoctorName(): string
     {
         return $this->patientExamDoctorReadModelService()->name($this->treating_doctor_id);
     }
@@ -609,8 +609,8 @@ class PatientExamForm extends Component
 
         $this->tempUploads = [];
 
-        $this->examiningDoctorSearch = $this->getExaminingDoctorNameProperty();
-        $this->treatingDoctorSearch = $this->getTreatingDoctorNameProperty();
+        $this->examiningDoctorSearch = $this->examiningDoctorName();
+        $this->treatingDoctorSearch = $this->treatingDoctorName();
     }
 
     protected function isSessionLockedByProgress(ExamSession $session): bool
