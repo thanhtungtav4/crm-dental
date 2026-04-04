@@ -153,9 +153,13 @@ it('builds patient workspace tab counters through the shared read model', functi
     $page->forceRecord($patient->fresh());
 
     $service = app(PatientOverviewReadModelService::class);
-    $counters = $page->getTabCountersProperty();
+    $counters = $service->tabCounters($patient->fresh());
     $serviceTabs = collect($service->workspaceTabs($patient->fresh(), $admin))->keyBy('id');
-    $tabs = collect($page->getTabsProperty())->keyBy('id');
+    $serviceRenderedTabs = collect($service->renderedWorkspaceTabs($serviceTabs->values()->all(), 'basic-info'))->keyBy('id');
+    $workspaceViewState = $service->workspaceViewState($patient->fresh(), $admin, 'basic-info');
+    $pageWorkspaceViewState = $page->workspaceViewState();
+    $tabs = collect($pageWorkspaceViewState['tabs'])->keyBy('id');
+    $renderedTabs = collect($pageWorkspaceViewState['rendered_tabs'])->keyBy('id');
 
     expect($counters)->toMatchArray([
         'treatment_plans' => 1,
@@ -177,7 +181,25 @@ it('builds patient workspace tab counters through the shared read model', functi
         ->and($tabs['appointments']['count'])->toBe(1)
         ->and($tabs['payments']['count'])->toBe(2)
         ->and($tabs['care']['count'])->toBe(2)
-        ->and($tabs['activity-log']['count'])->toBe(7);
+        ->and($tabs['activity-log']['count'])->toBe(7)
+        ->and($renderedTabs['basic-info'])->toMatchArray([
+            'button_id' => 'patient-workspace-tab-basic-info',
+            'panel_id' => 'patient-workspace-panel-basic-info',
+            'aria_selected' => 'true',
+            'tabindex' => '0',
+            'button_class' => 'crm-top-tab is-active',
+        ])
+        ->and($renderedTabs['payments'])->toMatchArray([
+            'button_id' => 'patient-workspace-tab-payments',
+            'panel_id' => 'patient-workspace-panel-payments',
+            'aria_selected' => 'false',
+            'tabindex' => '-1',
+            'button_class' => 'crm-top-tab',
+        ])
+        ->and(collect($workspaceViewState['rendered_tabs'])->keyBy('id')->all())->toBe($serviceRenderedTabs->all())
+        ->and($pageWorkspaceViewState['active_panel_id'])->toBe('patient-workspace-panel-basic-info')
+        ->and($pageWorkspaceViewState['active_tab_button_id'])->toBe('patient-workspace-tab-basic-info')
+        ->and($renderedTabs->all())->toBe($serviceRenderedTabs->all());
 });
 
 it('returns closed patient workspace capabilities when there is no authenticated actor', function (): void {

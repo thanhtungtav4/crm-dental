@@ -6,6 +6,8 @@ use App\Models\PlanItem;
 use App\Services\PatientTreatmentPlanDraftService;
 use App\Services\PatientTreatmentPlanReadModelService;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -144,7 +146,7 @@ class PatientTreatmentPlanSection extends Component
         return PlanItem::normalizeApprovalStatus($status) ?? PlanItem::DEFAULT_APPROVAL_STATUS;
     }
 
-    public function render()
+    public function render(): View
     {
         $sectionData = app(PatientTreatmentPlanReadModelService::class)->sectionData(
             $this->patientId,
@@ -153,7 +155,213 @@ class PatientTreatmentPlanSection extends Component
         );
 
         return view('livewire.patient-treatment-plan-section', [
+            'viewState' => $this->buildViewState($sectionData),
             ...$sectionData,
         ]);
+    }
+
+    /**
+     * @param  array{
+     *     planItems:Collection<int, PlanItem>,
+     *     diagnosisMap:Collection<int, mixed>,
+     *     diagnosisDetails:array<int, array{tooth_number:string, condition_name:string}>,
+     *     services:Collection<int, mixed>,
+     *     estimatedTotal:float,
+     *     discountTotal:float,
+     *     totalCost:float,
+     *     completedCost:float,
+     *     pendingCost:float
+     * }  $sectionData
+     * @return array{
+     *     plan_count:int,
+     *     plan_rows:array<int, array<string, mixed>>,
+     *     summary_panels:array<int, array{
+     *         items:array<int, array{label:string, value:string}>
+     *     }>,
+     *     draft_rows:array<int, array<string, mixed>>,
+     *     service_rows:array<int, array<string, mixed>>
+     * }
+     */
+    protected function buildViewState(array $sectionData): array
+    {
+        /** @var Collection<int, PlanItem> $planItems */
+        $planItems = $sectionData['planItems'];
+        /** @var Collection<int, mixed> $diagnosisMap */
+        $diagnosisMap = $sectionData['diagnosisMap'];
+
+        return [
+            'plan_count' => $planItems->pluck('treatment_plan_id')->unique()->count(),
+            'plan_rows' => $this->planRows($planItems, $diagnosisMap),
+            'summary_panels' => [
+                [
+                    'items' => [
+                        ['label' => 'Chi phí dự kiến', 'value' => $this->formatMoney($sectionData['estimatedTotal'])],
+                        ['label' => 'Tiền giảm giá', 'value' => $this->formatMoney($sectionData['discountTotal'])],
+                        ['label' => 'Tổng chi phí dự kiến', 'value' => $this->formatMoney($sectionData['totalCost'])],
+                    ],
+                ],
+                [
+                    'items' => [
+                        ['label' => 'Đã hoàn thành', 'value' => $this->formatMoney($sectionData['completedCost'])],
+                        ['label' => 'Chưa hoàn thành', 'value' => $this->formatMoney($sectionData['pendingCost'])],
+                    ],
+                ],
+            ],
+            'draft_rows' => $this->draftRows($sectionData['diagnosisDetails']),
+            'service_rows' => $this->serviceRows($sectionData['services']),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, PlanItem>  $planItems
+     * @param  Collection<int, mixed>  $diagnosisMap
+     * @return array<int, array<string, mixed>>
+     */
+    protected function planRows(Collection $planItems, Collection $diagnosisMap): array
+    {
+        return $planItems
+            ->map(function (PlanItem $item) use ($diagnosisMap): array {
+                $toothNumbers = $item->tooth_ids ?: ($item->tooth_number ? [$item->tooth_number] : []);
+                $diagnosisLabels = collect($item->diagnosis_ids ?? [])
+                    ->map(fn (mixed $diagnosisId): ?string => $diagnosisMap[(int) $diagnosisId]->condition?->name ?? null)
+                    ->filter()
+                    ->join(', ');
+
+                $unitPrice = (float) ($item->price ?? 0);
+                $lineAmount = ((int) ($item->quantity ?? 0)) * $unitPrice;
+                $discountPercent = (float) ($item->discount_percent ?? 0);
+                $discountAmount = (float) ($item->discount_amount ?? 0);
+                $vatAmount = (float) ($item->vat_amount ?? 0);
+
+                if ($discountAmount <= 0 && $discountPercent > 0) {
+                    $discountAmount = ($discountPercent / 100) * $lineAmount;
+                }
+
+                $totalAmount = $item->final_amount !== null
+                    ? (float) $item->final_amount
+                    : max(0, $lineAmount - $discountAmount + $vatAmount);
+
+                return [
+                    'tooth_label' => $toothNumbers !== [] ? implode(' ', $toothNumbers) : '-',
+                    'diagnosis_labels' => $diagnosisLabels !== '' ? $diagnosisLabels : '-',
+                    'plan_title' => $item->treatmentPlan?->title ?: 'Kế hoạch #'.$item->treatment_plan_id,
+                    'plan_url' => $item->treatmentPlan
+                        ? route('filament.admin.resources.treatment-plans.edit', [
+                            'record' => $item->treatment_plan_id,
+                            'return_url' => $this->returnUrl,
+                        ])
+                        : null,
+                    'service_name' => $item->service?->name ?? $item->name,
+                    'approval_label' => $item->getApprovalStatusLabel(),
+                    'approval_badge_classes' => $this->approvalBadgeClass($item->getApprovalStatusBadgeColor()),
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'unit_price_text' => $this->formatMoney($unitPrice),
+                    'line_amount_text' => $this->formatMoney($lineAmount),
+                    'discount_percent_text' => $this->formatDiscountPercent($discountPercent),
+                    'discount_amount_text' => $this->formatMoney($discountAmount),
+                    'vat_amount_text' => $this->formatMoney($vatAmount),
+                    'total_amount_text' => $this->formatMoney($totalAmount),
+                    'notes' => $item->notes ?: '-',
+                    'status_label' => $item->getStatusLabel(),
+                    'status_badge_classes' => $this->planStatusBadgeClass($item->status),
+                    'edit_url' => route('filament.admin.resources.plan-items.edit', [
+                        'record' => $item->id,
+                        'return_url' => $this->returnUrl,
+                        'patient_id' => $this->patientId,
+                    ]),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{tooth_number:string, condition_name:string}>  $diagnosisDetails
+     * @return array<int, array<string, mixed>>
+     */
+    protected function draftRows(array $diagnosisDetails): array
+    {
+        return collect($this->draftItems)
+            ->values()
+            ->map(function (array $item, int $index) use ($diagnosisDetails): array {
+                $quantity = (int) ($item['quantity'] ?? 1);
+                $price = (float) ($item['price'] ?? 0);
+                $lineAmount = $quantity * $price;
+                $discountPercent = (float) ($item['discount_percent'] ?? 0);
+                $discountAmount = $discountPercent > 0 ? ($discountPercent / 100) * $lineAmount : 0;
+                $totalAmount = $lineAmount - $discountAmount;
+                $toothDisplay = collect($item['diagnosis_ids'] ?? [])
+                    ->map(fn (mixed $diagnosisId): ?string => $diagnosisDetails[(int) $diagnosisId]['tooth_number'] ?? null)
+                    ->filter()
+                    ->unique()
+                    ->sortBy(fn (string $toothNumber): int => (int) $toothNumber, SORT_NUMERIC)
+                    ->values()
+                    ->join(', ');
+
+                return [
+                    'index' => $index,
+                    'tooth_display' => $toothDisplay !== '' ? $toothDisplay : 'Tự động theo tình trạng răng',
+                    'service_name' => (string) ($item['service_name'] ?? 'Thủ thuật'),
+                    'approval_status' => (string) ($item['approval_status'] ?? PlanItem::APPROVAL_PROPOSED),
+                    'line_amount_text' => $this->formatMoney($lineAmount),
+                    'discount_amount_text' => $this->formatMoney($discountAmount),
+                    'total_amount_text' => $this->formatMoney($totalAmount),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, mixed>  $services
+     * @return array<int, array{
+     *     id:int,
+     *     name:string,
+     *     price_text:string,
+     *     description:string
+     * }>
+     */
+    protected function serviceRows(Collection $services): array
+    {
+        return $services
+            ->map(fn (mixed $service): array => [
+                'id' => (int) $service->id,
+                'name' => (string) $service->name,
+                'price_text' => $this->formatMoney($service->default_price ?? 0),
+                'description' => (string) ($service->description ?: '-'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function approvalBadgeClass(string $badgeColor): string
+    {
+        return match ($badgeColor) {
+            'success' => 'is-completed',
+            'warning' => 'is-progress',
+            'danger' => 'is-cancelled',
+            default => 'is-default',
+        };
+    }
+
+    protected function planStatusBadgeClass(?string $status): string
+    {
+        return match ($status) {
+            PlanItem::STATUS_COMPLETED => 'is-completed',
+            PlanItem::STATUS_IN_PROGRESS => 'is-progress',
+            PlanItem::STATUS_CANCELLED => 'is-cancelled',
+            default => 'is-default',
+        };
+    }
+
+    protected function formatMoney(mixed $value): string
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
+
+    protected function formatDiscountPercent(float $value): string
+    {
+        return $value > 0
+            ? rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.')
+            : '0';
     }
 }

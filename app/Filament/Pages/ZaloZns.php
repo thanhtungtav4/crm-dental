@@ -19,6 +19,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Computed;
 
 class ZaloZns extends Page implements HasTable
 {
@@ -60,47 +61,188 @@ class ZaloZns extends Page implements HasTable
 
     /**
      * @return array{
-     *   automation_pending:int,
-     *   automation_retry_due:int,
-     *   automation_dead:int,
-     *   deliveries_retry_due:int,
-     *   deliveries_terminal_failed:int,
-     *   campaigns_running:int,
-     *   campaigns_failed:int
+     *   dashboard_section:array{
+     *     partial:string,
+     *     include_data:array{
+     *       panel:array{
+     *         dashboard_sections:array<int, array{
+     *           partial:string,
+     *           include_data:array<string, mixed>
+     *         }>
+     *       }
+     *     }
+     *   }
      * }
      */
-    public function getOperationalSummaryProperty(): array
+    #[Computed]
+    public function dashboardViewState(): array
     {
-        $branchIds = BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false);
+        return [
+            'dashboard_section' => $this->dashboardSection(),
+        ];
+    }
 
-        return app(ZnsOperationalReadModelService::class)->summaryMetrics($branchIds);
+    /**
+     * @return array{
+     *   partial:string,
+     *   include_data:array{
+     *     panel:array{
+     *       dashboard_sections:array<int, array{
+     *         partial:string,
+     *         include_data:array<string, mixed>
+     *       }>
+     *     }
+     *   }
+     * }
+     */
+    protected function dashboardSection(): array
+    {
+        return [
+            'partial' => 'filament.pages.partials.zalo-zns-dashboard-panel',
+            'include_data' => [
+                'panel' => [
+                    'dashboard_sections' => $this->dashboardSections(),
+                ],
+            ],
+        ];
     }
 
     /**
      * @return array<int, array{
-     *   key:string,
-     *   label:string,
-     *   description:string,
-     *   enabled:bool,
-     *   tone:string,
-     *   status:string,
-     *   score:int,
-     *   issues:array<int, string>,
-     *   recommendations:array<int, string>,
-     *   meta:array<int, array{label:string, value:int|string}>,
-     *   issue_count:int,
-     *   recommendation_count:int,
-     *   runtime_error_message:?string,
-     *   webhook_url:?string
+     *   partial:string,
+     *   include_data:array<string, mixed>
      * }>
      */
-    public function getProviderHealthProperty(): array
+    protected function dashboardSections(): array
     {
-        $service = app(IntegrationProviderHealthReadModelService::class);
+        return [
+            [
+                'partial' => 'filament.pages.partials.zalo-zns-summary-panel',
+                'include_data' => [
+                    'panel' => $this->summaryPanel(),
+                ],
+            ],
+            [
+                'partial' => 'filament.pages.partials.provider-health-panel',
+                'include_data' => [
+                    'panel' => $this->providerHealthPanel(),
+                ],
+            ],
+            [
+                'partial' => 'filament.pages.partials.zalo-zns-note-panels',
+                'include_data' => [
+                    'panels' => $this->notePanels(),
+                ],
+            ],
+            [
+                'partial' => 'filament.pages.partials.zalo-zns-table-panel',
+                'include_data' => [],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{items:array<int, array<string, mixed>>}
+     */
+    protected function summaryPanel(): array
+    {
+        $branchIds = BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false);
 
         return [
-            $service->provider('zalo_oa'),
-            $service->provider('zns'),
+            'items' => $this->renderedDashboardSummaryCards(
+                app(ZnsOperationalReadModelService::class)->dashboardSummaryCards($branchIds),
+                containerClasses: 'rounded-xl border p-3',
+                valueTypographyClasses: 'text-xl font-semibold',
+            ),
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function renderedDashboardSummaryCards(
+        array $cards,
+        string $containerClasses,
+        string $valueTypographyClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => trim(($card['card_classes'] ?? '').' '.$containerClasses),
+                'label_classes' => trim('text-sm font-medium '.($card['label_classes'] ?? 'text-gray-500')),
+                'value_classes' => trim($valueTypographyClasses.' '.($card['value_classes'] ?? 'text-gray-900 dark:text-white')),
+            ],
+            $cards,
+        );
+    }
+
+    /**
+     * @return array{
+     *   heading:string,
+     *   description:string,
+     *   drift_count:int,
+     *   drift_label:string,
+     *   items:array<int, array<string, mixed>>
+     * }
+     */
+    protected function providerHealthPanel(): array
+    {
+        $providerHealth = collect(app(IntegrationProviderHealthReadModelService::class)->snapshotCards())
+            ->whereIn('key', ['zalo_oa', 'zns'])
+            ->values()
+            ->all();
+
+        $providerHealthDriftCount = collect($providerHealth)
+            ->filter(fn (array $provider): bool => filled($provider['issue_badge'] ?? null))
+            ->count();
+
+        return [
+            'heading' => 'Provider readiness',
+            'description' => 'Dùng chung contract với OPS và Integration Settings để triage nhanh runtime drift.',
+            'drift_count' => $providerHealthDriftCount,
+            'drift_label' => $providerHealthDriftCount.' drift',
+            'items' => $providerHealth,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *   heading:string,
+     *   items:array<int, array<string, string>|string>
+     * }>
+     */
+    protected function notePanels(): array
+    {
+        return [
+            [
+                'heading' => 'Triage nhanh',
+                'items' => [
+                    'Trang này ưu tiên backlog cần xử lý: retry tới hạn, dead-letter, processing kẹt và failed campaign.',
+                    'Thao tác đổi trạng thái campaign vẫn đi qua workflow action trong resource campaign, không sửa tay trực tiếp trên page này.',
+                    'Dùng filter theo luồng, mã provider và chi nhánh để khoanh vùng lỗi trước khi mở campaign tương ứng.',
+                ],
+            ],
+            [
+                'heading' => 'Gợi ý xử lý',
+                'items' => [
+                    [
+                        'tone_classes' => 'text-amber-700 dark:text-amber-300',
+                        'label' => 'Retry tới hạn',
+                        'description' => 'kiểm tra lỗi provider và template trước khi để scheduler chạy lại.',
+                    ],
+                    [
+                        'tone_classes' => 'text-rose-700 dark:text-rose-300',
+                        'label' => 'Dead-letter',
+                        'description' => 'ưu tiên root cause, tránh bấm chạy lại campaign khi lỗi đến từ dữ liệu template hoặc số điện thoại.',
+                    ],
+                    [
+                        'tone_classes' => 'text-blue-700 dark:text-blue-300',
+                        'label' => 'Campaign running',
+                        'description' => 'nếu backlog tăng mà không giảm, mở campaign để kiểm tra deliveries relation manager.',
+                    ],
+                ],
+            ],
         ];
     }
 

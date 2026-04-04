@@ -599,6 +599,65 @@ it('scopes risk dashboard profiles to accessible branches', function (): void {
         ->and((int) $records->first()->patient_id)->toBe($patientA->id);
 });
 
+it('uses the shared branch filter state for risk dashboard queries', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $admin = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $admin->assignRole('Admin');
+
+    $customerA = Customer::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $patientA = Patient::factory()->create([
+        'customer_id' => $customerA->id,
+        'first_branch_id' => $branchA->id,
+    ]);
+
+    $customerB = Customer::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $patientB = Patient::factory()->create([
+        'customer_id' => $customerB->id,
+        'first_branch_id' => $branchB->id,
+    ]);
+
+    PatientRiskProfile::query()->create([
+        'patient_id' => $patientA->id,
+        'as_of_date' => now()->toDateString(),
+        'model_version' => PatientRiskProfile::MODEL_VERSION_BASELINE,
+        'no_show_risk_score' => 61,
+        'churn_risk_score' => 44,
+        'risk_level' => PatientRiskProfile::LEVEL_MEDIUM,
+        'generated_at' => now(),
+        'feature_payload' => ['source' => 'test'],
+    ]);
+
+    PatientRiskProfile::query()->create([
+        'patient_id' => $patientB->id,
+        'as_of_date' => now()->toDateString(),
+        'model_version' => PatientRiskProfile::MODEL_VERSION_BASELINE,
+        'no_show_risk_score' => 83,
+        'churn_risk_score' => 75,
+        'risk_level' => PatientRiskProfile::LEVEL_HIGH,
+        'generated_at' => now(),
+        'feature_payload' => ['source' => 'test'],
+    ]);
+
+    $this->actingAs($admin);
+
+    $page = Livewire::test(RiskScoringDashboard::class)
+        ->set('tableFilters.branch_id.value', $branchB->id)
+        ->instance();
+
+    $records = invokeTableQuery($page)->get();
+
+    expect($records)->toHaveCount(1)
+        ->and((int) $records->first()->patient_id)->toBe($patientB->id);
+});
+
 function invokeTableQuery(object $page)
 {
     $method = new \ReflectionMethod($page, 'getTableQuery');

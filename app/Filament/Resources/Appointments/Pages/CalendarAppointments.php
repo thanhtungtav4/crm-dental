@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
 use App\Models\Appointment;
+use App\Models\Branch;
 use App\Models\User;
 use App\Services\AppointmentReportReadModelService;
 use App\Services\AppointmentSchedulingService;
@@ -54,6 +55,24 @@ class CalendarAppointments extends Page
         $fallback = reset($options);
 
         return $options[ClinicRuntimeSettings::googleCalendarSyncMode()] ?? (is_string($fallback) ? $fallback : '');
+    }
+
+    /**
+     * @return array{
+     *     metrics: array<string, int>,
+     *     status_colors: array<string, array<int, string>>,
+     *     branches: array<int|string, string>,
+     *     doctors: array<int|string, string>
+     * }
+     */
+    public function calendarViewState(): array
+    {
+        return [
+            'metrics' => $this->getOperationalStatusMetrics(),
+            'status_colors' => $this->getStatusColors(),
+            'branches' => $this->branchOptions(),
+            'doctors' => $this->doctorOptions(),
+        ];
     }
 
     /**
@@ -202,6 +221,53 @@ class CalendarAppointments extends Page
         }
 
         return BranchAccess::accessibleBranchIds($authUser);
+    }
+
+    /**
+     * @return array<int|string, string>
+     */
+    protected function branchOptions(): array
+    {
+        $branchIds = $this->accessibleBranchIds();
+
+        return Branch::query()
+            ->when(
+                $branchIds !== null,
+                fn (Builder $query) => $branchIds === []
+                    ? $query->whereRaw('1 = 0')
+                    : $query->whereIn('id', $branchIds),
+            )
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<int|string, string>
+     */
+    protected function doctorOptions(): array
+    {
+        $branchIds = $this->accessibleBranchIds();
+
+        return User::query()
+            ->role('Doctor')
+            ->when(
+                $branchIds !== null,
+                function (Builder $query) use ($branchIds): Builder {
+                    if ($branchIds === []) {
+                        return $query->whereRaw('1 = 0');
+                    }
+
+                    return $query->where(function (Builder $doctorQuery) use ($branchIds): void {
+                        $doctorQuery
+                            ->whereIn('branch_id', $branchIds)
+                            ->orWhereHas('activeDoctorBranchAssignments', fn (Builder $assignmentQuery) => $assignmentQuery->whereIn('branch_id', $branchIds));
+                    });
+                }
+            )
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 
     /**

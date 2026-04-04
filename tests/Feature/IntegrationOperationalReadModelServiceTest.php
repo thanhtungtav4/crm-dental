@@ -404,13 +404,28 @@ it('reads active and expired grace rotations from the shared integration reader'
 
         $service = app(IntegrationOperationalReadModelService::class);
         $activeRotations = $service->activeGraceRotations();
+        $renderedActiveRotations = $service->renderedActiveGraceRotations();
         $expiredRotations = $service->expiredGraceRotations();
+        $renderedExpiredRotations = $service->renderedExpiredGraceRotations();
         $expiredSummary = $service->expiredGraceRotationSummary();
 
         expect($activeRotations)->toHaveCount(1)
+            ->and($renderedActiveRotations)->toHaveCount(1)
             ->and($expiredRotations)->toHaveCount(1)
+            ->and($renderedExpiredRotations)->toHaveCount(1)
             ->and($activeRotations->firstWhere('key', 'web_lead.api_token'))->not->toBeNull()
+            ->and($renderedActiveRotations->firstWhere('key', 'web_lead.api_token'))->toMatchArray([
+                'display_name' => 'Web Lead API Token',
+                'rotation_reason' => 'Shared reader active grace test.',
+            ])
+            ->and($renderedActiveRotations->firstWhere('key', 'web_lead.api_token')['grace_expires_at_label'])->not->toBeEmpty()
+            ->and($renderedActiveRotations->firstWhere('key', 'web_lead.api_token')['remaining_minutes_label'])->toContain('Còn lại khoảng')
             ->and($expiredRotations->firstWhere('key', 'emr.api_key'))->not->toBeNull()
+            ->and($renderedExpiredRotations->firstWhere('key', 'emr.api_key'))->toMatchArray([
+                'display_name' => 'EMR API Key',
+            ])
+            ->and($renderedExpiredRotations->firstWhere('key', 'emr.api_key')['grace_expires_at_label'])->not->toBeEmpty()
+            ->and($renderedExpiredRotations->firstWhere('key', 'emr.api_key')['expired_minutes_label'])->toContain('Quá hạn')
             ->and((int) $activeRotations->firstWhere('key', 'web_lead.api_token')['remaining_minutes'])->toBeGreaterThan(0)
             ->and((int) $expiredRotations->firstWhere('key', 'emr.api_key')['expired_minutes'])->toBeGreaterThan(0)
             ->and($expiredSummary['total'])->toBe(1)
@@ -499,11 +514,38 @@ it('computes popup and patient photo retention counts from the shared integratio
     ]);
 
     $service = app(IntegrationOperationalReadModelService::class);
+    $retentionCandidates = collect($service->retentionCandidates())->keyBy('label');
+    $popupRetentionDays = \App\Support\ClinicRuntimeSettings::popupAnnouncementRetentionDays();
+    $patientPhotoRetentionDays = \App\Support\ClinicRuntimeSettings::patientPhotoRetentionDays();
+    $patientPhotoRetentionEnabled = \App\Support\ClinicRuntimeSettings::patientPhotoRetentionEnabled();
+    $patientPhotoRetentionIncludeXray = \App\Support\ClinicRuntimeSettings::patientPhotoRetentionIncludeXray();
 
     expect($service->popupDeliveryRetentionCandidateCount(30))->toBe(2)
         ->and($service->popupAnnouncementRetentionCandidateCount(30))->toBe(1)
         ->and($service->patientPhotoRetentionCandidateCount(30))->toBe(1)
-        ->and($service->patientPhotoRetentionCandidateCount(30, true))->toBe(2);
+        ->and($service->patientPhotoRetentionCandidateCount(30, true))->toBe(2)
+        ->and($retentionCandidates->get('Popup announcement logs'))->toMatchArray([
+            'retention_days' => $popupRetentionDays,
+            'total' => $service->popupDeliveryRetentionCandidateCount($popupRetentionDays)
+                + $service->popupAnnouncementRetentionCandidateCount($popupRetentionDays),
+            'tone' => $service->popupDeliveryRetentionCandidateCount($popupRetentionDays)
+                + $service->popupAnnouncementRetentionCandidateCount($popupRetentionDays) > 0 ? 'warning' : 'success',
+        ])
+        ->and($retentionCandidates->get('Patient photos'))->toMatchArray([
+            'retention_days' => $patientPhotoRetentionDays,
+            'total' => $patientPhotoRetentionEnabled
+                ? $service->patientPhotoRetentionCandidateCount(
+                    $patientPhotoRetentionDays,
+                    $patientPhotoRetentionIncludeXray
+                )
+                : 0,
+            'tone' => $patientPhotoRetentionEnabled
+                && $service->patientPhotoRetentionCandidateCount(
+                    $patientPhotoRetentionDays,
+                    $patientPhotoRetentionIncludeXray
+                ) > 0 ? 'warning' : 'success',
+        ])
+        ->and($retentionCandidates->get('Clinical media temporary')['label'])->toBe('Clinical media temporary');
 });
 
 function seedIntegrationOperationalReadModelEntities(): array

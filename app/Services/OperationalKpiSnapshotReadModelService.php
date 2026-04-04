@@ -108,6 +108,27 @@ class OperationalKpiSnapshotReadModelService
     }
 
     /**
+     * @param  array{on_time:int,late:int,stale:int,missing:int}  $counts
+     * @return array<int, array{
+     *     key:string,
+     *     label:string,
+     *     value:int,
+     *     value_label:string,
+     *     badge_label:string,
+     *     badge_classes:string
+     * }>
+     */
+    public function renderedSnapshotCountCards(array $counts): array
+    {
+        return [
+            $this->snapshotCountCard('on_time', 'On Time', $counts['on_time'], 'success'),
+            $this->snapshotCountCard('late', 'Late', $counts['late'], $counts['late'] > 0 ? 'warning' : 'success'),
+            $this->snapshotCountCard('stale', 'Stale', $counts['stale'], $counts['stale'] > 0 ? 'danger' : 'success'),
+            $this->snapshotCountCard('missing', 'Missing', $counts['missing'], $counts['missing'] > 0 ? 'danger' : 'success'),
+        ];
+    }
+
+    /**
      * @param  array<int, int>|null  $branchIds
      * @return array{no_show_delta:float,acceptance_delta:float,chair_delta:float}|null
      */
@@ -139,5 +160,27 @@ class OperationalKpiSnapshotReadModelService
             'acceptance_delta' => round($currentAcceptance - $averageAcceptance, 2),
             'chair_delta' => round($currentChair - $averageChair, 2),
         ];
+    }
+
+    protected function snapshotCountCard(string $key, string $label, int $value, string $tone): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'value' => $value,
+            'value_label' => number_format($value),
+            'badge_label' => number_format($value),
+            'badge_classes' => $this->toneBadgeClasses($tone),
+        ];
+    }
+
+    protected function toneBadgeClasses(string $tone): string
+    {
+        return match ($tone) {
+            'success' => 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200',
+            'warning' => 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+            'danger' => 'border-danger-200 bg-danger-50 text-danger-700 dark:border-danger-900/60 dark:bg-danger-950/30 dark:text-danger-100',
+            default => 'border-info-200 bg-info-50 text-info-700 dark:border-info-900/60 dark:bg-info-950/30 dark:text-info-200',
+        };
     }
 }

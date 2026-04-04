@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use UnitEnum;
 
@@ -149,9 +150,172 @@ class ConversationInbox extends Page
     }
 
     /**
+     * @return array{
+     *   is_schema_ready:bool,
+     *   polling_interval_seconds:int,
+     *   schema_notice:array{
+     *      heading:string,
+     *      description:string,
+     *      message:string
+     *   },
+     *   page_panel:array{
+     *      queue_panel:array{
+     *          heading:string,
+     *          description:string,
+     *          search_label:string,
+     *          search_placeholder:string,
+     *          provider_label:string,
+     *          results_text:string,
+     *          empty_state_text:string,
+     *          inbox_stat_cards:list<array{
+     *              key:string,
+     *              label:string,
+     *              count:int,
+     *              description:string,
+     *              card_class:string,
+     *              label_class:string,
+     *              value_class:string,
+     *              description_class:string
+     *          }>,
+     *          rendered_inbox_tabs:list<array{
+     *              key:string,
+     *              label:string,
+     *              button_class:string,
+     *              is_active:bool
+     *          }>,
+     *          provider_filter_options:array<string, string>,
+     *          conversation_rows:list<array{
+     *              id:int,
+     *              button_class:string,
+     *              display_name:string,
+     *              provider_label:string,
+     *              provider_badge_class:string,
+     *              handoff_status_label:string,
+     *              handoff_status_badge_class:string,
+     *              handoff_priority_label:string,
+     *              handoff_priority_badge_class:string,
+     *              branch_label:string,
+     *              unread_count:int,
+     *              preview:string,
+     *              handoff_summary_preview:?string,
+     *              lead_status_label:string,
+     *              next_action_label:?string,
+     *              last_message_at_human:string
+     *          }>
+     *      },
+     *      detail_panel:array{
+     *          heading:string,
+     *          description:string,
+     *          empty_state_text:string,
+     *          conversation:?Conversation,
+     *          selected_conversation_view:array{
+     *              summary_cards:list<array{label:string,value:string}>,
+     *              assignee_options:array<int,string>,
+     *              customer_edit_url:?string,
+     *              handoff_panel:array{
+     *                  summary_heading:string,
+     *                  summary_description:string,
+     *                  updated_at_text:?string,
+     *                  updated_by_name:string,
+     *                  summary_label:string,
+     *                  summary_placeholder:string,
+     *                  status_label:string,
+     *                  next_action_label:string,
+     *                  priority_label:string,
+     *                  priority_options:array<string,string>,
+     *                  status_options:array<string,string>,
+     *                  guidance:string,
+     *                  submit_label:string
+     *              },
+     *              thread_panel:array{
+     *                  heading:string,
+     *                  description:string,
+     *                  show_load_older_messages:bool,
+     *                  empty_state_text:string,
+     *                  load_older_label:string
+     *              },
+     *              composer_panel:array{
+     *                  label:string,
+     *                  placeholder:string,
+     *                  helper_text:string,
+     *                  polling_notice:string,
+     *                  submit_label:string
+     *              },
+     *              messages:list<array{
+     *                  id:int,
+     *                  container_class:string,
+     *                  bubble_class:string,
+     *                  sender_label:string,
+     *                  message_at_text:string,
+     *                  body:string,
+     *                  status_label:string,
+     *                  can_retry:bool,
+     *                  last_error:?string
+     *              }>
+     *          }
+     *      },
+     *      lead_modal_view:array{
+     *          heading:string,
+     *          description:string,
+     *          close_label:string,
+     *          branch_options:array<int,string>,
+     *          assignee_options:array<int,string>,
+     *          summary_cards:list<array{label:string,value:string}>,
+     *          submit_label:string
+     *      }
+     *   },
+     *   inbox_stats:array{unread:int,due:int,unclaimed:int,unbound:int}
+     * }
+     */
+    #[Computed]
+    public function inboxViewState(): array
+    {
+        $selectedConversation = $this->selectedConversation();
+
+        return [
+            'is_schema_ready' => $this->isConversationSchemaReady(),
+            'polling_interval_seconds' => $this->getPollingIntervalSeconds(),
+            'schema_notice' => $this->schemaNoticePanel(),
+            'inbox_stats' => $this->inboxStats(),
+            'page_panel' => [
+                'queue_panel' => [
+                    ...$this->queuePanel(),
+                    'inbox_stat_cards' => $this->inboxStatCards(),
+                    'rendered_inbox_tabs' => $this->renderedInboxTabs(),
+                    'provider_filter_options' => $this->providerFilterOptions(),
+                    'conversation_rows' => $this->renderedConversationRows(),
+                ],
+                'detail_panel' => [
+                    ...$this->detailPanel(),
+                    'conversation' => $selectedConversation,
+                    'selected_conversation_view' => $this->selectedConversationView(),
+                ],
+                'lead_modal_view' => $this->leadModalView(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{
+     *   heading:string,
+     *   description:string,
+     *   message:string
+     * }
+     */
+    protected function schemaNoticePanel(): array
+    {
+        return [
+            'heading' => 'Inbox hội thoại chưa sẵn sàng',
+            'description' => 'Trang này sẽ tự hoạt động lại sau khi schema hội thoại được cài đặt đầy đủ.',
+            'message' => 'Quản trị viên cần hoàn tất cài đặt dữ liệu hội thoại trước khi đội CSKH sử dụng màn hình này.',
+        ];
+    }
+
+    /**
      * @return Collection<int, Conversation>
      */
-    public function getConversationListProperty(): Collection
+    #[Computed]
+    public function conversationList(): Collection
     {
         if (! $this->isConversationSchemaReady()) {
             return new Collection;
@@ -163,7 +327,8 @@ class ConversationInbox extends Page
         );
     }
 
-    public function getSelectedConversationProperty(): ?Conversation
+    #[Computed]
+    public function selectedConversation(): ?Conversation
     {
         if (! $this->isConversationSchemaReady()) {
             return null;
@@ -181,7 +346,8 @@ class ConversationInbox extends Page
     /**
      * @return array<int, string>
      */
-    public function getBranchOptionsProperty(): array
+    #[Computed]
+    public function branchOptions(): array
     {
         return BranchAccess::branchOptionsForCurrentUser();
     }
@@ -189,7 +355,8 @@ class ConversationInbox extends Page
     /**
      * @return array<int, string>
      */
-    public function getAssignableStaffOptionsProperty(): array
+    #[Computed]
+    public function assignableStaffOptions(): array
     {
         $branchId = filled($this->leadForm['branch_id'] ?? null)
             ? (int) $this->leadForm['branch_id']
@@ -202,9 +369,10 @@ class ConversationInbox extends Page
     /**
      * @return array<int, string>
      */
-    public function getConversationAssigneeOptionsProperty(): array
+    #[Computed]
+    public function conversationAssigneeOptions(): array
     {
-        $branchId = $this->selectedConversation?->branch_id;
+        $branchId = $this->selectedConversation()?->branch_id;
 
         if (! filled($branchId)) {
             return [];
@@ -217,7 +385,8 @@ class ConversationInbox extends Page
     /**
      * @return array<string, string>
      */
-    public function getHandoffPriorityOptionsProperty(): array
+    #[Computed]
+    public function handoffPriorityOptions(): array
     {
         return Conversation::handoffPriorityOptions();
     }
@@ -225,7 +394,8 @@ class ConversationInbox extends Page
     /**
      * @return array<string, string>
      */
-    public function getHandoffStatusOptionsProperty(): array
+    #[Computed]
+    public function handoffStatusOptions(): array
     {
         return Conversation::handoffStatusOptions();
     }
@@ -233,7 +403,8 @@ class ConversationInbox extends Page
     /**
      * @return array<string, string>
      */
-    public function getInboxTabOptionsProperty(): array
+    #[Computed]
+    public function inboxTabOptions(): array
     {
         return [
             'all' => 'Tất cả',
@@ -247,7 +418,8 @@ class ConversationInbox extends Page
     /**
      * @return array{unread:int,due:int,unclaimed:int,unbound:int}
      */
-    public function getInboxStatsProperty(): array
+    #[Computed]
+    public function inboxStats(): array
     {
         if (! $this->isConversationSchemaReady()) {
             return [
@@ -262,6 +434,397 @@ class ConversationInbox extends Page
             $this->currentUser(),
             $this->currentFilters(),
         );
+    }
+
+    /**
+     * @return list<array{
+     *    key:string,
+     *    label:string,
+     *    count:int,
+     *    description:string,
+     *    card_class:string,
+     *    label_class:string,
+     *    value_class:string,
+     *    description_class:string
+     * }>
+     */
+    protected function inboxStatCards(): array
+    {
+        $stats = $this->inboxStats();
+
+        return [
+            [
+                'key' => 'unread',
+                'label' => 'Chưa đọc',
+                'count' => $stats['unread'],
+                'description' => 'Cần mở thread để xử lý ngay trong ca.',
+                'card_class' => 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950/60',
+                'label_class' => 'text-gray-400 dark:text-gray-500',
+                'value_class' => 'text-gray-950 dark:text-white',
+                'description_class' => 'text-gray-500 dark:text-gray-400',
+            ],
+            [
+                'key' => 'due',
+                'label' => 'Đến hạn follow-up',
+                'count' => $stats['due'],
+                'description' => 'Ưu tiên gọi lại hoặc chốt bước tiếp theo.',
+                'card_class' => 'border-warning-200 bg-warning-50/80 dark:border-warning-900/60 dark:bg-warning-950/20',
+                'label_class' => 'text-warning-700 dark:text-warning-200',
+                'value_class' => 'text-warning-900 dark:text-warning-100',
+                'description_class' => 'text-warning-700/80 dark:text-warning-200/80',
+            ],
+            [
+                'key' => 'unclaimed',
+                'label' => 'Chưa claim',
+                'count' => $stats['unclaimed'],
+                'description' => 'Hội thoại chưa có người phụ trách rõ ràng.',
+                'card_class' => 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950/60',
+                'label_class' => 'text-gray-400 dark:text-gray-500',
+                'value_class' => 'text-gray-950 dark:text-white',
+                'description_class' => 'text-gray-500 dark:text-gray-400',
+            ],
+            [
+                'key' => 'unbound',
+                'label' => 'Chưa gắn lead',
+                'count' => $stats['unbound'],
+                'description' => 'Còn cơ hội convert trực tiếp từ inbox.',
+                'card_class' => 'border-primary-200 bg-primary-50/80 dark:border-primary-900/60 dark:bg-primary-950/20',
+                'label_class' => 'text-primary-700 dark:text-primary-200',
+                'value_class' => 'text-primary-900 dark:text-primary-100',
+                'description_class' => 'text-primary-700/80 dark:text-primary-200/80',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function providerFilterOptions(): array
+    {
+        return [
+            'all' => 'Tất cả',
+            'zalo' => 'Zalo OA',
+            'facebook' => 'Facebook Messenger',
+        ];
+    }
+
+    /**
+     * @return list<array{
+     *   key:string,
+     *   label:string,
+     *   button_class:string,
+     *   is_active:bool
+     * }>
+     */
+    protected function renderedInboxTabs(): array
+    {
+        return collect($this->inboxTabOptions())
+            ->map(function (string $label, string $key): array {
+                $isActive = $this->inboxTab === $key;
+
+                return [
+                    'key' => $key,
+                    'label' => $label,
+                    'is_active' => $isActive,
+                    'button_class' => $isActive
+                        ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-950/40 dark:text-primary-200'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-primary-200 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-800 dark:hover:text-primary-200',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{label:string,value:string}>
+     */
+    protected function selectedConversationSummaryCards(): array
+    {
+        $conversation = $this->selectedConversation();
+
+        if (! $conversation instanceof Conversation) {
+            return [];
+        }
+
+        return [
+            [
+                'label' => 'Khách ngoài hệ thống',
+                'value' => (string) $conversation->external_user_id,
+            ],
+            [
+                'label' => 'Chi nhánh / phụ trách',
+                'value' => ($conversation->branch?->name ?? 'Chưa route').' · '.($conversation->assignee?->name ?? 'Chưa claim'),
+            ],
+            [
+                'label' => 'Follow-up tiếp theo',
+                'value' => $conversation->handoffNextActionLabel('d/m/Y H:i') ?? 'Chưa đặt lịch follow-up',
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{
+     *   id:int,
+     *   button_class:string,
+     *   display_name:string,
+     *   provider_label:string,
+     *   provider_badge_class:string,
+     *   handoff_status_label:string,
+     *   handoff_status_badge_class:string,
+     *   handoff_priority_label:string,
+     *   handoff_priority_badge_class:string,
+     *   branch_label:string,
+     *   unread_count:int,
+     *   preview:string,
+     *   handoff_summary_preview:?string,
+     *   lead_status_label:string,
+     *   next_action_label:?string,
+     *   last_message_at_human:string
+     * }>
+     */
+    protected function renderedConversationRows(): array
+    {
+        return $this->conversationList()
+            ->map(function (Conversation $conversation): array {
+                $isSelected = (int) $conversation->id === (int) ($this->selectedConversation()?->id ?? 0);
+
+                return [
+                    'id' => (int) $conversation->id,
+                    'button_class' => $isSelected
+                        ? 'border-primary-300 bg-primary-50/70 dark:border-primary-700 dark:bg-primary-950/30'
+                        : 'border-gray-200 bg-white hover:border-primary-200 hover:bg-primary-50/40 dark:border-gray-800 dark:bg-gray-950/50 dark:hover:border-primary-800 dark:hover:bg-primary-950/20',
+                    'display_name' => $conversation->displayName(),
+                    'provider_label' => $conversation->providerLabel(),
+                    'provider_badge_class' => $conversation->providerBadgeClasses(),
+                    'handoff_status_label' => $conversation->handoffStatusLabel(),
+                    'handoff_status_badge_class' => $conversation->handoffStatusBadgeClasses(),
+                    'handoff_priority_label' => $conversation->handoffPriorityLabel(),
+                    'handoff_priority_badge_class' => $conversation->handoffPriorityBadgeClasses(),
+                    'branch_label' => $conversation->branch?->name ?? 'Chưa route chi nhánh',
+                    'unread_count' => (int) $conversation->unread_count,
+                    'preview' => $conversation->latestPreview(),
+                    'handoff_summary_preview' => filled($conversation->handoffSummaryPreview())
+                        ? $conversation->handoffSummaryPreview()
+                        : null,
+                    'lead_status_label' => $conversation->customer_id ? 'Đã gắn lead' : 'Chưa gắn lead',
+                    'next_action_label' => $conversation->handoffNextActionLabel(),
+                    'last_message_at_human' => optional($conversation->last_message_at)->diffForHumans() ?? '-',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *   heading:string,
+     *   description:string,
+     *   search_label:string,
+     *   search_placeholder:string,
+     *   provider_label:string,
+     *   results_text:string,
+     *   empty_state_text:string
+     * }
+     */
+    protected function queuePanel(): array
+    {
+        return [
+            'heading' => 'Queue hội thoại',
+            'description' => 'Tin nhắn inbound mới từ Zalo OA và Facebook Messenger sẽ tự vào đây theo chu kỳ polling đã cấu hình.',
+            'search_label' => 'Tìm nhanh hội thoại',
+            'search_placeholder' => 'Tìm theo tên, lead, note…',
+            'provider_label' => 'Kênh',
+            'results_text' => 'Đang hiển thị '.count($this->renderedConversationRows()).' hội thoại theo bộ lọc hiện tại.',
+            'empty_state_text' => 'Không có hội thoại nào khớp bộ lọc hiện tại.',
+        ];
+    }
+
+    /**
+     * @return array{
+     *   heading:string,
+     *   description:string,
+     *   empty_state_text:string
+     * }
+     */
+    protected function detailPanel(): array
+    {
+        return [
+            'heading' => 'Chi tiết hội thoại',
+            'description' => 'Phản hồi trực tiếp, gắn lead vào đúng conversation và tiếp tục giữ luồng tin nhắn về sau.',
+            'empty_state_text' => 'Chọn một hội thoại ở cột bên trái để xem thread chi tiết.',
+        ];
+    }
+
+    /**
+     * @return array{
+     *   summary_cards:list<array{label:string,value:string}>,
+     *   assignee_options:array<int,string>,
+     *   customer_edit_url:?string,
+     *   handoff_panel:array{
+     *       summary_heading:string,
+     *       summary_description:string,
+     *       updated_at_text:?string,
+     *       updated_by_name:string,
+     *       summary_label:string,
+     *       summary_placeholder:string,
+     *       status_label:string,
+     *       next_action_label:string,
+     *       priority_label:string,
+     *       priority_options:array<string,string>,
+     *       status_options:array<string,string>,
+     *       guidance:string,
+     *       submit_label:string
+     *   },
+     *   thread_panel:array{
+     *       heading:string,
+     *       description:string,
+     *       show_load_older_messages:bool,
+     *       empty_state_text:string,
+     *       load_older_label:string
+     *   },
+     *   composer_panel:array{
+     *       label:string,
+     *       placeholder:string,
+     *       helper_text:string,
+     *       polling_notice:string,
+     *       submit_label:string
+     *   },
+     *   messages:list<array{
+     *       id:int,
+     *       container_class:string,
+     *       bubble_class:string,
+     *       sender_label:string,
+     *       message_at_text:string,
+     *       body:string,
+     *       status_label:string,
+     *       can_retry:bool,
+     *       last_error:?string
+     *   }>
+     * }
+     */
+    protected function selectedConversationView(): array
+    {
+        $conversation = $this->selectedConversation();
+
+        return [
+            'summary_cards' => $this->selectedConversationSummaryCards(),
+            'assignee_options' => $this->conversationAssigneeOptions(),
+            'customer_edit_url' => $this->customerEditUrl($conversation),
+            'handoff_panel' => [
+                'summary_heading' => 'Note bàn giao nội bộ',
+                'summary_description' => 'Chỉ hiển thị trong CRM để CSKH khác mở vào là nắm nhanh bối cảnh, ưu tiên hiện tại và bước follow-up tiếp theo.',
+                'updated_at_text' => $conversation?->handoff_updated_at?->format('d/m/Y H:i'),
+                'updated_by_name' => $conversation?->handoffEditor?->name ?? 'CRM',
+                'summary_label' => 'Tóm tắt bàn giao',
+                'summary_placeholder' => 'VD: Khách đang so sánh 2 gói, đã hẹn gọi lại 17h, cần ưu tiên tư vấn giá.',
+                'status_label' => 'Trạng thái xử lý',
+                'next_action_label' => 'Follow-up tiếp theo',
+                'priority_label' => 'Mức ưu tiên',
+                'priority_options' => $this->handoffPriorityOptions(),
+                'status_options' => $this->handoffStatusOptions(),
+                'guidance' => 'Gợi ý: ghi nhu cầu chính, cam kết đã hẹn, thông tin còn thiếu và điều gì phải xử lý trước trong ca trực tiếp theo.',
+                'submit_label' => 'Lưu note bàn giao',
+            ],
+            'thread_panel' => [
+                'heading' => 'Thread hội thoại',
+                'description' => $conversation instanceof Conversation
+                    ? 'Đang hiển thị '.$conversation->getAttribute('loaded_message_count').' tin gần nhất. Polling sẽ chỉ cập nhật phần thread đang mở thay vì kéo toàn bộ lịch sử.'
+                    : '',
+                'show_load_older_messages' => (bool) ($conversation?->getAttribute('has_more_messages') ?? false),
+                'empty_state_text' => 'Hội thoại này chưa có tin nhắn nào.',
+                'load_older_label' => 'Xem tin cũ hơn',
+            ],
+            'composer_panel' => [
+                'label' => 'Phản hồi từ CRM',
+                'placeholder' => 'Nhập phản hồi gửi qua hội thoại đang chọn...',
+                'helper_text' => 'Composer được giữ cố định ở cuối thread để CSKH không phải kéo xuống đáy lịch sử sau mỗi lần xem lại tin cũ.',
+                'polling_notice' => 'Chưa có websocket ở v1, nên page sẽ tự polling để cập nhật thread mới giữa các kênh.',
+                'submit_label' => 'Gửi phản hồi',
+            ],
+            'messages' => $this->renderedSelectedConversationMessages(),
+        ];
+    }
+
+    /**
+     * @return list<array{
+     *   id:int,
+     *   container_class:string,
+     *   bubble_class:string,
+     *   sender_label:string,
+     *   message_at_text:string,
+     *   body:string,
+     *   status_label:string,
+     *   can_retry:bool,
+     *   last_error:?string
+     * }>
+     */
+    protected function renderedSelectedConversationMessages(): array
+    {
+        $conversation = $this->selectedConversation();
+
+        if (! $conversation instanceof Conversation) {
+            return [];
+        }
+
+        return $conversation->messages
+            ->map(function (ConversationMessage $message): array {
+                $isInbound = $message->isInbound();
+
+                return [
+                    'id' => (int) $message->id,
+                    'container_class' => $isInbound ? 'justify-start' : 'justify-end',
+                    'bubble_class' => $isInbound
+                        ? 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
+                        : 'border-primary-200 bg-primary-50/80 dark:border-primary-800 dark:bg-primary-950/30',
+                    'sender_label' => $isInbound ? 'Khách' : ($message->sender?->name ?? 'CRM'),
+                    'message_at_text' => optional($message->message_at)->format('d/m/Y H:i') ?? '-',
+                    'body' => filled($message->body) ? $message->body : 'Tin nhắn không hỗ trợ hiển thị ở v1.',
+                    'status_label' => $this->messageStatusLabel($message->status),
+                    'can_retry' => $message->status === ConversationMessage::STATUS_FAILED,
+                    'last_error' => $message->status === ConversationMessage::STATUS_FAILED && filled($message->last_error)
+                        ? (string) $message->last_error
+                        : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *   heading:string,
+     *   description:string,
+     *   close_label:string,
+     *   branch_options:array<int,string>,
+     *   assignee_options:array<int,string>,
+     *   summary_cards:list<array{label:string,value:string}>,
+     *   submit_label:string
+     * }
+     */
+    protected function leadModalView(): array
+    {
+        return [
+            'heading' => 'Tạo lead từ hội thoại',
+            'description' => 'Prefill từ kênh chat hiện tại và gắn lead vào đúng conversation đang chọn.',
+            'close_label' => 'Đóng',
+            'branch_options' => $this->branchOptions(),
+            'assignee_options' => $this->assignableStaffOptions(),
+            'summary_cards' => [
+                [
+                    'label' => 'Nguồn',
+                    'value' => (string) ($this->leadForm['source'] ?? '-'),
+                ],
+                [
+                    'label' => 'Nguồn chi tiết',
+                    'value' => (string) ($this->leadForm['source_detail'] ?? '-'),
+                ],
+                [
+                    'label' => 'Trạng thái',
+                    'value' => (string) ($this->leadForm['status'] ?? '-'),
+                ],
+            ],
+            'submit_label' => 'Lưu lead',
+        ];
     }
 
     public function refreshInbox(): void

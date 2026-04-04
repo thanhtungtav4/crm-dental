@@ -157,3 +157,53 @@ it('marks popup as failed when there are no eligible recipients', function (): v
             'trigger' => 'dispatch_due',
         ]);
 });
+
+it('expires ended popup announcements and their active deliveries through the dispatch workflow', function (): void {
+    ClinicSetting::setValue('popup.enabled', true, [
+        'group' => 'popup',
+        'value_type' => 'boolean',
+    ]);
+
+    $pendingRecipient = User::factory()->create();
+    $pendingRecipient->assignRole('CSKH');
+    $seenRecipient = User::factory()->create();
+    $seenRecipient->assignRole('CSKH');
+
+    $announcement = PopupAnnouncement::query()->create([
+        'title' => 'Popup da het han',
+        'message' => 'Nội dung popup het han',
+        'status' => PopupAnnouncement::STATUS_PUBLISHED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [],
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subMinute(),
+        'published_at' => now()->subDay(),
+    ]);
+
+    $pendingDelivery = PopupAnnouncementDelivery::query()->create([
+        'popup_announcement_id' => $announcement->id,
+        'user_id' => $pendingRecipient->id,
+        'status' => PopupAnnouncementDelivery::STATUS_PENDING,
+        'delivered_at' => now()->subHour(),
+    ]);
+
+    $seenDelivery = PopupAnnouncementDelivery::query()->create([
+        'popup_announcement_id' => $announcement->id,
+        'user_id' => $seenRecipient->id,
+        'status' => PopupAnnouncementDelivery::STATUS_SEEN,
+        'delivered_at' => now()->subHour(),
+        'seen_at' => now()->subMinutes(30),
+    ]);
+
+    $report = app(PopupAnnouncementDispatchService::class)->dispatchDueAnnouncements();
+
+    expect($report)->toMatchArray([
+        'enabled' => true,
+        'announcements_expired' => 1,
+        'deliveries_expired' => 2,
+    ])->and($announcement->refresh()->status)->toBe(PopupAnnouncement::STATUS_EXPIRED)
+        ->and($pendingDelivery->refresh()->status)->toBe(PopupAnnouncementDelivery::STATUS_EXPIRED)
+        ->and($pendingDelivery->expired_at)->not->toBeNull()
+        ->and($seenDelivery->refresh()->status)->toBe(PopupAnnouncementDelivery::STATUS_EXPIRED)
+        ->and($seenDelivery->expired_at)->not->toBeNull();
+});

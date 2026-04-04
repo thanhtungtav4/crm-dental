@@ -114,6 +114,21 @@ class PatientInsightReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function riskSummaryStatsPayload(
+        ?array $branchIds,
+        ?string $from,
+        ?string $until,
+        ?string $riskLevel = null,
+    ): array {
+        return PatientRiskProfile::summaryStatsPayload(
+            $this->riskSummary($branchIds, $from, $until, $riskLevel)
+        );
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     protected function applyDirectBranchScope(Builder $query, ?array $branchIds, string $column): Builder
     {

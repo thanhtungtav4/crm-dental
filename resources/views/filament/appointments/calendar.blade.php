@@ -1,46 +1,4 @@
-@php
-    use App\Models\User;
-    use App\Support\BranchAccess;
-
-    $metrics = $this->getOperationalStatusMetrics();
-    $statusColors = $this->getStatusColors();
-
-    $authUser = auth()->user();
-    $branchIds = [];
-
-    if ($authUser instanceof User && ! $authUser->hasRole('Admin')) {
-        $branchIds = BranchAccess::accessibleBranchIds($authUser);
-    }
-
-    $branches = \App\Models\Branch::query()
-        ->when(
-            $authUser instanceof User && ! $authUser->hasRole('Admin'),
-            fn ($query) => $branchIds === []
-                ? $query->whereRaw('1 = 0')
-                : $query->whereIn('id', $branchIds),
-        )
-        ->orderBy('name')
-        ->pluck('name', 'id');
-
-    $doctors = User::query()
-        ->role('Doctor')
-        ->when(
-            $authUser instanceof User && ! $authUser->hasRole('Admin'),
-            function ($query) use ($branchIds) {
-                if ($branchIds === []) {
-                    return $query->whereRaw('1 = 0');
-                }
-
-                return $query->where(function ($doctorQuery) use ($branchIds) {
-                    $doctorQuery
-                        ->whereIn('branch_id', $branchIds)
-                        ->orWhereHas('activeDoctorBranchAssignments', fn ($assignmentQuery) => $assignmentQuery->whereIn('branch_id', $branchIds));
-                });
-            }
-        )
-        ->orderBy('name')
-        ->pluck('name', 'id');
-@endphp
+@php($viewState = $this->calendarViewState())
 
 <x-filament::section>
     <div class="flex flex-col gap-4">
@@ -65,31 +23,35 @@
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <div class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/60">
                 <p class="text-xs text-gray-500">Tổng lịch tuần</p>
-                <p class="text-xl font-semibold">{{ number_format($metrics['total']) }}</p>
+                <p class="text-xl font-semibold">{{ number_format($viewState['metrics']['total']) }}</p>
             </div>
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-500/10">
                 <p class="text-xs text-amber-700 dark:text-amber-300">Đã đặt</p>
-                <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">{{ number_format($metrics['scheduled']) }}</p>
+                <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">{{ number_format($viewState['metrics']['scheduled']) }}</p>
             </div>
             <div class="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-400/30 dark:bg-blue-500/10">
                 <p class="text-xs text-blue-700 dark:text-blue-300">Đã xác nhận</p>
-                <p class="text-xl font-semibold text-blue-700 dark:text-blue-300">{{ number_format($metrics['confirmed']) }}</p>
+                <p class="text-xl font-semibold text-blue-700 dark:text-blue-300">{{ number_format($viewState['metrics']['confirmed']) }}</p>
             </div>
             <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-3 dark:border-cyan-400/30 dark:bg-cyan-500/10">
                 <p class="text-xs text-cyan-700 dark:text-cyan-300">Đang khám</p>
-                <p class="text-xl font-semibold text-cyan-700 dark:text-cyan-300">{{ number_format($metrics['in_progress']) }}</p>
+                <p class="text-xl font-semibold text-cyan-700 dark:text-cyan-300">{{ number_format($viewState['metrics']['in_progress']) }}</p>
             </div>
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-400/30 dark:bg-emerald-500/10">
                 <p class="text-xs text-emerald-700 dark:text-emerald-300">Hoàn thành</p>
-                <p class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">{{ number_format($metrics['completed']) }}</p>
+                <p class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">{{ number_format($viewState['metrics']['completed']) }}</p>
             </div>
             <div class="rounded-xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-400/30 dark:bg-rose-500/10">
                 <p class="text-xs text-rose-700 dark:text-rose-300">No-show</p>
-                <p class="text-xl font-semibold text-rose-700 dark:text-rose-300">{{ number_format($metrics['no_show']) }}</p>
+                <p class="text-xl font-semibold text-rose-700 dark:text-rose-300">{{ number_format($viewState['metrics']['no_show']) }}</p>
             </div>
         </div>
 
-        <div x-data="calendar()" x-init="init(@js($statusColors))">
+        <div
+            x-data="@include('filament.appointments.partials.calendar-shell-state')"
+            x-init="init(@js($viewState['status_colors']))"
+            x-on:close-modal.window="handleModalClosed($event)"
+        >
             <div class="mb-4 grid gap-3 rounded-lg border border-gray-200 bg-white p-3 md:grid-cols-4 dark:border-gray-700 dark:bg-gray-900/60">
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">Trạng thái</label>
@@ -108,7 +70,7 @@
                     <label class="mb-1 block text-xs text-gray-500">Chi nhánh</label>
                     <select x-model="filters.branchId" @change="applyFilters()" class="w-full rounded-lg border-gray-300 text-sm dark:border-gray-700 dark:bg-gray-900">
                         <option value="">Tất cả</option>
-                        @foreach($branches as $branchId => $branchName)
+                        @foreach($viewState['branches'] as $branchId => $branchName)
                             <option value="{{ $branchId }}">{{ $branchName }}</option>
                         @endforeach
                     </select>
@@ -117,7 +79,7 @@
                     <label class="mb-1 block text-xs text-gray-500">Bác sĩ</label>
                     <select x-model="filters.doctorId" @change="applyFilters()" class="w-full rounded-lg border-gray-300 text-sm dark:border-gray-700 dark:bg-gray-900">
                         <option value="">Tất cả</option>
-                        @foreach($doctors as $doctorId => $doctorName)
+                        @foreach($viewState['doctors'] as $doctorId => $doctorName)
                             <option value="{{ $doctorId }}">{{ $doctorName }}</option>
                         @endforeach
                     </select>
@@ -130,150 +92,91 @@
             </div>
 
             <div id="calendar" class="crm-calendar-shell w-full rounded-lg bg-white shadow ring-1 ring-gray-200"></div>
+
+            <x-filament::modal
+                id="appointment-calendar-reschedule-modal"
+                width="2xl"
+                heading="Dời lịch hẹn"
+                description="Xác nhận thời gian mới và ghi lại lý do thay đổi trước khi cập nhật lịch hẹn."
+            >
+                <div class="space-y-4">
+                    <div class="grid gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-2 dark:border-gray-800 dark:bg-gray-900/70">
+                        <div class="space-y-1">
+                            <p class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Lịch hẹn</p>
+                            <p class="text-sm font-semibold text-gray-950 dark:text-white" x-text="rescheduleDialog.appointmentTitle || 'Lịch hẹn bệnh nhân'"></p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Thời gian mới</p>
+                            <p class="text-sm font-semibold text-gray-950 dark:text-white" x-text="rescheduleDialog.startLabel || 'Chưa chọn'"></p>
+                        </div>
+
+                        <div class="space-y-1" x-show="rescheduleDialog.doctorLabel">
+                            <p class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Bác sĩ</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-200" x-text="rescheduleDialog.doctorLabel"></p>
+                        </div>
+
+                        <div class="space-y-1" x-show="rescheduleDialog.branchLabel">
+                            <p class="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Chi nhánh</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-200" x-text="rescheduleDialog.branchLabel"></p>
+                        </div>
+                    </div>
+
+                    <div
+                        x-cloak
+                        x-show="rescheduleDialog.conflictMessage"
+                        class="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-100"
+                    >
+                        <p class="font-semibold">Khung giờ mới đang bị trùng lịch.</p>
+                        <p class="mt-1" x-text="rescheduleDialog.conflictMessage"></p>
+                        <p class="mt-2 text-xs text-warning-800/90 dark:text-warning-200/80">
+                            Nếu vẫn cần lưu, hệ thống sẽ ghi nhận đây là thao tác override.
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="calendar-reschedule-reason" class="block text-sm font-medium text-gray-900 dark:text-white">
+                            Lý do dời lịch
+                        </label>
+                        <textarea
+                            id="calendar-reschedule-reason"
+                            x-model="rescheduleDialog.reason"
+                            rows="4"
+                            class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 shadow-sm transition focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                            placeholder="Ví dụ: bệnh nhân xin đổi giờ, bác sĩ thay đổi lịch, điều phối qua chi nhánh khác..."
+                        ></textarea>
+                        <p
+                            x-cloak
+                            x-show="rescheduleDialog.errorMessage"
+                            class="text-sm text-danger-600 dark:text-danger-400"
+                            x-text="rescheduleDialog.errorMessage"
+                        ></p>
+                    </div>
+                </div>
+
+                <x-slot name="footer">
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            class="crm-btn crm-btn-outline crm-btn-md"
+                            x-bind:disabled="rescheduleDialog.isSubmitting"
+                            x-on:click="closeRescheduleDialog()"
+                        >
+                            Hủy
+                        </button>
+
+                        <button
+                            type="button"
+                            class="crm-btn crm-btn-primary crm-btn-md"
+                            x-bind:disabled="rescheduleDialog.isSubmitting"
+                            x-on:click="submitReschedule()"
+                        >
+                            <span x-show="!rescheduleDialog.isSubmitting" x-text="rescheduleDialog.force ? 'Override và lưu' : 'Lưu thay đổi'"></span>
+                            <span x-cloak x-show="rescheduleDialog.isSubmitting">Đang cập nhật...</span>
+                        </button>
+                    </div>
+                </x-slot>
+            </x-filament::modal>
         </div>
     </div>
 </x-filament::section>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-<script>
-function calendar() {
-    return {
-        componentId: @js($this->getId()),
-        calendar: null,
-        filters: {
-            status: '',
-            branchId: '',
-            doctorId: '',
-        },
-        init(statusColors) {
-            const el = document.getElementById('calendar')
-            this.calendar = new FullCalendar.Calendar(el, {
-                locale: 'vi',
-                initialView: 'timeGridWeek',
-                height: 'auto',
-                expandRows: true,
-                nowIndicator: true,
-                firstDay: 1,
-                buttonText: {
-                    today: 'Hôm nay',
-                    week: 'Tuần',
-                    day: 'Ngày',
-                },
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'timeGridWeek,timeGridDay',
-                },
-                eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: false },
-                navLinks: true,
-                selectable: true,
-                selectMirror: true,
-                editable: true,
-                eventDurationEditable: false,
-                dateClick: (info) => {
-                    const baseUrl = @json(\App\Filament\Resources\Appointments\AppointmentResource::getUrl('create'))
-                    const params = new URLSearchParams()
-                    params.set('date', info.dateStr)
-                    if (this.filters.branchId) params.set('branch_id', this.filters.branchId)
-                    if (this.filters.doctorId) params.set('doctor_id', this.filters.doctorId)
-                    window.location.href = `${baseUrl}?${params.toString()}`
-                },
-                eventClick: (info) => {
-                    if (info.event.url) {
-                        info.jsEvent.preventDefault()
-                        window.location.href = info.event.url
-                    }
-                },
-                eventDrop: async (info) => {
-                    const reason = window.prompt('Nhap ly do doi lich hen:', '')
-
-                    if (!reason || !reason.trim()) {
-                        window.alert('Vui long nhap ly do doi lich hen.')
-                        info.revert()
-                        return
-                    }
-
-                    const normalizedReason = reason.trim()
-                    const result = await this.callReschedule(info.event, false, normalizedReason)
-
-                    if (result?.ok) {
-                        this.calendar.refetchEvents()
-                        return
-                    }
-
-                    const conflictMessage = String(result?.message || '')
-                    if (conflictMessage.includes('trùng lịch') && window.confirm(`${conflictMessage}\n\nBạn có muốn override để lưu lịch?`)) {
-                        const forcedResult = await this.callReschedule(info.event, true, normalizedReason)
-                        if (forcedResult?.ok) {
-                            this.calendar.refetchEvents()
-                            return
-                        }
-
-                        window.alert(forcedResult?.message || 'Không thể dời lịch hẹn.')
-                        info.revert()
-                        return
-                    }
-
-                    window.alert(result?.message || 'Không thể dời lịch hẹn.')
-                    info.revert()
-                },
-                eventDidMount: (info) => {
-                    const p = info.event.extendedProps || {}
-                    const tip = [
-                        p.patient ? `BN: ${p.patient}` : null,
-                        p.doctor ? `BS: ${p.doctor}` : null,
-                        p.branch ? `CN: ${p.branch}` : null,
-                        p.statusLabel ? `TT: ${p.statusLabel}` : null,
-                        p.note ? `Ghi chú: ${p.note}` : null,
-                    ].filter(Boolean).join('\n')
-                    info.el.setAttribute('title', tip)
-                },
-                events: async (fetchInfo, successCallback, failureCallback) => {
-                    try {
-                        const events = await this.callFetchEvents(fetchInfo.startStr, fetchInfo.endStr)
-                        successCallback(Array.isArray(events) ? events : [])
-                    } catch (error) {
-                        failureCallback(error)
-                    }
-                },
-            })
-            this.calendar.render()
-        },
-        async callFetchEvents(startAtIso, endAtIso) {
-            const component = window.Livewire?.find(this.componentId)
-            if (!component) {
-                return []
-            }
-
-            return await component.call('getCalendarEvents', startAtIso, endAtIso, this.filters)
-        },
-        async callReschedule(event, force, reason) {
-            const component = window.Livewire?.find(this.componentId)
-            if (!component) {
-                return { ok: false, message: 'Không thể kết nối tới phiên làm việc.' }
-            }
-
-            return await component.call(
-                'rescheduleAppointmentFromCalendar',
-                Number(event.id),
-                event.startStr,
-                force,
-                reason,
-            )
-        },
-        applyFilters() {
-            if (!this.calendar) {
-                return
-            }
-
-            this.calendar.refetchEvents()
-        },
-        resetFilters() {
-            this.filters = { status: '', branchId: '', doctorId: '' }
-            this.applyFilters()
-        },
-    }
-}
-</script>
-@endpush

@@ -11,7 +11,13 @@ it('wires customer and appointment lists to related profile pages', function ():
     expect($customersTable)
         ->toContain("PatientResource::getUrl('view'")
         ->toContain("CustomerResource::getUrl('edit'")
-        ->toContain("'tab' => 'basic-info'");
+        ->toContain("'tab' => 'basic-info'")
+        ->toContain('PatientAppointmentActionReadModelService::class')
+        ->toContain('->hasActiveAppointments($record->patient)')
+        ->toContain('->activeAppointmentOptions($record->patient)')
+        ->toContain('SharedSchemas::activeAppointmentSelectionField')
+        ->toContain('PatientAppointmentQuickActionService::class')
+        ->toContain('SharedSchemas::appointmentQuickActionFields');
 
     expect($appointmentsTable)
         ->toContain("PatientResource::getUrl('view'")
@@ -27,9 +33,20 @@ it('shows linked visual counters on patient list for core crm flow', function ()
         ->toContain("TextColumn::make('appointments_count')")
         ->toContain("TextColumn::make('treatment_plans_count')")
         ->toContain("TextColumn::make('invoices_count')")
+        ->toContain("TextColumn::make('status')")
+        ->toContain("SelectFilter::make('first_branch_id')")
+        ->toContain("SelectFilter::make('primary_doctor_id')")
+        ->toContain("SelectFilter::make('owner_staff_id')")
+        ->toContain("SelectFilter::make('gender')")
+        ->toContain("SelectFilter::make('status')")
+        ->toContain("Section::make('Thu hẹp danh sách thao tác')")
+        ->toContain('ActionGroup::make([')
         ->toContain("'tab' => 'appointments'")
         ->toContain("'tab' => 'exam-treatment'")
-        ->toContain("'tab' => 'payments'");
+        ->toContain("'tab' => 'payments'")
+        ->toContain('SharedSchemas::activeAppointmentSelectionField')
+        ->toContain('PatientAppointmentQuickActionService::class')
+        ->toContain('SharedSchemas::appointmentQuickActionFields');
 });
 
 it('links invoice, payment, and treatment plan screens back to patient context', function (): void {

@@ -6,10 +6,13 @@ use App\Models\User;
 use App\Services\FrontdeskControlCenterService;
 use BackedEnum;
 use Filament\Pages\Page;
+use Livewire\Attributes\Computed;
 use UnitEnum;
 
 class FrontdeskControlCenter extends Page
 {
+    use BuildsControlCenterPageViewState;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationLabel = 'Điều phối front-office';
@@ -54,26 +57,28 @@ class FrontdeskControlCenter extends Page
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return array{
+     *   overview_panel:array{
+     *     cards:array<int, array<string, mixed>>
+     *   },
+     *   quick_links_panel:array{
+     *     heading:string,
+     *     description:string,
+     *     grid_classes:string,
+     *     links:array<int, array<string, mixed>>
+     *   },
+     *   sections_panel:array{
+     *     sections:array<int, array<string, mixed>>
+     *   }
+     * }
      */
-    public function getOverviewCards(): array
+    #[Computed]
+    public function pageViewState(): array
     {
-        return array_values((array) ($this->state['overview_cards'] ?? []));
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    public function getQuickLinks(): array
-    {
-        return array_values((array) ($this->state['quick_links'] ?? []));
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    public function getSections(): array
-    {
-        return array_values((array) ($this->state['sections'] ?? []));
+        return $this->buildControlCenterPageViewState(
+            quickLinksHeading: 'Lối tắt front-office',
+            quickLinksDescription: 'Đi thẳng tới các màn hình hot-path mà không cần tìm lại trong menu.',
+            quickLinksGridClasses: 'grid gap-4 md:grid-cols-2 xl:grid-cols-5',
+        );
     }
 }

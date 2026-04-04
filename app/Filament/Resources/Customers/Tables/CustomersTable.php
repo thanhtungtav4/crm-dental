@@ -4,10 +4,12 @@ namespace App\Filament\Resources\Customers\Tables;
 
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Patients\PatientResource;
+use App\Filament\Schemas\SharedSchemas;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Patient;
-use App\Services\DoctorBranchAssignmentService;
+use App\Services\PatientAppointmentActionReadModelService;
+use App\Services\PatientAppointmentQuickActionService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Filament\Actions\Action;
@@ -101,46 +103,24 @@ class CustomersTable
                 Action::make('viewAppointments')
                     ->label('Xem lịch hẹn')
                     ->icon('heroicon-o-eye')
-                    ->visible(function ($record) {
-                        $patientId = optional($record->patient)->id;
-                        if (! $patientId || ! (auth()->user()?->can('Update:Appointment') ?? false)) {
+                    ->visible(function (Customer $record): bool {
+                        if (! $record->patient instanceof Patient || ! (auth()->user()?->can('Update:Appointment') ?? false)) {
                             return false;
                         }
 
-                        return Appointment::query()
-                            ->where('patient_id', $patientId)
-                            ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
-                            ->where('date', '>=', now())
-                            ->exists();
+                        return app(PatientAppointmentActionReadModelService::class)
+                            ->hasActiveAppointments($record->patient);
                     })
                     ->modalHeading('Lịch hẹn còn hiệu lực')
                     ->form([
-                        \Filament\Forms\Components\Select::make('appointment_id')
-                            ->label('Chọn lịch hẹn')
-                            ->options(function ($record) {
-                                $patientId = optional($record->patient)->id;
-                                if (! $patientId) {
-                                    return [];
-                                }
+                        SharedSchemas::activeAppointmentSelectionField(function (Customer $record): array {
+                            if (! $record->patient instanceof Patient) {
+                                return [];
+                            }
 
-                                return Appointment::query()
-                                    ->where('patient_id', $patientId)
-                                    ->whereIn('status', Appointment::statusesForQuery(Appointment::activeStatuses()))
-                                    ->where('date', '>=', now())
-                                    ->orderBy('date')
-                                    ->get()
-                                    ->mapWithKeys(function ($a) {
-                                        $label = sprintf(
-                                            '%s — %s — %s',
-                                            \Carbon\Carbon::parse($a->date)->format('d/m/Y H:i'),
-                                            optional($a->doctor)->name ?? 'Chưa chọn bác sĩ',
-                                            Appointment::statusLabel($a->status)
-                                        );
-
-                                        return [$a->id => $label];
-                                    });
-                            })
-                            ->required(),
+                            return app(PatientAppointmentActionReadModelService::class)
+                                ->activeAppointmentOptions($record->patient);
+                        }),
                     ])
                     ->modalSubmitActionLabel('Mở')
                     ->action(function (array $data) {
@@ -207,132 +187,17 @@ class CustomersTable
                     ->authorize(fn (Customer $record): bool => (auth()->user()?->can('create', Appointment::class) ?? false)
                         && (auth()->user()?->can('create', Patient::class) ?? false)
                         && (auth()->user()?->can('update', $record) ?? false))
-                    ->form([
-                        \Filament\Forms\Components\Select::make('doctor_id')
-                            ->label('Bác sĩ')
-                            ->options(function (callable $get): array {
-                                $branchId = $get('branch_id');
-                                $date = $get('date');
-                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
-
-                                return app(DoctorBranchAssignmentService::class)
-                                    ->doctorOptionsForBranch(
-                                        branchId: filled($branchId) ? (int) $branchId : null,
-                                        at: $appointmentAt,
-                                    );
-                            })
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->helperText('Chỉ hiển thị bác sĩ đang được phân công ở chi nhánh đã chọn.'),
-                        \Filament\Forms\Components\Select::make('branch_id')
-                            ->label('Chi nhánh')
-                            ->options(fn (): array => BranchAccess::branchOptionsForCurrentUser())
-                            ->searchable()
-                            ->preload()
-                            ->default(fn ($record): ?int => is_numeric($record?->branch_id) ? (int) $record->branch_id : BranchAccess::defaultBranchIdForCurrentUser())
-                            ->live()
-                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
-                                $doctorId = $get('doctor_id');
-
-                                if (! filled($doctorId) || ! filled($state)) {
-                                    return;
-                                }
-
-                                $date = $get('date');
-                                $appointmentAt = filled($date) ? \Carbon\Carbon::parse((string) $date) : null;
-
-                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
-                                    doctorId: (int) $doctorId,
-                                    branchId: (int) $state,
-                                    at: $appointmentAt,
-                                );
-
-                                if (! $isAllowed) {
-                                    $set('doctor_id', null);
-                                }
-                            })
-                            ->required(),
-                        \Filament\Forms\Components\DateTimePicker::make('date')
-                            ->label('Thời gian')
-                            ->default(fn () => now()->addDay())
-                            ->live()
-                            ->afterStateUpdated(function (callable $get, callable $set, $state): void {
-                                $doctorId = $get('doctor_id');
-                                $branchId = $get('branch_id');
-
-                                if (! filled($doctorId) || ! filled($branchId) || ! filled($state)) {
-                                    return;
-                                }
-
-                                $isAllowed = app(DoctorBranchAssignmentService::class)->isDoctorAssignedToBranch(
-                                    doctorId: (int) $doctorId,
-                                    branchId: (int) $branchId,
-                                    at: \Carbon\Carbon::parse((string) $state),
-                                );
-
-                                if (! $isAllowed) {
-                                    $set('doctor_id', null);
-                                }
-                            })
-                            ->required(),
-                        \Filament\Forms\Components\Select::make('appointment_kind')
-                            ->label('Loại lịch hẹn')
-                            ->options([
-                                'booking' => 'Đặt hẹn',
-                                're_exam' => 'Tái khám',
-                            ])
-                            ->default('booking')
-                            ->required(),
-                        \Filament\Forms\Components\Select::make('status')
-                            ->label('Trạng thái')
-                            ->options(Appointment::statusOptions())
-                            ->default(Appointment::STATUS_SCHEDULED),
-                        \Filament\Forms\Components\Textarea::make('cancellation_reason')
-                            ->label('Lý do hủy')
-                            ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
-                            ->required(fn (callable $get) => $get('status') === Appointment::STATUS_CANCELLED)
-                            ->rows(2),
-                        \Filament\Forms\Components\Textarea::make('reschedule_reason')
-                            ->label('Lý do hẹn lại')
-                            ->visible(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
-                            ->required(fn (callable $get) => $get('status') === Appointment::STATUS_RESCHEDULED)
-                            ->rows(2),
-                        \Filament\Forms\Components\Textarea::make('note')
-                            ->label('Ghi chú')
-                            ->rows(3),
-                    ])
+                    ->form(SharedSchemas::appointmentQuickActionFields(
+                        fn ($record): ?int => is_numeric($record?->branch_id)
+                            ? (int) $record->branch_id
+                            : BranchAccess::defaultBranchIdForCurrentUser()
+                    ))
                     ->action(function (array $data, $record) {
                         Gate::authorize('create', Appointment::class);
                         Gate::authorize('create', Patient::class);
                         Gate::authorize('update', $record);
 
-                        $resolvedBranchId = is_numeric($data['branch_id'] ?? null)
-                            ? (int) $data['branch_id']
-                            : (is_numeric($record->branch_id) ? (int) $record->branch_id : null);
-
-                        BranchAccess::assertCanAccessBranch(
-                            branchId: $resolvedBranchId,
-                            field: 'branch_id',
-                            message: 'Bạn không thể tạo lịch hẹn ở chi nhánh ngoài phạm vi được phân quyền.',
-                        );
-
-                        /** @var \App\Services\PatientConversionService $service */
-                        $service = app(\App\Services\PatientConversionService::class);
-                        $patient = $service->convert($record);
-
-                        Appointment::create([
-                            'patient_id' => $patient->id,
-                            'customer_id' => $record->id,
-                            'doctor_id' => $data['doctor_id'] ?? null,
-                            'branch_id' => $resolvedBranchId,
-                            'date' => $data['date'],
-                            'appointment_kind' => $data['appointment_kind'] ?? 'booking',
-                            'status' => $data['status'] ?? Appointment::STATUS_SCHEDULED,
-                            'cancellation_reason' => $data['cancellation_reason'] ?? null,
-                            'reschedule_reason' => $data['reschedule_reason'] ?? null,
-                            'note' => $data['note'] ?? null,
-                        ]);
+                        app(PatientAppointmentQuickActionService::class)->createForCustomer($record, $data);
                     }),
             ])
             ->toolbarActions([

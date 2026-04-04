@@ -8,6 +8,8 @@ use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Services\PatientOverviewReadModelService;
 
+use function Pest\Laravel\actingAs;
+
 it('builds treatment progress totals by day and by session for exam treatment tab', function (): void {
     $doctor = User::factory()->create();
     $doctor->assignRole('Doctor');
@@ -82,27 +84,76 @@ it('builds treatment progress totals by day and by session for exam treatment ta
         {
             $this->record = $patient;
         }
+
+        public function forceWorkspaceReturnUrl(string $url): void
+        {
+            $this->workspaceReturnUrl = $url;
+        }
     };
 
     $page->forceRecord($patient->fresh());
+    $workspaceReturnUrl = route('filament.admin.resources.patients.view', [
+        'record' => $patient,
+        'tab' => 'exam-treatment',
+    ]);
+    $page->forceWorkspaceReturnUrl($workspaceReturnUrl);
 
     $service = app(PatientOverviewReadModelService::class);
     $serviceDaySummaries = $service->treatmentProgressDaySummaries($patient->fresh());
     $serviceSessions = $service->treatmentProgress($patient->fresh());
+    $summary = $service->treatmentProgressSummary($serviceSessions, $serviceDaySummaries);
+    $panel = $service->treatmentProgressPanelPayload($patient->fresh(), $doctor, $workspaceReturnUrl, $serviceSessions, $serviceDaySummaries);
+    $renderedPanel = $service->renderedTreatmentProgressPanel($patient->fresh(), $doctor, $workspaceReturnUrl);
+    actingAs($doctor);
 
-    $daySummaries = $page->getTreatmentProgressDaySummariesProperty();
-    $sessions = $page->getTreatmentProgressProperty();
-
-    expect($serviceSessions->pluck('session_id')->all())->toBe($sessions->pluck('session_id')->all())
-        ->and($serviceDaySummaries->pluck('progress_date')->all())->toBe($daySummaries->pluck('progress_date')->all())
-        ->and($sessions)->toHaveCount(3)
-        ->and($page->getTreatmentProgressCountProperty())->toBe(3)
-        ->and($daySummaries)->toHaveCount(2)
-        ->and($page->getTreatmentProgressDayCountProperty())->toBe(2)
-        ->and($page->getTreatmentProgressTotalAmountProperty())->toEqualWithDelta(2000000.0, 0.01)
-        ->and($page->getTreatmentProgressTotalAmountFormattedProperty())->toBe('2.000.000')
-        ->and((float) ($daySummaries->first()['day_total_amount'] ?? 0))->toEqualWithDelta(800000.0, 0.01)
-        ->and((int) ($daySummaries->first()['sessions_count'] ?? 0))->toBe(1)
-        ->and((float) ($daySummaries->last()['day_total_amount'] ?? 0))->toEqualWithDelta(1200000.0, 0.01)
-        ->and((int) ($daySummaries->last()['sessions_count'] ?? 0))->toBe(2);
+    expect($summary)->toMatchArray([
+        'sessions_count' => 3,
+        'days_count' => 2,
+        'total_amount' => 2000000.0,
+        'total_amount_formatted' => '2.000.000',
+    ])
+        ->and($panel)->toMatchArray([
+            'section_title' => 'Tiến trình điều trị',
+            'card_title' => 'Tiến trình điều trị',
+            'sessions_count' => 3,
+            'days_count' => 2,
+            'has_day_summaries' => true,
+            'summary_badge' => '2 ngày · 3 phiên',
+            'total_amount_text' => 'Tổng chi phí phiên: 2.000.000đ',
+            'empty_text' => 'Chưa có tiến trình điều trị cho bệnh nhân này.',
+            'primary_action' => [
+                'label' => 'Thêm ngày điều trị',
+                'url' => route('filament.admin.resources.treatment-sessions.create', [
+                    'patient_id' => $patient->id,
+                    'return_url' => route('filament.admin.resources.patients.view', [
+                        'record' => $patient,
+                        'tab' => 'exam-treatment',
+                    ]),
+                ]),
+                'button_class' => 'crm-btn-primary',
+            ],
+        ])
+        ->and($serviceSessions)->toHaveCount(3)
+        ->and($serviceSessions->first())->toMatchArray([
+            'edit_action_label' => 'Chỉnh sửa phiên điều trị',
+            'edit_action_placeholder' => '-',
+        ])
+        ->and($serviceSessions->first()['edit_action'])->toMatchArray([
+            'url' => $serviceSessions->first()['edit_url'],
+            'label' => 'Chỉnh sửa phiên điều trị',
+            'icon' => 'heroicon-o-pencil-square',
+            'button_class' => 'crm-table-icon-btn',
+        ])
+        ->and($renderedPanel)->toMatchArray([
+            'section_title' => 'Tiến trình điều trị',
+            'summary_badge' => '2 ngày · 3 phiên',
+            'card_title' => 'Tiến trình điều trị',
+            'total_amount_text' => 'Tổng chi phí phiên: 2.000.000đ',
+        ])
+        ->and($page->workspaceViewState()['rendered_treatment_progress_panel'])->toMatchArray($renderedPanel)
+        ->and($serviceDaySummaries)->toHaveCount(2)
+        ->and((float) ($serviceDaySummaries->first()['day_total_amount'] ?? 0))->toEqualWithDelta(800000.0, 0.01)
+        ->and((int) ($serviceDaySummaries->first()['sessions_count'] ?? 0))->toBe(1)
+        ->and((float) ($serviceDaySummaries->last()['day_total_amount'] ?? 0))->toEqualWithDelta(1200000.0, 0.01)
+        ->and((int) ($serviceDaySummaries->last()['sessions_count'] ?? 0))->toBe(2);
 });

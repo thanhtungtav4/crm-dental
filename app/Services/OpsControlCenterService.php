@@ -454,111 +454,17 @@ class OpsControlCenterService
      */
     protected function integrationOperationsSummary(): array
     {
-        $providerCards = $this->integrationProviderHealthReadModelService->cards();
+        $providerCards = $this->integrationProviderHealthReadModelService->snapshotCards();
         $providerCounts = $this->integrationProviderHealthReadModelService->counts();
         $activeGraceRotations = $this->integrationOperationalReadModelService
-            ->activeGraceRotations()
-            ->map(fn (array $rotation): array => [
-                'display_name' => (string) ($rotation['display_name'] ?? 'Integration secret'),
-                'grace_expires_at' => $this->formatDateTime(data_get($rotation, 'grace_expires_at')),
-                'remaining_minutes' => (int) ($rotation['remaining_minutes'] ?? 0),
-            ])
+            ->renderedActiveGraceRotations()
             ->all();
 
         $expiredGraceRotations = $this->integrationOperationalReadModelService
-            ->expiredGraceRotations()
-            ->map(fn (array $rotation): array => [
-                'display_name' => (string) ($rotation['display_name'] ?? 'Integration secret'),
-                'grace_expires_at' => $this->formatDateTime(data_get($rotation, 'grace_expires_at')),
-                'expired_minutes' => (int) ($rotation['expired_minutes'] ?? 0),
-            ])
+            ->renderedExpiredGraceRotations()
             ->all();
 
-        $retentionCandidates = [
-            $this->integrationRetentionCandidate(
-                label: 'Web lead ingestion',
-                retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
-                total: $this->integrationOperationalReadModelService->webLeadIngestionRetentionCandidateCount(
-                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
-                ),
-                description: 'Lead ingestion log quá hạn retention.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Web lead internal email deliveries',
-                retentionDays: ClinicRuntimeSettings::webLeadOperationalRetentionDays(),
-                total: $this->integrationOperationalReadModelService->webLeadTerminalEmailRetentionCandidateCount(
-                    ClinicRuntimeSettings::webLeadOperationalRetentionDays()
-                ),
-                description: 'Delivery log email nội bộ đã terminal và quá hạn review window.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Zalo webhook',
-                retentionDays: ClinicRuntimeSettings::zaloWebhookRetentionDays(),
-                total: $this->integrationOperationalReadModelService->zaloWebhookRetentionCandidateCount(
-                    ClinicRuntimeSettings::zaloWebhookRetentionDays()
-                ),
-                description: 'Webhook inbound đã quá hạn retention.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'EMR outbox',
-                retentionDays: ClinicRuntimeSettings::emrOperationalRetentionDays(),
-                total: $this->integrationOperationalReadModelService->emrRetentionCandidateCount(
-                    ClinicRuntimeSettings::emrOperationalRetentionDays()
-                ),
-                description: 'EMR log + event đã đồng bộ xong và đủ điều kiện prune.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Clinical media temporary',
-                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY),
-                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
-                    ? $this->integrationOperationalReadModelService->clinicalMediaRetentionCandidateCount(
-                        \App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY,
-                        ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_TEMPORARY)
-                    )
-                    : 0,
-                description: 'Clinical media retention class temporary đã đủ điều kiện prune.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Clinical media operational',
-                retentionDays: ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL),
-                total: ClinicRuntimeSettings::clinicalMediaRetentionEnabled()
-                    ? $this->integrationOperationalReadModelService->clinicalMediaRetentionCandidateCount(
-                        \App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL,
-                        ClinicRuntimeSettings::clinicalMediaRetentionDays(\App\Models\ClinicalMediaAsset::RETENTION_CLINICAL_OPERATIONAL)
-                    )
-                    : 0,
-                description: 'Clinical media retention class clinical_operational đã đủ điều kiện prune.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Google Calendar outbox',
-                retentionDays: ClinicRuntimeSettings::googleCalendarOperationalRetentionDays(),
-                total: $this->integrationOperationalReadModelService->googleCalendarRetentionCandidateCount(
-                    ClinicRuntimeSettings::googleCalendarOperationalRetentionDays()
-                ),
-                description: 'Google Calendar log + event đã đủ điều kiện prune.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Popup announcement logs',
-                retentionDays: ClinicRuntimeSettings::popupAnnouncementRetentionDays(),
-                total: $this->integrationOperationalReadModelService->popupDeliveryRetentionCandidateCount(
-                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
-                ) + $this->integrationOperationalReadModelService->popupAnnouncementRetentionCandidateCount(
-                    ClinicRuntimeSettings::popupAnnouncementRetentionDays()
-                ),
-                description: 'Popup delivery và announcement log đã quá hạn retention.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'Patient photos',
-                retentionDays: ClinicRuntimeSettings::patientPhotoRetentionDays(),
-                total: ClinicRuntimeSettings::patientPhotoRetentionEnabled()
-                    ? $this->integrationOperationalReadModelService->patientPhotoRetentionCandidateCount(
-                        ClinicRuntimeSettings::patientPhotoRetentionDays(),
-                        ClinicRuntimeSettings::patientPhotoRetentionIncludeXray()
-                    )
-                    : 0,
-                description: 'Ảnh bệnh nhân đã quá hạn retention theo runtime setting hiện tại.',
-            ),
-        ];
+        $retentionCandidates = $this->integrationOperationalReadModelService->retentionCandidates();
 
         $expiredCount = count($expiredGraceRotations);
         $activeCount = count($activeGraceRotations);
@@ -631,35 +537,14 @@ class OpsControlCenterService
      */
     protected function znsOperationsSummary(): array
     {
-        $summaryCards = $this->znsOperationalReadModelService->summaryCards();
-
-        $retentionDays = ClinicRuntimeSettings::znsOperationalRetentionDays();
-        $retentionCandidates = [
-            $this->integrationRetentionCandidate(
-                label: 'ZNS automation logs',
-                retentionDays: $retentionDays,
-                total: $this->znsOperationalReadModelService->automationLogRetentionCandidateCount($retentionDays),
-                description: 'Log automation đủ điều kiện prune.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'ZNS automation events',
-                retentionDays: $retentionDays,
-                total: $this->znsOperationalReadModelService->automationRetentionCandidateCount($retentionDays),
-                description: 'Event SENT/DEAD đã quá hạn retention.',
-            ),
-            $this->integrationRetentionCandidate(
-                label: 'ZNS deliveries',
-                retentionDays: $retentionDays,
-                total: $this->znsOperationalReadModelService->deliveryRetentionCandidateCount($retentionDays),
-                description: 'Delivery sent/skipped hoặc failed terminal đủ điều kiện prune.',
-            ),
-        ];
+        $summaryCards = $this->znsOperationalReadModelService->dashboardSummaryCards();
+        $retentionCandidates = $this->znsOperationalReadModelService->retentionCandidates();
 
         $hasDeadBacklog = collect($summaryCards)
-            ->whereIn('label', ['Automation dead-letter', 'Delivery terminal failed', 'Campaign failed'])
+            ->whereIn('key', ['automation_dead', 'deliveries_terminal_failed', 'campaigns_failed'])
             ->sum('value') > 0;
         $hasRetryBacklog = collect($summaryCards)
-            ->whereIn('label', ['Automation pending', 'Automation retry due', 'Delivery retry due'])
+            ->whereIn('key', ['automation_pending', 'automation_retry_due', 'deliveries_retry_due'])
             ->sum('value') > 0;
         $tone = $hasDeadBacklog ? 'danger' : ($hasRetryBacklog ? 'warning' : 'success');
         $status = $hasDeadBacklog ? 'Needs triage' : ($hasRetryBacklog ? 'Backlog active' : 'Healthy');
@@ -702,10 +587,12 @@ class OpsControlCenterService
 
         $aggregateReadiness = [
             [
+                'key' => 'revenue',
                 'label' => 'Revenue aggregate',
                 'ready' => $this->hotReportAggregateReadinessService->shouldUseRevenueAggregate($branchIds, $snapshotDate, $snapshotDate),
             ],
             [
+                'key' => 'care',
                 'label' => 'Care aggregate',
                 'ready' => $this->hotReportAggregateReadinessService->shouldUseCareAggregate($branchIds, $snapshotDate, $snapshotDate),
             ],
@@ -737,7 +624,9 @@ class OpsControlCenterService
                 ],
             ],
             'snapshot_counts' => $snapshotCounts,
+            'snapshot_count_cards' => $this->operationalKpiSnapshotReadModelService->renderedSnapshotCountCards($snapshotCounts),
             'aggregate_readiness' => $aggregateReadiness,
+            'aggregate_readiness_cards' => $this->renderedAggregateReadinessCards($aggregateReadiness),
             'open_alerts' => $alertSummary['open_alerts'],
             'links' => [
                 [
@@ -762,6 +651,31 @@ class OpsControlCenterService
                 ],
             ],
         ];
+    }
+
+    /**
+     * @param  array<int, array{key:string,label:string,ready:bool}>  $aggregateReadiness
+     * @return array<int, array{
+     *     key:string,
+     *     label:string,
+     *     badge_label:string,
+     *     badge_classes:string
+     * }>
+     */
+    protected function renderedAggregateReadinessCards(array $aggregateReadiness): array
+    {
+        return array_map(function (array $aggregate): array {
+            $ready = (bool) ($aggregate['ready'] ?? false);
+
+            return [
+                'key' => (string) $aggregate['key'],
+                'label' => (string) $aggregate['label'],
+                'badge_label' => $ready ? 'Ready' : 'Fallback raw',
+                'badge_classes' => $ready
+                    ? 'border-success-200 bg-success-50 text-success-700 dark:border-success-900/60 dark:bg-success-950/30 dark:text-success-200'
+                    : 'border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-900/60 dark:bg-warning-950/30 dark:text-warning-200',
+            ];
+        }, $aggregateReadiness);
     }
 
     /**
@@ -1357,7 +1271,7 @@ class OpsControlCenterService
             'description' => 'Retry/dead-letter backlog, failed campaigns và retention backlog ZNS.',
             'tone' => (string) ($zns['tone'] ?? 'warning'),
             'status' => 'Dead '.collect((array) ($zns['summary_cards'] ?? []))
-                ->whereIn('label', ['Automation dead-letter', 'Delivery terminal failed', 'Campaign failed'])
+                ->whereIn('key', ['automation_dead', 'deliveries_terminal_failed', 'campaigns_failed'])
                 ->sum('value'),
             'meta' => [
                 'Prune backlog '.collect((array) ($zns['retention_candidates'] ?? []))->sum('total'),

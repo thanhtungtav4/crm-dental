@@ -100,13 +100,17 @@ it('scopes calendar operational metrics by accessible branch for non admin users
 
         $this->actingAs($manager);
 
-        $metrics = Livewire::test(CalendarAppointments::class)
-            ->instance()
-            ->getOperationalStatusMetrics();
+        $page = Livewire::test(CalendarAppointments::class)->instance();
+        $metrics = $page->getOperationalStatusMetrics();
+        $viewState = $page->calendarViewState();
 
         expect($metrics['total'])->toBe(1)
             ->and($metrics['scheduled'])->toBe(1)
-            ->and($metrics['no_show'])->toBe(0);
+            ->and($metrics['no_show'])->toBe(0)
+            ->and($viewState['branches'])->toHaveKey($branchA->id)
+            ->and($viewState['branches'])->not->toHaveKey($branchB->id)
+            ->and($viewState['doctors'])->toHaveKey($doctor->id)
+            ->and($viewState['doctors'])->not->toHaveKey($doctorBranchB->id);
     } finally {
         Carbon::setTestNow();
     }

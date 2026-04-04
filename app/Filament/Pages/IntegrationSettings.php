@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Spatie\Permission\Models\Role;
 use UnitEnum;
@@ -938,12 +939,9 @@ class IntegrationSettings extends Page
     {
         $this->authorizeManageSecrets();
 
-        $report = app(IntegrationProviderActionService::class)->emrConnectionReport();
-        $notification = Notification::make()
-            ->title($report['title'])
-            ->body($report['body']);
-
-        ($report['success'] ? $notification->success() : $notification->danger())->send();
+        $this->sendNotificationPayload(
+            app(IntegrationProviderActionService::class)->emrConnectionNotification(),
+        );
     }
 
     public function testZaloReadiness(): void
@@ -970,17 +968,13 @@ class IntegrationSettings extends Page
     {
         $this->authorizeManageSecrets();
 
-        $report = app(IntegrationProviderActionService::class)->googleCalendarConnectionReport();
+        $report = app(IntegrationProviderActionService::class)->googleCalendarConnectionNotification();
 
         if ($report['account_email'] !== null) {
             $this->settings['google_calendar_account_email'] = $report['account_email'];
         }
 
-        $notification = Notification::make()
-            ->title($report['title'])
-            ->body($report['body']);
-
-        ($report['success'] ? $notification->success() : $notification->danger())->send();
+        $this->sendNotificationPayload($report);
     }
 
     public function openEmrConfigUrl(): void
@@ -990,11 +984,11 @@ class IntegrationSettings extends Page
         $report = app(IntegrationProviderActionService::class)->emrConfigUrlReport();
 
         if (! $report['success'] || ! filled($report['url'])) {
-            Notification::make()
-                ->title('Không thể mở trang cấu hình EMR')
-                ->body($report['message'])
-                ->warning()
-                ->send();
+            $this->sendNotificationPayload([
+                'title' => 'Không thể mở trang cấu hình EMR',
+                'body' => $report['message'],
+                'status' => 'warning',
+            ]);
 
             return;
         }
@@ -1008,21 +1002,36 @@ class IntegrationSettings extends Page
 
         $this->settings['web_lead_api_token'] = 'wla_'.Str::random(48);
 
-        Notification::make()
-            ->title('Đã tạo API token mới')
-            ->body('Token mới đã được điền vào form. Nhấn "Lưu cài đặt tích hợp" để áp dụng.')
-            ->success()
-            ->send();
+        $this->sendNotificationPayload([
+            'title' => 'Đã tạo API token mới',
+            'body' => 'Token mới đã được điền vào form. Nhấn "Lưu cài đặt tích hợp" để áp dụng.',
+            'status' => 'success',
+        ]);
     }
 
     protected function sendProviderReadinessNotification(string $providerKey): void
     {
-        $report = app(IntegrationProviderActionService::class)->readinessReport($providerKey);
-        $notification = Notification::make()
-            ->title($report['title'])
-            ->body($report['body']);
+        $this->sendNotificationPayload(
+            app(IntegrationProviderActionService::class)->readinessNotification($providerKey),
+        );
+    }
 
-        ($report['success'] ? $notification->success() : $notification->warning())->send();
+    /**
+     * @param  array{title:string,body:string,status:string}  $payload
+     */
+    protected function sendNotificationPayload(array $payload): void
+    {
+        $notification = Notification::make()
+            ->title($payload['title'])
+            ->body($payload['body']);
+
+        $notification = match ($payload['status']) {
+            'success' => $notification->success(),
+            'danger' => $notification->danger(),
+            default => $notification->warning(),
+        };
+
+        $notification->send();
     }
 
     public function addCatalogRow(string $state): void
@@ -1198,22 +1207,43 @@ class IntegrationSettings extends Page
         );
     }
 
-    public function getRecentLogs(): Collection
+    /**
+     * @return Collection<int, array{
+     *     changed_at_label:string,
+     *     changed_by_name:string,
+     *     setting_label:string,
+     *     setting_key:string,
+     *     change_reason:?string,
+     *     grace_expires_at_label:?string,
+     *     old_value:?string,
+     *     new_value:?string
+     * }>
+     */
+    protected function renderedRecentLogs(): Collection
     {
         if (! $this->canViewAuditLogs() || ! Schema::hasTable('clinic_setting_logs')) {
             return collect();
         }
 
-        return app(IntegrationSettingsAuditReadModelService::class)->recentLogs();
+        return app(IntegrationSettingsAuditReadModelService::class)->renderedRecentLogs();
     }
 
-    public function getActiveSecretRotations(): Collection
+    /**
+     * @return Collection<int, array{
+     *     key:string,
+     *     display_name:string,
+     *     grace_expires_at_label:string,
+     *     remaining_minutes_label:string,
+     *     rotation_reason:?string
+     * }>
+     */
+    protected function renderedActiveSecretRotations(): Collection
     {
         if (! $this->canManageSecrets()) {
             return collect();
         }
 
-        return app(IntegrationOperationalReadModelService::class)->activeGraceRotations();
+        return app(IntegrationOperationalReadModelService::class)->renderedActiveGraceRotations();
     }
 
     /**
@@ -1221,22 +1251,651 @@ class IntegrationSettings extends Page
      *     key:string,
      *     label:string,
      *     description:string,
-     *     enabled:bool,
-     *     tone:string,
-     *     status:string,
-     *     score:int,
-     *     issues:array<int, string>,
-     *     recommendations:array<int, string>,
-     *     meta:array<int, array{label:string, value:int|string}>,
-     *     issue_count:int,
-     *     recommendation_count:int,
-     *     runtime_error_message:?string,
-     *     webhook_url:?string
+     *     status_badge:array{label:string, classes:string},
+     *     summary_badge:array{label:string, classes:string},
+     *     issue_badge:?array{label:string, classes:string},
+     *     meta_preview:array<int, array{label:string, value:int|string}>,
+     *     status_message:?string,
+     *     status_message_classes:?string
      * }>
      */
-    public function getProviderHealthCards(): array
+    protected function renderedProviderHealthCards(): array
     {
-        return app(IntegrationProviderHealthReadModelService::class)->cards();
+        return app(IntegrationProviderHealthReadModelService::class)->snapshotCards();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function presentedProviderHealthCards(
+        array $cards,
+        string $containerClasses,
+        string $metaValueClasses,
+        string $statusMessageContainerClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => $containerClasses,
+                'meta_value_classes' => $metaValueClasses,
+                'status_message_container_classes' => $statusMessageContainerClasses,
+            ],
+            $cards,
+        );
+    }
+
+    /**
+     * @return array{
+     *     form_panel:array{
+     *         notice_panels:array<int, array{classes:string,message:string}>,
+     *         revision_conflict_notice:array{is_visible:bool,classes:string,message:string},
+     *         pre_sections:array<int, array{
+     *             heading:string,
+     *             description:string,
+     *             partial:string,
+     *             include_data:array<string, mixed>
+     *         }>,
+     *         provider_sections:array<int, array{
+     *             heading:string,
+     *             description:string,
+     *             partial:string,
+     *             include_data:array{provider:array<string, mixed>}
+     *         }>,
+     *         submit_action:array{is_visible:bool,label:string,icon:string}
+     *     },
+     *     post_form_sections:array<int, array{
+     *         heading:string,
+     *         description:string,
+     *         partial:string,
+     *         include_data:array<string, mixed>,
+     *         section_classes:?string
+     *     }>
+     * }
+     */
+    #[Computed]
+    public function pageViewState(): array
+    {
+        return [
+            'form_panel' => [
+                'notice_panels' => $this->noticePanels(),
+                'revision_conflict_notice' => $this->revisionConflictNoticePanel(),
+                'pre_sections' => $this->preFormSections(),
+                'provider_sections' => $this->providerSections(),
+                'submit_action' => $this->submitActionPanel(),
+            ],
+            'post_form_sections' => $this->postFormSections(),
+        ];
+    }
+
+    /**
+     * @return array<int, array{classes:string,message:string}>
+     */
+    protected function noticePanels(): array
+    {
+        return array_values(array_filter([
+            $this->readOnlyNoticePanel()['is_visible']
+                ? [
+                    'classes' => 'rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-900/60 dark:bg-warning-950/40 dark:text-warning-200',
+                    'message' => $this->readOnlyNoticePanel()['message'],
+                ]
+                : null,
+            $this->secretRotationNoticePanel()['is_visible']
+                ? [
+                    'classes' => 'rounded-lg border border-info-200 bg-info-50 px-4 py-3 text-sm text-info-800 dark:border-info-900/60 dark:bg-info-950/40 dark:text-info-200',
+                    'message' => $this->secretRotationNoticePanel()['message'],
+                ]
+                : null,
+        ]));
+    }
+
+    /**
+     * @return array<int, array{
+     *     heading:string,
+     *     description:string,
+     *     partial:string,
+     *     include_data:array<string, mixed>
+     * }>
+     */
+    protected function preFormSections(): array
+    {
+        $sections = [];
+
+        $secretRotationPanel = $this->secretRotationPanel();
+
+        if ($secretRotationPanel['items']->isNotEmpty()) {
+            $sections[] = [
+                'heading' => $secretRotationPanel['heading'],
+                'description' => $secretRotationPanel['description'],
+                'partial' => 'filament.pages.partials.integration-settings-secret-rotation-list',
+                'include_data' => [
+                    'panel' => $secretRotationPanel,
+                ],
+            ];
+        }
+
+        $providerHealthPanel = $this->providerHealthPanel();
+
+        $sections[] = [
+            'heading' => $providerHealthPanel['heading'],
+            'description' => $providerHealthPanel['description'],
+            'partial' => 'filament.pages.partials.provider-health-panel',
+            'include_data' => [
+                'panel' => $providerHealthPanel,
+            ],
+        ];
+
+        return $sections;
+    }
+
+    /**
+     * @return array<int, array{
+     *     heading:string,
+     *     description:string,
+     *     partial:string,
+     *     include_data:array<string, mixed>,
+     *     section_classes:?string
+     * }>
+     */
+    protected function postFormSections(): array
+    {
+        $auditLogPanel = $this->auditLogPanel();
+
+        if (! $auditLogPanel['is_visible']) {
+            return [];
+        }
+
+        return [[
+            'heading' => $auditLogPanel['heading'],
+            'description' => $auditLogPanel['description'],
+            'partial' => 'filament.pages.partials.integration-settings-audit-log-table',
+            'include_data' => [
+                'auditLog' => $auditLogPanel,
+            ],
+            'section_classes' => 'mt-6',
+        ]];
+    }
+
+    /**
+     * @return array<int, array{
+     *     heading:string,
+     *     description:string,
+     *     partial:string,
+     *     include_data:array{provider:array<string, mixed>}
+     * }>
+     */
+    protected function providerSections(): array
+    {
+        return array_map(fn (array $provider): array => [
+            'heading' => $provider['title'],
+            'description' => $provider['description'],
+            'partial' => 'filament.pages.partials.integration-settings-provider-panel',
+            'include_data' => [
+                'provider' => $provider,
+            ],
+        ], $this->providerPanels());
+    }
+
+    /**
+     * @return array{is_visible:bool,message:string}
+     */
+    protected function readOnlyNoticePanel(): array
+    {
+        return [
+            'is_visible' => ! $this->canManageRuntimeSettings(),
+            'message' => 'Bạn đang ở chế độ chỉ xem. Chỉ người có quyền quản lý runtime settings hoặc integration secrets mới được lưu thay đổi.',
+        ];
+    }
+
+    /**
+     * @return array{is_visible:bool,message:string}
+     */
+    protected function secretRotationNoticePanel(): array
+    {
+        $secretRotationPanel = $this->secretRotationPanel();
+
+        return [
+            'is_visible' => (bool) $secretRotationPanel['show_notice'],
+            'message' => 'Khi đổi `Web Lead API Token`, `Zalo Webhook Verify Token` hoặc `EMR API Key`, hệ thống sẽ giữ token cũ trong grace window để client bên ngoài có thời gian rollover. Sau khi grace window hết hạn, command `integrations:revoke-rotated-secrets` sẽ tự thu hồi token cũ.',
+        ];
+    }
+
+    /**
+     * @return array{is_visible:bool,classes:string,message:string}
+     */
+    protected function revisionConflictNoticePanel(): array
+    {
+        $message = $this->getErrorBag()->first('settingsRevision');
+
+        return [
+            'is_visible' => filled($message),
+            'classes' => 'rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-800 dark:border-danger-900/60 dark:bg-danger-950/40 dark:text-danger-200',
+            'message' => (string) $message,
+        ];
+    }
+
+    /**
+     * @return array{is_visible:bool,label:string,icon:string}
+     */
+    protected function submitActionPanel(): array
+    {
+        return [
+            'is_visible' => $this->canManageRuntimeSettings(),
+            'label' => 'Lưu cài đặt tích hợp',
+            'icon' => 'heroicon-o-check-circle',
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, array{
+     *     wire_click:string,
+     *     label:string,
+     *     icon:string,
+     *     color:string
+     * }>>
+     */
+    protected function providerActionGroups(): array
+    {
+        return [
+            'zalo' => [
+                [
+                    'wire_click' => 'testZaloReadiness',
+                    'label' => 'Đánh giá sẵn sàng Zalo OA',
+                    'icon' => 'heroicon-o-shield-check',
+                    'color' => 'gray',
+                ],
+            ],
+            'zns' => [
+                [
+                    'wire_click' => 'testZnsReadiness',
+                    'label' => 'Đánh giá sẵn sàng ZNS',
+                    'icon' => 'heroicon-o-shield-check',
+                    'color' => 'gray',
+                ],
+            ],
+            'google_calendar' => $this->canManageSecrets()
+                ? [
+                    [
+                        'wire_click' => 'testGoogleCalendarConnection',
+                        'label' => 'Test Google Calendar',
+                        'icon' => 'heroicon-o-signal',
+                        'color' => 'gray',
+                    ],
+                ]
+                : [],
+            'emr' => array_values(array_filter([
+                [
+                    'wire_click' => 'testDicomReadiness',
+                    'label' => 'Đánh giá sẵn sàng DICOM / PACS',
+                    'icon' => 'heroicon-o-shield-check',
+                    'color' => 'gray',
+                ],
+                $this->canManageSecrets()
+                    ? [
+                        'wire_click' => 'testEmrConnection',
+                        'label' => 'Test EMR',
+                        'icon' => 'heroicon-o-signal',
+                        'color' => 'gray',
+                    ]
+                    : null,
+                $this->canManageSecrets()
+                    ? [
+                        'wire_click' => 'openEmrConfigUrl',
+                        'label' => 'Mở config EMR',
+                        'icon' => 'heroicon-o-arrow-top-right-on-square',
+                        'color' => 'info',
+                    ]
+                    : null,
+            ])),
+            'web_lead' => array_values(array_filter([
+                [
+                    'wire_click' => 'testWebLeadReadiness',
+                    'label' => 'Đánh giá sẵn sàng Web Lead API',
+                    'icon' => 'heroicon-o-shield-check',
+                    'color' => 'gray',
+                ],
+                $this->canManageSecrets()
+                    ? [
+                        'wire_click' => 'generateWebLeadApiToken',
+                        'label' => 'Tạo API Token',
+                        'icon' => 'heroicon-o-key',
+                        'color' => 'gray',
+                    ]
+                    : null,
+            ])),
+        ];
+    }
+
+    /**
+     * @return array<string, array{
+     *     actions:array<int, array{
+     *         wire_click:string,
+     *         label:string,
+     *         icon:string,
+     *         color:string
+     *     }>,
+     *     guide_partial:?string
+     * }>
+     */
+    protected function providerSupportPanels(): array
+    {
+        return [
+            'zalo' => [
+                'actions' => $this->providerActionGroups()['zalo'] ?? [],
+                'guide_partial' => 'filament.pages.partials.zalo-oa-guide',
+            ],
+            'zns' => [
+                'actions' => $this->providerActionGroups()['zns'] ?? [],
+                'guide_partial' => null,
+            ],
+            'google_calendar' => [
+                'actions' => $this->providerActionGroups()['google_calendar'] ?? [],
+                'guide_partial' => null,
+            ],
+            'emr' => [
+                'actions' => $this->providerActionGroups()['emr'] ?? [],
+                'guide_partial' => null,
+            ],
+            'web_lead' => [
+                'actions' => $this->providerActionGroups()['web_lead'] ?? [],
+                'guide_partial' => 'filament.pages.partials.web-lead-api-guide',
+            ],
+            'popup' => [
+                'actions' => [],
+                'guide_partial' => 'filament.pages.partials.popup-announcement-guide',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     group:string,
+     *     title:string,
+     *     description:string,
+     *     fields:array<int, array<string, mixed>>,
+     *     rendered_fields:array<int, array{
+     *         field:array<string, mixed>,
+     *         state_path:string,
+     *         partial:string,
+     *         include_data:array<string, mixed>
+     *     }>,
+     *     support_sections:array<int, array{
+     *         partial:string,
+     *         include_data:array<string, mixed>
+     *     }
+     * }>
+     */
+    protected function providerPanels(): array
+    {
+        return array_map(function (array $provider): array {
+            $support = $this->providerSupportPanels()[$provider['group']] ?? ['actions' => [], 'guide_partial' => null];
+
+            return [
+                ...$provider,
+                'rendered_fields' => array_values(array_map(fn (array $field): array => $this->renderedField($field), array_values(array_filter(
+                    $provider['fields'],
+                    fn (array $field): bool => ! ((bool) ($field['hidden'] ?? false)),
+                )))),
+                'support_sections' => array_values(array_filter([
+                    $support['actions'] !== []
+                        ? [
+                            'partial' => 'filament.pages.partials.provider-action-buttons',
+                            'include_data' => [
+                                'actions' => $support['actions'],
+                            ],
+                        ]
+                        : null,
+                    $support['guide_partial'] !== null
+                        ? [
+                            'partial' => $support['guide_partial'],
+                            'include_data' => [],
+                        ]
+                        : null,
+                ])),
+            ];
+        }, $this->getProviders());
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array{
+     *     field:array<string, mixed>,
+     *     state_path:string,
+     *     partial:string,
+     *     include_data:array<string, mixed>
+     * }
+     */
+    protected function renderedField(array $field): array
+    {
+        $statePath = 'settings.'.$field['state'];
+
+        return [
+            'field' => $field,
+            'state_path' => $statePath,
+            'partial' => $this->fieldPartialView($field),
+            'include_data' => $this->fieldIncludeData($field, $statePath),
+        ];
+    }
+
+    /**
+     * @param  array{type?:string}  $field
+     */
+    protected function fieldPartialView(array $field): string
+    {
+        return match ($field['type'] ?? 'text') {
+            'boolean' => 'filament.pages.partials.integration-setting-boolean-field',
+            'select' => 'filament.pages.partials.integration-setting-select-field',
+            'roles' => 'filament.pages.partials.integration-setting-roles-field',
+            'textarea' => 'filament.pages.partials.integration-setting-textarea-field',
+            'json' => 'filament.pages.partials.integration-setting-json-field',
+            default => 'filament.pages.partials.integration-setting-input-field',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array<string, mixed>
+     */
+    protected function fieldIncludeData(array $field, string $statePath): array
+    {
+        return match ($field['type'] ?? 'text') {
+            'boolean' => [
+                'field' => $field,
+                'statePath' => $statePath,
+            ],
+            'select' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'options' => (array) ($field['options'] ?? []),
+            ],
+            'roles' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'options' => (array) ($field['options'] ?? []),
+                'emptyStateText' => 'Chưa có role để cấu hình. Vui lòng seed role trước khi bật thông báo realtime.',
+                'helperText' => $this->fieldHelperText($field),
+            ],
+            'textarea' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'helperText' => $this->fieldHelperText($field),
+            ],
+            'json' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                ...$this->catalogFieldViewData($field),
+            ],
+            default => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'inputType' => $this->fieldInputType($field),
+                'isWebLeadApiToken' => ($field['state'] ?? null) === 'web_lead_api_token',
+                'min' => ($field['type'] ?? null) === 'integer' ? '0' : null,
+                'step' => ($field['type'] ?? null) === 'integer' ? '1' : null,
+            ],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     */
+    protected function fieldInputType(array $field): string
+    {
+        if ((bool) ($field['is_secret'] ?? false)) {
+            return 'password';
+        }
+
+        return match ($field['type'] ?? 'text') {
+            'url' => 'url',
+            'email' => 'email',
+            'color' => 'color',
+            'integer' => 'number',
+            default => 'text',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     */
+    protected function fieldHelperText(array $field): ?string
+    {
+        return match ($field['key'] ?? null) {
+            'web_lead.realtime_notification_roles' => 'Chỉ các user thuộc nhóm quyền đã chọn mới nhận thông báo realtime khi có lead mới từ website.',
+            'web_lead.internal_email_recipient_roles' => 'Các user thuộc nhóm quyền đã chọn sẽ nhận email nội bộ nếu có email hợp lệ và được phép truy cập chi nhánh của lead.',
+            'popup.sender_roles' => 'Chỉ các role đã chọn mới có quyền gửi popup toàn hệ thống.',
+            'security.mfa_required_roles' => 'User thuộc các role này sẽ bắt buộc cấu hình MFA khi đăng nhập admin.',
+            'web_lead.internal_email_recipient_emails' => 'Dùng để thêm mailbox cố định của bộ phận như `lead@clinic.vn`. Mỗi dòng một email, hệ thống sẽ tự loại trùng với email user theo role.',
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array{
+     *     editableEntries:list<array{
+     *         index:int,
+     *         row:array<string, mixed>,
+     *         row_enabled:bool
+     *     }>,
+     *     editableRowsCount:int,
+     *     showRowEnabledToggle:bool,
+     *     helperText:string
+     * }
+     */
+    protected function catalogFieldViewData(array $field): array
+    {
+        $rows = data_get($this->catalogEditors, $field['state'], []);
+        $showRowEnabledToggle = ($field['state'] ?? null) !== self::EXAM_INDICATIONS_STATE;
+        $editableEntries = collect($rows)
+            ->map(fn ($row, $index): array => [
+                'index' => (int) $index,
+                'row' => (array) $row,
+                'row_enabled' => filter_var(data_get($row, 'enabled', true), FILTER_VALIDATE_BOOLEAN),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'editableEntries' => $editableEntries,
+            'editableRowsCount' => count($editableEntries),
+            'showRowEnabledToggle' => $showRowEnabledToggle,
+            'helperText' => $showRowEnabledToggle
+                ? 'Nhập nhãn hiển thị, hệ thống tự sinh mã. Dùng toggle từng dòng để bật/tắt hiển thị option. Không cần sửa JSON thủ công.'
+                : 'Nhập nhãn hiển thị, hệ thống tự sinh mã. Không cần sửa JSON thủ công.',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     show_notice:bool,
+     *     heading:string,
+     *     description:string,
+     *     items:Collection<int, array{
+     *         key:string,
+     *         display_name:string,
+     *         grace_expires_at_label:string,
+     *         remaining_minutes_label:string,
+     *         rotation_reason:?string
+     *     }>
+     * }
+     */
+    protected function secretRotationPanel(): array
+    {
+        return [
+            'show_notice' => $this->canManageSecrets(),
+            'heading' => 'Grace window đang hoạt động',
+            'description' => 'Các token cũ dưới đây vẫn còn hiệu lực tạm thời để tránh outage trong lúc rollout.',
+            'items' => $this->renderedActiveSecretRotations(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     heading:string,
+     *     description:string,
+     *     show_header:bool,
+     *     show_container:bool,
+     *     grid_classes:string,
+     *     items:array<int, array{
+     *         key:string,
+     *         label:string,
+     *         description:string,
+     *         status_badge:array{label:string, classes:string},
+     *         summary_badge:array{label:string, classes:string},
+     *         issue_badge:?array{label:string, classes:string},
+     *         meta_preview:array<int, array{label:string, value:int|string}>,
+     *         status_message:?string,
+     *         status_message_classes:?string,
+     *         container_classes:string,
+     *         meta_value_classes:string,
+     *         status_message_container_classes:string
+     *     }>
+     * }
+     */
+    protected function providerHealthPanel(): array
+    {
+        return [
+            'heading' => 'Provider health snapshot',
+            'description' => 'Contract chung cho readiness, runtime drift va provider-specific hint.',
+            'show_header' => false,
+            'show_container' => false,
+            'grid_classes' => 'grid gap-4 md:grid-cols-2',
+            'items' => $this->presentedProviderHealthCards(
+                $this->renderedProviderHealthCards(),
+                containerClasses: 'rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900',
+                metaValueClasses: 'break-all font-medium text-gray-950 dark:text-white',
+                statusMessageContainerClasses: 'mt-3 rounded-lg border px-3 py-2 text-xs',
+            ),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     is_visible:bool,
+     *     heading:string,
+     *     description:string,
+     *     empty_state_text:string,
+     *     items:Collection<int, array{
+     *         changed_at_label:string,
+     *         changed_by_name:string,
+     *         setting_label:string,
+     *         setting_key:string,
+     *         change_reason:?string,
+     *         grace_expires_at_label:?string,
+     *         old_value:?string,
+     *         new_value:?string
+     *     }>
+     * }
+     */
+    protected function auditLogPanel(): array
+    {
+        return [
+            'is_visible' => $this->canViewAuditLogs(),
+            'heading' => 'Nhật ký thay đổi cài đặt',
+            'description' => 'Theo dõi ai sửa, sửa gì và thời điểm cập nhật gần nhất.',
+            'empty_state_text' => 'Chưa có lịch sử thay đổi.',
+            'items' => $this->renderedRecentLogs(),
+        ];
     }
 
     protected function normalizeValueForCompare(mixed $value, string $type): mixed
