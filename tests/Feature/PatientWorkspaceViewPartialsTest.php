@@ -30,10 +30,12 @@ it('renders shared patient workspace action partials from the page view', functi
         ->toContain("@include('filament.resources.patients.pages.partials.patient-overview-card'")
         ->toContain("@include('filament.resources.patients.pages.partials.workspace-tabs-nav'")
         ->toContain("@include(\$this->activeWorkspaceTabView['partial'], \$this->activeWorkspaceTabView['data'])")
-        ->toContain("'overviewCard' => \$this->workspaceViewState['overview_card'] ?? []")
-        ->toContain("'tabs' => \$this->workspaceViewState['rendered_tabs'] ?? []")
-        ->toContain("id=\"{{ \$this->workspaceViewState['active_panel_id'] ?? '' }}\"")
-        ->toContain("aria-labelledby=\"{{ \$this->workspaceViewState['active_tab_button_id'] ?? '' }}\"")
+        ->toContain("'overviewCard' => \$this->workspaceViewState['overview_card']")
+        ->toContain("'identityHeader' => \$this->workspaceViewState['overview_card']['identity_header']")
+        ->toContain("'basicInfoGrid' => \$this->workspaceViewState['overview_card']['basic_info_grid']")
+        ->toContain("'tabs' => \$this->workspaceViewState['rendered_tabs']")
+        ->toContain("id=\"{{ \$this->workspaceViewState['active_panel_id'] }}\"")
+        ->toContain("aria-labelledby=\"{{ \$this->workspaceViewState['active_tab_button_id'] }}\"")
         ->toContain("x-data=\"@include('filament.resources.patients.pages.partials.workspace-shell-state')\"")
         ->toContain("x-init=\"@include('filament.resources.patients.pages.partials.workspace-shell-init')\"")
         ->not->toContain("@elseif(\$activeTab === 'payments')")
@@ -93,8 +95,7 @@ it('renders shared patient workspace action partials from the page view', functi
         ->toContain("@foreach(\$panel['metrics'] as \$metric)");
 
     expect($patientOverviewCardPartial)
-        ->toContain("\$overviewCard['identity_header']")
-        ->toContain("\$overviewCard['basic_info_grid']")
+        ->toContain('@props([')
         ->toContain("\$identityHeader['avatar_initials']")
         ->toContain("@include('filament.resources.patients.pages.partials.copy-button'")
         ->toContain("@foreach(\$basicInfoGrid['cards'] as \$card)")
@@ -112,28 +113,33 @@ it('renders shared patient workspace action partials from the page view', functi
         ->toContain('key($wireKey)');
 
     expect($basicInfoTabPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.resources.patients.pages.partials.livewire-tab-panel'")
         ->toContain("@include('filament.resources.patients.pages.partials.relation-manager-section'")
         ->toContain("@include('filament.resources.patients.pages.partials.action-prompt-card'")
         ->toContain("\$basicInfoPanels['empty_state_text']");
 
     expect($examTreatmentTabPartial)
+        ->toContain('@props([')
         ->toContain("@livewire('patient-exam-form'")
         ->toContain("@livewire('patient-treatment-plan-section'")
         ->toContain("@include('filament.resources.patients.pages.partials.treatment-progress-panel'");
 
     expect($labMaterialsTabPartial)
+        ->toContain('@props([')
         ->toContain('@foreach($renderedLabMaterialSections as $section)')
         ->toContain("@include('filament.resources.patients.pages.partials.feature-table-section'");
 
     expect($paymentsTabPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.resources.patients.pages.partials.payment-summary-panel'")
-        ->toContain("@foreach(\$renderedPaymentPanel['blocks'] ?? [] as \$block)")
+        ->toContain("@foreach(\$renderedPaymentPanel['blocks'] as \$block)")
         ->toContain("@include('filament.resources.patients.pages.partials.relation-manager-block'");
 
     expect($formsTabPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.resources.patients.pages.partials.section-header'")
-        ->toContain("@foreach(\$renderedFormsPanel['sections'] ?? [] as \$section)")
+        ->toContain("@foreach(\$renderedFormsPanel['sections'] as \$section)")
         ->toContain("@include('filament.resources.patients.pages.partials.link-list-section'");
 
     expect($treatmentProgressPanelPartial)

@@ -341,6 +341,8 @@ class OpsControlCenter extends Page
      *         description:string,
      *         drift_badge_label:string,
      *         drift_badge_classes:string,
+     *         container_classes:string,
+     *         grid_classes:string,
      *         items:array<int, array<string, mixed>>
      *     },
      *     active_grace:array{
@@ -391,7 +393,14 @@ class OpsControlCenter extends Page
                 'description' => 'Contract chung cho Zalo OA, ZNS, Google Calendar và EMR.',
                 'drift_badge_label' => $providerDriftCount.' drift',
                 'drift_badge_classes' => $this->toneBadgeClass($providerDriftCount > 0 ? 'danger' : 'success'),
-                'items' => (array) ($integrations['providers'] ?? []),
+                'container_classes' => 'rounded-2xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950/60',
+                'grid_classes' => 'ops-grid-2',
+                'items' => $this->presentedProviderHealthCards(
+                    (array) ($integrations['providers'] ?? []),
+                    containerClasses: 'rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/60',
+                    metaValueClasses: 'ops-break-words font-medium text-gray-950 dark:text-white',
+                    statusMessageContainerClasses: 'mt-3 rounded-xl border px-3 py-2 text-xs',
+                ),
             ],
             'active_grace' => [
                 'heading' => 'Active grace tokens',
@@ -412,6 +421,27 @@ class OpsControlCenter extends Page
             ),
             'links' => (array) ($integrations['links'] ?? []),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function presentedProviderHealthCards(
+        array $cards,
+        string $containerClasses,
+        string $metaValueClasses,
+        string $statusMessageContainerClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => $containerClasses,
+                'meta_value_classes' => $metaValueClasses,
+                'status_message_container_classes' => $statusMessageContainerClasses,
+            ],
+            $cards,
+        );
     }
 
     /**
@@ -497,12 +527,36 @@ class OpsControlCenter extends Page
                 tone: (string) ($zns['tone'] ?? 'info'),
                 badgeLabel: count($summaryCards).' signals',
             ),
-            'summary_cards' => $summaryCards,
+            'summary_cards' => $this->renderedDashboardSummaryCards(
+                $summaryCards,
+                containerClasses: 'rounded-xl border px-4 py-3',
+                valueTypographyClasses: 'text-sm font-semibold',
+            ),
             'retention_candidates' => $this->renderedRetentionCandidates(
                 (array) ($zns['retention_candidates'] ?? []),
             ),
             'links' => (array) ($zns['links'] ?? []),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function renderedDashboardSummaryCards(
+        array $cards,
+        string $containerClasses,
+        string $valueTypographyClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => trim(($card['card_classes'] ?? '').' '.$containerClasses),
+                'label_classes' => trim('text-sm font-medium '.($card['label_classes'] ?? 'text-gray-500')),
+                'value_classes' => trim($valueTypographyClasses.' '.($card['value_classes'] ?? 'text-gray-900 dark:text-white')),
+            ],
+            $cards,
+        );
     }
 
     /**
@@ -700,7 +754,13 @@ class OpsControlCenter extends Page
      * @return array{
      *     summary:array{title:string,description:string,badge_label:string,badge_classes:string},
      *     metric_cards:array<int, array{label:string,key:string,value_label:string,budget_label:string}>,
-     *     breach_cards:array<int, array{label:string,badge_label:string,badge_classes:string}>,
+     *     breach_panel:array{
+     *         heading:string,
+     *         badge_label:string,
+     *         badge_classes:string,
+     *         empty_state_message:string,
+     *         cards:array<int, array{label:string,badge_label:string,badge_classes:string}>
+     *     },
      *     missing_runbook_panel:array{
      *         is_visible:bool,
      *         heading:string,
@@ -716,18 +776,25 @@ class OpsControlCenter extends Page
         $observability = $this->observability();
         $breaches = (array) ($observability['breaches'] ?? []);
         $missingRunbookCategories = (array) ($observability['missing_runbook_categories'] ?? []);
+        $summary = $this->renderedSectionSummary(
+            title: (string) ($observability['status'] ?? 'Unknown'),
+            description: 'Window '.((int) ($observability['window_hours'] ?? 0)).'h · Snapshot '.((string) ($observability['snapshot_date'] ?? '-')),
+            tone: (string) ($observability['tone'] ?? 'info'),
+            badgeLabel: count($breaches).' breach',
+        );
 
         return [
-            'summary' => $this->renderedSectionSummary(
-                title: (string) ($observability['status'] ?? 'Unknown'),
-                description: 'Window '.((int) ($observability['window_hours'] ?? 0)).'h · Snapshot '.((string) ($observability['snapshot_date'] ?? '-')),
-                tone: (string) ($observability['tone'] ?? 'info'),
-                badgeLabel: count($breaches).' breach',
-            ),
+            'summary' => $summary,
             'metric_cards' => $this->renderedObservabilityMetricCards(
                 (array) ($observability['metrics'] ?? []),
             ),
-            'breach_cards' => $this->renderedObservabilityBreachCards($breaches),
+            'breach_panel' => [
+                'heading' => 'Error budget breaches',
+                'badge_label' => (string) count($breaches),
+                'badge_classes' => $summary['badge_classes'],
+                'empty_state_message' => 'Không có observability breach nào trong cửa sổ hiện tại.',
+                'cards' => $this->renderedObservabilityBreachCards($breaches),
+            ],
             'missing_runbook_panel' => $this->renderedMissingRunbookPanel($missingRunbookCategories),
         ];
     }
@@ -836,7 +903,7 @@ class OpsControlCenter extends Page
      * @param  array<int, array<string, mixed>>  $openAlerts
      * @return array<int, array{
      *     title:string,
-     *     meta_text:string,
+     *     subtitle:string,
      *     badge_label:string,
      *     badge_classes:string
      * }>
@@ -848,7 +915,7 @@ class OpsControlCenter extends Page
 
             return [
                 'title' => (string) ($alert['title'] ?? '-'),
-                'meta_text' => ((string) ($alert['branch'] ?? '-')).' · owner '.((string) ($alert['owner'] ?? '-')),
+                'subtitle' => ((string) ($alert['branch'] ?? '-')).' · owner '.((string) ($alert['owner'] ?? '-')),
                 'badge_label' => strtoupper($status).' · '.((string) ($alert['severity'] ?? '-')),
                 'badge_classes' => $this->toneBadgeClass($status === 'new' ? 'danger' : 'warning'),
             ];
@@ -952,7 +1019,7 @@ class OpsControlCenter extends Page
      * @param  array<int, array<string, mixed>>  $scenarioUsers
      * @return array<int, array{
      *     title:string,
-     *     meta_text:string,
+     *     subtitle:string,
      *     badge_label:?string,
      *     badge_classes:string
      * }>
@@ -964,7 +1031,7 @@ class OpsControlCenter extends Page
 
             return [
                 'title' => (string) ($user['email'] ?? '-'),
-                'meta_text' => ((string) ($user['role'] ?? 'No role')).' · '.((string) ($user['branch'] ?? '-')),
+                'subtitle' => ((string) ($user['role'] ?? 'No role')).' · '.((string) ($user['branch'] ?? '-')),
                 'badge_label' => $assignments,
                 'badge_classes' => $this->toneBadgeClass('warning'),
             ];
@@ -973,14 +1040,17 @@ class OpsControlCenter extends Page
 
     /**
      * @param  array<int, array<string, mixed>>  $recentAudits
-     * @return array<int, array{title:string,meta_text:string}>
+     * @return array<int, array{title:string,subtitle:string,badge_label:?string,badge_classes:string,detail:?string}>
      */
     protected function renderedGovernanceRecentAuditCards(array $recentAudits): array
     {
         return array_map(function (array $audit): array {
             return [
                 'title' => strtoupper((string) ($audit['entity'] ?? '-')).' · '.((string) ($audit['action'] ?? '-')),
-                'meta_text' => ((string) ($audit['actor'] ?? 'system')).' · '.((string) ($audit['occurred_at'] ?? '-')),
+                'subtitle' => ((string) ($audit['actor'] ?? 'system')).' · '.((string) ($audit['occurred_at'] ?? '-')),
+                'badge_label' => null,
+                'badge_classes' => $this->toneBadgeClass('info'),
+                'detail' => null,
             ];
         }, $recentAudits);
     }

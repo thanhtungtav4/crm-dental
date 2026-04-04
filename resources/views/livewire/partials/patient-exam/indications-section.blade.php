@@ -32,7 +32,7 @@
         </div>
 
         @foreach($selectedIndicationUploadTypes as $type)
-            <div class="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600" wire:key="indication-upload-{{ $session->id }}-{{ $type }}">
+            <div class="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-600" wire:key="indication-upload-{{ $sessionCard['id'] }}-{{ $type }}">
                 <div class="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{{ $indicationTypes[$type] ?? strtoupper($type) }}</div>
                 @if (!empty($indicationImages[$type]))
                     <div class="mb-2 flex flex-wrap gap-2">

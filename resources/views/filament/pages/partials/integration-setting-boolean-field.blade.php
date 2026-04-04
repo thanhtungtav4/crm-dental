@@ -1,3 +1,8 @@
+@props([
+    'field' => [],
+    'statePath' => '',
+])
+
 <label class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
     <input
         type="checkbox"

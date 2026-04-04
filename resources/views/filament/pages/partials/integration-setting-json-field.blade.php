@@ -1,12 +1,11 @@
-@php
-    $rows = data_get($this->catalogEditors, $field['state'], []);
-    $isExamIndicationCatalog = ($field['state'] ?? null) === 'catalog_exam_indications_json';
-    $rowEntries = collect($rows)
-        ->map(fn ($row, $index) => ['index' => $index, 'row' => $row]);
-    $editableEntries = $rowEntries->values();
-    $editableRowsCount = $editableEntries->count();
-    $showRowEnabledToggle = ! $isExamIndicationCatalog;
-@endphp
+@props([
+    'field' => [],
+    'statePath' => '',
+    'editableEntries' => [],
+    'editableRowsCount' => 0,
+    'showRowEnabledToggle' => true,
+    'helperText' => '',
+])
 
 <div class="md:col-span-2">
     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -46,14 +45,9 @@
 
         <div class="max-h-[26rem] space-y-2 overflow-y-auto p-3">
             @foreach($editableEntries as $entry)
-                @php
-                    $index = (int) ($entry['index'] ?? 0);
-                    $row = (array) ($entry['row'] ?? []);
-                    $rowEnabled = filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
-                @endphp
                 <div @class([
                     'crm-catalog-row dark:border-gray-800 dark:bg-gray-900',
-                    'crm-catalog-row--disabled' => $showRowEnabledToggle && ! $rowEnabled,
+                    'crm-catalog-row--disabled' => $showRowEnabledToggle && ! $entry['row_enabled'],
                     'crm-catalog-row--without-toggle' => ! $showRowEnabledToggle,
                 ])>
                     @if($showRowEnabledToggle)
@@ -62,10 +56,10 @@
                             <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-200">
                                 <input
                                     type="checkbox"
-                                    wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.enabled"
+                                    wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $entry['index'] }}.enabled"
                                     class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                 />
-                                <span>{{ $rowEnabled ? 'Hiển thị' : 'Ẩn' }}</span>
+                                <span>{{ $entry['row_enabled'] ? 'Hiển thị' : 'Ẩn' }}</span>
                             </label>
                         </div>
                     @endif
@@ -74,13 +68,13 @@
                         <x-filament::input.wrapper>
                             <input
                                 type="text"
-                                wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.label"
-                                wire:blur="syncCatalogRowFromLabel('{{ $field['state'] }}', {{ $index }})"
+                                wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $entry['index'] }}.label"
+                                wire:blur="syncCatalogRowFromLabel('{{ $field['state'] }}', {{ $entry['index'] }})"
                                 class="fi-input"
                                 placeholder="Nhãn hiển thị"
                             />
                         </x-filament::input.wrapper>
-                        @error("catalogEditors.{$field['state']}.{$index}.label")
+                        @error("catalogEditors.{$field['state']}.{$entry['index']}.label")
                             <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -89,12 +83,12 @@
                         <x-filament::input.wrapper>
                             <input
                                 type="text"
-                                wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $index }}.key"
+                                wire:model.live="catalogEditors.{{ $field['state'] }}.{{ $entry['index'] }}.key"
                                 class="fi-input bg-gray-50 dark:bg-gray-800"
                                 readonly
                             />
                         </x-filament::input.wrapper>
-                        @error("catalogEditors.{$field['state']}.{$index}.key")
+                        @error("catalogEditors.{$field['state']}.{$entry['index']}.key")
                             <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -102,7 +96,7 @@
                         <button
                             type="button"
                             class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-danger-300 hover:text-danger-600 dark:border-gray-700 dark:text-gray-300"
-                            wire:click="removeCatalogRow('{{ $field['state'] }}', {{ $index }})"
+                            wire:click="removeCatalogRow('{{ $field['state'] }}', {{ $entry['index'] }})"
                             @disabled($editableRowsCount <= 1)
                             title="Xóa dòng"
                         >
@@ -114,11 +108,7 @@
         </div>
     </div>
 
-    @if($showRowEnabledToggle)
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Nhập nhãn hiển thị, hệ thống tự sinh mã. Dùng toggle từng dòng để bật/tắt hiển thị option. Không cần sửa JSON thủ công.</p>
-    @else
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Nhập nhãn hiển thị, hệ thống tự sinh mã. Không cần sửa JSON thủ công.</p>
-    @endif
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $helperText }}</p>
     @error($statePath)
         <p class="mt-1 text-xs text-danger-600">{{ $message }}</p>
     @enderror

@@ -1,9 +1,7 @@
-@php
-    /** @var \App\Models\Patient $record */
-    $record = $record;
-    /** @var array<int, array<string, mixed>> $renderedLabMaterialSections */
-    $renderedLabMaterialSections = $renderedLabMaterialSections ?? [];
-@endphp
+@props([
+    'record',
+    'renderedLabMaterialSections' => [],
+])
 
 <div class="crm-pane-stack" wire:key="patient-{{ $record->id }}-lab-materials">
     @foreach($renderedLabMaterialSections as $section)

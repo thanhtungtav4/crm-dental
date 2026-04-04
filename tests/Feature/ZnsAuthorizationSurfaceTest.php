@@ -146,6 +146,7 @@ it('renders zalo zns provider readiness and summary cards from shared partials',
     $providerHealthPanelPartial = File::get(resource_path('views/filament/pages/partials/provider-health-panel.blade.php'));
     $dashboardPanelPartial = File::get(resource_path('views/filament/pages/partials/zalo-zns-dashboard-panel.blade.php'));
     $summaryPanelPartial = File::get(resource_path('views/filament/pages/partials/zalo-zns-summary-panel.blade.php'));
+    $dashboardSummaryCardPartial = File::get(resource_path('views/filament/pages/partials/dashboard-summary-card.blade.php'));
     $notePanelsPartial = File::get(resource_path('views/filament/pages/partials/zalo-zns-note-panels.blade.php'));
     $tablePanelPartial = File::get(resource_path('views/filament/pages/partials/zalo-zns-table-panel.blade.php'));
     $partialListPartial = File::get(resource_path('views/filament/pages/partials/control-plane-partial-list.blade.php'));
@@ -160,15 +161,25 @@ it('renders zalo zns provider readiness and summary cards from shared partials',
         ->toContain('@foreach($items as $item)')
         ->toContain("@include(\$item['partial'], \$item['include_data'] ?? [])")
         ->and($summaryPanelPartial)
+        ->toContain('@props([')
         ->toContain("@foreach(\$panel['items'] as \$card)")
-        ->toContain("@include('filament.pages.partials.dashboard-summary-card', [")
+        ->toContain("@include('filament.pages.partials.dashboard-summary-card', ['card' => \$card])")
+        ->and($dashboardSummaryCardPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain("{{ \$card['container_classes'] ?? 'rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/60' }}")
+        ->toContain("{{ \$card['value_classes'] ?? 'text-xl font-semibold text-gray-900 dark:text-white' }}")
         ->and($notePanelsPartial)
         ->toContain('@foreach($panels as $panel)')
         ->toContain("@include('filament.pages.partials.control-plane-note-panel', ['panel' => \$panel])")
         ->and($tablePanelPartial)
         ->toContain('{{ $this->table }}')
         ->and($providerHealthPanelPartial)
-        ->toContain("\$panelBadgeLabel = \$panel['drift_badge_label'] ?? \$panel['drift_label'] ?? null;")
+        ->not->toContain('@php')
+        ->toContain("@if(\$panel['show_header'] ?? true)")
+        ->toContain("@if(\$panel['show_container'] ?? true)")
+        ->toContain("@if(filled(\$panel['drift_badge_label'] ?? \$panel['drift_label'] ?? null))")
+        ->toContain("{{ \$panel['drift_badge_label'] ?? \$panel['drift_label'] }}")
         ->toContain("@include('filament.pages.partials.provider-health-card'")
         ->and($notePanelPartial)
         ->toContain('@if(is_array($item))')
@@ -198,6 +209,11 @@ it('builds zalo zns dashboard view state from shared contracts', function (): vo
         ->and($dashboardSection['partial'])->toBe('filament.pages.partials.zalo-zns-dashboard-panel')
         ->and($summarySection['include_data']['panel'])->toHaveKeys([
             'items',
+        ])
+        ->and($summarySection['include_data']['panel']['items'][0] ?? [])->toHaveKeys([
+            'container_classes',
+            'label_classes',
+            'value_classes',
         ])
         ->and($providerHealthSection['include_data']['panel'])->toHaveKeys([
             'heading',

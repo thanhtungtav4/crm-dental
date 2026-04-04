@@ -59,55 +59,45 @@
         </div>
     </div>
 
-    @if($sessions->isEmpty())
+    @if(empty($sessionCards))
         <div class="rounded-md border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
             Chưa có phiếu khám cho bệnh nhân này. Kế hoạch điều trị, nếu có, sẽ hiển thị ở phần bên dưới.
         </div>
     @else
         <div class="crm-section-card">
-            @foreach($sessions as $session)
-                @php
-                    $sessionDate = $session->date?->format('d/m/Y') ?? '-';
-                    $isActive = $activeSessionId === $session->id;
-                    $isLocked = (bool) $session->is_locked;
-                    $adultUpper = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
-                    $childUpper = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
-                    $childLower = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
-                    $adultLower = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
-                @endphp
-
-                <div class="crm-exam-session" wire:key="exam-session-{{ $session->id }}">
+            @foreach($sessionCards as $sessionCard)
+                <div class="crm-exam-session" wire:key="exam-session-{{ $sessionCard['id'] }}">
                     <div class="crm-session-header">
                         <div class="flex items-center gap-2">
                             <button
                                 type="button"
-                                wire:click="setActiveSession({{ $session->id }})"
+                                wire:click="setActiveSession({{ $sessionCard['id'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="setActiveSession"
                                 class="crm-session-toggle"
                             >
-                                <span class="crm-session-caret {{ $isActive ? 'is-open' : '' }}">
+                                <span class="crm-session-caret {{ $sessionCard['is_active'] ? 'is-open' : '' }}">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </span>
-                                NGÀY KHÁM: {{ $sessionDate }}
+                                NGÀY KHÁM: {{ $sessionCard['date_label'] }}
                             </button>
-                            @if($isActive)
+                            @if($sessionCard['is_active'])
                                 <span class="crm-session-badge is-active">Đang xem</span>
                             @endif
-                            @if($isLocked)
+                            @if($sessionCard['is_locked'])
                                 <span class="crm-session-badge is-locked">Đã khóa tiến trình</span>
                             @endif
                             <button
                                 type="button"
-                                wire:click="startEditingSession({{ $session->id }})"
+                                wire:click="startEditingSession({{ $sessionCard['id'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="startEditingSession"
-                                @disabled($isLocked)
+                                @disabled($sessionCard['is_locked'])
                                 class="crm-btn crm-btn-outline crm-btn-icon text-gray-500 disabled:opacity-50"
-                                title="{{ $isLocked ? 'Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.' : 'Sửa ngày khám' }}"
-                                aria-label="{{ $isLocked ? 'Ngày khám đã khóa, không thể chỉnh sửa' : 'Sửa ngày khám' }}"
+                                title="{{ $sessionCard['is_locked'] ? 'Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.' : 'Sửa ngày khám' }}"
+                                aria-label="{{ $sessionCard['is_locked'] ? 'Ngày khám đã khóa, không thể chỉnh sửa' : 'Sửa ngày khám' }}"
                             >
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 20h9" />
@@ -129,13 +119,13 @@
 
                             <button
                                 type="button"
-                                wire:click="deleteSession({{ $session->id }})"
+                                wire:click="deleteSession({{ $sessionCard['id'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="deleteSession"
-                                @disabled($isLocked)
+                                @disabled($sessionCard['is_locked'])
                                 class="crm-btn crm-btn-outline crm-btn-icon text-gray-600 disabled:opacity-50"
-                                title="{{ $isLocked ? 'Ngày khám đã có tiến trình điều trị nên không thể xóa được.' : 'Xóa phiếu khám' }}"
-                                aria-label="{{ $isLocked ? 'Ngày khám đã khóa, không thể xóa' : 'Xóa phiếu khám' }}"
+                                title="{{ $sessionCard['is_locked'] ? 'Ngày khám đã có tiến trình điều trị nên không thể xóa được.' : 'Xóa phiếu khám' }}"
+                                aria-label="{{ $sessionCard['is_locked'] ? 'Ngày khám đã khóa, không thể xóa' : 'Xóa phiếu khám' }}"
                             >
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7h10z"/>
@@ -144,8 +134,8 @@
                         </div>
                     </div>
 
-                    @if($isActive)
-                        @if($editingSessionId === $session->id)
+                    @if($sessionCard['is_active'])
+                        @if($editingSessionId === $sessionCard['id'])
                             <div class="crm-session-edit-bar">
                                 <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Sửa ngày khám:</span>
                                 <input
@@ -182,15 +172,6 @@
                             x-init="initOtherDiagnosis()"
                         >
                             @include('livewire.partials.patient-exam.general-section')
-
-                            @php
-                                $selectedIndicationUploadTypes = collect($indications)
-                                    ->map(fn ($type) => strtolower(trim((string) $type)))
-                                    ->filter()
-                                    ->unique()
-                                    ->values()
-                                    ->all();
-                            @endphp
 
                             @include('livewire.partials.patient-exam.indications-section')
 

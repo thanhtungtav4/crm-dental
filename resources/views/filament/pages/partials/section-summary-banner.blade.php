@@ -1,6 +1,7 @@
-@php
-    $containerClasses = $containerClasses ?? 'flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/60';
-@endphp
+@props([
+    'summary',
+    'containerClasses' => 'flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/60',
+])
 
 <div class="{{ $containerClasses }}">
     <div>

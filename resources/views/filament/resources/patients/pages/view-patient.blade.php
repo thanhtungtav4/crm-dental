@@ -7,22 +7,24 @@
         {{-- Patient Overview Card --}}
         <div class="crm-section-block">
             @include('filament.resources.patients.pages.partials.patient-overview-card', [
-                'overviewCard' => $this->workspaceViewState['overview_card'] ?? [],
+                'overviewCard' => $this->workspaceViewState['overview_card'],
+                'identityHeader' => $this->workspaceViewState['overview_card']['identity_header'],
+                'basicInfoGrid' => $this->workspaceViewState['overview_card']['basic_info_grid'],
             ])
         </div>
 
         {{-- Tabs Navigation --}}
         <div class="crm-section-block">
             @include('filament.resources.patients.pages.partials.workspace-tabs-nav', [
-                'tabs' => $this->workspaceViewState['rendered_tabs'] ?? [],
+                'tabs' => $this->workspaceViewState['rendered_tabs'],
             ])
 
 
             {{-- Tab Content --}}
             <div
-                id="{{ $this->workspaceViewState['active_panel_id'] ?? '' }}"
+                id="{{ $this->workspaceViewState['active_panel_id'] }}"
                 role="tabpanel"
-                aria-labelledby="{{ $this->workspaceViewState['active_tab_button_id'] ?? '' }}"
+                aria-labelledby="{{ $this->workspaceViewState['active_tab_button_id'] }}"
                 tabindex="0"
             >
                 @include($this->activeWorkspaceTabView['partial'], $this->activeWorkspaceTabView['data'])

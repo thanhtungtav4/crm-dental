@@ -39,7 +39,7 @@ it('renders quick copy controls on patient profile header and phone card', funct
 
     expect($blade)
         ->toContain("@include('filament.resources.patients.pages.partials.patient-overview-card'")
-        ->toContain("'overviewCard' => \$this->workspaceViewState['overview_card'] ?? []")
+        ->toContain("'overviewCard' => \$this->workspaceViewState['overview_card']")
         ->toContain('class="crm-copy-toast"')
         ->toContain("x-data=\"@include('filament.resources.patients.pages.partials.workspace-shell-state')\"");
 

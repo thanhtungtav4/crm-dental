@@ -1,11 +1,8 @@
 @props([
     'viewState',
+    'pagePanel',
     'showLeadModal' => false,
 ])
-
-@php
-    $pagePanel = $viewState['page_panel'];
-@endphp
 
 @if (! $viewState['is_schema_ready'])
     @include('filament.pages.partials.conversation-inbox-schema-notice', [

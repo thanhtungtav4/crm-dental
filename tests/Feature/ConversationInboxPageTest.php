@@ -49,13 +49,15 @@ it('renders the conversation inbox shell from a shared inbox view state', functi
         ->not->toContain('@php')
         ->toContain("@include('filament.pages.partials.conversation-inbox-page-shell', [")
         ->toContain("'viewState' => \$this->inboxViewState,")
+        ->toContain("'pagePanel' => \$this->inboxViewState['page_panel'],")
         ->toContain("'showLeadModal' => \$showLeadModal,")
         ->not->toContain('match ($conversation->handoffPriorityValue())')
         ->not->toContain('match ($selectedConversation->handoffStatusValue())')
         ->not->toContain('$isActiveTab = $this->inboxTab === $tabValue');
 
     expect($pageShellPartial)
-        ->toContain("\$pagePanel = \$viewState['page_panel'];")
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->toContain("@if (! \$viewState['is_schema_ready'])")
         ->toContain("@include('filament.pages.partials.conversation-inbox-schema-notice', [")
         ->toContain("'schemaNotice' => \$viewState['schema_notice']")

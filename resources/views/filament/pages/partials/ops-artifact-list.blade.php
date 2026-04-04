@@ -1,9 +1,10 @@
-@php
-    $listClasses = $listClasses ?? 'space-y-4';
-    $artifactContainerClasses = $artifactContainerClasses ?? null;
-    $artifactPathContainerClasses = $artifactPathContainerClasses ?? null;
-    $errorTextClasses = $errorTextClasses ?? null;
-@endphp
+@props([
+    'artifacts',
+    'listClasses' => 'space-y-4',
+    'artifactContainerClasses' => null,
+    'artifactPathContainerClasses' => null,
+    'errorTextClasses' => null,
+])
 
 <div class="{{ $listClasses }}">
     @foreach($artifacts as $artifact)

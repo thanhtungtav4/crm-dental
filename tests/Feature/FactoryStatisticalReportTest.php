@@ -7,6 +7,7 @@ use App\Models\FactoryOrderItem;
 use App\Models\Patient;
 use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Support\Facades\File;
 
 it('queries factory orders instead of treatment sessions for the factory statistical report', function (): void {
     $page = app(FactoryStatistical::class);
@@ -137,4 +138,26 @@ it('limits factory statistical branch filter options to accessible branches for 
         $branchA->id => $branchA->name,
     ])
         ->and($options)->not->toHaveKey($branchB->id);
+});
+
+it('renders report stats from page view data instead of inline blade php', function (): void {
+    $branch = Branch::factory()->create(['active' => true]);
+
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $this->actingAs($manager);
+
+    $page = app(FactoryStatistical::class);
+    $getViewDataMethod = new ReflectionMethod($page, 'getViewData');
+    $getViewDataMethod->setAccessible(true);
+    $viewData = $getViewDataMethod->invoke($page);
+    $blade = File::get(resource_path('views/filament/pages/reports/base-report.blade.php'));
+
+    expect($blade)
+        ->not->toContain('@php($stats = $this->getStats())')
+        ->toContain('@if(!empty($stats))')
+        ->toContain('dark:border-gray-700 dark:bg-gray-900/60')
+        ->and($viewData)->toHaveKey('stats')
+        ->and($viewData['stats'])->toBe($page->getStats());
 });

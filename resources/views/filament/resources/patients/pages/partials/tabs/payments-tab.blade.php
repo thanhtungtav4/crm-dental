@@ -1,16 +1,14 @@
-@php
-    /** @var \App\Models\Patient $record */
-    $record = $record;
-    /** @var array<string, mixed> $renderedPaymentPanel */
-    $renderedPaymentPanel = $renderedPaymentPanel ?? [];
-@endphp
+@props([
+    'record',
+    'renderedPaymentPanel' => [],
+])
 
 <div class="crm-payment-tab" wire:key="patient-{{ $record->id }}-payments">
     @include('filament.resources.patients.pages.partials.payment-summary-panel', [
         'panel' => $renderedPaymentPanel,
     ])
 
-    @foreach($renderedPaymentPanel['blocks'] ?? [] as $block)
+    @foreach($renderedPaymentPanel['blocks'] as $block)
         @include('filament.resources.patients.pages.partials.relation-manager-block', [
             'block' => $block,
             'ownerRecord' => $record,

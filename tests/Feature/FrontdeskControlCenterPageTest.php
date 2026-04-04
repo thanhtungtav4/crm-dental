@@ -71,6 +71,8 @@ it('renders the frontdesk control center through shared control-center partials'
     $overviewCardPartial = File::get(resource_path('views/filament/pages/partials/control-center-overview-card.blade.php'));
     $quickLinksPartial = File::get(resource_path('views/filament/pages/partials/control-center-quick-links-panel.blade.php'));
     $sectionPanelPartial = File::get(resource_path('views/filament/pages/partials/control-center-section-panel.blade.php'));
+    $metricCardPartial = File::get(resource_path('views/filament/pages/partials/control-center-metric-card.blade.php'));
+    $rowCardPartial = File::get(resource_path('views/filament/pages/partials/control-center-row-card.blade.php'));
 
     expect($blade)
         ->not->toContain('@php')
@@ -103,9 +105,17 @@ it('renders the frontdesk control center through shared control-center partials'
 
     expect($sectionPanelPartial)
         ->toContain("@foreach(\$section['metrics'] as \$metric)")
-        ->toContain("{{ \$metric['badge_classes'] }}")
+        ->toContain("@include('filament.pages.partials.control-center-metric-card', [")
         ->toContain("@foreach(\$section['rows'] as \$row)")
-        ->toContain("{{ \$row['badge_classes'] }}");
+        ->toContain("@include('filament.pages.partials.control-center-row-card', [");
+
+    expect($metricCardPartial)
+        ->toContain("{{ \$metric['badge_classes'] }}")
+        ->toContain("{{ \$metric['description'] }}");
+
+    expect($rowCardPartial)
+        ->toContain("{{ \$row['badge_classes'] }}")
+        ->toContain("@foreach(\$row['meta'] as \$meta)");
 });
 
 it('builds frontdesk page view state from shared presentation payloads', function (): void {

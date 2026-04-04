@@ -21,6 +21,7 @@ use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -30,6 +31,14 @@ use Livewire\WithFileUploads;
 class PatientExamForm extends Component
 {
     use WithFileUploads;
+
+    protected const ADULT_UPPER_TEETH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+
+    protected const CHILD_UPPER_TEETH = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
+
+    protected const CHILD_LOWER_TEETH = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
+
+    protected const ADULT_LOWER_TEETH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
     public Patient $patient;
 
@@ -530,7 +539,7 @@ class PatientExamForm extends Component
         return $this->patientExamDoctorReadModelService()->name($this->treating_doctor_id);
     }
 
-    public function render()
+    public function render(): View
     {
         $sessions = $this->patientExamSessionReadModelService()->sessions($this->patient);
         $toothTreatmentStates = $this->buildToothTreatmentStates();
@@ -547,7 +556,7 @@ class PatientExamForm extends Component
         );
 
         return view('livewire.patient-exam-form', [
-            'sessions' => $sessions,
+            'sessionCards' => $this->sessionCards($sessions),
             'examiningDoctors' => $this->getDoctors($this->examiningDoctorSearch),
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
             'medicalRecordActionUrl' => $medicalRecordAction['url'] ?? null,
@@ -561,7 +570,42 @@ class PatientExamForm extends Component
             'mediaTimeline' => $mediaReadModel['mediaTimeline'],
             'mediaPhaseSummary' => $mediaReadModel['mediaPhaseSummary'],
             'evidenceChecklist' => $mediaReadModel['evidenceChecklist'],
+            'selectedIndicationUploadTypes' => $this->selectedIndicationUploadTypes(),
+            'adultUpper' => self::ADULT_UPPER_TEETH,
+            'childUpper' => self::CHILD_UPPER_TEETH,
+            'childLower' => self::CHILD_LOWER_TEETH,
+            'adultLower' => self::ADULT_LOWER_TEETH,
         ]);
+    }
+
+    /**
+     * @param  Collection<int, ExamSession>  $sessions
+     * @return array<int, array{id:int, session: ExamSession, date_label:string, is_active:bool, is_locked:bool}>
+     */
+    protected function sessionCards(Collection $sessions): array
+    {
+        return $sessions->map(
+            fn (ExamSession $session): array => [
+                'id' => $session->id,
+                'session' => $session,
+                'date_label' => $session->date?->format('d/m/Y') ?? '-',
+                'is_active' => $this->activeSessionId === $session->id,
+                'is_locked' => (bool) $session->is_locked,
+            ],
+        )->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function selectedIndicationUploadTypes(): array
+    {
+        return collect($this->indications)
+            ->map(fn ($type): string => strtolower(trim((string) $type)))
+            ->filter(fn (string $type): bool => $type !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     protected function getSessionQuery()

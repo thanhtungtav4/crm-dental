@@ -1,11 +1,8 @@
 @props([
     'overviewCard',
+    'identityHeader',
+    'basicInfoGrid',
 ])
-
-@php
-    $identityHeader = $overviewCard['identity_header'];
-    $basicInfoGrid = $overviewCard['basic_info_grid'];
-@endphp
 
 <div class="crm-patient-overview-card">
     <div class="crm-patient-overview-header">

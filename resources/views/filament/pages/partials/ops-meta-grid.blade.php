@@ -1,8 +1,9 @@
-@php
-    $gridClasses = $gridClasses ?? 'ops-grid-2';
-    $containerClasses = $containerClasses ?? 'rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60';
-    $valueClasses = $valueClasses ?? 'mt-1 text-sm font-medium text-gray-950 dark:text-white';
-@endphp
+@props([
+    'items',
+    'gridClasses' => 'ops-grid-2',
+    'containerClasses' => 'rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60',
+    'valueClasses' => 'mt-1 text-sm font-medium text-gray-950 dark:text-white',
+])
 
 <dl class="{{ $gridClasses }}">
     @foreach($items as $meta)

@@ -1,9 +1,7 @@
-@php
-    /** @var \App\Models\Patient $record */
-    $record = $record;
-    /** @var array<string, mixed> $renderedTreatmentProgressPanel */
-    $renderedTreatmentProgressPanel = $renderedTreatmentProgressPanel ?? [];
-@endphp
+@props([
+    'record',
+    'renderedTreatmentProgressPanel' => [],
+])
 
 <div class="crm-pane-stack-lg" wire:key="patient-{{ $record->id }}-exam-treatment">
     @livewire('patient-exam-form', ['patient' => $record], key('patient-' . $record->id . '-exam-form'))

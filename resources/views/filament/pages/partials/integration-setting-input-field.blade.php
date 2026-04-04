@@ -1,20 +1,17 @@
-@php
-    $inputType = ($field['is_secret'] ?? false)
-        ? 'password'
-        : match ($field['type'] ?? 'text') {
-            'url' => 'url',
-            'email' => 'email',
-            'color' => 'color',
-            'integer' => 'number',
-            default => 'text',
-        };
-@endphp
+@props([
+    'field' => [],
+    'statePath' => '',
+    'inputType' => 'text',
+    'isWebLeadApiToken' => false,
+    'min' => null,
+    'step' => null,
+])
 
 <div>
     <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
         {{ $field['label'] }}
     </label>
-    @if(($field['state'] ?? null) === 'web_lead_api_token')
+    @if($isWebLeadApiToken)
         <div x-data="{ showWebLeadToken: false }" class="flex flex-wrap items-start gap-2">
             <x-filament::input.wrapper class="min-w-0 flex-1">
                 <input
@@ -50,7 +47,8 @@
                 type="{{ $inputType }}"
                 wire:model.blur="{{ $statePath }}"
                 class="fi-input"
-                @if(($field['type'] ?? null) === 'integer') min="0" step="1" @endif
+                @if($min !== null) min="{{ $min }}" @endif
+                @if($step !== null) step="{{ $step }}" @endif
             />
         </x-filament::input.wrapper>
     @endif

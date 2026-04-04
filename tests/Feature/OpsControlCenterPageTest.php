@@ -139,6 +139,7 @@ it('renders ops provider readiness and zns summaries from shared presentation pa
     $governancePanelPartial = File::get(resource_path('views/filament/pages/partials/ops-governance-panel.blade.php'));
     $kpiPanelPartial = File::get(resource_path('views/filament/pages/partials/ops-kpi-panel.blade.php'));
     $financePanelPartial = File::get(resource_path('views/filament/pages/partials/ops-finance-panel.blade.php'));
+    $opsDetailCardPartial = File::get(resource_path('views/filament/pages/partials/ops-detail-card.blade.php'));
     $integrationsPanelPartial = File::get(resource_path('views/filament/pages/partials/ops-integrations-panel.blade.php'));
     $znsPanelPartial = File::get(resource_path('views/filament/pages/partials/ops-zns-panel.blade.php'));
     $controlPlaneSectionPartial = File::get(resource_path('views/filament/pages/partials/control-plane-section.blade.php'));
@@ -181,6 +182,9 @@ it('renders ops provider readiness and zns summaries from shared presentation pa
         ->and($opsOverviewCardPartial)
         ->toContain("{{ \$card['status_badge_classes'] }}")
         ->and($providerHealthPanelPartial)
+        ->not->toContain('@php')
+        ->toContain("@if(\$panel['show_header'] ?? true)")
+        ->toContain("@if(\$panel['show_container'] ?? true)")
         ->toContain("{{ \$panel['heading'] }}")
         ->toContain("@include('filament.pages.partials.provider-health-card'")
         ->and($graceRotationPanelPartial)
@@ -198,8 +202,12 @@ it('renders ops provider readiness and zns summaries from shared presentation pa
         ->and($runtimeBackupPanelPartial)
         ->toContain("{{ \$panel['path'] }}")
         ->and($artifactListPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.ops-artifact-card', [")
         ->and(File::get(resource_path('views/filament/pages/partials/ops-artifact-card.blade.php')))
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->toContain("{{ \$artifact['status_badge_classes'] }}")
         ->not->toContain('$toneBadgeClasses = [')
         ->and($commandListPartial)
@@ -209,38 +217,62 @@ it('renders ops provider readiness and zns summaries from shared presentation pa
         ->toContain("'message' => \$panel['empty_state_message']");
 
     expect($signalCardPartial)->toContain("{{ \$card['badge_label'] }}")
+        ->not->toContain('@php')
+        ->toContain("'containerClasses' => 'rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60'")
         ->and($retentionCandidatePartial)->toContain("{{ \$candidate['badge_label'] }}")
+        ->not->toContain('@php')
+        ->toContain("'containerClasses' => 'rounded-2xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950/60'")
         ->and($observabilityPanelPartial)
         ->toContain("{{ \$metric['budget_label'] }}")
-        ->toContain('Error budget breaches')
+        ->toContain("{{ \$panel['breach_panel']['heading'] }}")
         ->toContain("{{ \$panel['missing_runbook_panel']['heading'] }}")
         ->toContain("@include('filament.pages.partials.ops-empty-state', [")
         ->and($governancePanelPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.signal-badge-card', [")
         ->toContain("{{ \$panel['scenario_user_panel']['heading'] }}")
         ->toContain("{{ \$panel['recent_audit_panel']['heading'] }}")
-        ->toContain("{{ \$card['meta_text'] }}")
+        ->toContain("@include('filament.pages.partials.ops-detail-card', ['card' => \$card])")
         ->toContain("@include('filament.pages.partials.ops-empty-state', [")
         ->and($kpiPanelPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.signal-badge-card', [")
         ->toContain("{{ \$panel['open_alert_panel']['heading'] }}")
-        ->toContain("{{ \$card['badge_label'] }}")
+        ->toContain("@include('filament.pages.partials.ops-detail-card', ['card' => \$card])")
         ->toContain("@include('filament.pages.partials.ops-empty-state', [")
         ->and($financePanelPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.signal-badge-card', [")
         ->toContain("{{ \$panel['watchlist_panel']['heading'] }}")
+        ->toContain("@include('filament.pages.partials.ops-detail-card', ['card' => \$card])")
         ->toContain("@include('filament.pages.partials.ops-empty-state', [")
+        ->and($opsDetailCardPartial)
+        ->toContain('@props([')
+        ->toContain("{{ \$card['title'] }}")
+        ->toContain("{{ \$card['subtitle'] }}")
         ->toContain("{{ \$card['detail'] }}")
+        ->and(File::get(resource_path('views/filament/pages/partials/ops-empty-state.blade.php')))
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->and($integrationsPanelPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.provider-health-panel', [")
+        ->toContain("'panel' => \$panel['provider_health']")
+        ->not->toContain("'containerClasses' =>")
         ->toContain("@include('filament.pages.partials.grace-rotation-panel', [")
         ->toContain("@include('filament.pages.partials.retention-candidate-card', [")
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
         ->toContain("@include('filament.pages.partials.ops-meta-grid', [")
         ->and($znsPanelPartial)
-        ->toContain("@include('filament.pages.partials.dashboard-summary-card', [")
+        ->toContain('@props([')
+        ->toContain("@include('filament.pages.partials.dashboard-summary-card', ['card' => \$card])")
         ->toContain("@include('filament.pages.partials.retention-candidate-card', [")
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
+        ->and(File::get(resource_path('views/filament/pages/partials/dashboard-summary-card.blade.php')))
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain("{{ \$card['container_classes'] ?? 'rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/60' }}")
+        ->toContain("{{ \$card['value_classes'] ?? 'text-xl font-semibold text-gray-900 dark:text-white' }}")
         ->and($kpiPanelPartial)
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
         ->toContain("@include('filament.pages.partials.ops-meta-grid', [")
@@ -248,10 +280,21 @@ it('renders ops provider readiness and zns summaries from shared presentation pa
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
         ->toContain("@include('filament.pages.partials.ops-meta-grid', [")
         ->and($observabilityPanelPartial)
+        ->toContain('@props([')
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
+        ->toContain("{{ \$panel['breach_panel']['heading'] }}")
+        ->toContain("{{ \$panel['breach_panel']['badge_label'] }}")
+        ->toContain("'message' => \$panel['breach_panel']['empty_state_message']")
         ->and($governancePanelPartial)
         ->toContain("@include('filament.pages.partials.section-summary-banner', [")
-        ->toContain("@include('filament.pages.partials.ops-meta-grid', [");
+        ->toContain("@include('filament.pages.partials.ops-meta-grid', [")
+        ->and(File::get(resource_path('views/filament/pages/partials/section-summary-banner.blade.php')))
+        ->not->toContain('@php')
+        ->toContain("'containerClasses' => 'flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/60'")
+        ->and(File::get(resource_path('views/filament/pages/partials/ops-meta-grid.blade.php')))
+        ->not->toContain('@php')
+        ->toContain("'gridClasses' => 'ops-grid-2'")
+        ->toContain("'valueClasses' => 'mt-1 text-sm font-medium text-gray-950 dark:text-white'");
 });
 
 it('builds ops rendered panels from shared state contracts', function (): void {
@@ -338,7 +381,11 @@ it('builds ops rendered panels from shared state contracts', function (): void {
             'empty_state_message',
             'rows',
         ])
-        ->and($integrationsPanel['provider_health']['items'])->toBe($integrationsState['providers'])
+        ->and($integrationsPanel['provider_health'])->toHaveKeys([
+            'container_classes',
+            'grid_classes',
+            'items',
+        ])
         ->and($integrationsPanel['active_grace'])->toHaveKeys([
             'heading',
             'badge_label',
@@ -347,6 +394,16 @@ it('builds ops rendered panels from shared state contracts', function (): void {
             'items',
         ])
         ->and($activeGraceItems === [] || collect($activeGraceItems[0])->has(['display_name', 'detail_text', 'card_classes']))->toBeTrue()
+        ->and(
+            $integrationsPanel['provider_health']['items'] === []
+            || collect($integrationsPanel['provider_health']['items'][0])->has([
+                'key',
+                'label',
+                'container_classes',
+                'meta_value_classes',
+                'status_message_container_classes',
+            ])
+        )->toBeTrue()
         ->and(
             $recentRunsPanel['rows'] === []
             || collect($recentRunsPanel['rows'])->first() === null
@@ -374,13 +431,19 @@ it('builds ops rendered panels from shared state contracts', function (): void {
             'title' => $znsState['status'],
             'badge_label' => count($znsState['summary_cards'] ?? []).' signals',
         ])
+        ->and($znsPanel['summary_cards'] === [] || collect($znsPanel['summary_cards'][0])->has([
+            'container_classes',
+            'label_classes',
+            'value_classes',
+        ]))->toBeTrue()
         ->and($observabilityPanel['summary']['title'])->toBe($observabilityState['status'])
         ->and($observabilityPanel)->toHaveKeys([
             'metric_cards',
-            'breach_cards',
+            'breach_panel',
             'missing_runbook_panel',
         ])
         ->and($observabilityPanel['metric_cards'])->toHaveCount(count($observabilityState['metrics'] ?? []))
+        ->and($observabilityPanel['breach_panel']['cards'])->toHaveCount(count($observabilityState['breaches'] ?? []))
         ->and($governancePanel['summary']['description'])->toBe($governanceState['policy_note'])
         ->and($governancePanel['signals'])->toHaveCount(count($governanceState['signals'] ?? []))
         ->and($governancePanel)->toHaveKeys([

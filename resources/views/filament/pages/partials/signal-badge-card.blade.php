@@ -1,6 +1,7 @@
-@php
-    $containerClasses = $containerClasses ?? 'rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60';
-@endphp
+@props([
+    'card',
+    'containerClasses' => 'rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950/60',
+])
 
 <div class="{{ $containerClasses }}">
     <div class="flex items-center justify-between gap-3">

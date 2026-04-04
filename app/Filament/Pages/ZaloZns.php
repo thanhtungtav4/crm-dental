@@ -149,8 +149,32 @@ class ZaloZns extends Page implements HasTable
         $branchIds = BranchAccess::accessibleBranchIds(BranchAccess::currentUser(), false);
 
         return [
-            'items' => app(ZnsOperationalReadModelService::class)->dashboardSummaryCards($branchIds),
+            'items' => $this->renderedDashboardSummaryCards(
+                app(ZnsOperationalReadModelService::class)->dashboardSummaryCards($branchIds),
+                containerClasses: 'rounded-xl border p-3',
+                valueTypographyClasses: 'text-xl font-semibold',
+            ),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function renderedDashboardSummaryCards(
+        array $cards,
+        string $containerClasses,
+        string $valueTypographyClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => trim(($card['card_classes'] ?? '').' '.$containerClasses),
+                'label_classes' => trim('text-sm font-medium '.($card['label_classes'] ?? 'text-gray-500')),
+                'value_classes' => trim($valueTypographyClasses.' '.($card['value_classes'] ?? 'text-gray-900 dark:text-white')),
+            ],
+            $cards,
+        );
     }
 
     /**

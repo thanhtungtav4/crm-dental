@@ -1265,6 +1265,27 @@ class IntegrationSettings extends Page
     }
 
     /**
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function presentedProviderHealthCards(
+        array $cards,
+        string $containerClasses,
+        string $metaValueClasses,
+        string $statusMessageContainerClasses,
+    ): array {
+        return array_map(
+            fn (array $card): array => [
+                ...$card,
+                'container_classes' => $containerClasses,
+                'meta_value_classes' => $metaValueClasses,
+                'status_message_container_classes' => $statusMessageContainerClasses,
+            ],
+            $cards,
+        );
+    }
+
+    /**
      * @return array{
      *     form_panel:array{
      *         notice_panels:array<int, array{classes:string,message:string}>,
@@ -1361,10 +1382,6 @@ class IntegrationSettings extends Page
             'partial' => 'filament.pages.partials.provider-health-panel',
             'include_data' => [
                 'panel' => $providerHealthPanel,
-                'showHeader' => false,
-                'showContainer' => false,
-                'gridClasses' => 'grid gap-4 md:grid-cols-2',
-                'cardContainerClasses' => 'rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900',
             ],
         ];
 
@@ -1599,7 +1616,8 @@ class IntegrationSettings extends Page
      *     rendered_fields:array<int, array{
      *         field:array<string, mixed>,
      *         state_path:string,
-     *         partial:string
+     *         partial:string,
+     *         include_data:array<string, mixed>
      *     }>,
      *     support_sections:array<int, array{
      *         partial:string,
@@ -1614,13 +1632,7 @@ class IntegrationSettings extends Page
 
             return [
                 ...$provider,
-                'rendered_fields' => array_values(array_map(function (array $field): array {
-                    return [
-                        'field' => $field,
-                        'state_path' => 'settings.'.$field['state'],
-                        'partial' => $this->fieldPartialView($field),
-                    ];
-                }, array_values(array_filter(
+                'rendered_fields' => array_values(array_map(fn (array $field): array => $this->renderedField($field), array_values(array_filter(
                     $provider['fields'],
                     fn (array $field): bool => ! ((bool) ($field['hidden'] ?? false)),
                 )))),
@@ -1645,6 +1657,27 @@ class IntegrationSettings extends Page
     }
 
     /**
+     * @param  array<string, mixed>  $field
+     * @return array{
+     *     field:array<string, mixed>,
+     *     state_path:string,
+     *     partial:string,
+     *     include_data:array<string, mixed>
+     * }
+     */
+    protected function renderedField(array $field): array
+    {
+        $statePath = 'settings.'.$field['state'];
+
+        return [
+            'field' => $field,
+            'state_path' => $statePath,
+            'partial' => $this->fieldPartialView($field),
+            'include_data' => $this->fieldIncludeData($field, $statePath),
+        ];
+    }
+
+    /**
      * @param  array{type?:string}  $field
      */
     protected function fieldPartialView(array $field): string
@@ -1657,6 +1690,119 @@ class IntegrationSettings extends Page
             'json' => 'filament.pages.partials.integration-setting-json-field',
             default => 'filament.pages.partials.integration-setting-input-field',
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array<string, mixed>
+     */
+    protected function fieldIncludeData(array $field, string $statePath): array
+    {
+        return match ($field['type'] ?? 'text') {
+            'boolean' => [
+                'field' => $field,
+                'statePath' => $statePath,
+            ],
+            'select' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'options' => (array) ($field['options'] ?? []),
+            ],
+            'roles' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'options' => (array) ($field['options'] ?? []),
+                'emptyStateText' => 'Chưa có role để cấu hình. Vui lòng seed role trước khi bật thông báo realtime.',
+                'helperText' => $this->fieldHelperText($field),
+            ],
+            'textarea' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'helperText' => $this->fieldHelperText($field),
+            ],
+            'json' => [
+                'field' => $field,
+                'statePath' => $statePath,
+                ...$this->catalogFieldViewData($field),
+            ],
+            default => [
+                'field' => $field,
+                'statePath' => $statePath,
+                'inputType' => $this->fieldInputType($field),
+                'isWebLeadApiToken' => ($field['state'] ?? null) === 'web_lead_api_token',
+                'min' => ($field['type'] ?? null) === 'integer' ? '0' : null,
+                'step' => ($field['type'] ?? null) === 'integer' ? '1' : null,
+            ],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     */
+    protected function fieldInputType(array $field): string
+    {
+        if ((bool) ($field['is_secret'] ?? false)) {
+            return 'password';
+        }
+
+        return match ($field['type'] ?? 'text') {
+            'url' => 'url',
+            'email' => 'email',
+            'color' => 'color',
+            'integer' => 'number',
+            default => 'text',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     */
+    protected function fieldHelperText(array $field): ?string
+    {
+        return match ($field['key'] ?? null) {
+            'web_lead.realtime_notification_roles' => 'Chỉ các user thuộc nhóm quyền đã chọn mới nhận thông báo realtime khi có lead mới từ website.',
+            'web_lead.internal_email_recipient_roles' => 'Các user thuộc nhóm quyền đã chọn sẽ nhận email nội bộ nếu có email hợp lệ và được phép truy cập chi nhánh của lead.',
+            'popup.sender_roles' => 'Chỉ các role đã chọn mới có quyền gửi popup toàn hệ thống.',
+            'security.mfa_required_roles' => 'User thuộc các role này sẽ bắt buộc cấu hình MFA khi đăng nhập admin.',
+            'web_lead.internal_email_recipient_emails' => 'Dùng để thêm mailbox cố định của bộ phận như `lead@clinic.vn`. Mỗi dòng một email, hệ thống sẽ tự loại trùng với email user theo role.',
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @return array{
+     *     editableEntries:list<array{
+     *         index:int,
+     *         row:array<string, mixed>,
+     *         row_enabled:bool
+     *     }>,
+     *     editableRowsCount:int,
+     *     showRowEnabledToggle:bool,
+     *     helperText:string
+     * }
+     */
+    protected function catalogFieldViewData(array $field): array
+    {
+        $rows = data_get($this->catalogEditors, $field['state'], []);
+        $showRowEnabledToggle = ($field['state'] ?? null) !== self::EXAM_INDICATIONS_STATE;
+        $editableEntries = collect($rows)
+            ->map(fn ($row, $index): array => [
+                'index' => (int) $index,
+                'row' => (array) $row,
+                'row_enabled' => filter_var(data_get($row, 'enabled', true), FILTER_VALIDATE_BOOLEAN),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'editableEntries' => $editableEntries,
+            'editableRowsCount' => count($editableEntries),
+            'showRowEnabledToggle' => $showRowEnabledToggle,
+            'helperText' => $showRowEnabledToggle
+                ? 'Nhập nhãn hiển thị, hệ thống tự sinh mã. Dùng toggle từng dòng để bật/tắt hiển thị option. Không cần sửa JSON thủ công.'
+                : 'Nhập nhãn hiển thị, hệ thống tự sinh mã. Không cần sửa JSON thủ công.',
+        ];
     }
 
     /**
@@ -1687,6 +1833,9 @@ class IntegrationSettings extends Page
      * @return array{
      *     heading:string,
      *     description:string,
+     *     show_header:bool,
+     *     show_container:bool,
+     *     grid_classes:string,
      *     items:array<int, array{
      *         key:string,
      *         label:string,
@@ -1696,7 +1845,10 @@ class IntegrationSettings extends Page
      *         issue_badge:?array{label:string, classes:string},
      *         meta_preview:array<int, array{label:string, value:int|string}>,
      *         status_message:?string,
-     *         status_message_classes:?string
+     *         status_message_classes:?string,
+     *         container_classes:string,
+     *         meta_value_classes:string,
+     *         status_message_container_classes:string
      *     }>
      * }
      */
@@ -1705,7 +1857,15 @@ class IntegrationSettings extends Page
         return [
             'heading' => 'Provider health snapshot',
             'description' => 'Contract chung cho readiness, runtime drift va provider-specific hint.',
-            'items' => $this->renderedProviderHealthCards(),
+            'show_header' => false,
+            'show_container' => false,
+            'grid_classes' => 'grid gap-4 md:grid-cols-2',
+            'items' => $this->presentedProviderHealthCards(
+                $this->renderedProviderHealthCards(),
+                containerClasses: 'rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900',
+                metaValueClasses: 'break-all font-medium text-gray-950 dark:text-white',
+                statusMessageContainerClasses: 'mt-3 rounded-lg border px-3 py-2 text-xs',
+            ),
         ];
     }
 

@@ -1,10 +1,10 @@
 <div class="crm-activity-widget">
     <div class="crm-activity-widget-head">
         <h3 class="crm-activity-widget-title">Hoạt động gần đây</h3>
-        <span class="crm-activity-widget-count">{{ $this->getActivities()->count() }} hoạt động</span>
+        <span class="crm-activity-widget-count">{{ $activityCount }} hoạt động</span>
     </div>
 
-    @if($this->getActivities()->isEmpty())
+    @if(empty($activities))
         <div class="crm-activity-empty">
             <x-filament::icon icon="heroicon-o-clock" class="mx-auto h-12 w-12 text-gray-400" />
             <h3 class="crm-activity-empty-title">Chưa có hoạt động</h3>
@@ -12,31 +12,8 @@
         </div>
     @else
         <div class="crm-activity-list">
-            @foreach($this->getActivities() as $activity)
-                @php
-                    $typeClass = match ($activity['type']) {
-                        'appointment' => 'is-appointment',
-                        'treatment_plan' => 'is-treatment-plan',
-                        'invoice' => 'is-invoice',
-                        'payment' => 'is-payment',
-                        'branch_log' => 'is-branch-log',
-                        'note' => 'is-note',
-                        'audit' => 'is-default',
-                        default => 'is-default',
-                    };
-
-                    $typeName = match ($activity['type']) {
-                        'appointment' => 'Lịch hẹn',
-                        'treatment_plan' => 'Kế hoạch điều trị',
-                        'invoice' => 'Hóa đơn',
-                        'payment' => 'Thanh toán',
-                        'branch_log' => 'Chuyển chi nhánh',
-                        'note' => 'Ghi chú',
-                        'audit' => 'Nhật ký hệ thống',
-                        default => $activity['type'],
-                    };
-                @endphp
-                <div class="crm-activity-item {{ $typeClass }}">
+            @foreach($activities as $activity)
+                <div class="crm-activity-item {{ $activity['type_class'] }}">
                     <div class="crm-activity-item-layout">
                         <div class="crm-activity-item-icon-wrap">
                             <div class="crm-activity-item-icon">
@@ -47,11 +24,11 @@
                         <div class="crm-activity-item-content">
                             <div class="crm-activity-item-title-row">
                                 <span class="crm-activity-item-title">{{ $activity['title'] }}</span>
-                                <span class="crm-activity-item-type">{{ $typeName }}</span>
+                                <span class="crm-activity-item-type">{{ $activity['type_label'] }}</span>
                             </div>
 
                             <p class="crm-activity-item-description">
-                                {{ Str::limit($activity['description'], 80) }}
+                                {{ $activity['description_excerpt'] }}
                             </p>
 
                             @if(!empty($activity['meta']))
@@ -80,15 +57,15 @@
                         </div>
 
                         <div class="crm-activity-item-date">
-                            <time datetime="{{ $activity['date']->toIso8601String() }}"
+                            <time datetime="{{ $activity['date_iso'] }}"
                                 class="crm-activity-item-date-day">
-                                {{ $activity['date']->format('d/m/Y') }}
+                                {{ $activity['date_label'] }}
                             </time>
                             <div class="crm-activity-item-date-time">
-                                {{ $activity['date']->format('H:i') }}
+                                {{ $activity['time_label'] }}
                             </div>
                             <div class="crm-activity-item-date-human">
-                                {{ $activity['date']->diffForHumans() }}
+                                {{ $activity['human_label'] }}
                             </div>
                         </div>
                     </div>
@@ -96,7 +73,7 @@
             @endforeach
         </div>
 
-        @if($this->getActivities()->count() === 20)
+        @if($showsMaxActivitiesFooter)
             <div class="crm-activity-footer">
                 Hiển thị 20 hoạt động gần nhất
             </div>

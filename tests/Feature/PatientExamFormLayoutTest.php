@@ -25,6 +25,8 @@ it('splits the patient exam form into focused partials', function (): void {
     $blade = File::get(resource_path('views/livewire/patient-exam-form.blade.php'));
 
     expect($blade)
+        ->not->toContain('@php')
+        ->toContain('@foreach($sessionCards as $sessionCard)')
         ->toContain("@include('livewire.partials.patient-exam.general-section')")
         ->toContain("@include('livewire.partials.patient-exam.indications-section')")
         ->toContain("@include('livewire.partials.patient-exam.diagnosis-section')")
@@ -43,7 +45,7 @@ it('keeps doctor clear buttons vertically centered in patient exam form', functi
 it('keeps delete session icon button dimensions stable in patient exam form', function (): void {
     $blade = patientExamBladeContent();
 
-    expect($blade)->toContain('wire:click="deleteSession({{ $session->id }})"');
+    expect($blade)->toContain('wire:click="deleteSession({{ $sessionCard[\'id\'] }})"');
     expect($blade)->toContain('class="crm-btn crm-btn-outline crm-btn-icon text-gray-600 disabled:opacity-50"');
     expect($blade)->toContain('<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">');
 });
@@ -87,8 +89,8 @@ it('supports explicit multi-select mode in patient exam tooth chart', function (
 it('renders indication upload areas dynamically per selected indication type', function (): void {
     $blade = patientExamBladeContent();
 
-    expect($blade)->toContain('$selectedIndicationUploadTypes = collect($indications)')
-        ->and($blade)->toContain('@foreach($selectedIndicationUploadTypes as $type)')
+    expect($blade)->toContain('@foreach($selectedIndicationUploadTypes as $type)')
+        ->and($blade)->toContain("wire:key=\"indication-upload-{{ \$sessionCard['id'] }}-{{ \$type }}\"")
         ->and($blade)->toContain('wire:model="tempUploads.{{ $type }}"')
         ->and($blade)->toContain("wire:click=\"removeImage('{{ \$type }}', {{ \$index }})\"")
         ->and($blade)->toContain('@paste.prevent="handleIndicationPaste(@js($type), $event)"')

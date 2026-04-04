@@ -30,6 +30,16 @@ abstract class BaseReportPage extends Page implements HasTable
         return [];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getViewData(): array
+    {
+        return [
+            'stats' => $this->getStats(),
+        ];
+    }
+
     public static function canAccess(): bool
     {
         $authUser = auth()->user();

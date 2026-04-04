@@ -43,6 +43,9 @@ it('shows web lead api integration guide in settings page', function () {
     $actionButtonsPartial = File::get(resource_path('views/filament/pages/partials/provider-action-buttons.blade.php'));
     $inputFieldPartial = File::get(resource_path('views/filament/pages/partials/integration-setting-input-field.blade.php'));
     $selectFieldPartial = File::get(resource_path('views/filament/pages/partials/integration-setting-select-field.blade.php'));
+    $rolesFieldPartial = File::get(resource_path('views/filament/pages/partials/integration-setting-roles-field.blade.php'));
+    $textareaFieldPartial = File::get(resource_path('views/filament/pages/partials/integration-setting-textarea-field.blade.php'));
+    $jsonFieldPartial = File::get(resource_path('views/filament/pages/partials/integration-setting-json-field.blade.php'));
     $revisionNoticePartial = File::get(resource_path('views/filament/pages/partials/integration-settings-revision-notice.blade.php'));
     $submitBarPartial = File::get(resource_path('views/filament/pages/partials/integration-settings-submit-bar.blade.php'));
     $pageShellPartial = File::get(resource_path('views/filament/pages/partials/integration-settings-page-shell.blade.php'));
@@ -77,16 +80,33 @@ it('shows web lead api integration guide in settings page', function () {
         ->toContain("wire:click=\"{{ \$action['wire_click'] }}\"")
         ->toContain("{{ \$action['label'] }}")
         ->and($inputFieldPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->toContain('showWebLeadToken')
         ->toContain('x-ref="webLeadApiTokenInput"')
         ->toContain("x-bind:type=\"showWebLeadToken ? 'text' : 'password'\"")
         ->toContain('x-on:click="navigator.clipboard?.writeText($refs.webLeadApiTokenInput?.value ?? \'\')"')
         ->and($selectFieldPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
         ->toContain('<x-filament::input.select wire:model.blur="{{ $statePath }}">')
+        ->and($rolesFieldPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain('{{ $emptyStateText }}')
+        ->toContain('{{ $helperText }}')
+        ->and($textareaFieldPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain('{{ $helperText }}')
+        ->and($jsonFieldPartial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain('{{ $helperText }}')
         ->and(File::get(resource_path('views/filament/pages/partials/integration-settings-provider-panel.blade.php')))
         ->not->toContain('<x-filament::section')
         ->toContain("@foreach(\$provider['rendered_fields'] as \$renderedField)")
-        ->toContain("@include(\$renderedField['partial'], [")
+        ->toContain("@include(\$renderedField['partial'], \$renderedField['include_data'])")
         ->toContain("@include('filament.pages.partials.control-plane-partial-list', [")
         ->toContain("'items' => \$provider['support_sections']")
         ->and($partialListPartial)
@@ -147,6 +167,11 @@ it('builds provider panels from provider definitions and support state', functio
         ->and($webLeadRenderedField)->not->toBeNull()
         ->and($webLeadRenderedField['state_path'])->toBe('settings.web_lead_api_token')
         ->and($webLeadRenderedField['partial'])->toBe('filament.pages.partials.integration-setting-input-field')
+        ->and($webLeadRenderedField['include_data'])->toMatchArray([
+            'statePath' => 'settings.web_lead_api_token',
+            'inputType' => 'password',
+            'isWebLeadApiToken' => true,
+        ])
         ->and($webLeadPanel['support_sections'])->toHaveCount(2)
         ->and($webLeadPanel['support_sections'][0]['partial'])->toBe('filament.pages.partials.provider-action-buttons')
         ->and($webLeadPanel['support_sections'][1]['partial'])->toBe('filament.pages.partials.web-lead-api-guide')
@@ -204,6 +229,43 @@ it('builds integration settings page view state from notices, control plane, and
         ->and($page->pageViewState()['post_form_sections'])->toHaveCount(1);
 });
 
+it('precomputes rendered field include data for shared integration setting partials', function (): void {
+    actingAsIntegrationSettingsProvidersAdmin();
+
+    $page = app(IntegrationSettings::class);
+    $page->mount();
+    $providerPanels = collect(integrationSettingsProviderPanels($page));
+    $webLeadPanel = $providerPanels->firstWhere('group', 'web_lead');
+    $popupPanel = $providerPanels->firstWhere('group', 'popup');
+    $securityPanel = $providerPanels->firstWhere('group', 'security');
+    $catalogPanel = $providerPanels->firstWhere('group', 'catalog');
+
+    $rolesField = collect($webLeadPanel['rendered_fields'])->firstWhere('field.key', 'web_lead.realtime_notification_roles');
+    $textareaField = collect($webLeadPanel['rendered_fields'])->firstWhere('field.key', 'web_lead.internal_email_recipient_emails');
+    $popupRolesField = collect($popupPanel['rendered_fields'])->firstWhere('field.key', 'popup.sender_roles');
+    $securityRolesField = collect($securityPanel['rendered_fields'])->firstWhere('field.key', 'security.mfa_required_roles');
+    $catalogField = collect($catalogPanel['rendered_fields'])->firstWhere('field.state', 'catalog_exam_indications_json');
+
+    expect($rolesField['include_data'])->toMatchArray([
+        'statePath' => 'settings.web_lead_realtime_notification_roles',
+        'emptyStateText' => 'Chưa có role để cấu hình. Vui lòng seed role trước khi bật thông báo realtime.',
+        'helperText' => 'Chỉ các user thuộc nhóm quyền đã chọn mới nhận thông báo realtime khi có lead mới từ website.',
+    ])
+        ->and($textareaField['include_data'])->toMatchArray([
+            'statePath' => 'settings.web_lead_internal_email_recipient_emails',
+            'helperText' => 'Dùng để thêm mailbox cố định của bộ phận như `lead@clinic.vn`. Mỗi dòng một email, hệ thống sẽ tự loại trùng với email user theo role.',
+        ])
+        ->and($popupRolesField['include_data']['helperText'])->toBe('Chỉ các role đã chọn mới có quyền gửi popup toàn hệ thống.')
+        ->and($securityRolesField['include_data']['helperText'])->toBe('User thuộc các role này sẽ bắt buộc cấu hình MFA khi đăng nhập admin.')
+        ->and($catalogField['include_data'])->toHaveKeys([
+            'editableEntries',
+            'editableRowsCount',
+            'showRowEnabledToggle',
+            'helperText',
+        ])
+        ->and($catalogField['include_data']['showRowEnabledToggle'])->toBeFalse();
+});
+
 it('renders concrete input html for integration text fields', function () {
     actingAsIntegrationSettingsProvidersAdmin();
 
@@ -237,10 +299,16 @@ it('renders provider health snapshot from shared presentation payload', function
         ->not->toContain("{{ \$provider['status'] }}")
         ->not->toContain("{{ \$provider['issues'][0] }}")
         ->and($panelPartial)
+        ->not->toContain('@php')
+        ->toContain("@if(\$panel['show_header'] ?? true)")
+        ->toContain("@if(\$panel['show_container'] ?? true)")
         ->toContain("{{ \$panel['heading'] }}")
         ->toContain("{{ \$panel['description'] }}")
         ->toContain("@include('filament.pages.partials.provider-health-card'")
         ->and($partial)
+        ->not->toContain('@php')
+        ->toContain('@props([')
+        ->toContain("{{ \$provider['container_classes'] ?? 'rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950/60' }}")
         ->toContain("{{ \$provider['status_badge']['label'] }}")
         ->toContain("{{ \$provider['summary_badge']['label'] }}")
         ->toContain("{{ \$provider['status_message'] }}");
@@ -789,7 +857,20 @@ it('renders integration settings audit logs and grace rotations through shared r
         ->and($secretRotationSection['include_data']['panel']['items']->first()['display_name'])->toBe('Web Lead API Token')
         ->and($secretRotationSection['include_data']['panel']['items']->first()['grace_expires_at_label'])->not->toBeEmpty()
         ->and($providerHealthSection)->not->toBeNull()
+        ->and($providerHealthSection['include_data']['panel'])->toHaveKeys([
+            'show_header',
+            'show_container',
+            'grid_classes',
+            'items',
+        ])
+        ->and($providerHealthSection['include_data']['panel']['show_header'])->toBeFalse()
+        ->and($providerHealthSection['include_data']['panel']['show_container'])->toBeFalse()
         ->and($providerHealthSection['include_data']['panel']['items'])->toBeArray()
+        ->and($providerHealthSection['include_data']['panel']['items'][0] ?? [])->toHaveKeys([
+            'container_classes',
+            'meta_value_classes',
+            'status_message_container_classes',
+        ])
         ->and($auditLogItems->contains(fn (array $log): bool => $log['change_reason'] === 'Shared rendered audit test'))->toBeTrue()
         ->and($auditLogItems->firstWhere('change_reason', 'Shared rendered audit test'))->toMatchArray([
             'changed_by_name' => $admin->name,

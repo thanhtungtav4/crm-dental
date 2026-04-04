@@ -106,14 +106,14 @@ class ViewPatient extends ViewRecord
                 'partial' => 'filament.resources.patients.pages.partials.tabs.basic-info-tab',
                 'data' => [
                     'record' => $this->record,
-                    'basicInfoPanels' => $workspace['basic_info_panels'] ?? [],
+                    'basicInfoPanels' => $workspace['basic_info_panels'],
                 ],
             ],
             'exam-treatment' => [
                 'partial' => 'filament.resources.patients.pages.partials.tabs.exam-treatment-tab',
                 'data' => [
                     'record' => $this->record,
-                    'renderedTreatmentProgressPanel' => $workspace['rendered_treatment_progress_panel'] ?? [],
+                    'renderedTreatmentProgressPanel' => $workspace['rendered_treatment_progress_panel'],
                 ],
             ],
             'prescriptions' => [
@@ -144,7 +144,7 @@ class ViewPatient extends ViewRecord
                 'partial' => 'filament.resources.patients.pages.partials.tabs.lab-materials-tab',
                 'data' => [
                     'record' => $this->record,
-                    'renderedLabMaterialSections' => $workspace['rendered_lab_material_sections'] ?? [],
+                    'renderedLabMaterialSections' => $workspace['rendered_lab_material_sections'],
                 ],
             ],
             'appointments' => [
@@ -163,14 +163,14 @@ class ViewPatient extends ViewRecord
                 'partial' => 'filament.resources.patients.pages.partials.tabs.payments-tab',
                 'data' => [
                     'record' => $this->record,
-                    'renderedPaymentPanel' => $workspace['rendered_payment_panel'] ?? [],
+                    'renderedPaymentPanel' => $workspace['rendered_payment_panel'],
                 ],
             ],
             'forms' => [
                 'partial' => 'filament.resources.patients.pages.partials.tabs.forms-tab',
                 'data' => [
                     'record' => $this->record,
-                    'renderedFormsPanel' => $workspace['rendered_forms_panel'] ?? [],
+                    'renderedFormsPanel' => $workspace['rendered_forms_panel'],
                 ],
             ],
             'care' => [
@@ -200,7 +200,7 @@ class ViewPatient extends ViewRecord
                 'partial' => 'filament.resources.patients.pages.partials.tabs.basic-info-tab',
                 'data' => [
                     'record' => $this->record,
-                    'basicInfoPanels' => $workspace['basic_info_panels'] ?? [],
+                    'basicInfoPanels' => $workspace['basic_info_panels'],
                 ],
             ],
         };
@@ -220,7 +220,7 @@ class ViewPatient extends ViewRecord
 
     protected function visibleWorkspaceTabIds(): array
     {
-        return collect($this->workspaceViewState()['tabs'] ?? [])
+        return collect($this->workspaceViewState()['tabs'])
             ->pluck('id')
             ->filter(fn (mixed $id): bool => is_string($id) && in_array($id, $this->workspaceTabs, true))
             ->values()
@@ -237,7 +237,7 @@ class ViewPatient extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        $headerActions = $this->workspaceViewState()['header_actions'] ?? ['items' => []];
+        $headerActions = $this->workspaceViewState()['header_actions'];
 
         return [
             ...collect($headerActions['items'])

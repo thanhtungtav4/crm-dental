@@ -11,6 +11,7 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Services\AppointmentSchedulingService;
 use App\Services\CareTicketWorkflowService;
+use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Permission;
 
 it('includes appointment and care audit logs in patient activity timeline', function () {
@@ -100,4 +101,24 @@ it('includes appointment and care audit logs in patient activity timeline', func
     expect($activities->where('type', 'audit'))->not->toBeEmpty()
         ->and($activities->pluck('title')->all())
         ->toContain('Hẹn lại lịch', 'Hoàn thành chăm sóc', 'Hoàn thành labo');
+
+    $getViewDataMethod = new ReflectionMethod($widget, 'getViewData');
+    $getViewDataMethod->setAccessible(true);
+    $viewData = $getViewDataMethod->invoke($widget);
+    $blade = File::get(resource_path('views/filament/resources/patients/widgets/patient-activity-timeline-widget.blade.php'));
+
+    expect($blade)
+        ->not->toContain('@php')
+        ->not->toContain('$this->getActivities()')
+        ->and($viewData)->toHaveKeys(['activities', 'activityCount', 'showsMaxActivitiesFooter'])
+        ->and($viewData['activityCount'])->toBe($activities->count())
+        ->and($viewData['activities'][0])->toHaveKeys([
+            'type_class',
+            'type_label',
+            'description_excerpt',
+            'date_iso',
+            'date_label',
+            'time_label',
+            'human_label',
+        ]);
 });
