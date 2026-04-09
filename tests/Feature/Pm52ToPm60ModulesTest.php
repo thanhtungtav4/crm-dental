@@ -101,12 +101,21 @@ it('scopes calendar operational metrics by accessible branch for non admin users
         $this->actingAs($manager);
 
         $page = Livewire::test(CalendarAppointments::class)->instance();
-        $metrics = $page->getOperationalStatusMetrics();
         $viewState = $page->calendarViewState();
+        $metrics = $viewState['metrics'];
 
         expect($metrics['total'])->toBe(1)
             ->and($metrics['scheduled'])->toBe(1)
             ->and($metrics['no_show'])->toBe(0)
+            ->and($viewState)->toHaveKeys(['shell_panel', 'reschedule_modal_panel'])
+            ->and($viewState['shell_panel'])->toMatchArray([
+                'modal_id' => 'appointment-calendar-reschedule-modal',
+                'conflict_keyword' => 'trùng lịch',
+            ])
+            ->and($viewState['reschedule_modal_panel'])->toMatchArray([
+                'heading' => 'Dời lịch hẹn',
+                'submit_override_label' => 'Override và lưu',
+            ])
             ->and($viewState['branches'])->toHaveKey($branchA->id)
             ->and($viewState['branches'])->not->toHaveKey($branchB->id)
             ->and($viewState['doctors'])->toHaveKey($doctor->id)

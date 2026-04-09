@@ -3,8 +3,8 @@
 use App\Models\Patient;
 use App\Models\PatientToothCondition;
 use App\Models\ToothCondition;
-use App\Models\TreatmentPlan;
 use App\Models\User;
+use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -182,7 +182,7 @@ describe('PatientToothCondition Model', function () {
             'tooth_condition_id' => $this->toothCondition->id,
         ]);
 
-        expect(fn() => PatientToothCondition::create([
+        expect(fn () => PatientToothCondition::create([
             'patient_id' => $this->patient->id,
             'tooth_number' => '35',
             'tooth_condition_id' => $this->toothCondition->id,
@@ -235,6 +235,17 @@ describe('PatientToothCondition Static Helpers', function () {
         expect($allTeeth)->toHaveCount(52); // 16 + 10 + 10 + 16
     });
 
+    it('returns grouped tooth number options for form selects', function () {
+        $options = PatientToothCondition::toothNumberOptions();
+
+        expect($options)->toBeArray();
+        expect($options)->toHaveCount(52);
+        expect($options['18'])->toBe('Răng 18 (Hàm trên người lớn)');
+        expect($options['55'])->toBe('Răng 55 (Răng sữa trên)');
+        expect($options['85'])->toBe('Răng 85 (Răng sữa dưới)');
+        expect($options['48'])->toBe('Răng 48 (Hàm dưới người lớn)');
+    });
+
     it('returns status options in Vietnamese', function () {
         $options = PatientToothCondition::getStatusOptions();
 
@@ -243,5 +254,28 @@ describe('PatientToothCondition Static Helpers', function () {
         expect($options)->toHaveKey('in_treatment');
         expect($options)->toHaveKey('completed');
         expect($options['current'])->toBe('Tình trạng hiện tại');
+    });
+
+    it('exposes shared status labels and colors for dental relation managers', function () {
+        expect(PatientToothCondition::statusLabel(PatientToothCondition::STATUS_CURRENT))->toBe('Tình trạng hiện tại')
+            ->and(PatientToothCondition::statusLabel(PatientToothCondition::STATUS_IN_TREATMENT))->toBe('Đang điều trị')
+            ->and(PatientToothCondition::statusBadgeColor(PatientToothCondition::STATUS_CURRENT))->toBe('gray')
+            ->and(PatientToothCondition::statusBadgeColor(PatientToothCondition::STATUS_IN_TREATMENT))->toBe('danger')
+            ->and(PatientToothCondition::statusBadgeColor(PatientToothCondition::STATUS_COMPLETED))->toBe('success')
+            ->and(PatientToothCondition::statusHexColor(PatientToothCondition::STATUS_COMPLETED))->toBe('#10B981');
+    });
+
+    it('reuses the shared tooth number options helper in the relation manager form', function () {
+        $relationManager = File::get(app_path('Filament/Resources/Patients/RelationManagers/ToothConditionsRelationManager.php'));
+
+        expect($relationManager)
+            ->toContain('->options(fn (): array => PatientToothCondition::toothNumberOptions())')
+            ->toContain('PatientToothCondition::statusLabel($state)')
+            ->toContain('PatientToothCondition::statusBadgeColor($state)')
+            ->not->toContain('foreach (PatientToothCondition::getAdultTeethUpper() as $tooth)')
+            ->not->toContain('foreach (PatientToothCondition::getChildTeethUpper() as $tooth)')
+            ->not->toContain('foreach (PatientToothCondition::getChildTeethLower() as $tooth)')
+            ->not->toContain('foreach (PatientToothCondition::getAdultTeethLower() as $tooth)')
+            ->not->toContain('match ($state)');
     });
 });

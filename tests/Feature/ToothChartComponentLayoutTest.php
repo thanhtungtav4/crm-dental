@@ -4,28 +4,43 @@ use Illuminate\Support\Facades\File;
 
 it('uses segmented dentition controls in tooth chart component', function (): void {
     $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
+    $componentPath = app_path('Filament/Forms/Components/ToothChart.php');
+    $viewConfigPath = app_path('Support/ToothChartViewConfig.php');
+    $rowsPartialPath = resource_path('views/filament/forms/components/partials/tooth-chart-rows.blade.php');
     $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $viewConfig = File::get($viewConfigPath);
+    $rowsPartial = File::get($rowsPartialPath);
 
-    expect($blade)->toContain('class="crm-dentition-toggle" role="tablist"');
-    expect($blade)->toContain('class="crm-dentition-option"');
-    expect($blade)->toContain("dentitionMode === 'adult' ? 'is-active' : ''");
-    expect($blade)->toContain("dentitionMode === 'child' ? 'is-active' : ''");
-    expect($blade)->toContain('min-width: 78px; height: 30px; padding: 0 10px;');
-    expect($blade)->toContain('background: var(--crm-primary, #2563eb); color: #fff;');
-    expect($blade)->toContain('color: var(--crm-text-body, #475569);');
-    expect($blade)->toContain('Người lớn');
-    expect($blade)->toContain('Trẻ em');
+    expect($blade)->not->toContain('@php')
+        ->and($blade)->toContain('class="crm-dentition-toggle" role="tablist"');
+    expect($blade)->toContain('@foreach($dentitionOptions as $option)');
+    expect($blade)->toContain("dentitionMode === '{{ \$option['mode'] }}' ? 'is-active' : ''");
+    expect($blade)->toContain('$dentitionOptionActiveStyle');
+    expect($blade)->toContain('$dentitionOptionIdleStyle');
+    expect($blade)->toContain("@include('filament.forms.components.partials.tooth-chart-rows', ['rows' => \$toothRows])");
+    expect($rowsPartial)->toContain("@props(['rows'])");
+    expect($rowsPartial)->toContain('@foreach($rows as $row)');
+    expect($component)->toContain('$viewConfig = app(ToothChartViewConfig::class);');
+    expect($component)->toContain("'dentitionOptions' => \$viewConfig->dentitionOptions()");
+    expect($viewConfig)->toContain("'Người lớn'");
+    expect($viewConfig)->toContain("'Trẻ em'");
 });
 
 it('supports multi-select toggle for mobile and desktop in tooth chart component', function (): void {
     $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
+    $componentPath = app_path('Filament/Forms/Components/ToothChart.php');
+    $viewConfigPath = app_path('Support/ToothChartViewConfig.php');
     $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $viewConfig = File::get($viewConfigPath);
 
     expect($blade)->toContain('multiSelectMode: false');
     expect($blade)->toContain('toggleMultiSelectMode()');
     expect($blade)->toContain('this.multiSelectMode || (event && (event.ctrlKey || event.metaKey))');
     expect($blade)->toContain('Chọn nhiều');
-    expect($blade)->toContain('hỗ trợ mobile');
+    expect($component)->toContain("'selectionHint' => \$viewConfig->selectionHint()");
+    expect($viewConfig)->toContain('hỗ trợ mobile');
 });
 
 it('escapes diagnosis condition codes safely in tooth chart alpine expressions', function (): void {
@@ -40,10 +55,22 @@ it('escapes diagnosis condition codes safely in tooth chart alpine expressions',
 
 it('uses dark-mode friendly modal and legend styling in tooth chart component', function (): void {
     $bladePath = resource_path('views/filament/forms/components/tooth-chart.blade.php');
+    $componentPath = app_path('Filament/Forms/Components/ToothChart.php');
+    $viewConfigPath = app_path('Support/ToothChartViewConfig.php');
+    $legendPartialPath = resource_path('views/filament/forms/components/partials/tooth-chart-legend.blade.php');
     $blade = File::get($bladePath);
+    $component = File::get($componentPath);
+    $viewConfig = File::get($viewConfigPath);
+    $legendPartial = File::get($legendPartialPath);
 
     expect($blade)->toContain('class="crm-modal-close-btn"')
         ->and($blade)->toContain('dark:text-gray-100')
         ->and($blade)->toContain('dark:text-gray-400')
         ->and($blade)->toContain('dark:hover:bg-gray-800/70');
+    expect($blade)->toContain("@include('filament.forms.components.partials.tooth-chart-legend', ['legendItems' => \$treatmentLegend])");
+    expect($legendPartial)->toContain("@props(['legendItems'])");
+    expect($legendPartial)->toContain('@foreach($legendItems as $legendItem)');
+    expect($legendPartial)->toContain('dark:text-gray-300');
+    expect($component)->toContain("'treatmentLegend' => \$viewConfig->treatmentLegend()");
+    expect($viewConfig)->toContain('bg-red-500');
 });

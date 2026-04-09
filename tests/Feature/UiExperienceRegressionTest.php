@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\CustomerCare;
 use App\Filament\Pages\FrontdeskControlCenter;
+use App\Filament\Pages\SystemSettings;
 use App\Filament\Resources\Appointments\Pages\CalendarAppointments;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Branch;
@@ -83,20 +84,39 @@ it('renders accessible tab semantics on customer care and patient workspace page
 
 it('uses a panel modal for calendar rescheduling instead of browser dialogs', function (): void {
     $view = File::get(resource_path('views/filament/appointments/calendar.blade.php'));
+    $calendarPageShell = File::get(resource_path('views/filament/appointments/partials/calendar-page-shell.blade.php'));
+    $calendarFiltersPanel = File::get(resource_path('views/filament/appointments/partials/calendar-filters-panel.blade.php'));
+    $calendarRescheduleModal = File::get(resource_path('views/filament/appointments/partials/calendar-reschedule-modal.blade.php'));
     $calendarShellState = File::get(resource_path('views/filament/appointments/partials/calendar-shell-state.blade.php'));
     $panelProvider = File::get(app_path('Providers/Filament/AdminPanelProvider.php'));
 
     expect($view)
-        ->toContain('@php($viewState = $this->calendarViewState())')
-        ->toContain("x-data=\"@include('filament.appointments.partials.calendar-shell-state')\"")
-        ->toContain('<x-filament::modal')
-        ->toContain('appointment-calendar-reschedule-modal')
-        ->toContain("x-init=\"init(@js(\$viewState['status_colors']))\"")
+        ->toContain("@include('filament.appointments.partials.calendar-page-shell'")
+        ->toContain("'viewState' => \$this->calendarViewState()")
+        ->not->toContain('@php($viewState = $this->calendarViewState())')
         ->not->toContain('Branch::query()')
         ->not->toContain("->role('Doctor')")
         ->not->toContain('function calendar()')
-        ->not->toContain('cdn.jsdelivr.net/npm/fullcalendar')
-        ->toContain('heading="Dời lịch hẹn"')
+        ->not->toContain('cdn.jsdelivr.net/npm/fullcalendar');
+
+    expect($calendarPageShell)
+        ->toContain("x-data=\"@include('filament.appointments.partials.calendar-shell-state', ['panel' => \$viewState['shell_panel']])\"")
+        ->toContain("x-init=\"init(@js(\$viewState['status_colors']))\"")
+        ->toContain("@include('filament.appointments.partials.calendar-filters-panel'")
+        ->toContain("@include('filament.appointments.partials.calendar-reschedule-modal', [")
+        ->toContain("'panel' => \$viewState['reschedule_modal_panel']");
+
+    expect($calendarFiltersPanel)
+        ->toContain("\$panel['status_options']")
+        ->toContain("\$panel['branch_options']")
+        ->toContain("\$panel['doctor_options']");
+
+    expect($calendarRescheduleModal)
+        ->toContain("@props([\n    'panel',\n])")
+        ->toContain('<x-filament::modal')
+        ->toContain(":id=\"\$panel['id']\"")
+        ->toContain(":heading=\"\$panel['heading']\"")
+        ->toContain(":description=\"\$panel['description']\"")
         ->not->toContain('window.prompt')
         ->not->toContain('window.alert')
         ->not->toContain('window.confirm');
@@ -107,10 +127,13 @@ it('uses a panel modal for calendar rescheduling instead of browser dialogs', fu
         ->toContain("Js::make('fullcalendar-global', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js')");
 
     expect($calendarShellState)
+        ->toContain("@props([\n    'panel',\n])")
         ->toContain('new FullCalendar.Calendar(el, {')
         ->toContain('callFetchEvents(startAtIso, endAtIso)')
         ->toContain('submitReschedule()')
-        ->toContain('message.includes(\'trùng lịch\')');
+        ->toContain("const baseUrl = @js(\$panel['create_url'])")
+        ->toContain("@js(\$panel['connection_error_message'])")
+        ->toContain("message.includes(@js(\$panel['conflict_keyword']))");
 });
 
 it('renders the registered fullcalendar asset on the calendar page', function (): void {
@@ -141,4 +164,50 @@ it('renders the patient intake form as grouped sections instead of a flat wall o
         ->assertSee('Liên hệ & tiếp nhận')
         ->assertSee('Phân nhóm & phụ trách')
         ->assertSee('Ghi chú lâm sàng');
+});
+
+it('uses shell partials for system settings and placeholder pages', function (): void {
+    $systemSettingsClass = File::get(app_path('Filament/Pages/SystemSettings.php'));
+    $systemSettingsView = File::get(resource_path('views/filament/pages/system-settings.blade.php'));
+    $systemSettingsShell = File::get(resource_path('views/filament/pages/partials/system-settings-page-shell.blade.php'));
+    $placeholderPageClass = File::get(app_path('Filament/Pages/PlaceholderPage.php'));
+    $placeholderView = File::get(resource_path('views/filament/pages/placeholder.blade.php'));
+    $placeholderShell = File::get(resource_path('views/filament/pages/partials/placeholder-page-shell.blade.php'));
+
+    expect($systemSettingsClass)
+        ->toContain('public function pageViewState(): array');
+
+    expect($systemSettingsView)
+        ->toContain("@include('filament.pages.partials.system-settings-page-shell'")
+        ->toContain("'viewState' => \$this->pageViewState()");
+
+    expect($systemSettingsShell)
+        ->toContain("@include('filament.pages.partials.system-settings-section-panel'")
+        ->not->toContain('$this->getSettingSections()');
+
+    expect($placeholderPageClass)
+        ->toContain('public function pageViewState(): array');
+
+    expect($placeholderView)
+        ->toContain("@include('filament.pages.partials.placeholder-page-shell'")
+        ->toContain("'viewState' => \$this->pageViewState()")
+        ->not->toContain('@php($bullets = $this->getBullets())');
+
+    expect($placeholderShell)
+        ->toContain("\$viewState['badge_label']")
+        ->toContain("\$viewState['status_text']")
+        ->toContain("\$viewState['bullets']");
+});
+
+it('renders the system settings page through the shell partial', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+    $admin->givePermissionTo('View:SystemSettings');
+
+    $this->actingAs($admin)
+        ->get(SystemSettings::getUrl())
+        ->assertOk()
+        ->assertSee('Danh mục khám & điều trị')
+        ->assertSee('Cài đặt tích hợp')
+        ->assertSee('Cấu hình vận hành');
 });

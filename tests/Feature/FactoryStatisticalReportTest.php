@@ -149,15 +149,21 @@ it('renders report stats from page view data instead of inline blade php', funct
     $this->actingAs($manager);
 
     $page = app(FactoryStatistical::class);
-    $getViewDataMethod = new ReflectionMethod($page, 'getViewData');
-    $getViewDataMethod->setAccessible(true);
-    $viewData = $getViewDataMethod->invoke($page);
+    $pageViewState = $page->pageViewState();
+    $pageClass = File::get(app_path('Filament/Pages/Reports/BaseReportPage.php'));
     $blade = File::get(resource_path('views/filament/pages/reports/base-report.blade.php'));
+    $shell = File::get(resource_path('views/filament/pages/reports/partials/report-page-shell.blade.php'));
+    $reportStatCard = File::get(resource_path('views/filament/pages/reports/partials/report-stat-card.blade.php'));
 
     expect($blade)
+        ->toContain("@include('filament.pages.reports.partials.report-page-shell'")
+        ->toContain("'viewState' => \$this->pageViewState()")
         ->not->toContain('@php($stats = $this->getStats())')
-        ->toContain('@if(!empty($stats))')
-        ->toContain('dark:border-gray-700 dark:bg-gray-900/60')
-        ->and($viewData)->toHaveKey('stats')
-        ->and($viewData['stats'])->toBe($page->getStats());
+        ->not->toContain('@if(!empty($stats))')
+        ->and($pageClass)->not->toContain('protected function getViewData(): array')
+        ->and($shell)->toContain("@props([\n    'viewState',\n])")
+        ->and($shell)->toContain("\$viewState['stats_panel']['cards']")
+        ->and($reportStatCard)->toContain("@props([\n    'card',\n])")
+        ->and($pageViewState)->toHaveKey('stats_panel')
+        ->and($pageViewState['stats_panel']['cards'])->toHaveCount(count($page->getStats()));
 });

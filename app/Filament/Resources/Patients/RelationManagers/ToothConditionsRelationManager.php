@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Patients\RelationManagers;
 
 use App\Models\PatientToothCondition;
 use App\Models\ToothCondition;
+use App\Support\ToothChartModalViewState;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -14,13 +15,12 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BadgeColumn;
-use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 
 class ToothConditionsRelationManager extends RelationManager
 {
@@ -40,31 +40,7 @@ class ToothConditionsRelationManager extends RelationManager
                     ->schema([
                         Select::make('tooth_number')
                             ->label('Số răng')
-                            ->options(function () {
-                                $teeth = [];
-
-                                // Adult upper
-                                foreach (PatientToothCondition::getAdultTeethUpper() as $tooth) {
-                                    $teeth[$tooth] = "Răng $tooth (Hàm trên người lớn)";
-                                }
-
-                                // Child upper
-                                foreach (PatientToothCondition::getChildTeethUpper() as $tooth) {
-                                    $teeth[$tooth] = "Răng $tooth (Răng sữa trên)";
-                                }
-
-                                // Child lower
-                                foreach (PatientToothCondition::getChildTeethLower() as $tooth) {
-                                    $teeth[$tooth] = "Răng $tooth (Răng sữa dưới)";
-                                }
-
-                                // Adult lower
-                                foreach (PatientToothCondition::getAdultTeethLower() as $tooth) {
-                                    $teeth[$tooth] = "Răng $tooth (Hàm dưới người lớn)";
-                                }
-
-                                return $teeth;
-                            })
+                            ->options(fn (): array => PatientToothCondition::toothNumberOptions())
                             ->searchable()
                             ->required(),
 
@@ -111,8 +87,7 @@ class ToothConditionsRelationManager extends RelationManager
                         DatePicker::make('completed_at')
                             ->label('Ngày hoàn thành')
                             ->visible(
-                                fn(Get $get): bool =>
-                                $get('treatment_status') === PatientToothCondition::STATUS_COMPLETED
+                                fn (Get $get): bool => $get('treatment_status') === PatientToothCondition::STATUS_COMPLETED
                             ),
 
                         Textarea::make('notes')
@@ -140,8 +115,7 @@ class ToothConditionsRelationManager extends RelationManager
                     ->searchable()
                     ->badge()
                     ->color(
-                        fn(PatientToothCondition $record): string =>
-                        $record->condition?->color ?? 'gray'
+                        fn (PatientToothCondition $record): string => $record->condition?->color ?? 'gray'
                     ),
 
                 TextColumn::make('condition.name')
@@ -153,15 +127,9 @@ class ToothConditionsRelationManager extends RelationManager
                     ->label('Trạng thái ĐT')
                     ->badge()
                     ->formatStateUsing(
-                        fn(string $state): string =>
-                        PatientToothCondition::getStatusOptions()[$state] ?? $state
+                        fn (string $state): string => PatientToothCondition::statusLabel($state)
                     )
-                    ->color(fn(string $state): string => match ($state) {
-                        PatientToothCondition::STATUS_CURRENT => 'gray',
-                        PatientToothCondition::STATUS_IN_TREATMENT => 'danger',
-                        PatientToothCondition::STATUS_COMPLETED => 'success',
-                        default => 'gray',
-                    }),
+                    ->color(fn (string $state): string => PatientToothCondition::statusBadgeColor($state)),
 
                 TextColumn::make('diagnosed_at')
                     ->label('Ngày CĐ')
@@ -199,9 +167,10 @@ class ToothConditionsRelationManager extends RelationManager
                     ->color('info')
                     ->modalHeading('Sơ đồ răng')
                     ->modalWidth('7xl')
-                    ->modalContent(fn() => view('filament.components.tooth-chart-modal', [
-                        'patientId' => $this->ownerRecord->id,
-                        'toothConditions' => $this->ownerRecord->toothConditions()->with('condition')->get(),
+                    ->modalContent(fn () => view('filament.components.tooth-chart-modal', [
+                        'chart' => app(ToothChartModalViewState::class)->build(
+                            $this->ownerRecord->toothConditions()->with('condition')->get(),
+                        ),
                     ])),
             ])
             ->actions([
@@ -217,22 +186,20 @@ class ToothConditionsRelationManager extends RelationManager
                     ->icon('heroicon-o-play')
                     ->color('warning')
                     ->visible(
-                        fn(PatientToothCondition $record): bool =>
-                        $record->treatment_status === PatientToothCondition::STATUS_CURRENT
+                        fn (PatientToothCondition $record): bool => $record->treatment_status === PatientToothCondition::STATUS_CURRENT
                     )
                     ->requiresConfirmation()
-                    ->action(fn(PatientToothCondition $record) => $record->startTreatment()),
+                    ->action(fn (PatientToothCondition $record) => $record->startTreatment()),
                 \Filament\Actions\Action::make('completeTreatment')
                     ->label('')
                     ->tooltip('Hoàn thành điều trị')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(
-                        fn(PatientToothCondition $record): bool =>
-                        $record->treatment_status === PatientToothCondition::STATUS_IN_TREATMENT
+                        fn (PatientToothCondition $record): bool => $record->treatment_status === PatientToothCondition::STATUS_IN_TREATMENT
                     )
                     ->requiresConfirmation()
-                    ->action(fn(PatientToothCondition $record) => $record->completeTreatment()),
+                    ->action(fn (PatientToothCondition $record) => $record->completeTreatment()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

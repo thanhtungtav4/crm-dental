@@ -31,12 +31,35 @@ abstract class BaseReportPage extends Page implements HasTable
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{
+     *     stats_panel: array{
+     *         cards: array<int, array{label:mixed,value:mixed,description:mixed,container_classes:string}>
+     *     }
+     * }
      */
-    protected function getViewData(): array
+    public function pageViewState(): array
     {
         return [
-            'stats' => $this->getStats(),
+            'stats_panel' => $this->statsPanel(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     cards: array<int, array{label:mixed,value:mixed,description:mixed,container_classes:string}>
+     * }
+     */
+    protected function statsPanel(): array
+    {
+        return [
+            'cards' => collect($this->getStats())
+                ->map(fn (array $stat): array => [
+                    'label' => $stat['label'] ?? '',
+                    'value' => $stat['value'] ?? '',
+                    'description' => $stat['description'] ?? null,
+                    'container_classes' => 'rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-900/60',
+                ])
+                ->all(),
         ];
     }
 

@@ -22,6 +22,7 @@ it('renders the upgraded patient exam form controls for session creation and aut
     Livewire::actingAs($doctor)
         ->test(PatientExamForm::class, ['patient' => $patient])
         ->call('createSession')
+        ->assertSee('Đang mở: '.now()->format('d/m/Y'))
         ->assertSee('Ngày khám mới')
         ->assertSee('Thêm phiếu khám')
         ->assertSee('Đang đồng bộ dữ liệu...')

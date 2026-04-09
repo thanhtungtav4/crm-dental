@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-04-03`
+- Last updated: `2026-04-07`
 
 ## Working Rules
 
@@ -331,6 +331,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - checkpoint `2026-04-02` da tiep tuc lam gon `PopupAnnouncementCenter` view-state: `centerViewState()` nay da bo key `has_active_announcement` va giu shell `announcement + polling_interval` la contract thuc te giua component, read-model, va Blade
     - checkpoint `2026-04-03` da tiep tuc chuyen `ViewPatient` va `PopupAnnouncementCenter` sang computed shell (`workspaceViewState`, `viewState`) thay vi getter legacy, de regression manual-object goi method shell truc tiep va runtime Livewire 3 giu mot contract nhat quan hon
     - checkpoint `2026-04-03` da tiep tuc chuyen `CustomerCare` sang computed shell `slaSummary`, dong thoi chot `ConversationInbox` sang bo computed shells (`conversationList`, `selectedConversation`, `branchOptions`, `assignableStaffOptions`, `conversationAssigneeOptions`, `handoffPriorityOptions`, `handoffStatusOptions`, `inboxTabOptions`, `inboxStats`); trong lane dang lam, `app/Filament` + `app/Livewire` khong con public `get*Property()` legacy nao nua
+    - checkpoint `2026-04-04` da chot them lane page-shell/read-model presentation cho `ViewPatient`, `PopupAnnouncementCenter`, `ConversationInbox`, `CustomerCare`, `CalendarAppointments`, `SystemSettings`, `DeliveryOpsCenter`, `FrontdeskControlCenter`, va `PlaceholderPage`: `ViewPatient` da doi sang `activeWorkspaceTabView()` + tab partials; `PopupAnnouncementCenter` da co shell partial va payload `has_announcement` / `aria_live`; `ConversationInbox` / `CustomerCare` da dung `inboxViewState()` / `careViewState()` de render queue/detail/SLA panels; `CalendarAppointments` da tach shell header/metrics/filters/modal sang partials va dung presentation payload cho metric/filter state; `SystemSettings` va `PlaceholderPage` da dung `pageViewState()` + shell partials; `DeliveryOpsCenter` va `FrontdeskControlCenter` da gom chung `pageViewState()` qua trait `BuildsControlCenterPageViewState`
+    - checkpoint `2026-04-07` da tiep tuc dong bo lane `clinical form presentation`: `ToothChart` da duoc nang thanh custom Filament field co view data rieng, `TreatmentPlanForm` va `ClinicalNotesRelationManager` khong con dung `ViewField` + `@php` de boot `conditionsJson / conditionOrder / dentition state path`, `ToothChartModalViewState` da gom presenter contract cho `tooth-chart-modal`, va `InstallmentPlan` da co model-backed presentation methods cho `installment-schedule` modal; sau batch nay `resources/views/filament` + `resources/views/livewire` khong con `@php` inline nao trong current branch checkpoint
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
     - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
@@ -404,6 +406,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da mo rong `AppointmentReportReadModelService` sang `CalendarAppointments` cho weekly operational status metrics, de page calendar khong con tu giu raw branch-scoped count query rieng trong `getOperationalStatusMetrics()`
     - da tao `ReportSnapshotComparisonService` de `CompareReportSnapshots` dung chung drift-aware metric diff contract thay vi command tu map numeric/scalar delta rieng
     - da tao `ReportSnapshotSlaService` de `CheckSnapshotSla` dung chung SLA evaluation + missing-placeholder contract thay vi command tu classify `on_time / late / stale / missing` va insert placeholder snapshot
+    - checkpoint `2026-04-07` da tiep tuc mo rong `BaseReportPage` sang `pageViewState()` + shell partial chung cho stats cards, de `FactoryStatistical` va cac report con doc presentation contract cho stat cards thay vi giu `@php($stats = $this->getStats())` va markup stats inline trong `base-report.blade.php`
 - Tests needed:
   - report scope/export tests
   - performance/explain checks cho heavy paths
@@ -467,6 +470,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - checkpoint `2026-04-02` da tiep tuc ha `renderedRecentLogs`, `renderedActiveSecretRotations`, `renderedProviderHealthCards`, va cac panel `secretRotation / providerHealth / auditLog` xuong helper noi bo, de regression khoa truc tiep panel payload trong `pageViewState` thay vi tiep tuc neo vao computed adapters cua page
     - checkpoint `2026-04-02` da tiep tuc ha `providerActionGroups` va `providerSupportPanels` xuong helper noi bo, de regression khoa `providerPanels/support_sections` la render contract thuc te thay vi computed adapters trung gian
     - checkpoint `2026-04-03` da tiep tuc chuyen `IntegrationSettings` sang computed shell `pageViewState`, de page control-plane nay khop hon voi Livewire 3 va regression manual-object chi con khoa method shell/public contract
+    - checkpoint `2026-04-04` da chot them lane shell/presentation contract cho `IntegrationSettings`, `OpsControlCenter`, va `ZaloZns`: `provider-health`, `dashboard summary`, `control-plane sections`, `field renderers`, `grace rotations`, va `OPS detail cards` da dung partial/state chung; `IntegrationSettings`, `OpsControlCenter`, va `ZaloZns` da tiep tuc giu `pageViewState()` / `dashboardViewState()` la shell contract chinh, giam them adapter state va markup lap
     - da tiep tuc dua `ZaloZns` tu state phang sang panel-state (`summary_panel`, `provider_health_panel`, `triage_panel`, `guidance_panel`), de page triage dung cung pattern view-state voi `IntegrationSettings` / `OpsControlCenter`
     - da tiep tuc gom hai khung note cua `ZaloZns` (`Triage nhanh`, `Gợi ý xử lý`) vao partial chung `control-plane-note-panel`, de page ZNS triage khong con giu hai block markup tach biet trong Blade
     - da tiep tuc nang `ZaloZns` len `note_panels`, de dashboard partial co the loop note payload theo cung contract thay vi van phai giu adapter rieng cho `triage_panel` va `guidance_panel`

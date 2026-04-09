@@ -1,3 +1,7 @@
+@props([
+    'panel',
+])
+
 {
     componentId: @js($this->getId()),
     calendar: null,
@@ -7,7 +11,7 @@
         doctorId: '',
     },
     rescheduleDialog: {
-        modalId: 'appointment-calendar-reschedule-modal',
+        modalId: @js($panel['modal_id']),
         appointmentId: null,
         appointmentTitle: '',
         startAtIso: '',
@@ -46,7 +50,7 @@
             editable: true,
             eventDurationEditable: false,
             dateClick: (info) => {
-                const baseUrl = @json(\App\Filament\Resources\Appointments\AppointmentResource::getUrl('create'))
+                const baseUrl = @js($panel['create_url'])
                 const params = new URLSearchParams()
                 params.set('date', info.dateStr)
                 if (this.filters.branchId) params.set('branch_id', this.filters.branchId)
@@ -102,7 +106,7 @@
     async callReschedule(appointmentId, startAtIso, force, reason) {
         const component = window.Livewire?.find(this.componentId)
         if (!component) {
-            return { ok: false, message: 'Không thể kết nối tới phiên làm việc.' }
+            return { ok: false, message: @js($panel['connection_error_message']) }
         }
 
         return await component.call(
@@ -134,7 +138,7 @@
     },
     resetRescheduleDialog() {
         this.rescheduleDialog = {
-            modalId: 'appointment-calendar-reschedule-modal',
+            modalId: @js($panel['modal_id']),
             appointmentId: null,
             appointmentTitle: '',
             startAtIso: '',
@@ -185,7 +189,7 @@
         const normalizedReason = String(this.rescheduleDialog.reason || '').trim()
 
         if (!normalizedReason) {
-            this.rescheduleDialog.errorMessage = 'Vui lòng nhập lý do dời lịch hẹn.'
+            this.rescheduleDialog.errorMessage = @js($panel['reason_required_message'])
             return
         }
 
@@ -202,7 +206,7 @@
                 normalizedReason,
             )
         } catch (error) {
-            this.rescheduleDialog.errorMessage = 'Không thể kết nối tới phiên làm việc.'
+            this.rescheduleDialog.errorMessage = @js($panel['connection_error_message'])
             this.rescheduleDialog.isSubmitting = false
 
             return
@@ -216,9 +220,9 @@
             return
         }
 
-        const message = String(result?.message || 'Không thể dời lịch hẹn.')
+        const message = String(result?.message || @js($panel['default_error_message']))
 
-        if (!this.rescheduleDialog.force && message.includes('trùng lịch')) {
+        if (!this.rescheduleDialog.force && message.includes(@js($panel['conflict_keyword']))) {
             this.rescheduleDialog.conflictMessage = message
             this.rescheduleDialog.force = true
             this.rescheduleDialog.isSubmitting = false
