@@ -246,6 +246,21 @@ class TreatmentPlan extends Model
         return app(TreatmentPlanWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
+    public function approve(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->approve($this, $actorId);
+    }
+
+    public function start(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->start($this, $actorId);
+    }
+
+    public function complete(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->complete($this, $actorId);
+    }
+
     public function sessions()
     {
         return $this->hasMany(TreatmentSession::class);
