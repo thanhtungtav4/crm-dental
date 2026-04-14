@@ -212,9 +212,9 @@ class ClinicalResult extends Model
     /**
      * @param  array<string, mixed>|null  $payload
      */
-    public function markPreliminary(?array $payload = null, ?string $interpretation = null, ?string $notes = null): void
+    public function markPreliminary(?array $payload = null, ?string $interpretation = null, ?string $notes = null): self
     {
-        app(ClinicalResultWorkflowService::class)->markPreliminary(
+        return app(ClinicalResultWorkflowService::class)->markPreliminary(
             result: $this,
             payload: $payload,
             interpretation: $interpretation,
@@ -231,8 +231,8 @@ class ClinicalResult extends Model
         ?string $interpretation = null,
         ?string $notes = null,
         ?string $evidenceOverrideReason = null,
-    ): void {
-        app(ClinicalResultWorkflowService::class)->finalize(
+    ): self {
+        return app(ClinicalResultWorkflowService::class)->finalize(
             result: $this,
             verifiedBy: $verifiedBy,
             payload: $payload,
@@ -245,9 +245,9 @@ class ClinicalResult extends Model
     /**
      * @param  array<string, mixed>|null  $payload
      */
-    public function amend(?array $payload = null, ?string $interpretation = null, ?string $notes = null): void
+    public function amend(?array $payload = null, ?string $interpretation = null, ?string $notes = null): self
     {
-        app(ClinicalResultWorkflowService::class)->amend(
+        return app(ClinicalResultWorkflowService::class)->amend(
             result: $this,
             payload: $payload,
             interpretation: $interpretation,

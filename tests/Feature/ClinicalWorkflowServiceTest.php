@@ -135,6 +135,39 @@ it('records managed audit context when clinical result workflow service finalize
         ->and(data_get($orderAuditLog?->context, 'reason'))->toBe('Ket qua chi dinh da duoc chot.');
 });
 
+it('returns transitioned clinical results from model workflow boundaries', function (): void {
+    [$order, $doctor] = makeClinicalWorkflowFixture([
+        'status' => ClinicalOrder::STATUS_IN_PROGRESS,
+    ]);
+
+    $this->actingAs($doctor);
+
+    $result = ClinicalResult::query()->create([
+        'clinical_order_id' => $order->id,
+        'status' => ClinicalResult::STATUS_DRAFT,
+        'payload' => ['attachment' => 'xray/model-boundary.jpg'],
+    ]);
+
+    $preliminaryResult = $result->markPreliminary(
+        payload: ['attachment' => 'xray/model-boundary-preliminary.jpg'],
+        interpretation: 'Can doi chieu them.',
+        notes: 'Preliminary via model boundary',
+    );
+
+    $finalResult = $preliminaryResult->finalize(
+        verifiedBy: $doctor->id,
+        payload: ['attachment' => 'xray/model-boundary-final.jpg'],
+        interpretation: 'Da chot ket qua.',
+        notes: 'Finalize via model boundary',
+    );
+
+    expect($preliminaryResult)->toBeInstanceOf(ClinicalResult::class)
+        ->and($preliminaryResult->status)->toBe(ClinicalResult::STATUS_PRELIMINARY)
+        ->and($finalResult)->toBeInstanceOf(ClinicalResult::class)
+        ->and($finalResult->status)->toBe(ClinicalResult::STATUS_FINAL)
+        ->and($finalResult->verified_by)->toBe($doctor->id);
+});
+
 it('blocks raw clinical order and result status changes outside workflow services', function (): void {
     [$order, $doctor] = makeClinicalWorkflowFixture([
         'status' => ClinicalOrder::STATUS_IN_PROGRESS,
