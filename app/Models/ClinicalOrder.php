@@ -178,18 +178,18 @@ class ClinicalOrder extends Model
         ?int $actorId = null,
         ?string $reason = null,
         string $trigger = 'manual_in_progress',
-    ): void {
-        app(ClinicalOrderWorkflowService::class)->markInProgress($this, $actorId, $reason, $trigger);
+    ): self {
+        return app(ClinicalOrderWorkflowService::class)->markInProgress($this, $actorId, $reason, $trigger);
     }
 
-    public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): void
+    public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): self
     {
-        app(ClinicalOrderWorkflowService::class)->markCompleted($this, $actorId, $reason, $trigger);
+        return app(ClinicalOrderWorkflowService::class)->markCompleted($this, $actorId, $reason, $trigger);
     }
 
-    public function cancel(?string $reason = null, ?int $actorId = null): void
+    public function cancel(?string $reason = null, ?int $actorId = null): self
     {
-        app(ClinicalOrderWorkflowService::class)->cancel($this, $reason, $actorId);
+        return app(ClinicalOrderWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed

@@ -129,7 +129,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `ReceiptExpense` voi workflow service canonical, model guard, table/page actions co ly do, va structured audit metadata.
   - `RRB-009` da mo rong them sang `MaterialIssueNote` voi workflow service canonical, model guard, table/page actions co ly do, va transition audit metadata.
   - `RRB-009` da mo rong them sang `InsuranceClaim` voi workflow service canonical, managed transition context, va payment-linked audit metadata.
-  - `RRB-009` da bo sung `ClinicalOrder::markInProgress()` boundary co `reason` / `actor` / `trigger` noi ve `ClinicalOrderWorkflowService`, de entry point cap nhat in-progress di qua model layer thay vi service call truc tiep.
+  - `RRB-009` da bo sung `ClinicalOrder::markInProgress()` boundary co `reason` / `actor` / `trigger` va chuan hoa `markCompleted()` / `cancel()` tra ve model da transition, de entry points workflow chi dinh di qua model layer nhat quan hon thay vi service call truc tiep.
   - `RRB-009` da bo sung `InsuranceClaim::submit()` / `approve()` / `deny()` / `resubmit()` / `markPaid()` noi ve `InsuranceClaimWorkflowService`, de entry points ho so bao hiem di qua model layer thay vi service call truc tiep.
   - `RRB-009` da mo rong them sang `ClinicalOrder` / `ClinicalResult` voi workflow service canonical, managed transition context, va EMR audit metadata co `reason` / `trigger`.
   - `RRB-009` da mo rong them sang `CareTicket/Note` voi phan tach `manual update` / `canonical transition`, model guard raw status update, va audit metadata co `trigger` / `reason`.

@@ -64,6 +64,29 @@ it('records managed audit context when clinical order is marked in progress thro
         ->and(data_get($auditLog?->context, 'status_to'))->toBe(ClinicalOrder::STATUS_IN_PROGRESS);
 });
 
+it('returns transitioned clinical orders from model workflow boundaries', function (): void {
+    [$order, $doctor] = makeClinicalWorkflowFixture();
+    [$cancelOrder, $cancelDoctor] = makeClinicalWorkflowFixture([
+        'status' => ClinicalOrder::STATUS_IN_PROGRESS,
+    ]);
+
+    $this->actingAs($doctor);
+
+    $inProgressOrder = $order->markInProgress($doctor->id, 'Bat dau', 'model_in_progress');
+    $completedOrder = $inProgressOrder->markCompleted($doctor->id, 'Hoan tat', 'model_complete');
+
+    $this->actingAs($cancelDoctor);
+
+    $cancelledOrder = $cancelOrder->cancel('Dung chi dinh', $cancelDoctor->id);
+
+    expect($inProgressOrder)->toBeInstanceOf(ClinicalOrder::class)
+        ->and($inProgressOrder->status)->toBe(ClinicalOrder::STATUS_IN_PROGRESS)
+        ->and($completedOrder)->toBeInstanceOf(ClinicalOrder::class)
+        ->and($completedOrder->status)->toBe(ClinicalOrder::STATUS_COMPLETED)
+        ->and($cancelledOrder)->toBeInstanceOf(ClinicalOrder::class)
+        ->and($cancelledOrder->status)->toBe(ClinicalOrder::STATUS_CANCELLED);
+});
+
 it('records managed audit context when clinical result workflow service finalizes a result', function (): void {
     [$order, $doctor] = makeClinicalWorkflowFixture([
         'status' => ClinicalOrder::STATUS_IN_PROGRESS,
