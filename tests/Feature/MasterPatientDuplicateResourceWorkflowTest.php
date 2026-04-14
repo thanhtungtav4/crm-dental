@@ -178,6 +178,60 @@ it('allows a manager with full branch coverage to merge and ignore MPI duplicate
             ->exists())->toBeTrue();
 });
 
+it('returns transitioned duplicate cases from model workflow boundaries', function (): void {
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $manager->id,
+        'branch_id' => $branchB->id,
+        'is_primary' => false,
+        'is_active' => true,
+        'assigned_from' => null,
+        'assigned_until' => null,
+    ]);
+
+    $patientA = makePatientForBranch($branchA, 'Model Canonical', '0903000001');
+    $patientB = makePatientForBranch($branchB, 'Model Duplicate', '0903000001', 'model@example.test');
+    $patientC = makePatientForBranch($branchA, 'Ignore Canonical Model', '0903000011');
+    $patientD = makePatientForBranch($branchB, 'Ignore Duplicate Model', '0903000011', 'ignore-model@example.test');
+
+    $resolvedCase = MasterPatientDuplicate::factory()->create([
+        'patient_id' => $patientB->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'phone',
+        'identity_value' => '0903000001',
+        'matched_patient_ids' => [$patientA->id, $patientB->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id],
+        'status' => MasterPatientDuplicate::STATUS_OPEN,
+    ]);
+
+    $ignoredCase = MasterPatientDuplicate::factory()->create([
+        'patient_id' => $patientD->id,
+        'branch_id' => $branchB->id,
+        'identity_type' => 'phone',
+        'identity_value' => '0903000011',
+        'matched_patient_ids' => [$patientC->id, $patientD->id],
+        'matched_branch_ids' => [$branchA->id, $branchB->id],
+        'status' => MasterPatientDuplicate::STATUS_OPEN,
+    ]);
+
+    $this->actingAs($manager);
+
+    $resolvedDuplicate = $resolvedCase->markResolved($manager->id, 'Resolved via model boundary');
+    $ignoredDuplicate = $ignoredCase->markIgnored($manager->id, 'Ignored via model boundary');
+
+    expect($resolvedDuplicate)->toBeInstanceOf(MasterPatientDuplicate::class)
+        ->and($resolvedDuplicate->status)->toBe(MasterPatientDuplicate::STATUS_RESOLVED)
+        ->and($ignoredDuplicate)->toBeInstanceOf(MasterPatientDuplicate::class)
+        ->and($ignoredDuplicate->status)->toBe(MasterPatientDuplicate::STATUS_IGNORED);
+});
+
 it('blocks direct duplicate case status mutations outside the workflow service', function (): void {
     $duplicateCase = MasterPatientDuplicate::factory()->create([
         'status' => MasterPatientDuplicate::STATUS_OPEN,

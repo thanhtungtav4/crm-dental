@@ -140,6 +140,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da keo them `Payment` refund / reversal audit metadata ve pattern `reason` / `trigger` / canonical identifiers.
   - `RRB-009` da bo sung `FactoryOrder::markOrdered()` / `markInProgress()` / `markDelivered()` noi ve `FactoryOrderWorkflowService`, de entry points workflow labo di qua model layer thay vi service call truc tiep.
   - `RRB-009` da mo rong them sang `MasterPatientDuplicate / MasterPatientMerge` voi model guard raw status update, `MasterPatientDuplicateWorkflowService` cho `ignore` / `merge-resolution` / `rollback restore`, va loai bo mass-update bypass o `MasterPatientIndexService`.
+  - `RRB-009` da chuan hoa `MasterPatientDuplicate::markResolved()` / `markIgnored()` tra ve model da transition, de MPI duplicate queue co model boundary nhat quan hon voi cac workflow lane khac.
   - `RRB-009` da mo rong them sang `WebLeadEmailDelivery` voi model guard raw status update, canonical `markProcessing` / `markSent` / `markFailure` / `resetForReplay`, va service mail noi bo di qua managed workflow path.
   - `RRB-009` da mo rong them sang `ZnsCampaignDelivery` voi model guard raw status update, canonical `markSent` / `markFailure`, `claimForProcessing`, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`.
   - `RRB-009` da bo sung boundary `ZnsCampaign::cancel()` noi ve `ZnsCampaignWorkflowService`, de entry point huy campaign di qua workflow service thay vi caller tu doi status.
