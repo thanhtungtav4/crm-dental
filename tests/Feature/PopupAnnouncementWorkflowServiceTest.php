@@ -71,3 +71,33 @@ it('cancels popup announcements through the canonical model workflow method', fu
         ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(PopupAnnouncement::STATUS_CANCELLED)
         ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('model_cancel');
 });
+
+it('publishes popup announcements through the canonical model workflow method', function (): void {
+    $manager = User::factory()->create();
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $announcement = PopupAnnouncement::query()->create([
+        'title' => 'Popup publish qua model',
+        'message' => 'Noi dung popup publish qua model',
+        'status' => PopupAnnouncement::STATUS_DRAFT,
+        'target_role_names' => ['Manager'],
+        'target_branch_ids' => [],
+        'starts_at' => null,
+        'published_at' => null,
+    ]);
+
+    $announcement->publish('model_publish');
+
+    $publishAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_POPUP_ANNOUNCEMENT)
+        ->where('entity_id', $announcement->id)
+        ->where('action', AuditLog::ACTION_UPDATE)
+        ->latest('id')
+        ->first();
+
+    expect($announcement->fresh()->status)->toBe(PopupAnnouncement::STATUS_PUBLISHED)
+        ->and($announcement->fresh()->published_at)->not->toBeNull()
+        ->and(data_get($publishAudit, 'metadata.status_to'))->toBe(PopupAnnouncement::STATUS_PUBLISHED)
+        ->and(data_get($publishAudit, 'metadata.reason'))->toBe('model_publish');
+});

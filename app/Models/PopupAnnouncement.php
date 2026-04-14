@@ -240,6 +240,11 @@ class PopupAnnouncement extends Model
         return app(PopupAnnouncementWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
+    public function publish(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PopupAnnouncementWorkflowService::class)->publish($this, $reason, $actorId);
+    }
+
     /**
      * @return array<string, string>
      */

@@ -235,6 +235,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `BranchTransferRequest` vao managed workflow context trong `PatientBranchTransferService`, model guard raw status update, va observer audit cho `request` / `apply` / `reject`
     - da keo observer-based workflow audit cua `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
     - da dua `PopupAnnouncement` vao workflow service canonical, guided actions, va audit-reason metadata tren nhanh backlog
+    - da bo sung `PopupAnnouncement::publish()` canonical boundary noi ve `PopupAnnouncementWorkflowService`, de entry point publish di qua model layer thay vi goi service truc tiep
     - da bo sung `PopupAnnouncementDelivery` model boundaries `markSeenViaWorkflow()` / `acknowledgeViaWorkflow()` / `dismissViaWorkflow()` noi ve workflow service, de delivery status transitions di qua model layer thay vi call service truc tiep
     - da dua `PlanItem` mutation lane vao workflow service canonical, guided actions, va audit transition metadata tren nhanh backlog
     - da dua `PatientTreatmentPlanSection` draft lane vao `PatientTreatmentPlanDraftService`, de `prepare draft`, `sync diagnosis tu latest exam`, `resolve latest-or-create plan`, va `persist draft items` di qua mot workflow service canon thay vi nam truc tiep trong Livewire component

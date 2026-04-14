@@ -119,6 +119,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `VisitEpisode` voi canonical `VisitEpisodeService`, model guard raw status update, va smoke flow appointment-to-encounter cap nhat theo workflow contract.
   - `RRB-009` da mo rong them sang `BranchTransferRequest` de dua workflow `request / apply / reject` vao managed context va observer audit co `trigger`.
   - `RRB-009` dang mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
+  - `RRB-009` da bo sung `PopupAnnouncement::publish()` noi ve `PopupAnnouncementWorkflowService`, de entry point publish di qua model layer thay vi goi service truc tiep.
   - `RRB-009` da bo sung `PopupAnnouncementDelivery` model boundaries `markSeenViaWorkflow()` / `acknowledgeViaWorkflow()` / `dismissViaWorkflow()` noi ve workflow service, de delivery status transitions di qua model layer thay vi call service truc tiep.
   - checkpoint `2026-04-13` da chot them destructive hardening cho `PopupAnnouncement`: page/table da bo delete/restore/force-delete surfaces, policy hard-deny `delete/restore/forceDelete`, model da co delete guard va them `cancel()` canonical boundary de popup noi bo di qua workflow thay vi xoa truc tiep.
   - `RRB-009` da mo rong them sang `PlanItem` voi workflow service canonical cho start / complete / cancel / complete-visit lanes.
