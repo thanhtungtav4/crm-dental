@@ -217,6 +217,16 @@ class ZnsCampaign extends Model
         return app(ZnsCampaignWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
+    public function schedule(mixed $scheduledAt = null, ?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ZnsCampaignWorkflowService::class)->schedule($this, $scheduledAt, $reason, $actorId);
+    }
+
+    public function runNow(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ZnsCampaignWorkflowService::class)->runNow($this, $reason, $actorId);
+    }
+
     public static function generateCode(): string
     {
         $prefix = now()->format('YmdHis');

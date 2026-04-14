@@ -150,6 +150,37 @@ it('supports cancellation through the model boundary', function (): void {
     expect($latestLog?->action)->toBe(AuditLog::ACTION_CANCEL);
 });
 
+it('supports scheduling and running campaigns through the model boundary', function (): void {
+    $branch = Branch::factory()->create();
+    $admin = User::factory()->create(['branch_id' => $branch->id]);
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Boundary schedule campaign',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_DRAFT,
+    ]);
+
+    $scheduledCampaign = $campaign->schedule(now()->addHour(), 'model_schedule', $admin->id);
+
+    expect($scheduledCampaign->status)->toBe(ZnsCampaign::STATUS_SCHEDULED)
+        ->and($scheduledCampaign->scheduled_at)->not->toBeNull();
+
+    $runningCampaign = $scheduledCampaign->runNow('model_run', $admin->id);
+
+    expect($runningCampaign->status)->toBe(ZnsCampaign::STATUS_RUNNING)
+        ->and($runningCampaign->started_at)->not->toBeNull();
+
+    $latestLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_AUTOMATION)
+        ->where('entity_id', $campaign->id)
+        ->latest('id')
+        ->first();
+
+    expect($latestLog?->action)->toBe(AuditLog::ACTION_RUN);
+});
+
 it('wires zns resource surfaces through workflow service and removes delete actions', function (): void {
     $createPage = File::get(app_path('Filament/Resources/ZnsCampaigns/Pages/CreateZnsCampaign.php'));
     $editPage = File::get(app_path('Filament/Resources/ZnsCampaigns/Pages/EditZnsCampaign.php'));
