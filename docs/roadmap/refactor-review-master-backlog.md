@@ -256,6 +256,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da chuan hoa `MasterPatientDuplicate::markResolved()` / `markIgnored()` tra ve model da transition, de MPI duplicate queue co model boundary nhat quan hon voi cac workflow lane khac
     - da chuan hoa `OperationalKpiAlert::markAcknowledged()` / `markResolved()` tra ve model da transition, de KPI alert action boundaries co contract nhat quan hon voi cac workflow lanes dang su dung model-level transition entry points
     - da dua `WebLeadEmailDelivery` vao managed workflow contract voi model guard raw status update, canonical resend / claim / sent / fail mutation methods, va giu service mail noi bo di qua canonical path
+    - da chuan hoa `WebLeadEmailDelivery::markProcessing()` / `markSent()` / `markFailure()` / `resetForReplay()` tra ve model da transition, de lane outbound web-lead internal mail co model boundary return contract nhat quan hon voi cac workflow lanes khac
     - da dua `ZnsCampaignDelivery` vao managed workflow contract voi model guard raw status update, canonical sent / fail mutation methods, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`
     - da bo sung `ZnsCampaign::cancel()` canonical boundary noi ve `ZnsCampaignWorkflowService`, de entry point huy campaign di qua workflow service thay vi caller tu doi trang thai
     - da bo sung `ZnsCampaign::schedule()` / `runNow()` canonical boundaries noi ve `ZnsCampaignWorkflowService`, de entry points len lich / chay ngay di qua model layer thay vi goi service truc tiep
