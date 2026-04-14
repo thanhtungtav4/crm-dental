@@ -72,6 +72,31 @@ it('records audit metadata when approving an insurance claim through the model b
         ->and($auditLog?->metadata['reason'] ?? null)->toBe('model_approve');
 });
 
+it('returns transitioned records from insurance claim model boundaries', function (): void {
+    [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
+
+    $this->actingAs($manager);
+
+    $submittedClaim = $claim->submit('model_submit', $manager->id);
+    $approvedClaim = $submittedClaim->approve(260_000, 'model_approve', $manager->id);
+
+    expect($submittedClaim)->toBeInstanceOf(InsuranceClaim::class)
+        ->and($submittedClaim->status)->toBe(InsuranceClaim::STATUS_SUBMITTED)
+        ->and($approvedClaim)->toBeInstanceOf(InsuranceClaim::class)
+        ->and($approvedClaim->status)->toBe(InsuranceClaim::STATUS_APPROVED);
+
+    $payment = $approvedClaim->markPaid(
+        amount: 260_000,
+        method: 'transfer',
+        note: 'Payout via model boundary',
+        reason: 'model_paid',
+        actorId: $manager->id,
+    );
+
+    expect($payment->payment_source)->toBe('insurance')
+        ->and($approvedClaim->fresh()->status)->toBe(InsuranceClaim::STATUS_PAID);
+});
+
 it('records payment context when marking an insurance claim paid through the workflow service', function (): void {
     [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
 

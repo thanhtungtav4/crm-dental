@@ -172,29 +172,29 @@ class InsuranceClaim extends Model
         return in_array($toStatus, self::TRANSITIONS[$fromStatus] ?? [], true);
     }
 
-    public function submit(?string $reason = null, ?int $actorId = null): void
+    public function submit(?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->submit($this, $reason, $actorId);
+        return app(InsuranceClaimWorkflowService::class)->submit($this, $reason, $actorId);
     }
 
-    public function approve(?float $amountApproved = null, ?string $reason = null, ?int $actorId = null): void
+    public function approve(?float $amountApproved = null, ?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved, $reason, $actorId);
+        return app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved, $reason, $actorId);
     }
 
-    public function deny(string $reasonCode, ?string $note = null, ?string $reason = null, ?int $actorId = null): void
+    public function deny(string $reasonCode, ?string $note = null, ?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note, $reason, $actorId);
+        return app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note, $reason, $actorId);
     }
 
-    public function resubmit(?string $reason = null, ?int $actorId = null): void
+    public function resubmit(?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->resubmit($this, $reason, $actorId);
+        return app(InsuranceClaimWorkflowService::class)->resubmit($this, $reason, $actorId);
     }
 
-    public function cancel(?string $reason = null, ?int $actorId = null): void
+    public function cancel(?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->cancel($this, $reason, $actorId);
+        return app(InsuranceClaimWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     public function markPaid(
