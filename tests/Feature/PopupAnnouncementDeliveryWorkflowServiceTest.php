@@ -39,6 +39,40 @@ it('marks popup deliveries as seen through the workflow service', function (): v
         ->and($updatedDelivery->last_displayed_at)->not->toBeNull();
 });
 
+it('supports workflow delivery transitions through the model boundary', function (): void {
+    $user = User::factory()->create();
+    $user->assignRole('CSKH');
+
+    $announcement = PopupAnnouncement::query()->create([
+        'title' => 'Popup workflow boundary',
+        'message' => 'Boundary flow',
+        'status' => PopupAnnouncement::STATUS_PUBLISHED,
+        'target_role_names' => ['CSKH'],
+        'target_branch_ids' => [],
+        'require_ack' => false,
+        'starts_at' => now()->subMinute(),
+        'published_at' => now()->subMinute(),
+    ]);
+
+    $delivery = PopupAnnouncementDelivery::query()->create([
+        'popup_announcement_id' => $announcement->id,
+        'user_id' => $user->id,
+        'status' => PopupAnnouncementDelivery::STATUS_PENDING,
+        'delivered_at' => now()->subMinute(),
+        'display_count' => 0,
+    ]);
+
+    $seenDelivery = $delivery->markSeenViaWorkflow();
+
+    expect($seenDelivery->status)->toBe(PopupAnnouncementDelivery::STATUS_SEEN)
+        ->and($seenDelivery->seen_at)->not->toBeNull();
+
+    $dismissedDelivery = $seenDelivery->dismissViaWorkflow();
+
+    expect($dismissedDelivery->status)->toBe(PopupAnnouncementDelivery::STATUS_DISMISSED)
+        ->and($dismissedDelivery->dismissed_at)->not->toBeNull();
+});
+
 it('prevents dismissing popup deliveries that require acknowledgement', function (): void {
     $user = User::factory()->create();
     $user->assignRole('Doctor');

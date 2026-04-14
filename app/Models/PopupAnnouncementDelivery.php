@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PopupAnnouncementDeliveryWorkflowService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -108,5 +109,20 @@ class PopupAnnouncementDelivery extends Model
             'status' => self::STATUS_DISMISSED,
             'dismissed_at' => $now,
         ])->save();
+    }
+
+    public function markSeenViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->markSeen($this);
+    }
+
+    public function acknowledgeViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->acknowledge($this);
+    }
+
+    public function dismissViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->dismiss($this);
     }
 }
