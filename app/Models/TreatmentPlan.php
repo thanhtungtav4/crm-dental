@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TreatmentPlanWorkflowService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -238,6 +239,11 @@ class TreatmentPlan extends Model
                 ]);
             }
         }
+    }
+
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     public function sessions()

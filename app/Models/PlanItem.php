@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlanItemWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -276,6 +277,11 @@ class PlanItem extends Model
             ?? $this->treatmentPlan?->patient?->first_branch_id;
 
         return $branchId !== null ? (int) $branchId : null;
+    }
+
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     // Helper Methods

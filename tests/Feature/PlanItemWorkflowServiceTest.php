@@ -76,6 +76,25 @@ it('records completion audit and keeps patient timeline friendly metadata for co
         ]);
 });
 
+it('cancels plan items through the canonical model boundary', function (): void {
+    [$planItem, , , $doctor] = makePlanItemWorkflowFixture();
+    $this->actingAs($doctor);
+
+    $planItem->cancel('model_boundary_cancel', $doctor->id);
+
+    $cancelAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_PLAN_ITEM)
+        ->where('entity_id', $planItem->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
+    expect($planItem->fresh()->status)->toBe(PlanItem::STATUS_CANCELLED)
+        ->and($cancelAudit)->not->toBeNull()
+        ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('model_boundary_cancel')
+        ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(PlanItem::STATUS_CANCELLED);
+});
+
 /**
  * @return array{0: PlanItem, 1: Patient, 2: Branch, 3: User}
  */

@@ -10,7 +10,7 @@
   - `docs/reviews/plans/*.md`
 - Canonical state rule:
   - Khi module review co ca phan review lich su va phan `Re-audit Summary`, `Re-audit Update`, hoac `Re-audit Outcome`, trang thai moi nhat va `00-master-index.md` la source of truth.
-- Last updated: `2026-04-13`
+- Last updated: `2026-04-14`
 
 ## Executive Summary
 
@@ -46,6 +46,8 @@
 - Checkpoint `2026-04-10` da tiep tuc mo rong `RRB-011` o lane `FIN`: `ReceiptExpense` da hard-deny `delete/restore/forceDelete` o policy va model delete guard da buoc phieu thu/chi di qua workflow state boundary thay vi xoa truc tiep.
 - Checkpoint `2026-04-14` da tiep tuc chuan hoa lane `FIN`: `ReceiptExpense` da co them model boundaries `approve()` / `post()` noi ve `ReceiptExpenseWorkflowService`, va `Payment` da co them `reverse()` canonical noi ve `PaymentReversalService`, de workflow entry points nhat quan hon giua model/caller/service.
 - Checkpoint `2026-04-14` da tiep tuc chuan hoa lane `FIN` o `Invoice`: model da co them `cancel()` canonical noi ve `InvoiceWorkflowService`, va regression da khoa lai cancel audit/status contract cho ca service path lan model boundary path.
+- Checkpoint `2026-04-14` da tiep tuc chuan hoa lane `TRT`: `TreatmentPlan` va `PlanItem` da co them `cancel()` canonical noi ve `TreatmentPlanWorkflowService` / `PlanItemWorkflowService`, de workflow entry points nhat quan hon giua model/caller/service.
+- Checkpoint `2026-04-14` da tiep tuc chuan hoa lane `ZNS`: `ZnsCampaign` da co them `cancel()` canonical noi ve `ZnsCampaignWorkflowService`, de entry point huy campaign di qua workflow service thay vi caller tu doi status.
 - Checkpoint `2026-04-10` da tiep tuc lam gon destructive path adjacent voi `RRB-009` o lane `CLIN`: `ClinicalOrder` da co model delete guard moi, de chi dinh lam sang co `cancel()` canonical khong con bi xoa truc tiep ngoai workflow.
 - Checkpoint `2026-04-13` da tiep tuc mo rong `RRB-011` sang lane workflow-backed adjunct surface: `PopupAnnouncement` da duoc ha ve cancel-only, khi page/table khong con expose delete/restore/force-delete surfaces, policy hard-deny `delete/restore/forceDelete`, model delete guard chan xoa truc tiep, va boundary `cancel()` canonical da noi thang vao `PopupAnnouncementWorkflowService`.
 - Checkpoint `2026-04-13` da tiep tuc khoi sau lane `RRB-011` o `TRT`: `TreatmentMaterialUsageService::delete()` gio idempotent cho retry path, de reverse cung mot usage nhieu lan khong con double-restore batch ton kho, double-write `InventoryTransaction` adjust, hay double-write `ACTION_REVERSAL` audit.

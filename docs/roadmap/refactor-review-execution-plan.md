@@ -6,7 +6,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 - Backlog source: `docs/roadmap/refactor-review-master-backlog.md`
 - Audit source: `docs/reviews/program-audit-summary.md`
-- Last updated: `2026-04-13`
+- Last updated: `2026-04-14`
 
 ## Current State
 
@@ -134,6 +134,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `MasterPatientDuplicate / MasterPatientMerge` voi model guard raw status update, `MasterPatientDuplicateWorkflowService` cho `ignore` / `merge-resolution` / `rollback restore`, va loai bo mass-update bypass o `MasterPatientIndexService`.
   - `RRB-009` da mo rong them sang `WebLeadEmailDelivery` voi model guard raw status update, canonical `markProcessing` / `markSent` / `markFailure` / `resetForReplay`, va service mail noi bo di qua managed workflow path.
   - `RRB-009` da mo rong them sang `ZnsCampaignDelivery` voi model guard raw status update, canonical `markSent` / `markFailure`, `claimForProcessing`, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`.
+  - `RRB-009` da bo sung boundary `ZnsCampaign::cancel()` noi ve `ZnsCampaignWorkflowService`, de entry point huy campaign di qua workflow service thay vi caller tu doi status.
   - `RRB-009` da dong them cac lane outbox `ZnsAutomationEvent`, `GoogleCalendarSyncEvent`, `EmrSyncEvent` bang transition contract, replay methods, va stale-processing reclaim khong con bypass model events.
   - `RRB-009` da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress dung chung contract `skip / fail / ready` cho `enabled/token/secret configured` thay vi middleware/controller tu lap lai runtime gate rieng.
   - `RRB-010` da co read-model dau tien cho patient operational timeline ben canh `ClinicalAuditTimelineService`, va da cover them `PlanItem`, `ReceiptExpense`, `MaterialIssueNote`, `BranchTransferRequest`, va mo ta finance timeline than thien hon cho `Payment`.
@@ -313,6 +314,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-011` da tiep tuc ha `ReceiptExpense` ve workflow-only mutation boundary, khi policy `delete/restore/forceDelete` bi hard-deny va model layer chan moi thao tac xoa truc tiep de phieu thu/chi chi di qua workflow status service.
   - `RRB-011` da tiep tuc chuan hoa model-level workflow entry points cho `FIN`: `ReceiptExpense` da co `approve()` / `post()` canonical noi ve `ReceiptExpenseWorkflowService`, va `Payment` da co `reverse()` canonical noi ve `PaymentReversalService`, de caller layer di qua boundary nhat quan thay vi goi service truc tiep.
   - `RRB-011` da tiep tuc bo sung `Invoice::cancel()` canonical noi ve `InvoiceWorkflowService`, de lane huy hoa don co model boundary nhat quan voi service path va regression khoa lai cancel audit/status contract cho ca hai duong goi.
+  - `RRB-011` da tiep tuc chuan hoa model boundaries cho `TRT`: `TreatmentPlan` va `PlanItem` da co them `cancel()` canonical noi ve `TreatmentPlanWorkflowService` / `PlanItemWorkflowService`, de caller layer di qua workflow entry point nhat quan thay vi goi service truc tiep.
   - Ngoai lane `RRB-011`, `ClinicalOrder` da duoc bo sung model delete guard de destructive path dong bo voi workflow `cancel()` canonical cua `RRB-009`.
   - `RRB-011` da tiep tuc siet reversal semantics o lane `TRT`: `TreatmentMaterialUsageService::delete()` gio idempotent cho retry path, de duplicate/concurrent reversal attempts khong con restore ton kho, tao ledger adjust, hay ghi audit `ACTION_REVERSAL` nhieu lan cho cung mot usage.
   - `RRB-011` da tiep tuc mo rong sang lane insurance adjunct: `InsuranceClaim` da co `cancel()` canonical boundary noi ve `InsuranceClaimWorkflowService`, model delete guard moi, va regression khoa structured cancel audit metadata cung delete boundary cho claim workflow.
