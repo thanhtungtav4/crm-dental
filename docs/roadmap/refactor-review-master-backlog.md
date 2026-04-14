@@ -242,6 +242,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `InsuranceClaim` vao workflow service canonical, managed transition context, va audit metadata `reason` / `trigger` / `payment_id`
     - da dua `ClinicalOrder` / `ClinicalResult` vao workflow service canonical, managed transition context, va EMR audit metadata `reason` / `trigger`
     - da dua `CareTicket/Note` vao workflow service canonical cho manual vs canonical status transitions, model guard raw status update, va managed audit metadata `reason` / `trigger`
+    - da bo sung boundary `Note::updateCareTicket()` / `transitionCareTicket()` noi ve `CareTicketWorkflowService`, de entry points care ticket di qua model layer thay vi caller tu goi service
     - da dua `Consent` vao managed workflow context trong lifecycle service, model guard raw status update, va audit metadata `trigger` / `signature_source`
     - da dua `ExamSession / TreatmentProgress` vao workflow service canonical cho clinical-note sync, treatment-progress prime, lifecycle refresh, va managed mutation cho `TreatmentProgressDay / TreatmentProgressItem`; model guard raw status update, va loai bo `saveQuietly()` doi `status` rai rac
     - da dua `InstallmentPlan` vao lifecycle service canonical, giu model facade `syncFinancialState()` cho backward compatibility, va keo `PaymentObserver`, `installments:run-dunning`, `installments:sync-status` qua cung lifecycle contract

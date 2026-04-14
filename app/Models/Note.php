@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CareTicketWorkflowService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -325,6 +326,39 @@ class Note extends Model
         $sourceType = trim((string) ($this->source_type ?? ''));
 
         return $sourceType !== '' && str_starts_with($sourceType, 'App\\Models\\');
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateCareTicket(
+        array $attributes,
+        ?string $reason = null,
+        ?int $actorId = null,
+        string $trigger = 'patient_notes_edit',
+    ): self {
+        return app(CareTicketWorkflowService::class)->updateManualTicket(
+            note: $this,
+            attributes: $attributes,
+            reason: $reason,
+            actorId: $actorId,
+            trigger: $trigger,
+        );
+    }
+
+    public function transitionCareTicket(
+        string $toStatus,
+        ?string $reason = null,
+        ?int $actorId = null,
+        string $trigger = 'manual_status_change',
+    ): self {
+        return app(CareTicketWorkflowService::class)->transitionTicket(
+            note: $this,
+            toStatus: $toStatus,
+            reason: $reason,
+            actorId: $actorId,
+            trigger: $trigger,
+        );
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed

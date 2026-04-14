@@ -129,6 +129,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `InsuranceClaim` voi workflow service canonical, managed transition context, va payment-linked audit metadata.
   - `RRB-009` da mo rong them sang `ClinicalOrder` / `ClinicalResult` voi workflow service canonical, managed transition context, va EMR audit metadata co `reason` / `trigger`.
   - `RRB-009` da mo rong them sang `CareTicket/Note` voi phan tach `manual update` / `canonical transition`, model guard raw status update, va audit metadata co `trigger` / `reason`.
+  - `RRB-009` da bo sung boundary `Note::updateCareTicket()` / `transitionCareTicket()` noi ve `CareTicketWorkflowService`, de entry points care ticket di qua model layer thay vi caller tu goi service.
   - `RRB-009` da mo rong them sang `Consent` voi lifecycle service managed context, model guard raw status update, va audit metadata co `trigger` / `signature_source`.
   - `RRB-009` da mo rong them sang `ExamSession / TreatmentProgress` voi `ExamSessionWorkflowService`, model guard raw status update, thay the cac lane `ClinicalNote`, `TreatmentProgressSyncService`, `ExamSessionLifecycleService` dang doi `status` truc tiep, va keo them `TreatmentProgressDay / TreatmentProgressItem` vao managed mutation path.
   - `RRB-009` da mo rong them sang `InstallmentPlan` voi `InstallmentPlanLifecycleService`, giu lai model facade `syncFinancialState()` de tuong thich, va dua `PaymentObserver`, `installments:run-dunning`, `installments:sync-status` vao canonical lifecycle path.
