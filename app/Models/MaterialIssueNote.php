@@ -136,13 +136,9 @@ class MaterialIssueNote extends Model
         });
 
         static::deleting(function (self $note): void {
-            if ($note->status !== static::STATUS_DRAFT) {
-                throw ValidationException::withMessages([
-                    'status' => $note->status === static::STATUS_POSTED
-                        ? 'Phiếu đã xuất kho không thể xóa.'
-                        : 'Chỉ phiếu nháp mới có thể xóa.',
-                ]);
-            }
+            throw ValidationException::withMessages([
+                'status' => 'Phiếu xuất vật tư không hỗ trợ xóa trực tiếp. Vui lòng hủy phiếu qua workflow.',
+            ]);
         });
     }
 

@@ -5,8 +5,6 @@ namespace App\Filament\Resources\MaterialIssueNotes\Tables;
 use App\Models\MaterialIssueNote;
 use App\Services\MaterialIssueNoteWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -106,11 +104,6 @@ class MaterialIssueNotesTable
                             auth()->id(),
                         );
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

@@ -12,6 +12,7 @@ use App\Models\MaterialIssueNote;
 use App\Models\Patient;
 use App\Models\PatientWallet;
 use App\Models\Payment;
+use App\Models\PopupAnnouncement;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
@@ -168,7 +169,29 @@ it('prevents editing or deleting material issue items after note is posted', fun
         ->toThrow(ValidationException::class, 'Phiếu đã xuất kho không thể xóa vật tư.');
 
     expect(fn () => $issueNote->delete())
-        ->toThrow(ValidationException::class, 'Phiếu đã xuất kho không thể xóa.');
+        ->toThrow(ValidationException::class, 'không hỗ trợ xóa trực tiếp');
+});
+
+it('forces popup announcements through cancel workflow instead of direct delete', function (): void {
+    $manager = User::factory()->create();
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $announcement = PopupAnnouncement::query()->create([
+        'title' => 'Popup hardening baseline',
+        'message' => 'Popup khong duoc xoa truc tiep',
+        'status' => PopupAnnouncement::STATUS_PUBLISHED,
+        'target_role_names' => ['Manager'],
+        'target_branch_ids' => [],
+        'starts_at' => now()->subMinute(),
+        'published_at' => now()->subMinute(),
+    ]);
+
+    $announcement->cancel('baseline_cancel');
+
+    expect($announcement->fresh()->status)->toBe(PopupAnnouncement::STATUS_CANCELLED)
+        ->and(fn () => $announcement->delete())
+        ->toThrow(ValidationException::class, 'không hỗ trợ xóa trực tiếp');
 });
 
 it('blocks treatment material updates to protect stock consistency', function (): void {
@@ -218,6 +241,7 @@ it('blocks treatment material updates to protect stock consistency', function ()
     $policy = app(TreatmentMaterialPolicy::class);
 
     expect($policy->update($manager, $usage))->toBeFalse()
+        ->and($policy->delete($manager, $usage))->toBeFalse()
         ->and($material->refresh()->stock_qty)->toBe(10);
 });
 

@@ -19,13 +19,19 @@ it('uses slide overs for popup announcement create edit and view actions', funct
         ->toContain("->modalWidth('5xl')")
         ->toContain("->modalWidth('6xl')")
         ->toContain('->modalHeading(\'Phát popup ngay bây giờ?\')')
-        ->toContain('->modalHeading(\'Hủy popup này?\')');
+        ->toContain('->modalHeading(\'Hủy popup này?\')')
+        ->not->toContain('DeleteBulkAction::make()')
+        ->not->toContain('ForceDeleteBulkAction::make()')
+        ->not->toContain('RestoreBulkAction::make()');
 
     expect($editPage)
         ->toContain('mutateFormDataBeforeSave')
         ->toContain('PopupAnnouncementWorkflowService::class')
         ->toContain("Action::make('publishNow')")
-        ->toContain("Action::make('cancel')");
+        ->toContain("Action::make('cancel')")
+        ->not->toContain('DeleteAction::make()')
+        ->not->toContain('ForceDeleteAction::make()')
+        ->not->toContain('RestoreAction::make()');
 });
 
 it('organizes popup announcement form into operator friendly sections', function (): void {

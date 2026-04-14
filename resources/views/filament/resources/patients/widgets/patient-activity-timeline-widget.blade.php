@@ -1,18 +1,18 @@
 <div class="crm-activity-widget">
     <div class="crm-activity-widget-head">
-        <h3 class="crm-activity-widget-title">Hoạt động gần đây</h3>
-        <span class="crm-activity-widget-count">{{ $activityCount }} hoạt động</span>
+        <h3 class="crm-activity-widget-title">{{ $viewState['title'] }}</h3>
+        <span class="crm-activity-widget-count">{{ $viewState['count_label'] }}</span>
     </div>
 
-    @if(empty($activities))
+    @if(empty($viewState['activities']))
         <div class="crm-activity-empty">
             <x-filament::icon icon="heroicon-o-clock" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="crm-activity-empty-title">Chưa có hoạt động</h3>
-            <p class="crm-activity-empty-desc">Lịch sử hoạt động của bệnh nhân sẽ hiển thị ở đây.</p>
+            <h3 class="crm-activity-empty-title">{{ $viewState['empty_state']['title'] }}</h3>
+            <p class="crm-activity-empty-desc">{{ $viewState['empty_state']['description'] }}</p>
         </div>
     @else
         <div class="crm-activity-list">
-            @foreach($activities as $activity)
+            @foreach($viewState['activities'] as $activity)
                 <div class="crm-activity-item {{ $activity['type_class'] }}">
                     <div class="crm-activity-item-layout">
                         <div class="crm-activity-item-icon-wrap">
@@ -73,9 +73,9 @@
             @endforeach
         </div>
 
-        @if($showsMaxActivitiesFooter)
+        @if($viewState['shows_max_activities_footer'])
             <div class="crm-activity-footer">
-                Hiển thị 20 hoạt động gần nhất
+                {{ $viewState['footer_label'] }}
             </div>
         @endif
     @endif

@@ -589,6 +589,7 @@ class PatientExamForm extends Component
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
             'medicalRecordActionUrl' => $medicalRecordAction['url'] ?? null,
             'medicalRecordActionLabel' => $medicalRecordAction['label'] ?? null,
+            ...$this->indicationsViewData($mediaReadModel),
             ...$this->diagnosisViewData(
                 referencePayload: $referencePayload,
                 toothTreatmentStates: $toothTreatmentStates,
@@ -630,7 +631,6 @@ class PatientExamForm extends Component
             'toothTreatmentStates' => $toothTreatmentStates,
             'defaultDentitionMode' => DentitionModeResolver::resolveFromBirthday($this->patient->birthday),
             'otherDiagnosisOptions' => app(PatientExamReferenceReadModelService::class)->otherDiagnosisOptions(),
-            'selectedIndicationUploadTypes' => $this->selectedIndicationUploadTypes(),
             'diagnosisDentitionOptions' => $toothChartViewConfig->dentitionOptions(),
             'diagnosisToothRows' => $toothChartViewConfig->toothRows(
                 ['upper' => self::ADULT_UPPER_TEETH, 'lower' => self::ADULT_LOWER_TEETH],
@@ -642,6 +642,38 @@ class PatientExamForm extends Component
             'childUpper' => self::CHILD_UPPER_TEETH,
             'childLower' => self::CHILD_LOWER_TEETH,
             'adultLower' => self::ADULT_LOWER_TEETH,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $mediaReadModel
+     * @return array<string, mixed>
+     */
+    protected function indicationsViewData(array $mediaReadModel): array
+    {
+        $selectedUploadTypes = $this->selectedIndicationUploadTypes();
+        $evidenceChecklist = $mediaReadModel['evidenceChecklist'];
+        $missingLabels = array_values((array) data_get($evidenceChecklist, 'missing_labels', []));
+        $qualityWarnings = array_values((array) data_get($evidenceChecklist, 'quality_warnings', []));
+        $completionPercent = max(0, min(100, (int) data_get($evidenceChecklist, 'completion_percent', 0)));
+
+        return [
+            'indicationOptions' => $this->indicationOptions(),
+            'indicationUploadCards' => $this->indicationUploadCards($selectedUploadTypes),
+            'selectedIndicationUploadCountLabel' => $selectedUploadTypes !== []
+                ? count($selectedUploadTypes).' chỉ định đang mở'
+                : null,
+            'evidenceSummaryLabel' => sprintf(
+                'Đã đạt %d/%d chỉ định cần ảnh.',
+                (int) data_get($evidenceChecklist, 'fulfilled', 0),
+                (int) data_get($evidenceChecklist, 'required', 0),
+            ),
+            'evidenceCompletionPercent' => $completionPercent,
+            'evidenceMissingLabel' => $missingLabels !== []
+                ? 'Thiếu ảnh cho: '.implode(', ', $missingLabels).'.'
+                : null,
+            'evidenceQualityWarnings' => $qualityWarnings,
+            'mediaTimelinePreview' => array_slice((array) ($mediaReadModel['mediaTimeline'] ?? []), 0, 12),
         ];
     }
 
@@ -717,6 +749,42 @@ class PatientExamForm extends Component
             ->map(fn ($type): string => strtolower(trim((string) $type)))
             ->filter(fn (string $type): bool => $type !== '')
             ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{key:string, label:string, is_selected:bool}>
+     */
+    protected function indicationOptions(): array
+    {
+        return collect($this->indicationTypes)
+            ->map(fn (string $label, string $key): array => [
+                'key' => $key,
+                'label' => $label,
+                'is_selected' => in_array($key, $this->indications, true),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<string>  $selectedUploadTypes
+     * @return list<array{type:string, label:string, images:list<string>, loading_label:string}>
+     */
+    protected function indicationUploadCards(array $selectedUploadTypes): array
+    {
+        return collect($selectedUploadTypes)
+            ->map(function (string $type): array {
+                $label = (string) ($this->indicationTypes[$type] ?? strtoupper($type));
+
+                return [
+                    'type' => $type,
+                    'label' => $label,
+                    'images' => array_values((array) ($this->indicationImages[$type] ?? [])),
+                    'loading_label' => 'Đang tải ảnh cho '.$label.'...',
+                ];
+            })
             ->values()
             ->all();
     }

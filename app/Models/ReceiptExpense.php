@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ReceiptExpenseWorkflowService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -126,6 +127,12 @@ class ReceiptExpense extends Model
 
             $receiptExpense->clinic_id = $resolvedBranchId;
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'receipt_expense' => 'Phiếu thu/chi không hỗ trợ xóa trực tiếp. Vui lòng quản lý trạng thái qua workflow.',
+            ]);
+        });
     }
 
     public function clinic(): BelongsTo
@@ -176,6 +183,16 @@ class ReceiptExpense extends Model
     public function getStatusLabel(): string
     {
         return static::statusLabel($this->status);
+    }
+
+    public function approve(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ReceiptExpenseWorkflowService::class)->approve($this, $reason, $actorId);
+    }
+
+    public function post(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ReceiptExpenseWorkflowService::class)->post($this, $reason, $actorId);
     }
 
     public static function statusLabel(?string $status): string

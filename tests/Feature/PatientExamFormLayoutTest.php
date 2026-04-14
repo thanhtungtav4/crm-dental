@@ -105,17 +105,28 @@ it('supports explicit multi-select mode in patient exam tooth chart', function (
 
 it('renders indication upload areas dynamically per selected indication type', function (): void {
     $blade = patientExamBladeContent();
+    $component = File::get(app_path('Livewire/PatientExamForm.php'));
 
-    expect($blade)->toContain('@foreach($selectedIndicationUploadTypes as $type)')
-        ->and($blade)->toContain("wire:key=\"indication-upload-{{ \$sessionCard['id'] }}-{{ \$type }}\"")
-        ->and($blade)->toContain('wire:model="tempUploads.{{ $type }}"')
-        ->and($blade)->toContain("wire:click=\"removeImage('{{ \$type }}', {{ \$index }})\"")
-        ->and($blade)->toContain('@paste.prevent="handleIndicationPaste(@js($type), $event)"')
-        ->and($blade)->toContain('@drop.prevent="handleIndicationDrop(@js($type), $event)"')
+    expect($blade)->toContain('@foreach ($indicationOptions as $option)')
+        ->and($blade)->toContain('@foreach($indicationUploadCards as $card)')
+        ->and($blade)->toContain("wire:key=\"indication-upload-{{ \$sessionCard['id'] }}-{{ \$card['type'] }}\"")
+        ->and($blade)->toContain('wire:model="tempUploads.{{ $card[\'type\'] }}"')
+        ->and($blade)->toContain("wire:click=\"removeImage('{{ \$card['type'] }}', {{ \$index }})\"")
+        ->and($blade)->toContain('@paste.prevent="handleIndicationPaste(@js($card[\'type\']), $event)"')
+        ->and($blade)->toContain('@drop.prevent="handleIndicationDrop(@js($card[\'type\']), $event)"')
         ->and($blade)->toContain('class="crm-upload-dropzone')
-        ->and($blade)->toContain('wire:loading.flex wire:target="tempUploads.{{ $type }}"')
+        ->and($blade)->toContain('wire:loading.flex wire:target="tempUploads.{{ $card[\'type\'] }}"')
+        ->and($blade)->toContain('$selectedIndicationUploadCountLabel')
+        ->and($blade)->toContain('$evidenceSummaryLabel')
+        ->and($blade)->toContain('$evidenceCompletionPercent')
+        ->and($blade)->toContain('$evidenceMissingLabel')
+        ->and($blade)->toContain('$evidenceQualityWarnings')
+        ->and($blade)->toContain('$mediaTimelinePreview')
         ->and($blade)->not->toContain('wire:model="tempUploads.ext"')
-        ->and($blade)->not->toContain('wire:model="tempUploads.int"');
+        ->and($blade)->not->toContain('wire:model="tempUploads.int"')
+        ->and($component)->toContain('protected function indicationsViewData(array $mediaReadModel): array')
+        ->and($component)->toContain('protected function indicationOptions(): array')
+        ->and($component)->toContain('protected function indicationUploadCards(array $selectedUploadTypes): array');
 });
 
 it('escapes diagnosis condition codes safely in alpine expressions', function (): void {

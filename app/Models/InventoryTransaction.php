@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 class InventoryTransaction extends Model
 {
@@ -22,6 +23,21 @@ class InventoryTransaction extends Model
         'note',
         'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw ValidationException::withMessages([
+                'inventory_transaction' => 'Inventory transaction là immutable, không cho phép cập nhật.',
+            ]);
+        });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'inventory_transaction' => 'Inventory transaction là immutable, không cho phép xóa.',
+            ]);
+        });
+    }
 
     public function material(): BelongsTo
     {

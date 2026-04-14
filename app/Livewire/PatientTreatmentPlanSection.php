@@ -155,8 +155,7 @@ class PatientTreatmentPlanSection extends Component
         );
 
         return view('livewire.patient-treatment-plan-section', [
-            'viewState' => $this->buildViewState($sectionData),
-            ...$sectionData,
+            'viewState' => $this->sectionViewState($sectionData),
         ]);
     }
 
@@ -165,6 +164,8 @@ class PatientTreatmentPlanSection extends Component
      *     planItems:Collection<int, PlanItem>,
      *     diagnosisMap:Collection<int, mixed>,
      *     diagnosisDetails:array<int, array{tooth_number:string, condition_name:string}>,
+     *     diagnosisOptions:array<int, string>,
+     *     categories:Collection<int, mixed>,
      *     services:Collection<int, mixed>,
      *     estimatedTotal:float,
      *     discountTotal:float,
@@ -173,16 +174,29 @@ class PatientTreatmentPlanSection extends Component
      *     pendingCost:float
      * }  $sectionData
      * @return array{
-     *     plan_count:int,
-     *     plan_rows:array<int, array<string, mixed>>,
-     *     summary_panels:array<int, array{
-     *         items:array<int, array{label:string, value:string}>
-     *     }>,
-     *     draft_rows:array<int, array<string, mixed>>,
-     *     service_rows:array<int, array<string, mixed>>
+     *     list_panel:array{
+     *         plan_count:int,
+     *         plan_rows:array<int, array<string, mixed>>,
+     *         summary_panels:array<int, array{
+     *             items:array<int, array{label:string, value:string}>
+     *         }>
+     *     },
+     *     plan_modal:array{
+     *         is_visible:bool,
+     *         diagnosis_options:array<int, string>,
+     *         draft_rows:array<int, array<string, mixed>>
+     *     },
+     *     procedure_modal:array{
+     *         is_visible:bool,
+     *         selected_category_id:?int,
+     *         all_categories_active:bool,
+     *         categories:array<int, array{id:int, name:string, is_active:bool}>,
+     *         service_rows:array<int, array<string, mixed>>,
+     *         settings_url:string
+     *     }
      * }
      */
-    protected function buildViewState(array $sectionData): array
+    protected function sectionViewState(array $sectionData): array
     {
         /** @var Collection<int, PlanItem> $planItems */
         $planItems = $sectionData['planItems'];
@@ -190,26 +204,55 @@ class PatientTreatmentPlanSection extends Component
         $diagnosisMap = $sectionData['diagnosisMap'];
 
         return [
-            'plan_count' => $planItems->pluck('treatment_plan_id')->unique()->count(),
-            'plan_rows' => $this->planRows($planItems, $diagnosisMap),
-            'summary_panels' => [
-                [
-                    'items' => [
-                        ['label' => 'Chi phí dự kiến', 'value' => $this->formatMoney($sectionData['estimatedTotal'])],
-                        ['label' => 'Tiền giảm giá', 'value' => $this->formatMoney($sectionData['discountTotal'])],
-                        ['label' => 'Tổng chi phí dự kiến', 'value' => $this->formatMoney($sectionData['totalCost'])],
+            'list_panel' => [
+                'plan_count' => $planItems->pluck('treatment_plan_id')->unique()->count(),
+                'plan_rows' => $this->planRows($planItems, $diagnosisMap),
+                'summary_panels' => [
+                    [
+                        'items' => [
+                            ['label' => 'Chi phí dự kiến', 'value' => $this->formatMoney($sectionData['estimatedTotal'])],
+                            ['label' => 'Tiền giảm giá', 'value' => $this->formatMoney($sectionData['discountTotal'])],
+                            ['label' => 'Tổng chi phí dự kiến', 'value' => $this->formatMoney($sectionData['totalCost'])],
+                        ],
                     ],
-                ],
-                [
-                    'items' => [
-                        ['label' => 'Đã hoàn thành', 'value' => $this->formatMoney($sectionData['completedCost'])],
-                        ['label' => 'Chưa hoàn thành', 'value' => $this->formatMoney($sectionData['pendingCost'])],
+                    [
+                        'items' => [
+                            ['label' => 'Đã hoàn thành', 'value' => $this->formatMoney($sectionData['completedCost'])],
+                            ['label' => 'Chưa hoàn thành', 'value' => $this->formatMoney($sectionData['pendingCost'])],
+                        ],
                     ],
                 ],
             ],
-            'draft_rows' => $this->draftRows($sectionData['diagnosisDetails']),
-            'service_rows' => $this->serviceRows($sectionData['services']),
+            'plan_modal' => [
+                'is_visible' => $this->showPlanModal,
+                'diagnosis_options' => $sectionData['diagnosisOptions'],
+                'draft_rows' => $this->draftRows($sectionData['diagnosisDetails']),
+            ],
+            'procedure_modal' => [
+                'is_visible' => $this->showProcedureModal,
+                'selected_category_id' => $this->selectedCategoryId,
+                'all_categories_active' => $this->selectedCategoryId === null,
+                'categories' => $this->categoryRows($sectionData['categories']),
+                'service_rows' => $this->serviceRows($sectionData['services']),
+                'settings_url' => url('/setting/trick'),
+            ],
         ];
+    }
+
+    /**
+     * @param  Collection<int, mixed>  $categories
+     * @return array<int, array{id:int, name:string, is_active:bool}>
+     */
+    protected function categoryRows(Collection $categories): array
+    {
+        return $categories
+            ->map(fn (mixed $category): array => [
+                'id' => (int) $category->id,
+                'name' => (string) $category->name,
+                'is_active' => $this->selectedCategoryId === (int) $category->id,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

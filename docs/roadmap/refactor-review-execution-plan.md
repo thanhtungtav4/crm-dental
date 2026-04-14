@@ -6,7 +6,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 - Backlog source: `docs/roadmap/refactor-review-master-backlog.md`
 - Audit source: `docs/reviews/program-audit-summary.md`
-- Last updated: `2026-04-07`
+- Last updated: `2026-04-13`
 
 ## Current State
 
@@ -119,6 +119,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da mo rong them sang `VisitEpisode` voi canonical `VisitEpisodeService`, model guard raw status update, va smoke flow appointment-to-encounter cap nhat theo workflow contract.
   - `RRB-009` da mo rong them sang `BranchTransferRequest` de dua workflow `request / apply / reject` vao managed context va observer audit co `trigger`.
   - `RRB-009` dang mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
+  - checkpoint `2026-04-13` da chot them destructive hardening cho `PopupAnnouncement`: page/table da bo delete/restore/force-delete surfaces, policy hard-deny `delete/restore/forceDelete`, model da co delete guard va them `cancel()` canonical boundary de popup noi bo di qua workflow thay vi xoa truc tiep.
   - `RRB-009` da mo rong them sang `PlanItem` voi workflow service canonical cho start / complete / cancel / complete-visit lanes.
   - `RRB-009` da mo rong them sang `PatientTreatmentPlanSection` voi `PatientTreatmentPlanDraftService`, dua `prepare draft`, `sync diagnosis tu latest exam`, `resolve latest-or-create plan`, va `persist draft items` ra khoi Livewire component de dung chung workflow path cho tab `Khám & Điều trị`.
   - `RRB-009` da mo rong them sang `ReceiptExpense` voi workflow service canonical, model guard, table/page actions co ly do, va structured audit metadata.
@@ -185,6 +186,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - checkpoint `2026-04-04` da mo rong them page-shell convergence sang `DeliveryOpsCenter` va `FrontdeskControlCenter`, de hai surface nay dung chung trait `BuildsControlCenterPageViewState` va shell partials cho overview cards, quick links, va section panels thay vi giu renderer lap lai trong tung page.
   - checkpoint `2026-04-07` da tiep tuc dong bo lane `clinical form presentation`: `ToothChart` da duoc nang thanh custom Filament field, `TreatmentPlanForm` va `ClinicalNotesRelationManager` da dung field nay thay cho `ViewField` + `@php` de boot `conditionsJson / conditionOrder / dentition state path`, `ToothChartModalViewState` da gom presenter contract cho `tooth-chart-modal`, va `InstallmentPlan` da giu presentation methods cho `installment-schedule` modal de loai bo `@php` va contract attribute cu khong con ton tai trong schema (`total_amount`, `paid_amount`).
   - checkpoint `2026-04-07` da chot mot moc nho cho shell hygiene: `resources/views/filament` va `resources/views/livewire` hien tai khong con `@php` inline trong branch checkpoint, de regression presentation tap trung vao shell contract thay vi Blade-side data preparation.
+  - checkpoint `2026-04-09` da tiep tuc dong bo them lane shell/read-model nho: `PatientActivityTimelineWidget` da dung `timelineViewState()` + widget render payload thay cho `getViewData()`, `PatientTreatmentPlanSection` da hop nhat `list_panel / plan_modal / procedure_modal` qua `sectionViewState()`, `PatientExamForm` da dua `indications` / `evidence checklist` / `media timeline preview` ve payload presentation-ready, va `PasskeysComponent` da co `viewState()` + shell partial cho profile surface.
   - `RRB-010` da mo rong them `ZnsOperationalReadModelService` vao page `ZaloZns` cho branch-scoped operational summary cards, `campaigns_running`, va `provider_status_code` option list, de page khong con tu dem ad-hoc raw query cho pending/retry/dead delivery, campaign state, hay provider-status filter values.
   - `RRB-010` da bo sung `IntegrationSettingsAuditReadModelService` de page `IntegrationSettings` dung reader chung cho recent setting logs, tiep tuc loai bo raw audit-query khoi page logic.
   - `RRB-010` da bo sung `IntegrationProviderHealthReadModelService` de `OpsControlCenterService` render provider-readiness cho `Zalo OA`, `ZNS`, `Google Calendar`, `EMR`, va `DICOM / PACS` bang contract chung thay vi page/service/command tu dien giai tung provider rieng.
@@ -301,6 +303,19 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-013` da co `IntegrationProviderRuntimeGate` cho contract `skip / fail / ready` tren cac lane `EMR / Google Calendar / ZNS`.
   - `RRB-013` da mo rong them runtime gate nay sang inbound `Web Lead API`, `EMR internal API`, va `Zalo webhook` ingress gates.
   - `RRB-013` da co `IntegrationProviderActionService` de `IntegrationSettings` dung chung contract action/readiness cho `EMR`, `Google Calendar`, `Zalo OA`, va `ZNS`.
+  - `RRB-011` da bat dau lane immutable ledger cho `WalletLedgerEntry` va `InventoryTransaction`, de wallet/inventory append-only records khong con cho phep update/delete truc tiep sau khi da phat sinh side effect.
+  - `RRB-011` da tiep tuc khoa destructive surface cua `TreatmentMaterial`, khi UI/policy khong con expose delete/restore/force-delete flow cho vat tu dieu tri va regression da doi chieu direct delete guard o cap model.
+  - `RRB-011` da tiep tuc dua `TreatmentMaterial` va `PatientWallet` vao unified patient timeline, de usage/reversal/adjustment co audit payload ro nghia va co the doi chieu voi patient activity thay vi nam rieng trong ledger/audit raw.
+  - `RRB-011` da tiep tuc ha `FactoryOrder` ve cancel-only, khi delete surfaces tren UI/policy/model duoc go bo; checkpoint tiep theo da bo sung boundary `FactoryOrder::cancel()` canonical noi ve `FactoryOrderWorkflowService`, de lane labo supplier-linked chot huong workflow thay vi destructive delete.
+  - `RRB-011` da tiep tuc ha `MaterialIssueNote` ve cancel-only, khi page/table khong con expose delete surfaces, `MaterialIssueNotePolicy` hard-deny `delete/restore/forceDelete`, va model delete guard ep domain inventory issue note di qua `cancel()` thay vi xoa truc tiep.
+  - `RRB-011` da tiep tuc ha `TreatmentPlan` va `PlanItem` ve cancel-only, khi `EditTreatmentPlan`, `EditPlanItem`, va `PlanItemsRelationManager` khong con expose delete surfaces, policy `delete/restore/forceDelete` bi hard-deny, va model layer chan moi thao tac xoa truc tiep de domain dieu tri di qua workflow `cancel()`.
+  - `RRB-011` da tiep tuc ha `Payment` ve immutable/reversal-only contract, khi `PaymentPolicy` khong con cho `delete/restore/forceDelete`, `EditPayment` go delete header action, va regression khoa direct delete guard cua ledger.
+  - `RRB-011` da tiep tuc ha `ReceiptExpense` ve workflow-only mutation boundary, khi policy `delete/restore/forceDelete` bi hard-deny va model layer chan moi thao tac xoa truc tiep de phieu thu/chi chi di qua workflow status service.
+  - `RRB-011` da tiep tuc chuan hoa model-level workflow entry points cho `FIN`: `ReceiptExpense` da co `approve()` / `post()` canonical noi ve `ReceiptExpenseWorkflowService`, va `Payment` da co `reverse()` canonical noi ve `PaymentReversalService`, de caller layer di qua boundary nhat quan thay vi goi service truc tiep.
+  - `RRB-011` da tiep tuc bo sung `Invoice::cancel()` canonical noi ve `InvoiceWorkflowService`, de lane huy hoa don co model boundary nhat quan voi service path va regression khoa lai cancel audit/status contract cho ca hai duong goi.
+  - Ngoai lane `RRB-011`, `ClinicalOrder` da duoc bo sung model delete guard de destructive path dong bo voi workflow `cancel()` canonical cua `RRB-009`.
+  - `RRB-011` da tiep tuc siet reversal semantics o lane `TRT`: `TreatmentMaterialUsageService::delete()` gio idempotent cho retry path, de duplicate/concurrent reversal attempts khong con restore ton kho, tao ledger adjust, hay ghi audit `ACTION_REVERSAL` nhieu lan cho cung mot usage.
+  - `RRB-011` da tiep tuc mo rong sang lane insurance adjunct: `InsuranceClaim` da co `cancel()` canonical boundary noi ve `InsuranceClaimWorkflowService`, model delete guard moi, va regression khoa structured cancel audit metadata cung delete boundary cho claim workflow.
 - Deploy safety note:
   - Chi nen lam tren branch/PR rieng, co feature flag hoac song song read-model neu can.
 

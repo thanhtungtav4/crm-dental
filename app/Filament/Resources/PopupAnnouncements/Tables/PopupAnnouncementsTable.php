@@ -6,11 +6,7 @@ use App\Models\PopupAnnouncement;
 use App\Services\PopupAnnouncementDispatchService;
 use App\Services\PopupAnnouncementWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -188,13 +184,6 @@ class PopupAnnouncementsTable
                             reason: $data['reason'] ?? null,
                         );
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                ]),
             ]);
     }
 }

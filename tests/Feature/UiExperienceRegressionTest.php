@@ -211,3 +211,22 @@ it('renders the system settings page through the shell partial', function (): vo
         ->assertSee('Cài đặt tích hợp')
         ->assertSee('Cấu hình vận hành');
 });
+
+it('renders the passkeys profile surface through a view-state shell', function (): void {
+    $component = File::get(app_path('Livewire/PasskeysComponent.php'));
+    $view = File::get(resource_path('views/livewire/passkeys-component.blade.php'));
+    $shell = File::get(resource_path('views/livewire/partials/passkeys-component-shell.blade.php'));
+
+    expect($component)
+        ->toContain('public function viewState(): array')
+        ->toContain("'viewState' => \$this->viewState()")
+        ->and($view)
+        ->toContain("@include('livewire.partials.passkeys-component-shell'")
+        ->not->toContain('heading="Khóa truy cập (Passkey)"')
+        ->and($shell)
+        ->toContain(":heading=\"\$viewState['heading']\"")
+        ->toContain(":description=\"\$viewState['description']\"")
+        ->toContain("\$viewState['unsupported_panel']['title']")
+        ->toContain("@foreach (\$viewState['unsupported_panel']['requirements'] as \$requirement)")
+        ->toContain("\$viewState['checking_label']");
+});

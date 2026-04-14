@@ -52,7 +52,7 @@ it('locks factory order resource access to admin and manager with branch scoped 
         ->and($manager->can('view', $hiddenOrder))->toBeFalse()
         ->and($manager->can('transitionStatus', $visibleOrder))->toBeTrue()
         ->and($manager->can('transitionStatus', $hiddenOrder))->toBeFalse()
-        ->and($manager->can('delete', $visibleOrder))->toBeTrue()
+        ->and($manager->can('delete', $visibleOrder))->toBeFalse()
         ->and($manager->can('deleteAny', FactoryOrder::class))->toBeFalse()
         ->and(FactoryOrderResource::getEloquentQuery()->pluck('factory_orders.id')->all())->toContain($visibleOrder->id)
         ->and(FactoryOrderResource::getEloquentQuery()->pluck('factory_orders.id')->all())->not->toContain($hiddenOrder->id)
@@ -82,9 +82,14 @@ it('locks factory order resource access to admin and manager with branch scoped 
 });
 
 it('guards patient workspace factory order links with policy checks', function (): void {
+    $overviewReader = File::get(app_path('Services/PatientOverviewReadModelService.php'));
     $patientView = File::get(resource_path('views/filament/resources/patients/pages/view-patient.blade.php'));
 
+    expect($overviewReader)
+        ->toContain("can('create', FactoryOrder::class)")
+        ->toContain("'create_factory_order_url' => \$createFactoryOrderUrl")
+        ->toContain("'key' => 'factory_orders'");
+
     expect($patientView)
-        ->toContain("@can('create', \\App\\Models\\FactoryOrder::class)")
-        ->toContain("@can('update', \$order)");
+        ->not->toContain('FactoryOrder::class');
 });

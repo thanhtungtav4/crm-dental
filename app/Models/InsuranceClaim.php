@@ -145,6 +145,12 @@ class InsuranceClaim extends Model
                 $claim->cancelled_at = $claim->cancelled_at ?? now();
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'insurance_claim' => 'Hồ sơ bảo hiểm không hỗ trợ xóa trực tiếp. Vui lòng hủy hồ sơ qua workflow.',
+            ]);
+        });
     }
 
     public function invoice(): BelongsTo
@@ -184,6 +190,11 @@ class InsuranceClaim extends Model
     public function resubmit(): void
     {
         app(InsuranceClaimWorkflowService::class)->resubmit($this);
+    }
+
+    public function cancel(?string $reason = null, ?int $actorId = null): void
+    {
+        app(InsuranceClaimWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     public function markPaid(?float $amount = null, string $method = 'transfer', ?string $note = null): Payment

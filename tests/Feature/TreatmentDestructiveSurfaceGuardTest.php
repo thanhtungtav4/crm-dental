@@ -8,14 +8,14 @@ it('removes force delete and restore surfaces from treatment edit pages', functi
     $sessionPage = File::get(app_path('Filament/Resources/TreatmentSessions/Pages/EditTreatmentSession.php'));
 
     expect($planPage)
-        ->toContain('TreatmentDeletionGuardService')
-        ->toContain('DeleteAction::make()')
+        ->not->toContain('TreatmentDeletionGuardService')
+        ->not->toContain('DeleteAction::make()')
         ->not->toContain('ForceDeleteAction::make()')
         ->not->toContain('RestoreAction::make()');
 
     expect($planItemPage)
-        ->toContain('TreatmentDeletionGuardService')
-        ->toContain('DeleteAction::make()')
+        ->not->toContain('TreatmentDeletionGuardService')
+        ->not->toContain('DeleteAction::make()')
         ->not->toContain('ForceDeleteAction::make()')
         ->not->toContain('RestoreAction::make()');
 
@@ -43,13 +43,13 @@ it('removes bulk destructive actions from treatment tables', function (): void {
         ->not->toContain('DeleteBulkAction::make()');
 });
 
-it('keeps plan item delete guarded only in the canonical relation manager', function (): void {
+it('removes plan item delete surface from the canonical relation manager', function (): void {
     $canonicalRelationManager = File::get(app_path('Filament/Resources/TreatmentPlans/RelationManagers/PlanItemsRelationManager.php'));
     $resource = File::get(app_path('Filament/Resources/TreatmentPlans/TreatmentPlanResource.php'));
 
     expect($canonicalRelationManager)
-        ->toContain('TreatmentDeletionGuardService')
-        ->toContain('DeleteAction::make()')
+        ->not->toContain('TreatmentDeletionGuardService')
+        ->not->toContain('DeleteAction::make()')
         ->not->toContain('DeleteBulkAction::make()');
 
     expect($resource)

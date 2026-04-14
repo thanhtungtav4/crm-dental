@@ -121,6 +121,12 @@ class ClinicalOrder extends Model
                 $order->completed_at = now();
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'clinical_order' => 'Chỉ định lâm sàng không hỗ trợ xóa trực tiếp. Vui lòng hủy chỉ định qua workflow.',
+            ]);
+        });
     }
 
     public function patient(): BelongsTo

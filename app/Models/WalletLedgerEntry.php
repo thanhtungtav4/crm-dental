@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 class WalletLedgerEntry extends Model
 {
@@ -27,6 +28,21 @@ class WalletLedgerEntry extends Model
         'metadata',
         'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw ValidationException::withMessages([
+                'wallet_ledger_entry' => 'Wallet ledger entry là immutable, không cho phép cập nhật.',
+            ]);
+        });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'wallet_ledger_entry' => 'Wallet ledger entry là immutable, không cho phép xóa.',
+            ]);
+        });
+    }
 
     /**
      * @return array<string, string>

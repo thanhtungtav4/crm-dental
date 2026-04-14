@@ -175,6 +175,12 @@ class TreatmentPlan extends Model
 
             static::assertWorkflowControlledFields($plan);
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'treatment_plan' => 'Kế hoạch điều trị không hỗ trợ xóa trực tiếp. Vui lòng hủy kế hoạch qua workflow.',
+            ]);
+        });
     }
 
     public static function runWithinManagedWorkflow(callable $callback): mixed

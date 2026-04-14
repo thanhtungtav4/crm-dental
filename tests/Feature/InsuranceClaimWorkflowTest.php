@@ -82,3 +82,36 @@ it('blocks invalid insurance claim transitions', function () {
     expect(fn () => $claim->update(['status' => InsuranceClaim::STATUS_PAID]))
         ->toThrow(ValidationException::class, 'INSURANCE_CLAIM_STATE_INVALID');
 });
+
+it('cancels insurance claims through the canonical workflow', function () {
+    $patient = Patient::factory()->create();
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 300000,
+        'paid_amount' => 0,
+    ]);
+
+    $claim = InsuranceClaim::create([
+        'invoice_id' => $invoice->id,
+        'patient_id' => $patient->id,
+        'amount_claimed' => 300000,
+        'status' => InsuranceClaim::STATUS_DRAFT,
+    ]);
+
+    $claim->cancel('payer withdrew');
+
+    $cancelAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_INSURANCE_CLAIM)
+        ->where('entity_id', $claim->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
+    expect($claim->fresh()->status)->toBe(InsuranceClaim::STATUS_CANCELLED)
+        ->and($claim->fresh()->cancelled_at)->not->toBeNull()
+        ->and($cancelAudit)->not->toBeNull()
+        ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(InsuranceClaim::STATUS_CANCELLED)
+        ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('payer withdrew');
+});

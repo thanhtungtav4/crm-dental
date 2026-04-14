@@ -232,6 +232,12 @@ class PlanItem extends Model
 
             $item->patient_approved = $item->approval_status === static::APPROVAL_APPROVED;
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'plan_item' => 'Hạng mục điều trị không hỗ trợ xóa trực tiếp. Vui lòng hủy hạng mục qua workflow.',
+            ]);
+        });
     }
 
     public function treatmentPlan()

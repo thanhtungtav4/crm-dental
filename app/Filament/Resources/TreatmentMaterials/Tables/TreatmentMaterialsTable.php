@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\TreatmentMaterials\Tables;
 
 use App\Models\TreatmentMaterial;
-use App\Services\TreatmentMaterialUsageService;
-use Filament\Actions\Action;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -51,18 +49,6 @@ class TreatmentMaterialsTable
                 TextColumn::make('user.name')
                     ->label('Người dùng')
                     ->toggleable(),
-            ])
-            ->recordActions([
-                Action::make('delete_usage')
-                    ->label('Hoan tac ghi nhan')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->successNotificationTitle('Da hoan tac ghi nhan vat tu')
-                    ->visible(fn (TreatmentMaterial $record): bool => auth()->user()?->can('delete', $record) ?? false)
-                    ->action(function (TreatmentMaterial $record): void {
-                        app(TreatmentMaterialUsageService::class)->delete($record);
-                    }),
             ]);
     }
 }

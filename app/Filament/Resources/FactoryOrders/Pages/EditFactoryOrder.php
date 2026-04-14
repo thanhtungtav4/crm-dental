@@ -5,7 +5,6 @@ namespace App\Filament\Resources\FactoryOrders\Pages;
 use App\Filament\Resources\FactoryOrders\FactoryOrderResource;
 use App\Services\FactoryOrderAuthorizer;
 use App\Services\FactoryOrderWorkflowService;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditFactoryOrder extends EditRecord
@@ -26,8 +25,6 @@ class EditFactoryOrder extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            DeleteAction::make(),
-        ];
+        return [];
     }
 }

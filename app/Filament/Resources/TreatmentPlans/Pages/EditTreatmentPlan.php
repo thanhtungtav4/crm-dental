@@ -6,10 +6,8 @@ use App\Filament\Resources\Patients\PatientResource;
 use App\Filament\Resources\TreatmentPlans\TreatmentPlanResource;
 use App\Models\TreatmentPlan;
 use App\Services\TreatmentAssignmentAuthorizer;
-use App\Services\TreatmentDeletionGuardService;
 use App\Services\TreatmentPlanWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Http\Request;
@@ -94,9 +92,6 @@ class EditTreatmentPlan extends EditRecord
                 ->color('gray')
                 ->url(fn (): ?string => $this->resolvePatientExamTreatmentUrl())
                 ->visible(fn (): bool => filled($this->resolvePatientExamTreatmentUrl())),
-            DeleteAction::make()
-                ->visible(fn (): bool => app(TreatmentDeletionGuardService::class)->canDeleteTreatmentPlan($this->getRecord()))
-                ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
         ];
     }
 

@@ -90,6 +90,33 @@ it('records structured posting audit metadata and stamps the poster', function (
         ->and(data_get($auditLog, 'metadata.posted_at'))->not->toBeNull();
 });
 
+it('routes receipt expense transitions through the canonical model boundary', function (): void {
+    [$receiptExpense, $manager] = makeReceiptExpenseWorkflowFixture();
+
+    $this->actingAs($manager);
+
+    $receiptExpense->approve('model_boundary_approve', $manager->id);
+    $receiptExpense->refresh();
+
+    expect($receiptExpense->status)->toBe(ReceiptExpense::STATUS_APPROVED);
+
+    $receiptExpense->post('model_boundary_post', $manager->id);
+    $receiptExpense->refresh();
+
+    $postAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_RECEIPT_EXPENSE)
+        ->where('entity_id', $receiptExpense->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->latest('id')
+        ->first();
+
+    expect($receiptExpense->status)->toBe(ReceiptExpense::STATUS_POSTED)
+        ->and($receiptExpense->posted_by)->toBe($manager->id)
+        ->and($postAudit)->not->toBeNull()
+        ->and(data_get($postAudit, 'metadata.reason'))->toBe('model_boundary_post')
+        ->and(data_get($postAudit, 'metadata.status_to'))->toBe(ReceiptExpense::STATUS_POSTED);
+});
+
 it('blocks raw status changes outside the workflow service', function (): void {
     [$receiptExpense, $manager] = makeReceiptExpenseWorkflowFixture();
 

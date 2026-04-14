@@ -34,27 +34,27 @@ class TreatmentMaterialPolicy
 
     public function delete(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Delete:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
+        return false;
     }
 
     public function restore(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('Restore:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
+        return false;
     }
 
     public function forceDelete(User $authUser, TreatmentMaterial $treatmentMaterial): bool
     {
-        return $authUser->can('ForceDelete:TreatmentMaterial') && $this->canAccessTreatmentMaterial($authUser, $treatmentMaterial);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:TreatmentMaterial') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, TreatmentMaterial $treatmentMaterial): bool

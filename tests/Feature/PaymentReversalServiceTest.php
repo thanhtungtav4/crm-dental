@@ -90,6 +90,41 @@ it('returns the existing reversal on retry instead of creating a duplicate refun
         ->and(Payment::query()->where('reversal_of_id', $receipt->id)->count())->toBe(1);
 });
 
+it('creates reversals through the canonical payment model boundary', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 650_000,
+    ]);
+
+    $receipt = $invoice->recordPayment(
+        amount: 250_000,
+        method: 'cash',
+        notes: 'Thanh toán model boundary',
+        receivedBy: $manager->id,
+    );
+
+    $refund = $receipt->reverse(
+        amount: 100_000,
+        paidAt: now(),
+        refundReason: 'model_boundary_refund',
+        note: 'Hoan qua model',
+        actorId: $manager->id,
+    );
+
+    expect($receipt->fresh()->isReversed())->toBeTrue()
+        ->and($refund->reversal_of_id)->toBe($receipt->id)
+        ->and($refund->direction)->toBe('refund')
+        ->and($refund->transaction_ref)->toBe(Payment::reversalTransactionRef($invoice->id, $receipt->id));
+});
+
 it('rejects reversal amounts that exceed the original receipt', function (): void {
     $branch = Branch::factory()->create();
     $manager = User::factory()->create(['branch_id' => $branch->id]);

@@ -7,9 +7,7 @@ use App\Filament\Resources\PlanItems\PlanItemResource;
 use App\Models\PlanItem;
 use App\Models\TreatmentPlan;
 use App\Services\PlanItemWorkflowService;
-use App\Services\TreatmentDeletionGuardService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Http\Request;
@@ -133,9 +131,6 @@ class EditPlanItem extends EditRecord
 
                     $this->refreshFormData(['status', 'completed_at']);
                 }),
-            DeleteAction::make()
-                ->visible(fn (): bool => app(TreatmentDeletionGuardService::class)->canDeletePlanItem($this->getRecord()))
-                ->successRedirectUrl(fn (): string => $this->resolveReturnUrl() ?? static::getResource()::getUrl('index')),
         ];
     }
 

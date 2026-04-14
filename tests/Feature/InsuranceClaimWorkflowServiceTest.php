@@ -100,6 +100,44 @@ it('records payment context when marking an insurance claim paid through the wor
         ]);
 });
 
+it('records structured audit metadata when cancelling an insurance claim through the workflow service', function (): void {
+    [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
+
+    $this->actingAs($manager);
+
+    app(InsuranceClaimWorkflowService::class)->submit(
+        claim: $claim,
+        actorId: $manager->id,
+    );
+
+    $cancelledClaim = app(InsuranceClaimWorkflowService::class)->cancel(
+        claim: $claim->fresh(),
+        reason: 'payer_withdrew',
+        actorId: $manager->id,
+    );
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_INSURANCE_CLAIM)
+        ->where('entity_id', $claim->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
+    expect($cancelledClaim->status)->toBe(InsuranceClaim::STATUS_CANCELLED)
+        ->and($cancelledClaim->cancelled_at)->not->toBeNull()
+        ->and($auditLog)->not->toBeNull()
+        ->and($auditLog?->actor_id)->toBe($manager->id)
+        ->and($auditLog?->metadata)->toMatchArray([
+            'status_from' => InsuranceClaim::STATUS_SUBMITTED,
+            'status_to' => InsuranceClaim::STATUS_CANCELLED,
+            'reason' => 'payer_withdrew',
+            'trigger' => 'manual_cancel',
+            'invoice_id' => $cancelledClaim->invoice_id,
+            'patient_id' => $cancelledClaim->patient_id,
+            'claim_number' => $cancelledClaim->claim_number,
+        ]);
+});
+
 it('blocks raw insurance claim status changes outside the workflow service', function (): void {
     [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
 

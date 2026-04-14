@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-04-07`
+- Last updated: `2026-04-13`
 
 ## Working Rules
 
@@ -333,6 +333,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - checkpoint `2026-04-03` da tiep tuc chuyen `CustomerCare` sang computed shell `slaSummary`, dong thoi chot `ConversationInbox` sang bo computed shells (`conversationList`, `selectedConversation`, `branchOptions`, `assignableStaffOptions`, `conversationAssigneeOptions`, `handoffPriorityOptions`, `handoffStatusOptions`, `inboxTabOptions`, `inboxStats`); trong lane dang lam, `app/Filament` + `app/Livewire` khong con public `get*Property()` legacy nao nua
     - checkpoint `2026-04-04` da chot them lane page-shell/read-model presentation cho `ViewPatient`, `PopupAnnouncementCenter`, `ConversationInbox`, `CustomerCare`, `CalendarAppointments`, `SystemSettings`, `DeliveryOpsCenter`, `FrontdeskControlCenter`, va `PlaceholderPage`: `ViewPatient` da doi sang `activeWorkspaceTabView()` + tab partials; `PopupAnnouncementCenter` da co shell partial va payload `has_announcement` / `aria_live`; `ConversationInbox` / `CustomerCare` da dung `inboxViewState()` / `careViewState()` de render queue/detail/SLA panels; `CalendarAppointments` da tach shell header/metrics/filters/modal sang partials va dung presentation payload cho metric/filter state; `SystemSettings` va `PlaceholderPage` da dung `pageViewState()` + shell partials; `DeliveryOpsCenter` va `FrontdeskControlCenter` da gom chung `pageViewState()` qua trait `BuildsControlCenterPageViewState`
     - checkpoint `2026-04-07` da tiep tuc dong bo lane `clinical form presentation`: `ToothChart` da duoc nang thanh custom Filament field co view data rieng, `TreatmentPlanForm` va `ClinicalNotesRelationManager` khong con dung `ViewField` + `@php` de boot `conditionsJson / conditionOrder / dentition state path`, `ToothChartModalViewState` da gom presenter contract cho `tooth-chart-modal`, va `InstallmentPlan` da co model-backed presentation methods cho `installment-schedule` modal; sau batch nay `resources/views/filament` + `resources/views/livewire` khong con `@php` inline nao trong current branch checkpoint
+    - checkpoint `2026-04-09` da tiep tuc dong bo lane shell/read-model nho: `PatientActivityTimelineWidget` da chuyen sang `timelineViewState()` + widget render payload thay vi `getViewData()`, `PatientTreatmentPlanSection` da chuyen sang `sectionViewState()` hop nhat cho `list_panel / plan_modal / procedure_modal`, `PatientExamForm` da dua indications/evidence timeline ve payload `indicationOptions / indicationUploadCards / evidence*`, va `PasskeysComponent` da co `viewState()` + shell partial thay vi giu Blade/copy hardcode trong component view
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
     - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
@@ -353,6 +354,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-011] Immutable adjustment and reversal ledger strategy
 
+- Status: `In progress`
 - Module: `TRT`, `INV`, `FIN`, `SUP`
 - Description:
   - Chot chien luoc append-only/immutable cho usage, void, reversal, cancel, va supplier-linked adjustments de giam drift downstream.
@@ -368,6 +370,22 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 - Recommended direction:
   - Khong dua ve delete/update mutable cho record da phat sinh side effect.
   - Uu tien event/adjustment model va read-model reconciliation.
+  - Tien do hien tai:
+    - checkpoint `2026-04-09` da bat dau lane immutable ledger cho `FIN`: `WalletLedgerEntry` da duoc khoa immutable o cap model, `PatientWalletService` da bo sung `trigger` + adjustment/reversal metadata cho ledger entries va audit trail, de wallet reconciliation co append-only contract ro hon.
+    - checkpoint `2026-04-09` da bat dau lane immutable ledger cho `INV/TRT`: `InventoryTransaction` da duoc khoa immutable o cap model, va `TreatmentMaterialUsageService` da duoc khoa regression de inventory ledger sau khi post usage khong con bi sua/xoa truc tiep.
+    - checkpoint `2026-04-09` da tiep tuc ha destructive surface cua `TRT`: `TreatmentMaterialsTable` da bo action `Hoan tac ghi nhan`, `TreatmentMaterialPolicy` khong con cho `delete/restore/forceDelete`, va regression da khoa direct delete/model-layer delete de lane vat tu dieu tri mac dinh di theo huong reversal-only thay vi destructive UI flow.
+    - checkpoint `2026-04-09` da tiep tuc bo sung audit/timeline cho `TRT/FIN`: `TreatmentMaterialUsageService` nay da ghi `ACTION_CREATE`/`ACTION_REVERSAL` audit co cau truc cho usage va reversal, `PatientOperationalTimelineService` da map duoc `Ghi nhận vật tư điều trị`, `Hoàn tác vật tư điều trị`, va `Điều chỉnh ví bệnh nhân` thay vi de nhung bien dong nay nam rieng trong audit log thô.
+    - checkpoint `2026-04-09` da tiep tuc siet lane `SUP`: `FactoryOrderPolicy` khong con cho `delete`, `EditFactoryOrder` va `FactoryOrdersTable` da go destructive delete surfaces, va `FactoryOrder` model da chan delete truc tiep; checkpoint `2026-04-13` bo sung them boundary `FactoryOrder::cancel()` canonical noi ve `FactoryOrderWorkflowService` de domain labo di qua workflow thay vi xoa ban ghi.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `INV`: `MaterialIssueNote` da duoc ha ve cancel-only, khi `EditMaterialIssueNote` va `MaterialIssueNotesTable` khong con expose delete surfaces, `MaterialIssueNotePolicy` khong con cho `delete/restore/forceDelete`, va model delete guard hard-deny moi thao tac xoa truc tiep de phieu xuat di qua workflow `cancel()`.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `TRT`: `TreatmentPlan` va `PlanItem` da duoc ha ve cancel-only, khi delete surfaces tren `EditTreatmentPlan`, `EditPlanItem`, va `PlanItemsRelationManager` bi go bo, `TreatmentPlanPolicy` / `PlanItemPolicy` khong con cho `delete/restore/forceDelete`, va model delete guard hard-deny moi thao tac xoa truc tiep de dieu tri di qua workflow `cancel()`.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `FIN`: `Payment` da dong bo `PaymentPolicy` va `EditPayment` voi immutable ledger contract, khong con mo delete/restore/force-delete surface va buoc moi thao tac reversal di qua workflow canonical thay vi xoa truc tiep.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `FIN`: `ReceiptExpense` da hard-deny `delete/restore/forceDelete` o policy, va model delete guard moi da buoc phieu thu/chi di qua workflow state boundary thay vi xoa truc tiep bang Eloquent.
+    - checkpoint `2026-04-14` da tiep tuc chuan hoa model boundaries cho lane `FIN`: `ReceiptExpense` da co them `approve()` va `post()` canonical noi ve `ReceiptExpenseWorkflowService`, con `Payment` da co them `reverse()` canonical noi ve `PaymentReversalService`, de caller layer khong con phai goi service truc tiep moi khi di qua workflow chinh.
+    - checkpoint `2026-04-14` da tiep tuc chuan hoa lane `FIN` o `Invoice`: model da co them `cancel()` canonical noi ve `InvoiceWorkflowService`, va regression khoa lai cancel audit/status contract cho ca service path lan model boundary path.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `CLIN`: `ClinicalOrder` da co model delete guard moi, de chi dinh lam sang co `cancel()` canonical khong con bi xoa truc tiep ngoai workflow.
+    - checkpoint `2026-04-13` da tiep tuc siet lane workflow-backed adjunct surfaces: `PopupAnnouncement` da duoc ha ve cancel-only, khi `EditPopupAnnouncement` va `PopupAnnouncementsTable` khong con expose delete/restore/force-delete surfaces, `PopupAnnouncementPolicy` hard-deny `delete/restore/forceDelete`, model delete guard moi chan xoa truc tiep, va model nay da co them `cancel()` canonical boundary noi ve `PopupAnnouncementWorkflowService`.
+    - checkpoint `2026-04-13` da tiep tuc khoi sau lane `TRT` bang regression reversal idempotency cho `TreatmentMaterialUsageService`: retry/duplicate calls vao `delete()` gio chi restore batch ton kho, tao `InventoryTransaction` adjust, va ghi `ACTION_REVERSAL` audit duy nhat mot lan cho moi `TreatmentMaterial` usage da duoc hoan tac.
+    - checkpoint `2026-04-13` da tiep tuc siet lane workflow-backed finance adjunct surface: `InsuranceClaim` da co them `cancel()` canonical boundary noi ve `InsuranceClaimWorkflowService`, model delete guard moi chan xoa truc tiep, va regression khoa lai cancel audit metadata cung destructive-path boundary cho ho so bao hiem.
 - Tests needed:
   - end-to-end reconciliation suite
   - concurrency tests

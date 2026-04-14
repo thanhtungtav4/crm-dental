@@ -29,7 +29,7 @@ class FactoryOrderPolicy
 
     public function delete(User $user, FactoryOrder $factoryOrder): bool
     {
-        return $this->update($user, $factoryOrder);
+        return false;
     }
 
     public function transitionStatus(User $user, FactoryOrder $factoryOrder): bool

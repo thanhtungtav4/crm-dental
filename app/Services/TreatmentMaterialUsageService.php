@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\InventoryTransaction;
 use App\Models\Material;
 use App\Models\TreatmentMaterial;
@@ -51,7 +52,7 @@ class TreatmentMaterialUsageService
             }
 
             $session = TreatmentSession::query()
-                ->with('treatmentPlan:id,branch_id')
+                ->with('treatmentPlan:id,branch_id,patient_id')
                 ->lockForUpdate()
                 ->findOrFail($sessionId);
 
@@ -118,21 +119,64 @@ class TreatmentMaterialUsageService
                 'created_by' => $actorId,
             ]);
 
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_TREATMENT_SESSION,
+                entityId: (int) $session->id,
+                action: AuditLog::ACTION_CREATE,
+                actorId: $actorId,
+                metadata: [
+                    'trigger' => 'treatment_material_usage_recorded',
+                    'treatment_session_id' => (int) $session->id,
+                    'treatment_plan_id' => $session->treatment_plan_id !== null ? (int) $session->treatment_plan_id : null,
+                    'patient_id' => $session->treatmentPlan?->patient_id !== null ? (int) $session->treatmentPlan->patient_id : null,
+                    'branch_id' => $resolvedBranchId,
+                    'treatment_material_id' => (int) $usage->id,
+                    'material_id' => (int) $material->id,
+                    'material_name' => (string) $material->name,
+                    'material_unit' => $material->unit,
+                    'batch_id' => (int) $batch->id,
+                    'batch_number' => (string) $batch->batch_number,
+                    'quantity' => $quantity,
+                    'unit_cost' => $unitCost,
+                    'total_cost' => $totalCost,
+                ],
+                branchId: $resolvedBranchId,
+                patientId: $session->treatmentPlan?->patient_id !== null ? (int) $session->treatmentPlan->patient_id : null,
+            );
+
             return $usage->fresh(['session.treatmentPlan', 'material', 'batch', 'user']);
         }, 3);
     }
 
     public function delete(TreatmentMaterial $usage): void
     {
-        DB::transaction(function () use ($usage): void {
+        $usageId = is_numeric($usage->getKey()) ? (int) $usage->getKey() : null;
+
+        if ($usageId === null) {
+            throw ValidationException::withMessages([
+                'treatment_material' => 'Khong tim thay ghi nhan vat tu can hoan tac.',
+            ]);
+        }
+
+        DB::transaction(function () use ($usageId): void {
             $lockedUsage = TreatmentMaterial::query()
                 ->with([
-                    'session.treatmentPlan:id,branch_id',
+                    'session.treatmentPlan:id,branch_id,patient_id',
                     'material',
                     'batch',
                 ])
                 ->lockForUpdate()
-                ->findOrFail($usage->getKey());
+                ->find($usageId);
+
+            if ($lockedUsage === null) {
+                if ($this->reversalAlreadyRecorded($usageId)) {
+                    return;
+                }
+
+                throw ValidationException::withMessages([
+                    'treatment_material' => 'Khong tim thay ghi nhan vat tu can hoan tac.',
+                ]);
+            }
 
             $material = Material::query()->findOrFail((int) $lockedUsage->material_id);
 
@@ -140,6 +184,7 @@ class TreatmentMaterialUsageService
             $resolvedBranchId = $lockedUsage->session?->treatmentPlan?->branch_id !== null
                 ? (int) $lockedUsage->session->treatmentPlan->branch_id
                 : ($material->branch_id !== null ? (int) $material->branch_id : null);
+            $resolvedActorId = is_numeric(auth()->id()) ? (int) auth()->id() : $lockedUsage->used_by;
 
             $mutation = app(InventoryMutationService::class)->restoreBatch(
                 materialId: (int) $lockedUsage->material_id,
@@ -161,12 +206,46 @@ class TreatmentMaterialUsageService
                 'quantity' => $quantity,
                 'unit_cost' => round(((float) $lockedUsage->cost) / max($quantity, 1), 2),
                 'note' => 'Auto: revert usage delete',
-                'created_by' => $lockedUsage->used_by,
+                'created_by' => $resolvedActorId,
             ]);
+
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_TREATMENT_SESSION,
+                entityId: (int) $lockedUsage->treatment_session_id,
+                action: AuditLog::ACTION_REVERSAL,
+                actorId: $resolvedActorId,
+                metadata: [
+                    'trigger' => 'treatment_material_usage_reversed',
+                    'treatment_session_id' => (int) $lockedUsage->treatment_session_id,
+                    'treatment_plan_id' => $lockedUsage->session?->treatment_plan_id !== null ? (int) $lockedUsage->session->treatment_plan_id : null,
+                    'patient_id' => $lockedUsage->session?->treatmentPlan?->patient_id !== null ? (int) $lockedUsage->session->treatmentPlan->patient_id : null,
+                    'branch_id' => $resolvedBranchId,
+                    'reversed_treatment_material_id' => (int) $lockedUsage->id,
+                    'material_id' => (int) $material->id,
+                    'material_name' => (string) $material->name,
+                    'material_unit' => $material->unit,
+                    'batch_id' => $batch->id !== null ? (int) $batch->id : null,
+                    'batch_number' => $batch->batch_number,
+                    'quantity' => $quantity,
+                    'total_cost' => (float) $lockedUsage->cost,
+                ],
+                branchId: $resolvedBranchId,
+                patientId: $lockedUsage->session?->treatmentPlan?->patient_id !== null ? (int) $lockedUsage->session->treatmentPlan->patient_id : null,
+            );
 
             TreatmentMaterial::runWithinManagedPersistence(function () use ($lockedUsage): void {
                 $lockedUsage->delete();
             });
         }, 3);
+    }
+
+    protected function reversalAlreadyRecorded(int $usageId): bool
+    {
+        return AuditLog::query()
+            ->where('entity_type', AuditLog::ENTITY_TREATMENT_SESSION)
+            ->where('action', AuditLog::ACTION_REVERSAL)
+            ->where('metadata->trigger', 'treatment_material_usage_reversed')
+            ->where('metadata->reversed_treatment_material_id', $usageId)
+            ->exists();
     }
 }

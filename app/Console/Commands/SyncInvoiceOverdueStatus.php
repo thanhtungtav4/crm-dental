@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Services\InvoiceWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -48,14 +49,18 @@ class SyncInvoiceOverdueStatus extends Command
             ->chunkById(200, function ($invoices) use (&$updated, &$unchanged, $canPersistAcrossBranches, $dryRun): void {
                 foreach ($invoices as $invoice) {
                     $oldStatus = $invoice->status;
+                    $oldPaidAmount = round((float) $invoice->paid_amount, 2);
                     $oldPaidAt = $invoice->paid_at?->toDateTimeString();
+                    $previewInvoice = clone $invoice;
 
-                    $invoice->updatePaymentStatus();
+                    $previewInvoice->paid_amount = $previewInvoice->getTotalPaid();
+                    $previewInvoice->updatePaymentStatus();
 
-                    $statusChanged = $invoice->status !== $oldStatus;
-                    $paidAtChanged = $invoice->paid_at?->toDateTimeString() !== $oldPaidAt;
+                    $statusChanged = $previewInvoice->status !== $oldStatus;
+                    $paidAmountChanged = round((float) $previewInvoice->paid_amount, 2) !== $oldPaidAmount;
+                    $paidAtChanged = $previewInvoice->paid_at?->toDateTimeString() !== $oldPaidAt;
 
-                    if (! $statusChanged && ! $paidAtChanged) {
+                    if (! $statusChanged && ! $paidAmountChanged && ! $paidAtChanged) {
                         $unchanged++;
 
                         continue;
@@ -64,11 +69,16 @@ class SyncInvoiceOverdueStatus extends Command
                     $updated++;
 
                     if (! $dryRun) {
-                        if ($canPersistAcrossBranches) {
-                            $invoice->saveQuietly();
-                        } else {
-                            $invoice->save();
-                        }
+                        app(InvoiceWorkflowService::class)->syncFinancialStatus(
+                            invoice: $invoice,
+                            actorId: is_numeric(auth()->id()) ? (int) auth()->id() : null,
+                            auditAction: AuditLog::ACTION_SYNC,
+                            metadata: [
+                                'trigger' => 'automation_overdue_sync',
+                                'command' => 'invoices:sync-overdue-status',
+                            ],
+                            persistQuietly: $canPersistAcrossBranches,
+                        );
                     }
                 }
             });

@@ -5,8 +5,6 @@ namespace App\Filament\Resources\FactoryOrders\Tables;
 use App\Models\FactoryOrder;
 use App\Services\FactoryOrderWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
@@ -126,11 +124,6 @@ class FactoryOrdersTable
                             reason: (string) ($data['notes'] ?? ''),
                         );
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

@@ -17,7 +17,11 @@ class PaymentObserver
 
     public function created(Payment $payment): void
     {
-        $payment->invoice?->updatePaidAmount();
+        $payment->invoice?->updatePaidAmount(
+            actorId: is_numeric($payment->received_by) ? (int) $payment->received_by : null,
+            reason: $this->invoiceFinancialReason($payment),
+            metadata: $this->invoiceFinancialMetadata($payment),
+        );
         $this->syncInstallmentPlan($payment);
         app(PatientWalletService::class)->postPayment($payment);
         $this->logPaymentCreated($payment);
@@ -28,10 +32,26 @@ class PaymentObserver
         if ($payment->wasChanged('invoice_id')) {
             Invoice::query()
                 ->find($payment->getOriginal('invoice_id'))
-                ?->updatePaidAmount();
+                ?->updatePaidAmount(
+                    actorId: is_numeric($payment->received_by) ? (int) $payment->received_by : null,
+                    metadata: array_filter([
+                        'trigger' => 'payment_reassigned',
+                        'payment_id' => $payment->id,
+                        'from_invoice_id' => is_numeric($payment->getOriginal('invoice_id'))
+                            ? (int) $payment->getOriginal('invoice_id')
+                            : null,
+                        'to_invoice_id' => is_numeric($payment->invoice_id) ? (int) $payment->invoice_id : null,
+                    ], static fn (mixed $value): bool => $value !== null),
+                );
         }
 
-        $payment->invoice?->updatePaidAmount();
+        $payment->invoice?->updatePaidAmount(
+            actorId: is_numeric($payment->received_by) ? (int) $payment->received_by : null,
+            reason: $this->invoiceFinancialReason($payment),
+            metadata: array_merge($this->invoiceFinancialMetadata($payment), [
+                'trigger' => 'payment_updated',
+            ]),
+        );
         $this->syncInstallmentPlan($payment);
     }
 
@@ -39,14 +59,26 @@ class PaymentObserver
     {
         Invoice::query()
             ->find($payment->invoice_id)
-            ?->updatePaidAmount();
+            ?->updatePaidAmount(
+                actorId: is_numeric($payment->received_by) ? (int) $payment->received_by : null,
+                reason: $this->invoiceFinancialReason($payment),
+                metadata: array_merge($this->invoiceFinancialMetadata($payment), [
+                    'trigger' => 'payment_deleted',
+                ]),
+            );
 
         $this->syncInstallmentPlan($payment);
     }
 
     public function restored(Payment $payment): void
     {
-        $payment->invoice?->updatePaidAmount();
+        $payment->invoice?->updatePaidAmount(
+            actorId: is_numeric($payment->received_by) ? (int) $payment->received_by : null,
+            reason: $this->invoiceFinancialReason($payment),
+            metadata: array_merge($this->invoiceFinancialMetadata($payment), [
+                'trigger' => 'payment_restored',
+            ]),
+        );
         $this->syncInstallmentPlan($payment);
     }
 
@@ -104,5 +136,36 @@ class PaymentObserver
                 'payment_source' => $payment->payment_source,
             ], static fn (mixed $value): bool => $value !== null)
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function invoiceFinancialMetadata(Payment $payment): array
+    {
+        $trigger = match (true) {
+            $payment->direction === 'refund' && $payment->reversal_of_id !== null => 'payment_reversal',
+            $payment->direction === 'refund' => 'payment_refund',
+            default => 'payment_recorded',
+        };
+
+        return array_filter([
+            'trigger' => $trigger,
+            'payment_id' => $payment->id,
+            'direction' => $payment->direction,
+            'transaction_ref' => $payment->transaction_ref,
+            'payment_source' => $payment->payment_source,
+            'reversal_of_id' => $payment->reversal_of_id,
+            'is_deposit' => (bool) $payment->is_deposit,
+        ], static fn (mixed $value): bool => $value !== null);
+    }
+
+    protected function invoiceFinancialReason(Payment $payment): ?string
+    {
+        if (! in_array($payment->direction, ['refund'], true) && $payment->reversal_of_id === null) {
+            return null;
+        }
+
+        return WorkflowAuditMetadata::normalizeReason($payment->refund_reason);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InvoiceWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -432,6 +433,11 @@ class Invoice extends Model
         return $context;
     }
 
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(InvoiceWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
     // ==================== RELATIONSHIPS ====================
 
     public function session(): BelongsTo
@@ -499,16 +505,23 @@ class Invoice extends Model
     }
 
     /**
-     * Update paid_amount field based on payments
+     * @param  array<string, mixed>  $metadata
      */
-    public function updatePaidAmount(): void
-    {
-        $this->paid_amount = $this->getTotalPaid();
-        $this->updatePaymentStatus();
-
-        if ($this->isDirty(['paid_amount', 'status', 'paid_at'])) {
-            $this->save();
-        }
+    public function updatePaidAmount(
+        ?int $actorId = null,
+        string $auditAction = AuditLog::ACTION_UPDATE,
+        ?string $reason = null,
+        array $metadata = [],
+        bool $persistQuietly = false,
+    ): void {
+        app(InvoiceWorkflowService::class)->syncFinancialStatus(
+            invoice: $this,
+            actorId: $actorId,
+            auditAction: $auditAction,
+            reason: $reason,
+            metadata: $metadata,
+            persistQuietly: $persistQuietly,
+        );
     }
 
     /**
