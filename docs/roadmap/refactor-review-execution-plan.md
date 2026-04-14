@@ -121,6 +121,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` dang mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
   - checkpoint `2026-04-13` da chot them destructive hardening cho `PopupAnnouncement`: page/table da bo delete/restore/force-delete surfaces, policy hard-deny `delete/restore/forceDelete`, model da co delete guard va them `cancel()` canonical boundary de popup noi bo di qua workflow thay vi xoa truc tiep.
   - `RRB-009` da mo rong them sang `PlanItem` voi workflow service canonical cho start / complete / cancel / complete-visit lanes.
+  - `RRB-009` da bo sung `PlanItem::startTreatment()` / `completeTreatment()` noi ve `PlanItemWorkflowService`, de entry points workflow hang muc dieu tri di qua model layer thay vi service call truc tiep.
   - `RRB-009` da bo sung `TreatmentPlan::approve()` / `start()` / `complete()` noi ve `TreatmentPlanWorkflowService`, de entry points workflow duoc goi tu model thay vi tu service truc tiep.
   - `RRB-009` da mo rong them sang `PatientTreatmentPlanSection` voi `PatientTreatmentPlanDraftService`, dua `prepare draft`, `sync diagnosis tu latest exam`, `resolve latest-or-create plan`, va `persist draft items` ra khoi Livewire component de dung chung workflow path cho tab `Khám & Điều trị`.
   - `RRB-009` da mo rong them sang `ReceiptExpense` voi workflow service canonical, model guard, table/page actions co ly do, va structured audit metadata.

@@ -284,6 +284,16 @@ class PlanItem extends Model
         return app(PlanItemWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
+    public function startTreatment(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->startTreatment($this, $reason, $actorId);
+    }
+
+    public function completeTreatment(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->completeTreatment($this, $reason, $actorId);
+    }
+
     // Helper Methods
 
     /**

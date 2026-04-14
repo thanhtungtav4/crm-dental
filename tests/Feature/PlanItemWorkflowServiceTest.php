@@ -95,6 +95,33 @@ it('cancels plan items through the canonical model boundary', function (): void 
         ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(PlanItem::STATUS_CANCELLED);
 });
 
+it('starts and completes plan items through the canonical model boundary', function (): void {
+    [$planItem, , , $doctor] = makePlanItemWorkflowFixture();
+    $this->actingAs($doctor);
+
+    $planItem->startTreatment('model_boundary_start', $doctor->id);
+
+    expect($planItem->fresh()->status)->toBe(PlanItem::STATUS_IN_PROGRESS);
+
+    $planItem->completeTreatment('model_boundary_complete', $doctor->id);
+
+    $completedPlanItem = $planItem->fresh();
+
+    expect($completedPlanItem->status)->toBe(PlanItem::STATUS_COMPLETED)
+        ->and($completedPlanItem->progress_percentage)->toBe(100);
+
+    $completeAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_PLAN_ITEM)
+        ->where('entity_id', $planItem->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->latest('id')
+        ->first();
+
+    expect($completeAudit)->not->toBeNull()
+        ->and(data_get($completeAudit, 'metadata.reason'))->toBe('model_boundary_complete')
+        ->and(data_get($completeAudit, 'metadata.status_to'))->toBe(PlanItem::STATUS_COMPLETED);
+});
+
 /**
  * @return array{0: PlanItem, 1: Patient, 2: Branch, 3: User}
  */
