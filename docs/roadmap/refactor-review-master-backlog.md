@@ -242,6 +242,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `ReceiptExpense` mutation lane vao workflow service canonical, model guard, guided actions, va structured audit metadata tren nhanh backlog
     - da dua `MaterialIssueNote` mutation lane vao workflow service canonical, model guard, guided actions, va transition audit metadata tren nhanh backlog
     - da dua `InsuranceClaim` vao workflow service canonical, managed transition context, va audit metadata `reason` / `trigger` / `payment_id`
+    - da bo sung `InsuranceClaim::submit()` / `approve()` / `deny()` / `resubmit()` / `markPaid()` canonical boundaries noi ve `InsuranceClaimWorkflowService`, de entry points ho so bao hiem di qua model layer thay vi service call truc tiep
     - da dua `ClinicalOrder` / `ClinicalResult` vao workflow service canonical, managed transition context, va EMR audit metadata `reason` / `trigger`
     - da dua `CareTicket/Note` vao workflow service canonical cho manual vs canonical status transitions, model guard raw status update, va managed audit metadata `reason` / `trigger`
     - da bo sung boundary `Note::updateCareTicket()` / `transitionCareTicket()` noi ve `CareTicketWorkflowService`, de entry points care ticket di qua model layer thay vi caller tu goi service

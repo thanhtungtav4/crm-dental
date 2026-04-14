@@ -51,6 +51,27 @@ it('records structured audit metadata when approving an insurance claim through 
         ]);
 });
 
+it('records audit metadata when approving an insurance claim through the model boundary', function (): void {
+    [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
+
+    $this->actingAs($manager);
+
+    $claim->submit('model_submit', $manager->id);
+    $claim->approve(280_000, 'model_approve', $manager->id);
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_INSURANCE_CLAIM)
+        ->where('entity_id', $claim->id)
+        ->where('action', AuditLog::ACTION_APPROVE)
+        ->latest('id')
+        ->first();
+
+    expect($claim->fresh()->status)->toBe(InsuranceClaim::STATUS_APPROVED)
+        ->and($auditLog)->not->toBeNull()
+        ->and($auditLog?->actor_id)->toBe($manager->id)
+        ->and($auditLog?->metadata['reason'] ?? null)->toBe('model_approve');
+});
+
 it('records payment context when marking an insurance claim paid through the workflow service', function (): void {
     [$claim, $manager] = makeInsuranceClaimWorkflowFixture();
 

@@ -172,24 +172,24 @@ class InsuranceClaim extends Model
         return in_array($toStatus, self::TRANSITIONS[$fromStatus] ?? [], true);
     }
 
-    public function submit(): void
+    public function submit(?string $reason = null, ?int $actorId = null): void
     {
-        app(InsuranceClaimWorkflowService::class)->submit($this);
+        app(InsuranceClaimWorkflowService::class)->submit($this, $reason, $actorId);
     }
 
-    public function approve(?float $amountApproved = null): void
+    public function approve(?float $amountApproved = null, ?string $reason = null, ?int $actorId = null): void
     {
-        app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved);
+        app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved, $reason, $actorId);
     }
 
-    public function deny(string $reasonCode, ?string $note = null): void
+    public function deny(string $reasonCode, ?string $note = null, ?string $reason = null, ?int $actorId = null): void
     {
-        app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note);
+        app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note, $reason, $actorId);
     }
 
-    public function resubmit(): void
+    public function resubmit(?string $reason = null, ?int $actorId = null): void
     {
-        app(InsuranceClaimWorkflowService::class)->resubmit($this);
+        app(InsuranceClaimWorkflowService::class)->resubmit($this, $reason, $actorId);
     }
 
     public function cancel(?string $reason = null, ?int $actorId = null): void
@@ -197,9 +197,14 @@ class InsuranceClaim extends Model
         app(InsuranceClaimWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
-    public function markPaid(?float $amount = null, string $method = 'transfer', ?string $note = null): Payment
-    {
-        return app(InsuranceClaimWorkflowService::class)->markPaid($this, $amount, $method, $note);
+    public function markPaid(
+        ?float $amount = null,
+        string $method = 'transfer',
+        ?string $note = null,
+        ?string $reason = null,
+        ?int $actorId = null,
+    ): Payment {
+        return app(InsuranceClaimWorkflowService::class)->markPaid($this, $amount, $method, $note, $reason, $actorId);
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
