@@ -196,6 +196,64 @@ it('cancels factory orders through the canonical model boundary', function (): v
         ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('benh nhan khong tiep tuc');
 });
 
+it('transitions factory orders through the canonical model boundaries', function (): void {
+    $branch = Branch::factory()->create(['active' => true]);
+
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $doctor = User::factory()->create(['branch_id' => $branch->id]);
+    $doctor->assignRole('Doctor');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'is_active' => true,
+        'is_primary' => true,
+    ]);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $supplier = Supplier::query()->create([
+        'name' => 'Labo Model Boundary',
+        'code' => 'LABOMODEL',
+        'payment_terms' => '30_days',
+        'active' => true,
+    ]);
+
+    $order = FactoryOrder::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'doctor_id' => $doctor->id,
+        'supplier_id' => $supplier->id,
+        'status' => FactoryOrder::STATUS_DRAFT,
+        'priority' => 'normal',
+    ]);
+
+    $item = FactoryOrderItem::query()->create([
+        'factory_order_id' => $order->id,
+        'item_name' => 'Mão răng sứ',
+        'quantity' => 1,
+        'unit_price' => 1_200_000,
+        'status' => 'ordered',
+    ]);
+
+    $this->actingAs($manager);
+
+    $ordered = $order->markOrdered();
+    expect($ordered->status)->toBe(FactoryOrder::STATUS_ORDERED)
+        ->and($ordered->ordered_at)->not->toBeNull()
+        ->and($item->fresh()->status)->toBe('ordered');
+
+    $inProgress = $ordered->markInProgress();
+    expect($inProgress->status)->toBe(FactoryOrder::STATUS_IN_PROGRESS)
+        ->and($item->fresh()->status)->toBe('in_progress');
+
+    $delivered = $inProgress->markDelivered();
+    expect($delivered->status)->toBe(FactoryOrder::STATUS_DELIVERED)
+        ->and($delivered->delivered_at)->not->toBeNull()
+        ->and($item->fresh()->status)->toBe('delivered');
+});
+
 it('blocks direct status changes and item mutations once order leaves draft', function (): void {
     $branch = Branch::factory()->create(['active' => true]);
 

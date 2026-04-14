@@ -227,6 +227,21 @@ class FactoryOrder extends Model
         return app(FactoryOrderWorkflowService::class)->cancel($this, $reason);
     }
 
+    public function markOrdered(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markOrdered($this);
+    }
+
+    public function markInProgress(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markInProgress($this);
+    }
+
+    public function markDelivered(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markDelivered($this);
+    }
+
     public function scopeBranchAccessible(Builder $query): Builder
     {
         $authUser = auth()->user();
