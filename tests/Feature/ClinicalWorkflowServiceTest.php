@@ -42,6 +42,28 @@ it('records managed audit context when clinical order workflow service completes
         ->and(data_get($auditLog?->context, 'status_to'))->toBe(ClinicalOrder::STATUS_COMPLETED);
 });
 
+it('records managed audit context when clinical order is marked in progress through the model boundary', function (): void {
+    [$order, $doctor] = makeClinicalWorkflowFixture();
+
+    $this->actingAs($doctor);
+
+    $order->markInProgress($doctor->id, 'Bat dau thuc hien', 'model_in_progress');
+
+    $auditLog = EmrAuditLog::query()
+        ->where('entity_type', EmrAuditLog::ENTITY_CLINICAL_ORDER)
+        ->where('entity_id', $order->id)
+        ->where('action', EmrAuditLog::ACTION_UPDATE)
+        ->latest('id')
+        ->first();
+
+    expect($order->fresh()->status)->toBe(ClinicalOrder::STATUS_IN_PROGRESS)
+        ->and($auditLog)->not->toBeNull()
+        ->and(data_get($auditLog?->context, 'trigger'))->toBe('model_in_progress')
+        ->and(data_get($auditLog?->context, 'reason'))->toBe('Bat dau thuc hien')
+        ->and(data_get($auditLog?->context, 'status_from'))->toBe(ClinicalOrder::STATUS_PENDING)
+        ->and(data_get($auditLog?->context, 'status_to'))->toBe(ClinicalOrder::STATUS_IN_PROGRESS);
+});
+
 it('records managed audit context when clinical result workflow service finalizes a result', function (): void {
     [$order, $doctor] = makeClinicalWorkflowFixture([
         'status' => ClinicalOrder::STATUS_IN_PROGRESS,

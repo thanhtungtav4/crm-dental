@@ -174,9 +174,12 @@ class ClinicalOrder extends Model
         return $this->hasMany(ClinicalMediaAsset::class);
     }
 
-    public function markInProgress(): void
-    {
-        app(ClinicalOrderWorkflowService::class)->markInProgress($this);
+    public function markInProgress(
+        ?int $actorId = null,
+        ?string $reason = null,
+        string $trigger = 'manual_in_progress',
+    ): void {
+        app(ClinicalOrderWorkflowService::class)->markInProgress($this, $actorId, $reason, $trigger);
     }
 
     public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): void
