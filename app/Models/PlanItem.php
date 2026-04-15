@@ -299,7 +299,7 @@ class PlanItem extends Model
     /**
      * Update progress based on completed visits
      */
-    public function updateProgress(): void
+    public function updateProgress(): self
     {
         static::assertTreatmentPhaseGate($this);
 
@@ -336,6 +336,8 @@ class PlanItem extends Model
 
         // Update parent treatment plan
         $this->treatmentPlan?->updateProgress();
+
+        return $this;
     }
 
     /**

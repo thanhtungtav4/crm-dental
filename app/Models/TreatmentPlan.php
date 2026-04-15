@@ -314,7 +314,7 @@ class TreatmentPlan extends Model
         return (int) ($totalProgress / $items->count());
     }
 
-    public function updateProgress(): void
+    public function updateProgress(): self
     {
         $this->progress_percentage = $this->calculateProgress();
         $this->completed_visits = $this->planItems->sum('completed_visits');
@@ -338,6 +338,8 @@ class TreatmentPlan extends Model
         static::runWithinManagedWorkflow(function (): void {
             $this->save();
         });
+
+        return $this;
     }
 
     public function getProgressBadgeColor(): string
