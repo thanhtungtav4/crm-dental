@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use App\Services\FinancialDashboardReadModelService;
-use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -16,43 +15,37 @@ class RevenueOverviewWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $overview = app(FinancialDashboardReadModelService::class)
-            ->revenueOverview(auth()->user());
-
-        $todayChange = $overview['today_change'];
-        $todayChangeIcon = $todayChange >= 0 ? Heroicon::OutlinedArrowTrendingUp : Heroicon::OutlinedArrowTrendingDown;
-        $todayChangeColor = $todayChange >= 0 ? 'success' : 'danger';
-        $monthChange = $overview['month_change'];
-        $monthChangeIcon = $monthChange >= 0 ? Heroicon::OutlinedArrowTrendingUp : Heroicon::OutlinedArrowTrendingDown;
-        $monthChangeColor = $monthChange >= 0 ? 'success' : 'danger';
+        $cards = app(FinancialDashboardReadModelService::class)
+            ->revenueOverviewCards(auth()->user());
+        $today = $cards['today'];
+        $month = $cards['month'];
+        $outstanding = $cards['outstanding'];
 
         return [
-            Stat::make('Doanh thu hôm nay', number_format($overview['today_revenue'], 0, ',', '.').'đ')
-                ->description($todayChange != 0 ? abs($todayChange).'% so với hôm qua' : 'Không có thay đổi')
-                ->descriptionIcon($todayChangeIcon)
-                ->color($todayChangeColor)
-                ->chart($overview['last_7_days'])
+            Stat::make($today['label'], $today['value'])
+                ->description($today['description'])
+                ->descriptionIcon($today['description_icon'])
+                ->color($today['color'])
+                ->chart($today['chart'])
                 ->extraAttributes([
-                    'title' => 'Tổng doanh thu từ các khoản thanh toán hôm nay',
+                    'title' => $today['title'],
                 ]),
 
-            Stat::make('Doanh thu tháng này', number_format($overview['this_month_revenue'], 0, ',', '.').'đ')
-                ->description($monthChange != 0 ? abs($monthChange).'% so với tháng trước' : 'Không có thay đổi')
-                ->descriptionIcon($monthChangeIcon)
-                ->color($monthChangeColor)
+            Stat::make($month['label'], $month['value'])
+                ->description($month['description'])
+                ->descriptionIcon($month['description_icon'])
+                ->color($month['color'])
                 ->extraAttributes([
-                    'title' => 'Tổng doanh thu tháng '.now()->format('m/Y'),
+                    'title' => $month['title'],
                 ]),
 
-            Stat::make('Tổng công nợ', number_format($overview['total_outstanding'], 0, ',', '.').'đ')
-                ->description($overview['overdue_count'] > 0 ? "{$overview['overdue_count']} hóa đơn quá hạn" : 'Không có quá hạn')
-                ->descriptionIcon($overview['overdue_count'] > 0 ? Heroicon::OutlinedExclamationTriangle : Heroicon::OutlinedCheckCircle)
-                ->color($overview['overdue_count'] > 0 ? 'danger' : 'success')
-                ->url(route('filament.admin.resources.invoices.index', [
-                    'tableFilters' => ['status' => ['values' => ['overdue', 'partial']]],
-                ]))
+            Stat::make($outstanding['label'], $outstanding['value'])
+                ->description($outstanding['description'])
+                ->descriptionIcon($outstanding['description_icon'])
+                ->color($outstanding['color'])
+                ->url($outstanding['url'])
                 ->extraAttributes([
-                    'title' => 'Tổng số tiền chưa thu được từ các hóa đơn',
+                    'title' => $outstanding['title'],
                 ]),
         ];
     }

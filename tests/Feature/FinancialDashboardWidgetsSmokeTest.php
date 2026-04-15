@@ -201,3 +201,25 @@ it('routes monthly revenue chart widget data through the financial dashboard rea
         ->not->toContain("'label' => 'Doanh thu (VNĐ)'")
         ->not->toContain("'label' => 'Số lượng thanh toán'");
 });
+
+it('routes revenue overview widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/RevenueOverviewWidget.php'));
+
+    expect($widget)
+        ->toContain('->revenueOverviewCards(auth()->user())')
+        ->not->toContain('->revenueOverview(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingUp')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingDown')
+        ->not->toContain('Heroicon::OutlinedExclamationTriangle');
+});
+
+it('routes quick financial stats widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/QuickFinancialStatsWidget.php'));
+
+    expect($widget)
+        ->toContain('->quickFinancialStatCards(auth()->user())')
+        ->not->toContain('->quickStats(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedCurrencyDollar')
+        ->not->toContain('Heroicon::OutlinedCheckCircle')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingUp');
+});

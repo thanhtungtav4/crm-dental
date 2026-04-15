@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -366,6 +367,173 @@ class FinancialDashboardReadModelService
                 ],
             ],
             'labels' => $data['labels'],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     today: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         chart: array<int, float>,
+     *         title: string
+     *     },
+     *     month: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string
+     *     },
+     *     outstanding: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *         url: string
+     *     }
+     * }
+     */
+    public function revenueOverviewCards(?User $user = null): array
+    {
+        $overview = $this->revenueOverview($user);
+        $todayChange = $overview['today_change'];
+        $monthChange = $overview['month_change'];
+        $overdueCount = $overview['overdue_count'];
+
+        return [
+            'today' => [
+                'label' => 'Doanh thu hôm nay',
+                'value' => number_format($overview['today_revenue'], 0, ',', '.').'đ',
+                'description' => $todayChange !== 0.0 ? abs($todayChange).'% so với hôm qua' : 'Không có thay đổi',
+                'description_icon' => $todayChange >= 0 ? Heroicon::OutlinedArrowTrendingUp : Heroicon::OutlinedArrowTrendingDown,
+                'color' => $todayChange >= 0 ? 'success' : 'danger',
+                'chart' => $overview['last_7_days'],
+                'title' => 'Tổng doanh thu từ các khoản thanh toán hôm nay',
+            ],
+            'month' => [
+                'label' => 'Doanh thu tháng này',
+                'value' => number_format($overview['this_month_revenue'], 0, ',', '.').'đ',
+                'description' => $monthChange !== 0.0 ? abs($monthChange).'% so với tháng trước' : 'Không có thay đổi',
+                'description_icon' => $monthChange >= 0 ? Heroicon::OutlinedArrowTrendingUp : Heroicon::OutlinedArrowTrendingDown,
+                'color' => $monthChange >= 0 ? 'success' : 'danger',
+                'title' => 'Tổng doanh thu tháng '.now()->format('m/Y'),
+            ],
+            'outstanding' => [
+                'label' => 'Tổng công nợ',
+                'value' => number_format($overview['total_outstanding'], 0, ',', '.').'đ',
+                'description' => $overdueCount > 0 ? "{$overdueCount} hóa đơn quá hạn" : 'Không có quá hạn',
+                'description_icon' => $overdueCount > 0 ? Heroicon::OutlinedExclamationTriangle : Heroicon::OutlinedCheckCircle,
+                'color' => $overdueCount > 0 ? 'danger' : 'success',
+                'title' => 'Tổng số tiền chưa thu được từ các hóa đơn',
+                'url' => route('filament.admin.resources.invoices.index', [
+                    'tableFilters' => ['status' => ['values' => ['overdue', 'partial']]],
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     total_revenue: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string
+     *     },
+     *     payment_rate: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         chart: array<int, float>,
+     *         title: string
+     *     },
+     *     cash_mix: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string
+     *     },
+     *     invoice_average: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string
+     *     },
+     *     payment_frequency: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string
+     *     }
+     * }
+     */
+    public function quickFinancialStatCards(?User $user = null): array
+    {
+        $stats = $this->quickStats($user);
+        $paidPercentage = $stats['paid_percentage'];
+        $frequencyChange = $stats['frequency_change'];
+
+        return [
+            'total_revenue' => [
+                'label' => 'Tổng doanh thu',
+                'value' => number_format($stats['total_revenue'], 0, ',', '.').'đ',
+                'description' => $stats['total_payments'].' giao dịch | TB: '.number_format($stats['avg_payment'], 0, ',', '.').'đ',
+                'description_icon' => Heroicon::OutlinedCurrencyDollar,
+                'color' => 'success',
+                'title' => 'Tổng doanh thu từ tất cả các khoản thanh toán',
+            ],
+            'payment_rate' => [
+                'label' => 'Tỷ lệ thanh toán',
+                'value' => $paidPercentage.'%',
+                'description' => "{$stats['paid_invoices']}/{$stats['total_invoices']} hóa đơn đã thanh toán đầy đủ",
+                'description_icon' => Heroicon::OutlinedCheckCircle,
+                'color' => $paidPercentage >= 70 ? 'success' : ($paidPercentage >= 50 ? 'warning' : 'danger'),
+                'chart' => [$paidPercentage, 100 - $paidPercentage],
+                'title' => 'Phần trăm hóa đơn đã thanh toán hoàn tất',
+            ],
+            'cash_mix' => [
+                'label' => 'Tiền mặt / Phi tiền mặt',
+                'value' => number_format($stats['cash_payments'], 0, ',', '.').'đ',
+                'description' => 'Phi tiền mặt: '.number_format($stats['non_cash_total'], 0, ',', '.').'đ ('.(100 - $stats['cash_percentage']).'%)',
+                'description_icon' => Heroicon::OutlinedCreditCard,
+                'color' => 'info',
+                'title' => 'So sánh thanh toán tiền mặt và phi tiền mặt',
+            ],
+            'invoice_average' => [
+                'label' => 'Giá trị HĐ trung bình',
+                'value' => number_format($stats['avg_invoice'], 0, ',', '.').'đ',
+                'description' => 'Cao nhất: '.number_format($stats['highest_invoice'], 0, ',', '.').'đ',
+                'description_icon' => Heroicon::OutlinedDocumentText,
+                'color' => 'info',
+                'title' => 'Giá trị trung bình của các hóa đơn',
+            ],
+            'payment_frequency' => [
+                'label' => 'Tần suất thanh toán',
+                'value' => $stats['this_month_payments'].' thanh toán/tháng',
+                'description' => $frequencyChange > 0
+                    ? "+{$frequencyChange}% so với tháng trước"
+                    : ($frequencyChange < 0 ? "{$frequencyChange}% so với tháng trước" : 'Không đổi'),
+                'description_icon' => $frequencyChange >= 0 ? Heroicon::OutlinedArrowTrendingUp : Heroicon::OutlinedArrowTrendingDown,
+                'color' => $frequencyChange >= 0 ? 'success' : 'danger',
+                'title' => 'Số lượng thanh toán trung bình mỗi tháng',
+            ],
         ];
     }
 

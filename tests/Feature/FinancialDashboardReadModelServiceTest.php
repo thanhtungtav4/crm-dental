@@ -11,6 +11,7 @@ use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Services\FinancialDashboardReadModelService;
 use App\Support\ClinicRuntimeSettings;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 
 if (! function_exists('createFinancialDashboardInvoice')) {
@@ -166,6 +167,8 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $paymentMethodChart = $service->paymentMethodChart('month', $manager);
     $monthlySeries = $service->monthlyRevenueSeries('3months', $manager);
     $monthlyChart = $service->monthlyRevenueChart('3months', $manager);
+    $revenueOverviewCards = $service->revenueOverviewCards($manager);
+    $quickFinancialCards = $service->quickFinancialStatCards($manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
     expect($overview)
@@ -270,6 +273,81 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
                 'tension' => 0.4,
                 'yAxisID' => 'y1',
             ],
+        ],
+    ]);
+
+    expect($revenueOverviewCards)->toMatchArray([
+        'today' => [
+            'label' => 'Doanh thu hôm nay',
+            'value' => '500.000đ',
+            'description' => '50% so với hôm qua',
+            'description_icon' => Heroicon::OutlinedArrowTrendingDown,
+            'color' => 'danger',
+            'chart' => [0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 500000.0],
+            'title' => 'Tổng doanh thu từ các khoản thanh toán hôm nay',
+        ],
+        'month' => [
+            'label' => 'Doanh thu tháng này',
+            'value' => '1.500.000đ',
+            'description' => '62.5% so với tháng trước',
+            'description_icon' => Heroicon::OutlinedArrowTrendingDown,
+            'color' => 'danger',
+            'title' => 'Tổng doanh thu tháng 03/2026',
+        ],
+        'outstanding' => [
+            'label' => 'Tổng công nợ',
+            'value' => '4.500.000đ',
+            'description' => '1 hóa đơn quá hạn',
+            'description_icon' => Heroicon::OutlinedExclamationTriangle,
+            'color' => 'danger',
+            'title' => 'Tổng số tiền chưa thu được từ các hóa đơn',
+            'url' => route('filament.admin.resources.invoices.index', [
+                'tableFilters' => ['status' => ['values' => ['overdue', 'partial']]],
+            ]),
+        ],
+    ]);
+
+    expect($quickFinancialCards)->toMatchArray([
+        'total_revenue' => [
+            'label' => 'Tổng doanh thu',
+            'value' => '5.500.000đ',
+            'description' => '3 giao dịch | TB: 1.833.333đ',
+            'description_icon' => Heroicon::OutlinedCurrencyDollar,
+            'color' => 'success',
+            'title' => 'Tổng doanh thu từ tất cả các khoản thanh toán',
+        ],
+        'payment_rate' => [
+            'label' => 'Tỷ lệ thanh toán',
+            'value' => '25%',
+            'description' => '1/4 hóa đơn đã thanh toán đầy đủ',
+            'description_icon' => Heroicon::OutlinedCheckCircle,
+            'color' => 'danger',
+            'chart' => [25.0, 75.0],
+            'title' => 'Phần trăm hóa đơn đã thanh toán hoàn tất',
+        ],
+        'cash_mix' => [
+            'label' => 'Tiền mặt / Phi tiền mặt',
+            'value' => '500.000đ',
+            'description' => 'Phi tiền mặt: 5.000.000đ (90.9%)',
+            'description_icon' => Heroicon::OutlinedCreditCard,
+            'color' => 'info',
+            'title' => 'So sánh thanh toán tiền mặt và phi tiền mặt',
+        ],
+        'invoice_average' => [
+            'label' => 'Giá trị HĐ trung bình',
+            'value' => '2.500.000đ',
+            'description' => 'Cao nhất: 4.000.000đ',
+            'description_icon' => Heroicon::OutlinedDocumentText,
+            'color' => 'info',
+            'title' => 'Giá trị trung bình của các hóa đơn',
+        ],
+        'payment_frequency' => [
+            'label' => 'Tần suất thanh toán',
+            'value' => '2 thanh toán/tháng',
+            'description' => '+100% so với tháng trước',
+            'description_icon' => Heroicon::OutlinedArrowTrendingUp,
+            'color' => 'success',
+            'title' => 'Số lượng thanh toán trung bình mỗi tháng',
         ],
     ]);
 
