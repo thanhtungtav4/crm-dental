@@ -327,6 +327,48 @@ class FinancialDashboardReadModelService
         ];
     }
 
+    /**
+     * @return array{
+     *     datasets: array<int, array{
+     *         label: string,
+     *         data: array<int, float|int>,
+     *         borderColor: string,
+     *         backgroundColor: string,
+     *         fill: bool,
+     *         tension: float,
+     *         yAxisID?: string
+     *     }>,
+     *     labels: array<int, string>
+     * }
+     */
+    public function monthlyRevenueChart(string $filter = 'year', ?User $user = null): array
+    {
+        $data = $this->monthlyRevenueSeries($filter, $user);
+
+        return [
+            'datasets' => [
+                [
+                    'label' => 'Doanh thu (VNĐ)',
+                    'data' => $data['revenue'],
+                    'borderColor' => 'rgb(59, 130, 246)',
+                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                    'fill' => true,
+                    'tension' => 0.4,
+                ],
+                [
+                    'label' => 'Số lượng thanh toán',
+                    'data' => $data['count'],
+                    'borderColor' => 'rgb(16, 185, 129)',
+                    'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
+                    'fill' => true,
+                    'tension' => 0.4,
+                    'yAxisID' => 'y1',
+                ],
+            ],
+            'labels' => $data['labels'],
+        ];
+    }
+
     protected function invoiceQuery(?User $user = null): Builder
     {
         return $this->scopeQueryToAccessibleBranches(Invoice::query(), $user);

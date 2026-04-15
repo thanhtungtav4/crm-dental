@@ -191,3 +191,13 @@ it('routes payment methods chart widget data through the financial dashboard rea
         ->not->toContain('ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)')
         ->not->toContain('->paymentMethodTotals($this->filter ?? \'month\', auth()->user())');
 });
+
+it('routes monthly revenue chart widget data through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/MonthlyRevenueChartWidget.php'));
+
+    expect($widget)
+        ->toContain('->monthlyRevenueChart($this->filter ?? \'year\', auth()->user())')
+        ->not->toContain('->monthlyRevenueSeries($this->filter ?? \'year\', auth()->user())')
+        ->not->toContain("'label' => 'Doanh thu (VNĐ)'")
+        ->not->toContain("'label' => 'Số lượng thanh toán'");
+});

@@ -165,6 +165,7 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $paymentStats = $service->paymentStatsSnapshot($manager);
     $paymentMethodChart = $service->paymentMethodChart('month', $manager);
     $monthlySeries = $service->monthlyRevenueSeries('3months', $manager);
+    $monthlyChart = $service->monthlyRevenueChart('3months', $manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
     expect($overview)
@@ -248,6 +249,29 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     expect($monthlySeries['labels'])->toHaveCount(3)
         ->and($monthlySeries['revenue'])->toBe([0.0, 4000000.0, 1500000.0])
         ->and($monthlySeries['count'])->toBe([0, 1, 2]);
+
+    expect($monthlyChart)->toMatchArray([
+        'labels' => ['01/2026', '02/2026', '03/2026'],
+        'datasets' => [
+            [
+                'label' => 'Doanh thu (VNĐ)',
+                'data' => [0.0, 4000000.0, 1500000.0],
+                'borderColor' => 'rgb(59, 130, 246)',
+                'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                'fill' => true,
+                'tension' => 0.4,
+            ],
+            [
+                'label' => 'Số lượng thanh toán',
+                'data' => [0, 1, 2],
+                'borderColor' => 'rgb(16, 185, 129)',
+                'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
+                'fill' => true,
+                'tension' => 0.4,
+                'yAxisID' => 'y1',
+            ],
+        ],
+    ]);
 
     expect($methodTotals)->toMatchArray([
         'cash' => 500000.0,
