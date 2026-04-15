@@ -169,6 +169,7 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $monthlyChart = $service->monthlyRevenueChart('3months', $manager);
     $revenueOverviewCards = $service->revenueOverviewCards($manager);
     $quickFinancialCards = $service->quickFinancialStatCards($manager);
+    $outstandingCards = $service->outstandingBalanceCards($manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
     expect($overview)
@@ -348,6 +349,51 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
             'description_icon' => Heroicon::OutlinedArrowTrendingUp,
             'color' => 'success',
             'title' => 'Số lượng thanh toán trung bình mỗi tháng',
+        ],
+    ]);
+
+    expect($outstandingCards)->toMatchArray([
+        'unpaid' => [
+            'label' => 'Hóa đơn chưa thanh toán',
+            'value' => '1 hóa đơn',
+            'description' => 'Tổng: 1.000.000đ',
+            'description_icon' => Heroicon::OutlinedDocumentText,
+            'color' => 'warning',
+            'title' => 'Hóa đơn chưa có khoản thanh toán nào',
+            'url' => route('filament.admin.resources.invoices.index', [
+                'tableFilters' => ['payment_progress' => ['value' => 'unpaid']],
+            ]),
+        ],
+        'partial' => [
+            'label' => 'Thanh toán một phần',
+            'value' => '2 hóa đơn',
+            'description' => 'Còn lại: 3.500.000đ',
+            'description_icon' => Heroicon::OutlinedClock,
+            'color' => 'info',
+            'title' => 'Hóa đơn đã thanh toán một phần',
+            'url' => route('filament.admin.resources.invoices.index', [
+                'tableFilters' => ['status' => ['values' => ['partial']]],
+            ]),
+        ],
+        'overdue' => [
+            'label' => 'Hóa đơn quá hạn',
+            'value' => '1 hóa đơn',
+            'description' => 'Nợ: 2.000.000đ',
+            'description_icon' => Heroicon::OutlinedExclamationTriangle,
+            'color' => 'danger',
+            'title' => 'Hóa đơn đã quá ngày đến hạn',
+            'url' => route('filament.admin.resources.invoices.index', [
+                'tableFilters' => ['status' => ['values' => ['overdue']]],
+            ]),
+        ],
+        'week' => [
+            'label' => 'Thu tuần này',
+            'value' => '1.500.000đ',
+            'description' => '2 giao dịch',
+            'description_icon' => Heroicon::OutlinedBanknotes,
+            'color' => 'success',
+            'title' => 'Tổng thu từ đầu tuần đến nay',
+            'url' => route('filament.admin.resources.payments.index'),
         ],
     ]);
 

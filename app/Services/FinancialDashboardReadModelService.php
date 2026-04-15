@@ -537,6 +537,96 @@ class FinancialDashboardReadModelService
         ];
     }
 
+    /**
+     * @return array{
+     *     unpaid: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *         url: string
+     *     },
+     *     partial: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *         url: string
+     *     },
+     *     overdue: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *         url: string
+     *     },
+     *     week: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *         url: string
+     *     }
+     * }
+     */
+    public function outstandingBalanceCards(?User $user = null): array
+    {
+        $balances = $this->outstandingBalances($user);
+
+        return [
+            'unpaid' => [
+                'label' => 'Hóa đơn chưa thanh toán',
+                'value' => $balances['unpaid_count'].' hóa đơn',
+                'description' => 'Tổng: '.number_format($balances['unpaid_total'], 0, ',', '.').'đ',
+                'description_icon' => Heroicon::OutlinedDocumentText,
+                'color' => 'warning',
+                'title' => 'Hóa đơn chưa có khoản thanh toán nào',
+                'url' => route('filament.admin.resources.invoices.index', [
+                    'tableFilters' => ['payment_progress' => ['value' => 'unpaid']],
+                ]),
+            ],
+            'partial' => [
+                'label' => 'Thanh toán một phần',
+                'value' => $balances['partial_count'].' hóa đơn',
+                'description' => 'Còn lại: '.number_format($balances['partial_balance'], 0, ',', '.').'đ',
+                'description_icon' => Heroicon::OutlinedClock,
+                'color' => 'info',
+                'title' => 'Hóa đơn đã thanh toán một phần',
+                'url' => route('filament.admin.resources.invoices.index', [
+                    'tableFilters' => ['status' => ['values' => ['partial']]],
+                ]),
+            ],
+            'overdue' => [
+                'label' => 'Hóa đơn quá hạn',
+                'value' => $balances['overdue_count'].' hóa đơn',
+                'description' => 'Nợ: '.number_format($balances['overdue_balance'], 0, ',', '.').'đ',
+                'description_icon' => Heroicon::OutlinedExclamationTriangle,
+                'color' => 'danger',
+                'title' => 'Hóa đơn đã quá ngày đến hạn',
+                'url' => route('filament.admin.resources.invoices.index', [
+                    'tableFilters' => ['status' => ['values' => ['overdue']]],
+                ]),
+            ],
+            'week' => [
+                'label' => 'Thu tuần này',
+                'value' => number_format($balances['week_collections'], 0, ',', '.').'đ',
+                'description' => $balances['week_payments_count'].' giao dịch',
+                'description_icon' => Heroicon::OutlinedBanknotes,
+                'color' => 'success',
+                'title' => 'Tổng thu từ đầu tuần đến nay',
+                'url' => route('filament.admin.resources.payments.index'),
+            ],
+        ];
+    }
+
     protected function invoiceQuery(?User $user = null): Builder
     {
         return $this->scopeQueryToAccessibleBranches(Invoice::query(), $user);

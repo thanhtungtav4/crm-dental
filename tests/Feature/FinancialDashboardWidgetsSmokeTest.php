@@ -223,3 +223,14 @@ it('routes quick financial stats widget presentation through the financial dashb
         ->not->toContain('Heroicon::OutlinedCheckCircle')
         ->not->toContain('Heroicon::OutlinedArrowTrendingUp');
 });
+
+it('routes outstanding balance widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/OutstandingBalanceWidget.php'));
+
+    expect($widget)
+        ->toContain('->outstandingBalanceCards(auth()->user())')
+        ->not->toContain('->outstandingBalances(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedDocumentText')
+        ->not->toContain('Heroicon::OutlinedClock')
+        ->not->toContain('Heroicon::OutlinedBanknotes');
+});
