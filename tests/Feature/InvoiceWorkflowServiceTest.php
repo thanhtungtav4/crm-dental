@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\InstallmentPlan;
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\InvoiceWorkflowService;
 use Illuminate\Support\Facades\File;
@@ -231,4 +232,58 @@ it('routes overdue invoice sync through workflow service', function (): void {
     expect($command)
         ->toContain('InvoiceWorkflowService::class')
         ->toContain('syncFinancialStatus');
+});
+
+it('returns invoices from financial status model boundaries', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+
+    $previewInvoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 500000,
+        'paid_amount' => 0,
+        'due_date' => now()->subDay()->toDateString(),
+    ]);
+
+    $previewTransitionedInvoice = $previewInvoice->updatePaymentStatus();
+
+    expect($previewTransitionedInvoice)->toBe($previewInvoice)
+        ->and($previewTransitionedInvoice->status)->toBe(Invoice::STATUS_OVERDUE)
+        ->and($previewTransitionedInvoice->paid_at)->toBeNull();
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 1000000,
+        'paid_amount' => 0,
+    ]);
+
+    Payment::query()->create([
+        'invoice_id' => $invoice->id,
+        'branch_id' => $branch->id,
+        'amount' => 300000,
+        'direction' => 'receipt',
+        'method' => 'cash',
+        'paid_at' => now(),
+        'received_by' => $manager->id,
+        'note' => 'Thanh toán đợt 1',
+    ]);
+
+    $syncedInvoice = $invoice->fresh()->updatePaidAmount(
+        actorId: $manager->id,
+        reason: 'return_contract_check',
+        metadata: ['trigger' => 'test'],
+    );
+
+    expect($syncedInvoice)->toBeInstanceOf(Invoice::class)
+        ->and($syncedInvoice->is($invoice))->toBeTrue()
+        ->and((float) $syncedInvoice->paid_amount)->toEqualWithDelta(300000.00, 0.01)
+        ->and($syncedInvoice->status)->toBe(Invoice::STATUS_PARTIAL);
 });
