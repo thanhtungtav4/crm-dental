@@ -234,6 +234,98 @@ it('stores sanitized provider telemetry for zns automation logs and campaign del
     unset($patient);
 });
 
+it('returns transitioned models for zns campaign delivery claim send and failure boundaries', function (): void {
+    $branch = Branch::factory()->create();
+
+    $campaign = ZnsCampaign::query()->create([
+        'name' => 'Campaign delivery return contract',
+        'branch_id' => $branch->id,
+        'status' => ZnsCampaign::STATUS_DRAFT,
+        'template_id' => 'tpl_zns_return_contract',
+    ]);
+
+    $failedDelivery = ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => $campaign->id,
+        'branch_id' => $branch->id,
+        'phone' => '0901111222',
+        'normalized_phone' => '84901111222',
+        'idempotency_key' => hash('sha256', 'delivery-zns-return-failed'),
+        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+        'attempt_count' => 0,
+        'payload' => [
+            'message' => ['recipient_name' => 'Delivery Failed'],
+        ],
+        'template_key_snapshot' => 'appointment',
+        'template_id_snapshot' => 'tpl_zns_return_contract',
+    ]);
+
+    $claimedFailedDelivery = $failedDelivery->claimForProcessing('claim-token-failed');
+
+    expect($claimedFailedDelivery)->toBe($failedDelivery)
+        ->and($claimedFailedDelivery->processing_token)->toBe('claim-token-failed')
+        ->and((int) $claimedFailedDelivery->attempt_count)->toBe(1)
+        ->and($claimedFailedDelivery->locked_at)->not->toBeNull();
+
+    $failedTransitionedDelivery = $claimedFailedDelivery->markFailure(
+        message: 'Provider timeout',
+        providerStatusCode: 429,
+        providerResponse: [
+            'error' => '429',
+            'message' => 'Too many requests',
+        ],
+        nextRetryAt: now()->addMinutes(15),
+        providerRequestSummary: [
+            'phone_masked' => '******1222',
+            'template_data_keys' => ['recipient_name'],
+        ],
+    );
+
+    expect($failedTransitionedDelivery)->toBe($failedDelivery)
+        ->and($failedTransitionedDelivery->status)->toBe(ZnsCampaignDelivery::STATUS_FAILED)
+        ->and($failedTransitionedDelivery->processing_token)->toBeNull()
+        ->and($failedTransitionedDelivery->locked_at)->toBeNull()
+        ->and($failedTransitionedDelivery->error_message)->toBe('Provider timeout')
+        ->and(data_get($failedTransitionedDelivery->payload, 'provider_request_summary.phone_masked'))->toBe('******1222');
+
+    $sentDelivery = ZnsCampaignDelivery::query()->create([
+        'zns_campaign_id' => $campaign->id,
+        'branch_id' => $branch->id,
+        'phone' => '0903333444',
+        'normalized_phone' => '84903333444',
+        'idempotency_key' => hash('sha256', 'delivery-zns-return-sent'),
+        'status' => ZnsCampaignDelivery::STATUS_QUEUED,
+        'attempt_count' => 0,
+        'payload' => [
+            'message' => ['recipient_name' => 'Delivery Sent'],
+        ],
+        'template_key_snapshot' => 'appointment',
+        'template_id_snapshot' => 'tpl_zns_return_contract',
+    ]);
+
+    $claimedSentDelivery = $sentDelivery->claimForProcessing('claim-token-sent');
+
+    $sentTransitionedDelivery = $claimedSentDelivery->markSent(
+        providerMessageId: 'zns-message-001',
+        providerStatusCode: '0',
+        providerResponse: [
+            'error' => '0',
+            'message' => 'Success',
+        ],
+        providerRequestSummary: [
+            'phone_masked' => '******3444',
+            'template_data_keys' => ['recipient_name'],
+        ],
+    );
+
+    expect($sentTransitionedDelivery)->toBe($sentDelivery)
+        ->and($sentTransitionedDelivery->status)->toBe(ZnsCampaignDelivery::STATUS_SENT)
+        ->and($sentTransitionedDelivery->processing_token)->toBeNull()
+        ->and($sentTransitionedDelivery->locked_at)->toBeNull()
+        ->and($sentTransitionedDelivery->provider_message_id)->toBe('zns-message-001')
+        ->and($sentTransitionedDelivery->sent_at)->not->toBeNull()
+        ->and(data_get($sentTransitionedDelivery->payload, 'provider_request_summary.phone_masked'))->toBe('******3444');
+});
+
 function znsPayloadGovernanceAdminContext(): array
 {
     $branch = Branch::factory()->create();

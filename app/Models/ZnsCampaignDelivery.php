@@ -146,13 +146,15 @@ class ZnsCampaignDelivery extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function claimForProcessing(string $processingToken): void
+    public function claimForProcessing(string $processingToken): self
     {
         $this->forceFill([
             'processing_token' => $processingToken,
             'locked_at' => now(),
             'attempt_count' => (int) $this->attempt_count + 1,
         ])->save();
+
+        return $this;
     }
 
     /**
@@ -164,7 +166,7 @@ class ZnsCampaignDelivery extends Model
         string|int|null $providerStatusCode,
         ?array $providerResponse,
         ?array $providerRequestSummary = null,
-    ): void {
+    ): self {
         static::runWithinManagedWorkflow(function () use (
             $providerMessageId,
             $providerStatusCode,
@@ -188,6 +190,8 @@ class ZnsCampaignDelivery extends Model
                     ]),
             ])->save();
         });
+
+        return $this;
     }
 
     /**
@@ -200,7 +204,7 @@ class ZnsCampaignDelivery extends Model
         ?array $providerResponse,
         mixed $nextRetryAt,
         ?array $providerRequestSummary = null,
-    ): void {
+    ): self {
         static::runWithinManagedWorkflow(function () use (
             $message,
             $providerStatusCode,
@@ -224,6 +228,8 @@ class ZnsCampaignDelivery extends Model
                     ]),
             ])->save();
         });
+
+        return $this;
     }
 
     public static function runWithinManagedWorkflow(callable $callback): mixed
