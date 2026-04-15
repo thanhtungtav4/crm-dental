@@ -163,7 +163,7 @@ class ZnsAutomationEvent extends Model
             });
     }
 
-    public function markProcessing(string $processingToken): void
+    public function markProcessing(string $processingToken): self
     {
         static::runWithinManagedWorkflow(function () use ($processingToken): void {
             $this->forceFill([
@@ -174,6 +174,8 @@ class ZnsAutomationEvent extends Model
                 'last_error' => null,
             ])->save();
         });
+
+        return $this;
     }
 
     /**
@@ -184,7 +186,7 @@ class ZnsAutomationEvent extends Model
         ?string $providerStatusCode,
         ?int $httpStatus,
         ?array $providerResponse,
-    ): void {
+    ): self {
         static::runWithinManagedWorkflow(function () use ($providerMessageId, $providerStatusCode, $httpStatus, $providerResponse): void {
             $this->forceFill([
                 'status' => self::STATUS_SENT,
@@ -199,6 +201,8 @@ class ZnsAutomationEvent extends Model
                 'provider_response' => $providerResponse,
             ])->save();
         });
+
+        return $this;
     }
 
     /**
@@ -210,7 +214,7 @@ class ZnsAutomationEvent extends Model
         bool $retryable = true,
         ?string $providerStatusCode = null,
         ?array $providerResponse = null,
-    ): void {
+    ): self {
         $shouldDeadLetter = ! $retryable || (int) $this->attempts >= (int) $this->max_attempts;
 
         static::runWithinManagedWorkflow(function () use ($shouldDeadLetter, $httpStatus, $message, $providerStatusCode, $providerResponse): void {
@@ -225,12 +229,14 @@ class ZnsAutomationEvent extends Model
                 'provider_response' => $providerResponse,
             ])->save();
         });
+
+        return $this;
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function resetForReplay(array $attributes): void
+    public function resetForReplay(array $attributes): self
     {
         static::runWithinManagedWorkflow(function () use ($attributes): void {
             $this->forceFill(array_merge($attributes, [
@@ -247,9 +253,11 @@ class ZnsAutomationEvent extends Model
                 'provider_response' => null,
             ]))->save();
         });
+
+        return $this;
     }
 
-    public function markSuperseded(string $message): void
+    public function markSuperseded(string $message): self
     {
         static::runWithinManagedWorkflow(function () use ($message): void {
             $this->forceFill([
@@ -261,6 +269,8 @@ class ZnsAutomationEvent extends Model
                 'last_error' => $message,
             ])->save();
         });
+
+        return $this;
     }
 
     public static function reclaimStaleProcessing(int $ttlMinutes = self::STALE_PROCESSING_TTL_MINUTES): int

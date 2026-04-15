@@ -386,6 +386,78 @@ it('publishes birthday greeting event from birthday automation and deduplicates 
             ));
 });
 
+it('returns transitioned models from zns automation event boundaries', function (): void {
+    $branch = Branch::factory()->create();
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+        'phone' => '0901234567',
+    ]);
+
+    $event = ZnsAutomationEvent::query()->create([
+        'event_key' => 'zns-boundary-001',
+        'event_type' => ZnsAutomationEvent::EVENT_LEAD_WELCOME,
+        'template_key' => 'tpl_boundary_001',
+        'template_id_snapshot' => 'tpl_boundary_001_snapshot',
+        'patient_id' => $patient->id,
+        'customer_id' => $customer->id,
+        'branch_id' => $branch->id,
+        'phone' => '0901234567',
+        'normalized_phone' => '0901234567',
+        'payload' => ['template_data' => ['name' => 'Boundary']],
+        'payload_checksum' => 'zns-boundary-checksum-001',
+        'status' => ZnsAutomationEvent::STATUS_PENDING,
+        'attempts' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    $processingEvent = $event->markProcessing('zns-boundary-token-001');
+    $failedEvent = $processingEvent->markFailure(
+        httpStatus: 500,
+        message: 'Provider timeout',
+        retryable: true,
+        providerStatusCode: 'timeout',
+        providerResponse: ['error' => 'timeout'],
+    );
+
+    expect($processingEvent)->toBeInstanceOf(ZnsAutomationEvent::class)
+        ->and($processingEvent->is($event))->toBeTrue()
+        ->and($failedEvent)->toBeInstanceOf(ZnsAutomationEvent::class)
+        ->and($failedEvent->is($event))->toBeTrue()
+        ->and($failedEvent->status)->toBe(ZnsAutomationEvent::STATUS_FAILED)
+        ->and($failedEvent->next_retry_at)->not->toBeNull();
+
+    $sentEvent = $failedEvent
+        ->resetForReplay([])
+        ->markProcessing('zns-boundary-token-002')
+        ->markSent(
+            providerMessageId: 'zns-boundary-msg-001',
+            providerStatusCode: 'sent',
+            httpStatus: 200,
+            providerResponse: ['status' => 'sent'],
+        );
+
+    expect($sentEvent)->toBeInstanceOf(ZnsAutomationEvent::class)
+        ->and($sentEvent->is($event))->toBeTrue()
+        ->and($sentEvent->status)->toBe(ZnsAutomationEvent::STATUS_SENT)
+        ->and($sentEvent->provider_message_id)->toBe('zns-boundary-msg-001')
+        ->and($sentEvent->processed_at)->not->toBeNull();
+
+    $supersededEvent = $sentEvent
+        ->resetForReplay([])
+        ->markSuperseded('Superseded by newer reminder');
+
+    expect($supersededEvent)->toBeInstanceOf(ZnsAutomationEvent::class)
+        ->and($supersededEvent->is($event))->toBeTrue()
+        ->and($supersededEvent->status)->toBe(ZnsAutomationEvent::STATUS_DEAD)
+        ->and($supersededEvent->last_error)->toBe('Superseded by newer reminder')
+        ->and($supersededEvent)->toBeInstanceOf(ZnsAutomationEvent::class)
+        ->and($supersededEvent->is($event))->toBeTrue();
+});
+
 function configureWebLeadApiForZns(
     bool $enabled,
     string $token,
