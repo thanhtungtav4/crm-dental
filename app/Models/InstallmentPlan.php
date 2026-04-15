@@ -131,9 +131,9 @@ class InstallmentPlan extends Model
         return $schedule;
     }
 
-    public function syncFinancialState(?Carbon $asOf = null, bool $persist = true): void
+    public function syncFinancialState(?Carbon $asOf = null, bool $persist = true): self
     {
-        app(InstallmentPlanLifecycleService::class)->syncFinancialState($this, $asOf, $persist);
+        return app(InstallmentPlanLifecycleService::class)->syncFinancialState($this, $asOf, $persist);
     }
 
     public function getCurrentAgingBucket(?Carbon $asOf = null): int
