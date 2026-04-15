@@ -237,6 +237,42 @@ class FinancialDashboardReadModelService
         return $query;
     }
 
+    /**
+     * @return array{
+     *     today_revenue: float,
+     *     today_change: float,
+     *     last_7_days: array<int, float>,
+     *     method_total: float,
+     *     cash_payments: float,
+     *     card_payments: float,
+     *     transfer_payments: float,
+     *     insurance_payments: float,
+     *     unpaid_count: int,
+     *     unpaid_total: float,
+     *     overdue_count: int
+     * }
+     */
+    public function paymentStatsSnapshot(?User $user = null): array
+    {
+        $overview = $this->revenueOverview($user);
+        $quickStats = $this->quickStats($user);
+        $balances = $this->outstandingBalances($user);
+
+        return [
+            'today_revenue' => $overview['today_revenue'],
+            'today_change' => $overview['today_change'],
+            'last_7_days' => $overview['last_7_days'],
+            'method_total' => $quickStats['cash_payments'] + $quickStats['card_payments'] + $quickStats['transfer_payments'],
+            'cash_payments' => $quickStats['cash_payments'],
+            'card_payments' => $quickStats['card_payments'],
+            'transfer_payments' => $quickStats['transfer_payments'],
+            'insurance_payments' => $quickStats['insurance_payments'],
+            'unpaid_count' => $balances['unpaid_count'],
+            'unpaid_total' => $balances['unpaid_total'],
+            'overdue_count' => $balances['overdue_count'],
+        ];
+    }
+
     protected function invoiceQuery(?User $user = null): Builder
     {
         return $this->scopeQueryToAccessibleBranches(Invoice::query(), $user);

@@ -161,6 +161,7 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $overview = $service->revenueOverview($manager);
     $balances = $service->outstandingBalances($manager);
     $quickStats = $service->quickStats($manager);
+    $paymentStats = $service->paymentStatsSnapshot($manager);
     $monthlySeries = $service->monthlyRevenueSeries('3months', $manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
@@ -208,6 +209,23 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
         'last_month_payments' => 1,
         'frequency_change' => 100.0,
     ]);
+
+    expect($paymentStats)
+        ->toMatchArray([
+            'today_revenue' => 500000.0,
+            'today_change' => -50.0,
+            'method_total' => 5500000.0,
+            'cash_payments' => 500000.0,
+            'card_payments' => 1000000.0,
+            'transfer_payments' => 4000000.0,
+            'insurance_payments' => 0.0,
+            'unpaid_count' => 1,
+            'unpaid_total' => 1000000.0,
+            'overdue_count' => 1,
+        ])
+        ->and($paymentStats['last_7_days'])->toHaveCount(7)
+        ->and($paymentStats['last_7_days'][5])->toBe(1000000.0)
+        ->and($paymentStats['last_7_days'][6])->toBe(500000.0);
 
     expect($monthlySeries['labels'])->toHaveCount(3)
         ->and($monthlySeries['revenue'])->toBe([0.0, 4000000.0, 1500000.0])
