@@ -111,20 +111,14 @@ class FactoryStatistical extends BaseReportPage
     public function getStats(): array
     {
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->inventorySupplyReports()->factoryOrderSummary(
+
+        return $this->inventorySupplyReports()->factoryOrderStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
             $this->selectedStatus(),
             $this->selectedSupplierId(),
         );
-
-        return [
-            ['label' => 'Tổng lệnh labo', 'value' => number_format($summary['total_orders'])],
-            ['label' => 'Đang xử lý', 'value' => number_format($summary['open_orders'])],
-            ['label' => 'Đã giao', 'value' => number_format($summary['delivered_orders'])],
-            ['label' => 'Tổng giá trị', 'value' => number_format($summary['total_value']).' đ'],
-        ];
     }
 
     protected function selectedStatus(): ?string

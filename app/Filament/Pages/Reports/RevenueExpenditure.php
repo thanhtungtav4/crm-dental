@@ -80,27 +80,16 @@ class RevenueExpenditure extends BaseReportPage
     public function getStats(): array
     {
         if (! $this->hasReceiptsExpenseTable()) {
-            return [
-                ['label' => 'Tổng thu', 'value' => '0 đ'],
-                ['label' => 'Tổng chi', 'value' => '0 đ'],
-                ['label' => 'Biến động', 'value' => '0 đ'],
-            ];
+            return $this->financialReports()->cashflowStatsPayload([], null, null);
         }
 
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->financialReports()->cashflowSummary(
+
+        return $this->financialReports()->cashflowStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
         );
-        $totalReceipt = $summary['total_receipt'];
-        $totalExpense = $summary['total_expense'];
-
-        return [
-            ['label' => 'Tổng thu', 'value' => number_format($totalReceipt).' đ'],
-            ['label' => 'Tổng chi', 'value' => number_format($totalExpense).' đ'],
-            ['label' => 'Biến động', 'value' => number_format($totalReceipt - $totalExpense).' đ'],
-        ];
     }
 
     protected function formatPaymentMethod(?string $state): string

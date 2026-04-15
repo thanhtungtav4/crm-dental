@@ -54,6 +54,23 @@ class FinancialReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function cashflowStatsPayload(?array $branchIds, ?string $from, ?string $until): array
+    {
+        $summary = $this->cashflowSummary($branchIds, $from, $until);
+        $totalReceipt = $summary['total_receipt'];
+        $totalExpense = $summary['total_expense'];
+
+        return [
+            ['label' => 'Tổng thu', 'value' => number_format($totalReceipt).' đ'],
+            ['label' => 'Tổng chi', 'value' => number_format($totalExpense).' đ'],
+            ['label' => 'Biến động', 'value' => number_format($totalReceipt - $totalExpense).' đ'],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     public function invoiceBalanceQuery(?array $branchIds): Builder
     {
@@ -89,6 +106,21 @@ class FinancialReportReadModelService
             'total_amount' => $totalAmount,
             'paid_amount' => $paidAmount,
             'balance' => $totalAmount - $paidAmount,
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function invoiceBalanceStatsPayload(?array $branchIds, ?string $from, ?string $until): array
+    {
+        $summary = $this->invoiceBalanceSummary($branchIds, $from, $until);
+
+        return [
+            ['label' => 'Tổng phải thanh toán', 'value' => number_format($summary['total_amount']).' đ'],
+            ['label' => 'Đã thanh toán', 'value' => number_format($summary['paid_amount']).' đ'],
+            ['label' => 'Công nợ', 'value' => number_format($summary['balance']).' đ'],
         ];
     }
 

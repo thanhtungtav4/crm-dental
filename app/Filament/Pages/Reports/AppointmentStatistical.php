@@ -107,21 +107,12 @@ class AppointmentStatistical extends BaseReportPage
     public function getStats(): array
     {
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->appointmentReports()->appointmentSummary(
+
+        return $this->appointmentReports()->appointmentSummaryStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
         );
-
-        return [
-            ['label' => 'Tổng lịch hẹn', 'value' => number_format($summary['total'])],
-            ['label' => 'Lịch hẹn mới', 'value' => number_format($summary['new'])],
-            ['label' => 'Lịch hẹn bị hủy', 'value' => number_format($summary['cancelled'])],
-            ['label' => 'Hoàn thành', 'value' => number_format($summary['completed'])],
-            ['label' => 'Waiting TB (phút)', 'value' => number_format($summary['avg_waiting'], 1)],
-            ['label' => 'Chair TB (phút)', 'value' => number_format($summary['avg_chair'], 1)],
-            ['label' => 'Overrun TB (phút)', 'value' => number_format($summary['avg_overrun'], 1)],
-        ];
     }
 
     protected function appointmentReports(): AppointmentReportReadModelService

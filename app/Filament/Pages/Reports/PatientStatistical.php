@@ -64,15 +64,12 @@ class PatientStatistical extends BaseReportPage
     public function getStats(): array
     {
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->patientInsights()->patientSummary(
+
+        return $this->patientInsights()->patientSummaryStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
         );
-
-        return [
-            ['label' => 'Tổng khách hàng', 'value' => number_format($summary['total_patients'])],
-        ];
     }
 
     protected function patientInsights(): PatientInsightReportReadModelService
