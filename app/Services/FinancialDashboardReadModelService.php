@@ -223,6 +223,20 @@ class FinancialDashboardReadModelService
             ->all();
     }
 
+    public function overdueInvoices(?User $user = null, int $limit = 10): Builder
+    {
+        $query = $this->invoiceQuery($user)
+            ->overdue()
+            ->with(['patient', 'plan'])
+            ->orderBy('due_date', 'asc');
+
+        if ($limit > 0) {
+            $query->limit($limit);
+        }
+
+        return $query;
+    }
+
     protected function invoiceQuery(?User $user = null): Builder
     {
         return $this->scopeQueryToAccessibleBranches(Invoice::query(), $user);

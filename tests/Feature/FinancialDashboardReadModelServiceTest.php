@@ -278,3 +278,73 @@ it('allows admins to aggregate across all branches', function (): void {
 
     Carbon::setTestNow();
 });
+
+it('returns overdue invoices scoped and ordered for dashboard widgets', function (): void {
+    $now = Carbon::parse('2026-03-18 10:00:00');
+    Carbon::setTestNow($now);
+
+    $branchA = Branch::factory()->create();
+    $branchB = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $doctorA = User::factory()->create([
+        'branch_id' => $branchA->id,
+    ]);
+    $doctorA->assignRole('Doctor');
+
+    $doctorB = User::factory()->create([
+        'branch_id' => $branchB->id,
+    ]);
+    $doctorB->assignRole('Doctor');
+
+    createFinancialDashboardInvoice($branchA, $doctorA, $manager, [
+        'invoice_no' => 'INV-OVERDUE-001',
+        'status' => Invoice::STATUS_OVERDUE,
+        'total_amount' => 1_800_000,
+        'paid_amount' => 300_000,
+        'due_date' => $now->copy()->subDays(7)->toDateString(),
+    ]);
+
+    createFinancialDashboardInvoice($branchA, $doctorA, $manager, [
+        'invoice_no' => 'INV-OVERDUE-002',
+        'status' => Invoice::STATUS_OVERDUE,
+        'total_amount' => 2_400_000,
+        'paid_amount' => 900_000,
+        'due_date' => $now->copy()->subDays(2)->toDateString(),
+    ]);
+
+    createFinancialDashboardInvoice($branchA, $doctorA, $manager, [
+        'invoice_no' => 'INV-ISSUED-003',
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 1_100_000,
+        'paid_amount' => 0,
+        'due_date' => $now->copy()->subDay()->toDateString(),
+    ]);
+
+    createFinancialDashboardInvoice($branchB, $doctorB, $manager, [
+        'invoice_no' => 'INV-OVERDUE-004',
+        'status' => Invoice::STATUS_OVERDUE,
+        'total_amount' => 3_000_000,
+        'paid_amount' => 0,
+        'due_date' => $now->copy()->subDays(10)->toDateString(),
+    ]);
+
+    $invoices = app(FinancialDashboardReadModelService::class)
+        ->overdueInvoices($manager)
+        ->get();
+
+    expect($invoices->pluck('invoice_no')->all())->toBe([
+        'INV-OVERDUE-001',
+        'INV-OVERDUE-002',
+    ])
+        ->and($invoices)->toHaveCount(2)
+        ->and($invoices->every(fn (Invoice $invoice): bool => $invoice->branch_id === $branchA->id))->toBeTrue()
+        ->and($invoices->every(fn (Invoice $invoice): bool => $invoice->relationLoaded('patient')))->toBeTrue()
+        ->and($invoices->every(fn (Invoice $invoice): bool => $invoice->relationLoaded('plan')))->toBeTrue();
+
+    Carbon::setTestNow();
+});

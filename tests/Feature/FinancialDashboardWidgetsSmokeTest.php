@@ -17,6 +17,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 
 if (! function_exists('createFinancialDashboardInvoice')) {
@@ -162,4 +163,12 @@ it('renders financial dashboard widgets through the shared read model service', 
         ->assertSee('Tỷ lệ thanh toán');
 
     Carbon::setTestNow();
+});
+
+it('routes overdue invoice widget rows through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/OverdueInvoicesWidget.php'));
+
+    expect($widget)
+        ->toContain('->overdueInvoices(auth()->user())')
+        ->not->toContain('->scopedInvoiceQuery()');
 });

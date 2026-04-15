@@ -24,14 +24,10 @@ class OverdueInvoicesWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $dashboard = app(FinancialDashboardReadModelService::class);
+
         return $table
-            ->query(
-                $this->scopedInvoiceQuery()
-                    ->overdue()
-                    ->with(['patient', 'plan'])
-                    ->orderBy('due_date', 'asc')
-                    ->limit(10)
-            )
+            ->query($dashboard->overdueInvoices(auth()->user()))
             ->columns([
                 TextColumn::make('invoice_no')
                     ->label('Số HĐ')
@@ -88,9 +84,8 @@ class OverdueInvoicesWidget extends BaseWidget
             ->emptyStateHeading('Không có hóa đơn quá hạn')
             ->emptyStateDescription('Tất cả hóa đơn đều được thanh toán đúng hạn')
             ->emptyStateIcon('heroicon-o-check-circle')
-            ->heading(function (): string {
-                $balances = app(FinancialDashboardReadModelService::class)
-                    ->outstandingBalances(auth()->user());
+            ->heading(function () use ($dashboard): string {
+                $balances = $dashboard->outstandingBalances(auth()->user());
 
                 return "Hóa đơn quá hạn ({$balances['overdue_count']} hóa đơn, nợ: ".number_format($balances['overdue_balance'], 0, ',', '.').'đ)';
             });
