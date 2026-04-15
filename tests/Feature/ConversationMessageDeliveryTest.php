@@ -167,3 +167,40 @@ it('delivers a pending outbound message through the facebook messenger client', 
             && $request['message']['text'] === 'Cam on ban da nhan tin Facebook';
     });
 });
+
+it('returns transitioned message models from send failure and ignore boundaries', function (): void {
+    $conversation = Conversation::factory()->create();
+
+    $message = ConversationMessage::factory()->create([
+        'conversation_id' => $conversation->id,
+        'direction' => ConversationMessage::DIRECTION_OUTBOUND,
+        'status' => ConversationMessage::STATUS_PENDING,
+        'attempts' => 1,
+        'body' => 'Boundary contract check',
+    ]);
+
+    $sentMessage = $message->markSent([
+        'provider_message_id' => 'boundary-msg-001',
+        'provider_status_code' => '200',
+        'response' => ['ok' => true],
+    ]);
+    $failedMessage = $sentMessage->markFailed([
+        'provider_status_code' => '500',
+        'error' => 'Provider timeout',
+    ]);
+
+    expect($sentMessage)->toBeInstanceOf(ConversationMessage::class)
+        ->and($sentMessage->is($message))->toBeTrue()
+        ->and($failedMessage)->toBeInstanceOf(ConversationMessage::class)
+        ->and($failedMessage->is($message))->toBeTrue()
+        ->and($failedMessage->status)->toBe(ConversationMessage::STATUS_FAILED)
+        ->and($failedMessage->next_retry_at)->not->toBeNull();
+
+    $ignoredMessage = $failedMessage->markIgnored('Skipped by operator');
+
+    expect($ignoredMessage)->toBeInstanceOf(ConversationMessage::class)
+        ->and($ignoredMessage->is($message))->toBeTrue()
+        ->and($ignoredMessage->status)->toBe(ConversationMessage::STATUS_IGNORED)
+        ->and($ignoredMessage->last_error)->toBe('Skipped by operator')
+        ->and($ignoredMessage->processed_at)->not->toBeNull();
+});

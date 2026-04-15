@@ -91,7 +91,7 @@ class ConversationMessage extends Model
      *     response?:array<string, mixed>|null
      * }  $result
      */
-    public function markSent(array $result = []): void
+    public function markSent(array $result = []): self
     {
         $this->forceFill([
             'status' => self::STATUS_SENT,
@@ -103,6 +103,8 @@ class ConversationMessage extends Model
             'next_retry_at' => null,
             'last_error' => null,
         ])->save();
+
+        return $this;
     }
 
     /**
@@ -111,7 +113,7 @@ class ConversationMessage extends Model
      *     error?:string|null
      * }  $result
      */
-    public function markFailed(array $result = []): void
+    public function markFailed(array $result = []): self
     {
         $delayMinutes = min(60, max(5, ((int) $this->attempts) * 5));
 
@@ -123,9 +125,11 @@ class ConversationMessage extends Model
             'next_retry_at' => now()->addMinutes($delayMinutes),
             'last_error' => $result['error'] ?? 'Channel send failed.',
         ])->save();
+
+        return $this;
     }
 
-    public function markIgnored(?string $error = null): void
+    public function markIgnored(?string $error = null): self
     {
         $this->forceFill([
             'status' => self::STATUS_IGNORED,
@@ -134,5 +138,7 @@ class ConversationMessage extends Model
             'next_retry_at' => null,
             'last_error' => $error,
         ])->save();
+
+        return $this;
     }
 }
