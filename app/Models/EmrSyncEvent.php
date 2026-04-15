@@ -120,7 +120,7 @@ class EmrSyncEvent extends Model
             });
     }
 
-    public function markProcessing(): void
+    public function markProcessing(): self
     {
         static::runWithinManagedWorkflow(function (): void {
             $this->forceFill([
@@ -130,9 +130,11 @@ class EmrSyncEvent extends Model
                 'last_error' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markSynced(?string $externalPatientId, ?int $httpStatus): void
+    public function markSynced(?string $externalPatientId, ?int $httpStatus): self
     {
         static::runWithinManagedWorkflow(function () use ($externalPatientId, $httpStatus): void {
             $this->forceFill([
@@ -145,9 +147,11 @@ class EmrSyncEvent extends Model
                 'locked_at' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markFailure(?int $httpStatus, string $message): void
+    public function markFailure(?int $httpStatus, string $message): self
     {
         $shouldDeadLetter = (int) $this->attempts >= (int) $this->max_attempts;
         $nextRetryAt = $shouldDeadLetter
@@ -163,12 +167,14 @@ class EmrSyncEvent extends Model
                 'locked_at' => null,
             ])->save();
         });
+
+        return $this;
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function resetForReplay(array $attributes): void
+    public function resetForReplay(array $attributes): self
     {
         static::runWithinManagedWorkflow(function () use ($attributes): void {
             $this->forceFill(array_merge($attributes, [
@@ -182,6 +188,8 @@ class EmrSyncEvent extends Model
                 'external_patient_id' => null,
             ]))->save();
         });
+
+        return $this;
     }
 
     public static function reclaimStaleProcessing(int $ttlMinutes = self::STALE_PROCESSING_TTL_MINUTES): int
