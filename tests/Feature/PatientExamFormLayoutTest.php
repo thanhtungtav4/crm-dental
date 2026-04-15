@@ -40,7 +40,10 @@ it('splits the patient exam form into focused partials', function (): void {
         ->toContain('protected function formViewState(')
         ->toContain('protected function sessionPanelData(Collection $sessions): array')
         ->toContain('protected function diagnosisViewData(')
-        ->toContain('protected function mediaViewData(array $mediaReadModel): array');
+        ->toContain('protected function mediaViewData(array $mediaReadModel): array')
+        ->toContain('patientExamSessionReadModelService()->latestSession($this->patient)')
+        ->toContain('patientExamSessionReadModelService()->findSession($this->patient, $sessionId)')
+        ->not->toContain('protected function getSessionQuery()');
 });
 
 it('keeps doctor clear buttons vertically centered in patient exam form', function (): void {

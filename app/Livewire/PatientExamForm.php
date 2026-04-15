@@ -98,7 +98,7 @@ class PatientExamForm extends Component
         $this->indicationTypes = ClinicRuntimeSettings::examIndicationOptions();
         $this->newSessionDate = now()->toDateString();
 
-        $latestSession = $this->getSessionQuery()->first();
+        $latestSession = $this->patientExamSessionReadModelService()->latestSession($this->patient);
 
         if ($latestSession) {
             $this->setActiveSession($latestSession->id);
@@ -157,9 +157,7 @@ class PatientExamForm extends Component
 
     public function setActiveSession(int $sessionId): void
     {
-        $session = $this->patient->examSessions()
-            ->with('clinicalNote')
-            ->find($sessionId);
+        $session = $this->patientExamSessionReadModelService()->findSession($this->patient, $sessionId);
 
         if (! $session) {
             return;
@@ -186,7 +184,7 @@ class PatientExamForm extends Component
 
     public function startEditingSession(int $sessionId): void
     {
-        $session = $this->patient->examSessions()->find($sessionId);
+        $session = $this->patientExamSessionReadModelService()->findSession($this->patient, $sessionId);
 
         if (! $session) {
             return;
@@ -299,7 +297,7 @@ class PatientExamForm extends Component
         }
 
         if ($this->activeSessionId === $sessionId) {
-            $nextSession = $this->getSessionQuery()->first();
+            $nextSession = $this->patientExamSessionReadModelService()->latestSession($this->patient);
 
             if ($nextSession) {
                 $this->setActiveSession($nextSession->id);
@@ -787,14 +785,6 @@ class PatientExamForm extends Component
             })
             ->values()
             ->all();
-    }
-
-    protected function getSessionQuery()
-    {
-        return $this->patient->examSessions()
-            ->with('clinicalNote')
-            ->orderByDesc('session_date')
-            ->orderByDesc('id');
     }
 
     protected function resetExamForm(): void
