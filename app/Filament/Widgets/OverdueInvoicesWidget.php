@@ -84,10 +84,6 @@ class OverdueInvoicesWidget extends BaseWidget
             ->emptyStateHeading('Không có hóa đơn quá hạn')
             ->emptyStateDescription('Tất cả hóa đơn đều được thanh toán đúng hạn')
             ->emptyStateIcon('heroicon-o-check-circle')
-            ->heading(function () use ($dashboard): string {
-                $balances = $dashboard->outstandingBalances(auth()->user());
-
-                return "Hóa đơn quá hạn ({$balances['overdue_count']} hóa đơn, nợ: ".number_format($balances['overdue_balance'], 0, ',', '.').'đ)';
-            });
+            ->heading(fn (): string => $dashboard->overdueInvoiceHeading(auth()->user()));
     }
 }

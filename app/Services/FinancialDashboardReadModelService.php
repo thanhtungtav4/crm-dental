@@ -277,6 +277,71 @@ class FinancialDashboardReadModelService
 
     /**
      * @return array{
+     *     today: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         chart: array<int, float>,
+     *     },
+     *     methods: array{
+     *         label: string,
+     *         value: string,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         title: string,
+     *     },
+     *     unpaid: array{
+     *         label: string,
+     *         value: int,
+     *         description: string,
+     *         description_icon: string,
+     *         color: string,
+     *         url: string,
+     *     }
+     * }
+     */
+    public function paymentStatsCards(?User $user = null): array
+    {
+        $stats = $this->paymentStatsSnapshot($user);
+        $todayDiff = $stats['today_change'];
+
+        return [
+            'today' => [
+                'label' => '💰 Tổng thu hôm nay',
+                'value' => number_format($stats['today_revenue'], 0, ',', '.').'đ',
+                'description' => $todayDiff >= 0
+                    ? 'Tăng '.abs($todayDiff).'% so với hôm qua'
+                    : 'Giảm '.abs($todayDiff).'% so với hôm qua',
+                'description_icon' => $todayDiff >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down',
+                'color' => $todayDiff >= 0 ? 'success' : 'danger',
+                'chart' => $stats['last_7_days'],
+            ],
+            'methods' => [
+                'label' => '💳 Theo phương thức',
+                'value' => number_format($stats['method_total'], 0, ',', '.').'đ',
+                'description' => 'Tiền mặt: '.number_format($stats['cash_payments'], 0, ',', '.').'đ | Thẻ: '.number_format($stats['card_payments'], 0, ',', '.').'đ',
+                'description_icon' => 'heroicon-m-banknotes',
+                'color' => 'info',
+                'title' => 'Chuyển khoản: '.number_format($stats['transfer_payments'], 0, ',', '.').'đ | Bảo hiểm: '.number_format($stats['insurance_payments'], 0, ',', '.').'đ',
+            ],
+            'unpaid' => [
+                'label' => '⏰ Hóa đơn chưa thanh toán',
+                'value' => $stats['unpaid_count'],
+                'description' => 'Tổng: '.number_format($stats['unpaid_total'], 0, ',', '.').'đ | Quá hạn: '.$stats['overdue_count'],
+                'description_icon' => $stats['overdue_count'] > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle',
+                'color' => $stats['overdue_count'] > 0 ? 'danger' : 'warning',
+                'url' => route('filament.admin.resources.invoices.index', [
+                    'tableFilters' => ['status' => ['value' => ['issued', 'partial']]],
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{
      *     values: array<int, float|int>,
      *     labels: array<int, string>,
      *     background_color: array<int, string>,
@@ -625,6 +690,13 @@ class FinancialDashboardReadModelService
                 'url' => route('filament.admin.resources.payments.index'),
             ],
         ];
+    }
+
+    public function overdueInvoiceHeading(?User $user = null): string
+    {
+        $balances = $this->outstandingBalances($user);
+
+        return "Hóa đơn quá hạn ({$balances['overdue_count']} hóa đơn, nợ: ".number_format($balances['overdue_balance'], 0, ',', '.').'đ)';
     }
 
     protected function invoiceQuery(?User $user = null): Builder

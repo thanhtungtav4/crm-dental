@@ -164,12 +164,14 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $balances = $service->outstandingBalances($manager);
     $quickStats = $service->quickStats($manager);
     $paymentStats = $service->paymentStatsSnapshot($manager);
+    $paymentStatsCards = $service->paymentStatsCards($manager);
     $paymentMethodChart = $service->paymentMethodChart('month', $manager);
     $monthlySeries = $service->monthlyRevenueSeries('3months', $manager);
     $monthlyChart = $service->monthlyRevenueChart('3months', $manager);
     $revenueOverviewCards = $service->revenueOverviewCards($manager);
     $quickFinancialCards = $service->quickFinancialStatCards($manager);
     $outstandingCards = $service->outstandingBalanceCards($manager);
+    $overdueHeading = $service->overdueInvoiceHeading($manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
     expect($overview)
@@ -233,6 +235,35 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
         ->and($paymentStats['last_7_days'])->toHaveCount(7)
         ->and($paymentStats['last_7_days'][5])->toBe(1000000.0)
         ->and($paymentStats['last_7_days'][6])->toBe(500000.0);
+
+    expect($paymentStatsCards)->toMatchArray([
+        'today' => [
+            'label' => '💰 Tổng thu hôm nay',
+            'value' => '500.000đ',
+            'description' => 'Giảm 50% so với hôm qua',
+            'description_icon' => 'heroicon-m-arrow-trending-down',
+            'color' => 'danger',
+            'chart' => [0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 500000.0],
+        ],
+        'methods' => [
+            'label' => '💳 Theo phương thức',
+            'value' => '5.500.000đ',
+            'description' => 'Tiền mặt: 500.000đ | Thẻ: 1.000.000đ',
+            'description_icon' => 'heroicon-m-banknotes',
+            'color' => 'info',
+            'title' => 'Chuyển khoản: 4.000.000đ | Bảo hiểm: 0đ',
+        ],
+        'unpaid' => [
+            'label' => '⏰ Hóa đơn chưa thanh toán',
+            'value' => 1,
+            'description' => 'Tổng: 1.000.000đ | Quá hạn: 1',
+            'description_icon' => 'heroicon-m-exclamation-triangle',
+            'color' => 'danger',
+            'url' => route('filament.admin.resources.invoices.index', [
+                'tableFilters' => ['status' => ['value' => ['issued', 'partial']]],
+            ]),
+        ],
+    ]);
 
     expect($paymentMethodChart)->toMatchArray([
         'values' => [500000.0, 1000000.0],
@@ -396,6 +427,8 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
             'url' => route('filament.admin.resources.payments.index'),
         ],
     ]);
+
+    expect($overdueHeading)->toBe('Hóa đơn quá hạn (1 hóa đơn, nợ: 2.000.000đ)');
 
     expect($methodTotals)->toMatchArray([
         'cash' => 500000.0,

@@ -143,11 +143,12 @@ it('scopes payment stats widget to the manager branch', function (): void {
     Carbon::setTestNow();
 });
 
-it('routes payment stats widget data through the shared payment stats snapshot', function (): void {
+it('routes payment stats widget data through the shared payment stats cards', function (): void {
     $widget = File::get(app_path('Filament/Resources/Payments/Widgets/PaymentStatsWidget.php'));
 
     expect($widget)
-        ->toContain('->paymentStatsSnapshot(auth()->user())')
+        ->toContain('->paymentStatsCards(auth()->user())')
+        ->not->toContain('->paymentStatsSnapshot(auth()->user())')
         ->not->toContain('->revenueOverview(auth()->user())')
         ->not->toContain('->quickStats(auth()->user())')
         ->not->toContain('->outstandingBalances(auth()->user())');
