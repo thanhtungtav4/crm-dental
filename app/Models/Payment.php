@@ -246,10 +246,10 @@ class Payment extends Model
         return $branchId !== null ? (int) $branchId : null;
     }
 
-    public function markReversed(?int $userId = null): void
+    public function markReversed(?int $userId = null): self
     {
         if ($this->isReversed()) {
-            return;
+            return $this;
         }
 
         $now = now();
@@ -263,6 +263,8 @@ class Payment extends Model
             ]);
 
         $this->refresh();
+
+        return $this;
     }
 
     /**
