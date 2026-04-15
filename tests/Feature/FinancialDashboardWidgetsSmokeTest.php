@@ -172,3 +172,13 @@ it('routes overdue invoice widget rows through the financial dashboard read mode
         ->toContain('->overdueInvoices(auth()->user())')
         ->not->toContain('->scopedInvoiceQuery()');
 });
+
+it('keeps the shared financial widget scope trait focused on visibility gating', function (): void {
+    $trait = File::get(app_path('Filament/Widgets/Concerns/InteractsWithFinancialBranchScope.php'));
+
+    expect($trait)
+        ->toContain('FinancialAccess::canViewDashboard()')
+        ->not->toContain('scopedInvoiceQuery(')
+        ->not->toContain('scopedPaymentQuery(')
+        ->not->toContain('scopeFinancialQueryToAccessibleBranches(');
+});
