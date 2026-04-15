@@ -124,9 +124,9 @@ class ExamSession extends Model
         return in_array($toStatus, self::TRANSITIONS[$fromStatus] ?? [], true);
     }
 
-    public function transitionTo(string $status): void
+    public function transitionTo(string $status): self
     {
-        app(ExamSessionWorkflowService::class)->transition($this, $status);
+        return app(ExamSessionWorkflowService::class)->transition($this, $status);
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed
