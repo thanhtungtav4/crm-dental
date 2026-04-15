@@ -179,21 +179,25 @@ class PatientToothCondition extends Model
     }
 
     // Mark as in treatment
-    public function startTreatment(?int $treatmentPlanId = null): void
+    public function startTreatment(?int $treatmentPlanId = null): self
     {
         $this->update([
             'treatment_status' => self::STATUS_IN_TREATMENT,
             'treatment_plan_id' => $treatmentPlanId,
         ]);
+
+        return $this;
     }
 
     // Mark as completed
-    public function completeTreatment(): void
+    public function completeTreatment(): self
     {
         $this->update([
             'treatment_status' => self::STATUS_COMPLETED,
             'completed_at' => now(),
         ]);
+
+        return $this;
     }
 
     // Boot method

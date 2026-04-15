@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Patient;
-use App\Models\PlanItem;
 use App\Models\Service;
 use App\Models\TreatmentPlan;
 use App\Models\User;
@@ -15,7 +14,9 @@ class TreatmentPlanProgressTrackingTest extends TestCase
     use RefreshDatabase;
 
     protected User $doctor;
+
     protected Patient $patient;
+
     protected Service $service;
 
     protected function setUp(): void
@@ -188,7 +189,9 @@ class TreatmentPlanProgressTrackingTest extends TestCase
         ]);
 
         // Complete first visit
-        $item->completeVisit();
+        $completedOnce = $item->completeVisit();
+        $this->assertInstanceOf(\App\Models\PlanItem::class, $completedOnce);
+        $this->assertTrue($completedOnce->is($item));
         $this->assertEquals(1, $item->completed_visits);
         $this->assertEquals(20, $item->progress_percentage); // 1/5 * 100
 
@@ -271,7 +274,7 @@ class TreatmentPlanProgressTrackingTest extends TestCase
 
         $this->assertEquals('Đang thực hiện', $plan->getStatusLabel());
         $this->assertEquals('Khẩn cấp', $plan->getPriorityLabel());
-        
+
         $item = $plan->planItems()->create([
             'name' => 'Test',
             'status' => 'completed',

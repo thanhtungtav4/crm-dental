@@ -89,9 +89,11 @@ describe('PatientToothCondition Model', function () {
             'treatment_status' => PatientToothCondition::STATUS_CURRENT,
         ]);
 
-        $condition->startTreatment();
+        $startedCondition = $condition->startTreatment();
 
-        expect($condition->fresh()->treatment_status)->toBe(PatientToothCondition::STATUS_IN_TREATMENT);
+        expect($startedCondition)->toBeInstanceOf(PatientToothCondition::class)
+            ->and($startedCondition->is($condition))->toBeTrue()
+            ->and($startedCondition->treatment_status)->toBe(PatientToothCondition::STATUS_IN_TREATMENT);
     });
 
     it('can complete treatment', function () {
@@ -102,10 +104,12 @@ describe('PatientToothCondition Model', function () {
             'treatment_status' => PatientToothCondition::STATUS_IN_TREATMENT,
         ]);
 
-        $condition->completeTreatment();
+        $completedCondition = $condition->completeTreatment();
 
-        expect($condition->fresh()->treatment_status)->toBe(PatientToothCondition::STATUS_COMPLETED);
-        expect($condition->fresh()->completed_at)->not->toBeNull();
+        expect($completedCondition)->toBeInstanceOf(PatientToothCondition::class)
+            ->and($completedCondition->is($condition))->toBeTrue()
+            ->and($completedCondition->treatment_status)->toBe(PatientToothCondition::STATUS_COMPLETED)
+            ->and($completedCondition->completed_at)->not->toBeNull();
     });
 
     it('returns correct status color', function () {

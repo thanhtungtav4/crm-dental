@@ -341,7 +341,7 @@ class PlanItem extends Model
     /**
      * Mark a visit as completed
      */
-    public function completeVisit(): void
+    public function completeVisit(): self
     {
         if (! $this->canStartTreatment()) {
             throw ValidationException::withMessages([
@@ -353,6 +353,8 @@ class PlanItem extends Model
             $this->completed_visits++;
             $this->updateProgress();
         }
+
+        return $this;
     }
 
     /**
