@@ -182,3 +182,12 @@ it('keeps the shared financial widget scope trait focused on visibility gating',
         ->not->toContain('scopedPaymentQuery(')
         ->not->toContain('scopeFinancialQueryToAccessibleBranches(');
 });
+
+it('routes payment methods chart widget data through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Resources/Payments/Widgets/PaymentMethodsChartWidget.php'));
+
+    expect($widget)
+        ->toContain('->paymentMethodChart($this->filter ?? \'month\', auth()->user())')
+        ->not->toContain('ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)')
+        ->not->toContain('->paymentMethodTotals($this->filter ?? \'month\', auth()->user())');
+});

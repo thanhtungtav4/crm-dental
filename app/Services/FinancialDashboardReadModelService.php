@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\BranchAccess;
+use App\Support\ClinicRuntimeSettings;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -270,6 +271,59 @@ class FinancialDashboardReadModelService
             'unpaid_count' => $balances['unpaid_count'],
             'unpaid_total' => $balances['unpaid_total'],
             'overdue_count' => $balances['overdue_count'],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     values: array<int, float|int>,
+     *     labels: array<int, string>,
+     *     background_color: array<int, string>,
+     *     border_color: array<int, string>
+     * }
+     */
+    public function paymentMethodChart(string $filter = 'month', ?User $user = null): array
+    {
+        $methods = ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true);
+        $totals = $this->paymentMethodTotals($filter, $user);
+
+        $values = [];
+        $labels = [];
+        $backgroundColor = [];
+        $borderColor = [];
+        $colorMap = [
+            'cash' => ['rgba(34, 197, 94, 0.8)', 'rgb(34, 197, 94)'],
+            'card' => ['rgba(59, 130, 246, 0.8)', 'rgb(59, 130, 246)'],
+            'transfer' => ['rgba(251, 146, 60, 0.8)', 'rgb(251, 146, 60)'],
+            'vnpay' => ['rgba(99, 102, 241, 0.8)', 'rgb(99, 102, 241)'],
+            'other' => ['rgba(156, 163, 175, 0.8)', 'rgb(156, 163, 175)'],
+        ];
+
+        foreach ($methods as $method => $label) {
+            $amount = $totals[$method] ?? 0;
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $values[] = $amount;
+            $labels[] = $label;
+            $backgroundColor[] = $colorMap[$method][0] ?? 'rgba(156, 163, 175, 0.8)';
+            $borderColor[] = $colorMap[$method][1] ?? 'rgb(156, 163, 175)';
+        }
+
+        if ($values === []) {
+            $values = [0];
+            $labels = ['Chưa có dữ liệu'];
+            $backgroundColor = ['rgba(156, 163, 175, 0.8)'];
+            $borderColor = ['rgb(156, 163, 175)'];
+        }
+
+        return [
+            'values' => $values,
+            'labels' => $labels,
+            'background_color' => $backgroundColor,
+            'border_color' => $borderColor,
         ];
     }
 

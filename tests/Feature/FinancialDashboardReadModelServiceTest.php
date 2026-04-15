@@ -10,6 +10,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Services\FinancialDashboardReadModelService;
+use App\Support\ClinicRuntimeSettings;
 use Illuminate\Support\Carbon;
 
 if (! function_exists('createFinancialDashboardInvoice')) {
@@ -162,6 +163,7 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
     $balances = $service->outstandingBalances($manager);
     $quickStats = $service->quickStats($manager);
     $paymentStats = $service->paymentStatsSnapshot($manager);
+    $paymentMethodChart = $service->paymentMethodChart('month', $manager);
     $monthlySeries = $service->monthlyRevenueSeries('3months', $manager);
     $methodTotals = $service->paymentMethodTotals('month', $manager);
 
@@ -227,6 +229,22 @@ it('returns financial dashboard aggregates scoped to the manager branch', functi
         ->and($paymentStats['last_7_days'][5])->toBe(1000000.0)
         ->and($paymentStats['last_7_days'][6])->toBe(500000.0);
 
+    expect($paymentMethodChart)->toMatchArray([
+        'values' => [500000.0, 1000000.0],
+        'labels' => [
+            ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)['cash'],
+            ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)['card'],
+        ],
+        'background_color' => [
+            'rgba(34, 197, 94, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+        ],
+        'border_color' => [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+        ],
+    ]);
+
     expect($monthlySeries['labels'])->toHaveCount(3)
         ->and($monthlySeries['revenue'])->toBe([0.0, 4000000.0, 1500000.0])
         ->and($monthlySeries['count'])->toBe([0, 1, 2]);
@@ -287,12 +305,18 @@ it('allows admins to aggregate across all branches', function (): void {
 
     $overview = app(FinancialDashboardReadModelService::class)->revenueOverview($admin);
     $methodTotals = app(FinancialDashboardReadModelService::class)->paymentMethodTotals('today', $admin);
+    $methodChart = app(FinancialDashboardReadModelService::class)->paymentMethodChart('today', $admin);
 
     expect($overview['today_revenue'])->toBe(1600000.0)
         ->and($methodTotals)->toMatchArray([
             'cash' => 700000.0,
             'card' => 900000.0,
         ]);
+    expect($methodChart['labels'])->toBe([
+        ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)['cash'],
+        ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)['card'],
+    ]);
+    expect($methodChart['values'])->toBe([700000.0, 900000.0]);
 
     Carbon::setTestNow();
 });
