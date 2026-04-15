@@ -296,17 +296,17 @@ class ClinicalNote extends Model
         return $session->id ? (int) $session->id : null;
     }
 
-    public function syncExamSessionSnapshot(): void
+    public function syncExamSessionSnapshot(): self
     {
         if (! $this->patient_id) {
-            return;
+            return $this;
         }
 
         if (! $this->exam_session_id) {
             $sessionId = self::provisionExamSessionId($this);
 
             if (! $sessionId) {
-                return;
+                return $this;
             }
 
             $this->forceFill([
@@ -318,7 +318,7 @@ class ClinicalNote extends Model
 
         $session = ExamSession::query()->find((int) $this->exam_session_id);
         if (! $session) {
-            return;
+            return $this;
         }
 
         $doctorId = $this->examining_doctor_id
@@ -362,6 +362,8 @@ class ClinicalNote extends Model
         );
 
         app(ExamSessionLifecycleService::class)->refresh((int) $session->id);
+
+        return $this;
     }
 
     protected function resolveExamSessionStatus(): string
