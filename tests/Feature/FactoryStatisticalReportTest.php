@@ -163,7 +163,33 @@ it('renders report stats from page view data instead of inline blade php', funct
         ->and($pageClass)->not->toContain('protected function getViewData(): array')
         ->and($shell)->toContain("@props([\n    'viewState',\n])")
         ->and($shell)->toContain("\$viewState['stats_panel']['cards']")
+        ->toContain("aria-labelledby=\"{{ \$viewState['stats_panel']['labelled_by'] }}\"")
+        ->toContain('role="list"')
+        ->toContain('sm:grid-cols-2 xl:grid-cols-4')
         ->and($reportStatCard)->toContain("@props([\n    'card',\n])")
+        ->toContain('<article')
+        ->toContain('role="listitem"')
+        ->toContain('aria-label="{{ $card[\'aria_label\'] }}"')
+        ->toContain('tabular-nums')
+        ->toContain('bg-gradient-to-r')
         ->and($pageViewState)->toHaveKey('stats_panel')
+        ->and($pageViewState['stats_panel'])->toHaveKeys([
+            'heading',
+            'description',
+            'labelled_by',
+            'cards',
+        ])
         ->and($pageViewState['stats_panel']['cards'])->toHaveCount(count($page->getStats()));
+
+    expect($pageViewState['stats_panel']['cards'][0])
+        ->toHaveKeys([
+            'id',
+            'label',
+            'value',
+            'description',
+            'aria_label',
+            'container_classes',
+        ])
+        ->and($pageViewState['stats_panel']['cards'][0]['container_classes'])->toContain('rounded-2xl')
+        ->and($pageViewState['stats_panel']['cards'][0]['container_classes'])->toContain('motion-reduce:transition-none');
 });

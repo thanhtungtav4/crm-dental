@@ -33,7 +33,10 @@ abstract class BaseReportPage extends Page implements HasTable
     /**
      * @return array{
      *     stats_panel: array{
-     *         cards: array<int, array{label:mixed,value:mixed,description:mixed,container_classes:string}>
+     *         heading: string,
+     *         description: string,
+     *         labelled_by: string,
+     *         cards: array<int, array{id:string,label:mixed,value:mixed,description:mixed,aria_label:string,container_classes:string}>
      *     }
      * }
      */
@@ -46,18 +49,31 @@ abstract class BaseReportPage extends Page implements HasTable
 
     /**
      * @return array{
-     *     cards: array<int, array{label:mixed,value:mixed,description:mixed,container_classes:string}>
+     *     heading: string,
+     *     description: string,
+     *     labelled_by: string,
+     *     cards: array<int, array{id:string,label:mixed,value:mixed,description:mixed,aria_label:string,container_classes:string}>
      * }
      */
     protected function statsPanel(): array
     {
         return [
+            'heading' => 'Tổng quan báo cáo',
+            'description' => 'Các chỉ số chính được cập nhật theo bộ lọc hiện tại.',
+            'labelled_by' => 'report-stats-heading',
             'cards' => collect($this->getStats())
-                ->map(fn (array $stat): array => [
+                ->values()
+                ->map(fn (array $stat, int $index): array => [
+                    'id' => 'report-stat-card-'.$index,
                     'label' => $stat['label'] ?? '',
                     'value' => $stat['value'] ?? '',
                     'description' => $stat['description'] ?? null,
-                    'container_classes' => 'rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-900/60',
+                    'aria_label' => trim(implode(' ', array_filter([
+                        (string) ($stat['label'] ?? ''),
+                        (string) ($stat['value'] ?? ''),
+                        (string) ($stat['description'] ?? ''),
+                    ]))),
+                    'container_classes' => 'group relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/80 px-4 py-4 shadow-sm ring-1 ring-gray-950/5 transition duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-gray-800 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900/70 dark:ring-white/10 dark:hover:border-primary-700',
                 ])
                 ->all(),
         ];
