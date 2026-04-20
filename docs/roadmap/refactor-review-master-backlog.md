@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-04-16`
+- Last updated: `2026-04-20`
 
 ## Working Rules
 
@@ -19,6 +19,12 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 - Neu mot van de la cross-module, backlog chi giu 1 item canonical va link module lien quan.
 - Moi batch implementation phai di kem test/smoke test toi thieu dung scope.
 - Khong push/merge mot loat len `main` khi chua chot phase rollout va rollback plan.
+
+## Closure Checkpoint
+
+- Status: `Completed`
+- As of `2026-04-20`, khong con item `RRB-001` den `RRB-016` o trang thai mo trong backlog canonical.
+- Cac batch tiep theo nen bat dau bang review intake moi, khong sua tiep tren RRB cu neu khong co issue/module moi duoc them vao backlog.
 
 ## Quick Wins
 

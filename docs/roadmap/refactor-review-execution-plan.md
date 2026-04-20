@@ -6,7 +6,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 - Backlog source: `docs/roadmap/refactor-review-master-backlog.md`
 - Audit source: `docs/reviews/program-audit-summary.md`
-- Last updated: `2026-04-14`
+- Last updated: `2026-04-20`
 
 ## Current State
 
@@ -14,7 +14,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 - `100/100` issue baseline da `Resolved`.
 - Docs hub, module inventory, review pipeline, issue register, va module plans da co.
 - Production release gates va production readiness pack da pass tren environment that ngay `2026-03-28`.
-- Priority hien tai la shared contracts va structural convergence.
+- Backlog `RRB-001` den `RRB-016` da dong; priority hien tai la giu status pack dong bo va mo intake review UI/UX moi neu co module phat sinh.
 
 ## Phase 0 - Docs Cleanup and Audit Packaging
 
@@ -99,7 +99,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 
 ## Phase 4 - Workflow Consistency and Auditability
 
-- Status: `In progress`
+- Status: `Completed`
 - Goal:
   - Chuan hoa cac workflow mutation lane va audit reason contract giua module co state machine.
 - Scope:
@@ -118,7 +118,7 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - `RRB-009` da dong lane `Appointment` bang managed workflow context trong service, model guard raw status update, va observer audit hop nhat cho ca `status transition` lan `date-only reschedule`.
   - `RRB-009` da mo rong them sang `VisitEpisode` voi canonical `VisitEpisodeService`, model guard raw status update, va smoke flow appointment-to-encounter cap nhat theo workflow contract.
   - `RRB-009` da mo rong them sang `BranchTransferRequest` de dua workflow `request / apply / reject` vao managed context va observer audit co `trigger`.
-  - `RRB-009` dang mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
+  - `RRB-009` da mo rong them sang `PopupAnnouncement` voi workflow service canonical, guided actions, va transition audit co ly do.
   - `RRB-009` da bo sung `PopupAnnouncement::publish()` noi ve `PopupAnnouncementWorkflowService`, de entry point publish di qua model layer thay vi goi service truc tiep.
   - `RRB-009` da bo sung `PopupAnnouncementDelivery` model boundaries `markSeenViaWorkflow()` / `acknowledgeViaWorkflow()` / `dismissViaWorkflow()` noi ve workflow service, de delivery status transitions di qua model layer thay vi call service truc tiep.
   - `RRB-009` da chuan hoa them `PopupAnnouncementDelivery::markSeen()` / `markAcknowledged()` / `markDismissed()` tra ve model da transition, de direct delivery mutation boundaries co return contract nhat quan hon voi workflow-boundary surfaces cua popup center.
@@ -306,13 +306,14 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - checkpoint `2026-04-04` da tiep tuc lam gon `IntegrationSettings` field/provider shell: `rendered_fields.include_data`, `revision notice`, `submit bar`, va provider sections da duoc precompute trong PHP, de field partials va provider panels khong con giu `@php`, `statePath`, hay special-case renderer trong Blade.
   - checkpoint `2026-04-04` da tiep tuc lam gon `OpsControlCenter` detail sections: `Observability`, `Governance`, `KPI`, `Finance`, `Integrations`, va `ZNS` da dung them partial chung cho summary/detail/retention cards, de cockpit shell khong con giu fallback loops va card markup lap lai.
   - `CARE` da vao wave convergence qua `CareTicket/Note`; `OPS` van chua can wave rieng beyond baseline packs.
+  - checkpoint `2026-04-20` dong Phase 4: `RRB-009` va `RRB-010` deu da `Completed` trong master backlog va plan files, voi workflow/audit/read-model contracts da co regression coverage.
 - Deploy safety note:
   - Lam tung workflow module mot.
   - Khong doi workflow contract cua nhieu module trong cung mot release.
 
 ## Phase 5 - Structural Refactor
 
-- Status: `In progress`
+- Status: `Completed`
 - Goal:
   - Xu ly nhung diem coupling lon nhat giua domain va control-plane.
 - Scope:
@@ -345,12 +346,13 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
   - Ngoai lane `RRB-011`, `ClinicalOrder` da duoc bo sung model delete guard de destructive path dong bo voi workflow `cancel()` canonical cua `RRB-009`.
   - `RRB-011` da tiep tuc siet reversal semantics o lane `TRT`: `TreatmentMaterialUsageService::delete()` gio idempotent cho retry path, de duplicate/concurrent reversal attempts khong con restore ton kho, tao ledger adjust, hay ghi audit `ACTION_REVERSAL` nhieu lan cho cung mot usage.
   - `RRB-011` da tiep tuc mo rong sang lane insurance adjunct: `InsuranceClaim` da co `cancel()` canonical boundary noi ve `InsuranceClaimWorkflowService`, model delete guard moi, va regression khoa structured cancel audit metadata cung delete boundary cho claim workflow.
+  - checkpoint `2026-04-20` dong Phase 5: `RRB-011` va `RRB-013` deu da `Completed` trong master backlog, voi immutable ledger, reversal, provider runtime gate, provider action/readiness, va control-plane catalog contracts da co tests.
 - Deploy safety note:
   - Chi nen lam tren branch/PR rieng, co feature flag hoac song song read-model neu can.
 
 ## Phase 6 - Performance and Reporting Hardening
 
-- Status: `In progress`
+- Status: `Completed`
 - Goal:
   - Hoan thien layer report/read-model khi dataset va tan suat van hanh tang.
 - Scope:
@@ -369,6 +371,8 @@ Tai lieu nay chuyen backlog sau baseline thanh chuoi phase co the trien khai tua
 - Progress update:
   - `RRB-012` da co `HotReportAggregateReadModelService`, `FinancialReportReadModelService`, `PatientInsightReportReadModelService`, `InventorySupplyReportReadModelService`, va `AppointmentReportReadModelService` cho cac page report branch-scoped.
   - `RRB-012` da mo rong them `ReportSnapshotComparisonService` va `ReportSnapshotSlaService`, de `CompareReportSnapshots` va `CheckSnapshotSla` khong con tu giu logic diff/SLA ad-hoc trong command class.
+  - `RRB-014`, `RRB-015`, va `RRB-016` da dong bang smoke/contract tests cho cross-module reconciliation, KPI/ZNS/OPS release-gate consistency, va production-like report/MPI dataset chain.
+  - checkpoint `2026-04-20` dong Phase 6: report/read-model hot paths co shared service contracts, date-range/scope regression, snapshot SLA contracts, va production-like smoke coverage.
 - Deploy safety note:
   - Moi toi uu query/report phai co measurement truoc/sau, va tranh thay doi cung luc voi structural ledger refactor.
 
