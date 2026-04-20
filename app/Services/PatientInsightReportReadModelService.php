@@ -45,6 +45,19 @@ class PatientInsightReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function patientSummaryStatsPayload(?array $branchIds, ?string $from, ?string $until): array
+    {
+        $summary = $this->patientSummary($branchIds, $from, $until);
+
+        return [
+            ['label' => 'Tổng khách hàng', 'value' => number_format($summary['total_patients'])],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     public function riskProfileQuery(?array $branchIds): Builder
     {

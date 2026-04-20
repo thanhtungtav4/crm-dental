@@ -35,27 +35,32 @@ class PopupAnnouncementPolicy
 
     public function delete(User $authUser, PopupAnnouncement $popupAnnouncement): bool
     {
-        return $this->canManagePopupRecord($authUser, $popupAnnouncement);
+        return false;
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function restore(User $authUser, PopupAnnouncement $popupAnnouncement): bool
     {
-        return $this->canManagePopupRecord($authUser, $popupAnnouncement);
+        return false;
     }
 
     public function forceDelete(User $authUser, PopupAnnouncement $popupAnnouncement): bool
     {
-        return $this->canManagePopupRecord($authUser, $popupAnnouncement);
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $this->canManagePopup($authUser);
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $this->canManagePopup($authUser);
+        return false;
     }
 
     public function replicate(User $authUser, PopupAnnouncement $popupAnnouncement): bool

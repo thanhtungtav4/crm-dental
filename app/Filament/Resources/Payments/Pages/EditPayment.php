@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Payments\Pages;
 
 use App\Filament\Resources\Payments\PaymentResource;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -32,12 +31,6 @@ class EditPayment extends EditRecord
     {
         return [
             ViewAction::make(),
-            DeleteAction::make()
-                ->after(function () {
-                    if ($this->originalInvoiceId) {
-                        \App\Models\Invoice::find($this->originalInvoiceId)?->updatePaidAmount();
-                    }
-                }),
         ];
     }
 }

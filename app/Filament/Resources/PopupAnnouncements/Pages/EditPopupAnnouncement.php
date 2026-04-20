@@ -7,9 +7,6 @@ use App\Models\PopupAnnouncement;
 use App\Services\PopupAnnouncementDispatchService;
 use App\Services\PopupAnnouncementWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -82,9 +79,6 @@ class EditPopupAnnouncement extends EditRecord
 
                     $this->refreshFormData(['status']);
                 }),
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
         ];
     }
 

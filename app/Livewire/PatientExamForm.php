@@ -20,6 +20,7 @@ use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\ClinicRuntimeSettings;
 use App\Support\DentitionModeResolver;
+use App\Support\ToothChartViewConfig;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -97,7 +98,7 @@ class PatientExamForm extends Component
         $this->indicationTypes = ClinicRuntimeSettings::examIndicationOptions();
         $this->newSessionDate = now()->toDateString();
 
-        $latestSession = $this->getSessionQuery()->first();
+        $latestSession = $this->patientExamSessionReadModelService()->latestSession($this->patient);
 
         if ($latestSession) {
             $this->setActiveSession($latestSession->id);
@@ -156,9 +157,7 @@ class PatientExamForm extends Component
 
     public function setActiveSession(int $sessionId): void
     {
-        $session = $this->patient->examSessions()
-            ->with('clinicalNote')
-            ->find($sessionId);
+        $session = $this->patientExamSessionReadModelService()->findSession($this->patient, $sessionId);
 
         if (! $session) {
             return;
@@ -185,7 +184,7 @@ class PatientExamForm extends Component
 
     public function startEditingSession(int $sessionId): void
     {
-        $session = $this->patient->examSessions()->find($sessionId);
+        $session = $this->patientExamSessionReadModelService()->findSession($this->patient, $sessionId);
 
         if (! $session) {
             return;
@@ -298,7 +297,7 @@ class PatientExamForm extends Component
         }
 
         if ($this->activeSessionId === $sessionId) {
-            $nextSession = $this->getSessionQuery()->first();
+            $nextSession = $this->patientExamSessionReadModelService()->latestSession($this->patient);
 
             if ($nextSession) {
                 $this->setActiveSession($nextSession->id);
@@ -547,6 +546,7 @@ class PatientExamForm extends Component
         $medicalRecordAction = app(PatientOverviewReadModelService::class)
             ->medicalRecordAction($this->patient, Auth::user());
         $referencePayload = app(PatientExamReferenceReadModelService::class)->toothConditionsPayload();
+        $toothChartViewConfig = app(ToothChartViewConfig::class);
         $mediaReadModel = app(PatientExamMediaReadModelService::class)->build(
             patient: $this->patient,
             activeSessionId: $this->activeSessionId,
@@ -555,32 +555,163 @@ class PatientExamForm extends Component
             indicationTypes: $this->indicationTypes,
         );
 
-        return view('livewire.patient-exam-form', [
-            'sessionCards' => $this->sessionCards($sessions),
+        return view('livewire.patient-exam-form', $this->formViewState(
+            sessions: $sessions,
+            medicalRecordAction: $medicalRecordAction,
+            referencePayload: $referencePayload,
+            toothTreatmentStates: $toothTreatmentStates,
+            mediaReadModel: $mediaReadModel,
+            toothChartViewConfig: $toothChartViewConfig,
+        ));
+    }
+
+    /**
+     * @param  Collection<int, ExamSession>  $sessions
+     * @param  array<string, mixed>  $medicalRecordAction
+     * @param  array<string, mixed>  $referencePayload
+     * @param  array<string, mixed>  $mediaReadModel
+     * @param  array<string, mixed>  $toothTreatmentStates
+     * @return array<string, mixed>
+     */
+    protected function formViewState(
+        Collection $sessions,
+        array $medicalRecordAction,
+        array $referencePayload,
+        array $toothTreatmentStates,
+        array $mediaReadModel,
+        ToothChartViewConfig $toothChartViewConfig,
+    ): array {
+        return [
+            ...$this->sessionPanelData($sessions),
             'examiningDoctors' => $this->getDoctors($this->examiningDoctorSearch),
             'treatingDoctors' => $this->getDoctors($this->treatingDoctorSearch),
             'medicalRecordActionUrl' => $medicalRecordAction['url'] ?? null,
             'medicalRecordActionLabel' => $medicalRecordAction['label'] ?? null,
+            ...$this->indicationsViewData($mediaReadModel),
+            ...$this->diagnosisViewData(
+                referencePayload: $referencePayload,
+                toothTreatmentStates: $toothTreatmentStates,
+                toothChartViewConfig: $toothChartViewConfig,
+            ),
+            ...$this->mediaViewData($mediaReadModel),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, ExamSession>  $sessions
+     * @return array{
+     *     activeSessionBadgeLabel:?string,
+     *     sessionCards: array<int, array<string, mixed>>
+     * }
+     */
+    protected function sessionPanelData(Collection $sessions): array
+    {
+        return [
+            'activeSessionBadgeLabel' => $this->activeSessionBadgeLabel(),
+            'sessionCards' => $this->sessionCards($sessions),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $referencePayload
+     * @param  array<string, mixed>  $toothTreatmentStates
+     * @return array<string, mixed>
+     */
+    protected function diagnosisViewData(
+        array $referencePayload,
+        array $toothTreatmentStates,
+        ToothChartViewConfig $toothChartViewConfig,
+    ): array {
+        return [
             'conditions' => $referencePayload['conditions'],
             'conditionsJson' => $referencePayload['conditionsJson'],
             'conditionOrder' => $referencePayload['conditionOrder'],
             'toothTreatmentStates' => $toothTreatmentStates,
             'defaultDentitionMode' => DentitionModeResolver::resolveFromBirthday($this->patient->birthday),
             'otherDiagnosisOptions' => app(PatientExamReferenceReadModelService::class)->otherDiagnosisOptions(),
-            'mediaTimeline' => $mediaReadModel['mediaTimeline'],
-            'mediaPhaseSummary' => $mediaReadModel['mediaPhaseSummary'],
-            'evidenceChecklist' => $mediaReadModel['evidenceChecklist'],
-            'selectedIndicationUploadTypes' => $this->selectedIndicationUploadTypes(),
+            'diagnosisDentitionOptions' => $toothChartViewConfig->dentitionOptions(),
+            'diagnosisToothRows' => $toothChartViewConfig->toothRows(
+                ['upper' => self::ADULT_UPPER_TEETH, 'lower' => self::ADULT_LOWER_TEETH],
+                ['upper' => self::CHILD_UPPER_TEETH, 'lower' => self::CHILD_LOWER_TEETH],
+            ),
+            'diagnosisTreatmentLegend' => $toothChartViewConfig->treatmentLegend(),
+            'diagnosisSelectionHint' => $toothChartViewConfig->selectionHint(),
             'adultUpper' => self::ADULT_UPPER_TEETH,
             'childUpper' => self::CHILD_UPPER_TEETH,
             'childLower' => self::CHILD_LOWER_TEETH,
             'adultLower' => self::ADULT_LOWER_TEETH,
-        ]);
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $mediaReadModel
+     * @return array<string, mixed>
+     */
+    protected function indicationsViewData(array $mediaReadModel): array
+    {
+        $selectedUploadTypes = $this->selectedIndicationUploadTypes();
+        $evidenceChecklist = $mediaReadModel['evidenceChecklist'];
+        $missingLabels = array_values((array) data_get($evidenceChecklist, 'missing_labels', []));
+        $qualityWarnings = array_values((array) data_get($evidenceChecklist, 'quality_warnings', []));
+        $completionPercent = max(0, min(100, (int) data_get($evidenceChecklist, 'completion_percent', 0)));
+
+        return [
+            'indicationOptions' => $this->indicationOptions(),
+            'indicationUploadCards' => $this->indicationUploadCards($selectedUploadTypes),
+            'selectedIndicationUploadCountLabel' => $selectedUploadTypes !== []
+                ? count($selectedUploadTypes).' chỉ định đang mở'
+                : null,
+            'evidenceSummaryLabel' => sprintf(
+                'Đã đạt %d/%d chỉ định cần ảnh.',
+                (int) data_get($evidenceChecklist, 'fulfilled', 0),
+                (int) data_get($evidenceChecklist, 'required', 0),
+            ),
+            'evidenceCompletionPercent' => $completionPercent,
+            'evidenceMissingLabel' => $missingLabels !== []
+                ? 'Thiếu ảnh cho: '.implode(', ', $missingLabels).'.'
+                : null,
+            'evidenceQualityWarnings' => $qualityWarnings,
+            'mediaTimelinePreview' => array_slice((array) ($mediaReadModel['mediaTimeline'] ?? []), 0, 12),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $mediaReadModel
+     * @return array<string, mixed>
+     */
+    protected function mediaViewData(array $mediaReadModel): array
+    {
+        return [
+            'mediaTimeline' => $mediaReadModel['mediaTimeline'],
+            'mediaPhaseSummary' => $mediaReadModel['mediaPhaseSummary'],
+            'evidenceChecklist' => $mediaReadModel['evidenceChecklist'],
+        ];
+    }
+
+    protected function activeSessionBadgeLabel(): ?string
+    {
+        $sessionDate = $this->examSession?->session_date?->format('d/m/Y');
+
+        if (! filled($sessionDate)) {
+            return null;
+        }
+
+        return 'Đang mở: '.$sessionDate;
     }
 
     /**
      * @param  Collection<int, ExamSession>  $sessions
-     * @return array<int, array{id:int, session: ExamSession, date_label:string, is_active:bool, is_locked:bool}>
+     * @return array<int, array{
+     *     id:int,
+     *     session: ExamSession,
+     *     date_label:string,
+     *     is_active:bool,
+     *     is_locked:bool,
+     *     edit_action_title:string,
+     *     edit_action_label:string,
+     *     delete_action_title:string,
+     *     delete_action_label:string
+     * }>
      */
     protected function sessionCards(Collection $sessions): array
     {
@@ -591,6 +722,18 @@ class PatientExamForm extends Component
                 'date_label' => $session->date?->format('d/m/Y') ?? '-',
                 'is_active' => $this->activeSessionId === $session->id,
                 'is_locked' => (bool) $session->is_locked,
+                'edit_action_title' => $session->is_locked
+                    ? 'Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.'
+                    : 'Sửa ngày khám',
+                'edit_action_label' => $session->is_locked
+                    ? 'Ngày khám đã khóa, không thể chỉnh sửa'
+                    : 'Sửa ngày khám',
+                'delete_action_title' => $session->is_locked
+                    ? 'Ngày khám đã có tiến trình điều trị nên không thể xóa được.'
+                    : 'Xóa phiếu khám',
+                'delete_action_label' => $session->is_locked
+                    ? 'Ngày khám đã khóa, không thể xóa'
+                    : 'Xóa phiếu khám',
             ],
         )->all();
     }
@@ -608,12 +751,40 @@ class PatientExamForm extends Component
             ->all();
     }
 
-    protected function getSessionQuery()
+    /**
+     * @return list<array{key:string, label:string, is_selected:bool}>
+     */
+    protected function indicationOptions(): array
     {
-        return $this->patient->examSessions()
-            ->with('clinicalNote')
-            ->orderByDesc('session_date')
-            ->orderByDesc('id');
+        return collect($this->indicationTypes)
+            ->map(fn (string $label, string $key): array => [
+                'key' => $key,
+                'label' => $label,
+                'is_selected' => in_array($key, $this->indications, true),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<string>  $selectedUploadTypes
+     * @return list<array{type:string, label:string, images:list<string>, loading_label:string}>
+     */
+    protected function indicationUploadCards(array $selectedUploadTypes): array
+    {
+        return collect($selectedUploadTypes)
+            ->map(function (string $type): array {
+                $label = (string) ($this->indicationTypes[$type] ?? strtoupper($type));
+
+                return [
+                    'type' => $type,
+                    'label' => $label,
+                    'images' => array_values((array) ($this->indicationImages[$type] ?? [])),
+                    'loading_label' => 'Đang tải ảnh cho '.$label.'...',
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     protected function resetExamForm(): void

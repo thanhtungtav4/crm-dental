@@ -1,17 +1,14 @@
 @props([
-    'isVisible',
-    'selectedCategoryId',
-    'categories',
-    'viewState',
+    'panel',
 ])
 
-@if($isVisible)
+@if($panel['is_visible'])
     <div class="crm-modal-backdrop crm-modal-z-60" wire:click="closeProcedureModal">
         <div class="crm-modal-card crm-modal-card-lg dark:bg-gray-900" wire:click.stop>
             <div class="crm-modal-header">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">Chọn thủ thuật điều trị</h3>
-                    <a href="{{ url('/setting/trick') }}" class="text-xs text-primary-600">Đi tới thiết lập thủ thuật</a>
+                    <a href="{{ $panel['settings_url'] }}" class="text-xs text-primary-600">Đi tới thiết lập thủ thuật</a>
                 </div>
                 <button type="button" wire:click="closeProcedureModal" class="crm-modal-close-btn">✕</button>
             </div>
@@ -26,14 +23,14 @@
                     <div class="crm-procedure-category-panel">
                         <button type="button"
                             wire:click="selectCategory(null)"
-                            class="crm-procedure-category-btn {{ $selectedCategoryId ? '' : 'is-active' }}">
+                            class="crm-procedure-category-btn {{ $panel['all_categories_active'] ? 'is-active' : '' }}">
                             Tất cả nhóm thủ thuật
                         </button>
-                        @foreach($categories as $category)
+                        @foreach($panel['categories'] as $category)
                             <button type="button"
-                                wire:click="selectCategory({{ $category->id }})"
-                                class="crm-procedure-category-btn {{ $selectedCategoryId === $category->id ? 'is-active' : '' }}">
-                                {{ $category->name }}
+                                wire:click="selectCategory({{ $category['id'] }})"
+                                class="crm-procedure-category-btn {{ $category['is_active'] ? 'is-active' : '' }}">
+                                {{ $category['name'] }}
                             </button>
                         @endforeach
                     </div>
@@ -50,7 +47,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($viewState['service_rows'] as $service)
+                                @forelse($panel['service_rows'] as $service)
                                     <tr wire:key="service-{{ $service['id'] }}">
                                         <td class="is-center">
                                             <input type="checkbox" value="{{ $service['id'] }}" wire:model="selectedServiceIds" class="crm-check-sm">

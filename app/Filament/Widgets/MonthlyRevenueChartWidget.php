@@ -22,31 +22,8 @@ class MonthlyRevenueChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = app(FinancialDashboardReadModelService::class)
-            ->monthlyRevenueSeries($this->filter ?? 'year', auth()->user());
-
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Doanh thu (VNĐ)',
-                    'data' => $data['revenue'],
-                    'borderColor' => 'rgb(59, 130, 246)',
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
-                    'fill' => true,
-                    'tension' => 0.4,
-                ],
-                [
-                    'label' => 'Số lượng thanh toán',
-                    'data' => $data['count'],
-                    'borderColor' => 'rgb(16, 185, 129)',
-                    'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
-                    'fill' => true,
-                    'tension' => 0.4,
-                    'yAxisID' => 'y1',
-                ],
-            ],
-            'labels' => $data['labels'],
-        ];
+        return app(FinancialDashboardReadModelService::class)
+            ->monthlyRevenueChart($this->filter ?? 'year', auth()->user());
     }
 
     protected function getType(): string

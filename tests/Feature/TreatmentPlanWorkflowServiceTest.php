@@ -135,6 +135,45 @@ it('approves starts and completes a treatment plan through the workflow service 
             ->exists())->toBeTrue();
 });
 
+it('approves starts and completes a treatment plan through the model boundary', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $manager->id,
+        'branch_id' => $branch->id,
+        'status' => TreatmentPlan::STATUS_DRAFT,
+    ]);
+
+    $plan->approve($manager->id);
+    $approvedPlan = $plan->fresh();
+
+    expect($approvedPlan->status)->toBe(TreatmentPlan::STATUS_APPROVED)
+        ->and($approvedPlan->approved_by)->toBe($manager->id);
+
+    $approvedPlan->start($manager->id);
+    $startedPlan = $approvedPlan->fresh();
+
+    expect($startedPlan->status)->toBe(TreatmentPlan::STATUS_IN_PROGRESS)
+        ->and($startedPlan->actual_start_date)->not->toBeNull();
+
+    $startedPlan->complete($manager->id);
+    $completedPlan = $startedPlan->fresh();
+
+    expect($completedPlan->status)->toBe(TreatmentPlan::STATUS_COMPLETED)
+        ->and($completedPlan->actual_end_date)->not->toBeNull();
+
+    expect(AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_TREATMENT_PLAN)
+        ->where('entity_id', $plan->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->exists())->toBeTrue();
+});
+
 it('records normalized reason and transition metadata when cancelling a treatment plan', function (): void {
     $branch = Branch::factory()->create();
     $manager = User::factory()->create(['branch_id' => $branch->id]);
@@ -166,4 +205,33 @@ it('records normalized reason and transition metadata when cancelling a treatmen
         ->and($log?->metadata['status_from'] ?? null)->toBe(TreatmentPlan::STATUS_APPROVED)
         ->and($log?->metadata['status_to'] ?? null)->toBe(TreatmentPlan::STATUS_CANCELLED)
         ->and($log?->metadata['reason'] ?? null)->toBe('Benh nhan tam hoan dieu tri');
+});
+
+it('cancels treatment plans through the canonical model boundary', function (): void {
+    $branch = Branch::factory()->create();
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+    $this->actingAs($manager);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $manager->id,
+        'branch_id' => $branch->id,
+        'status' => TreatmentPlan::STATUS_APPROVED,
+    ]);
+
+    $plan->cancel('model_boundary_cancel', $manager->id);
+
+    $cancelAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_TREATMENT_PLAN)
+        ->where('entity_id', $plan->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
+    expect($plan->fresh()->status)->toBe(TreatmentPlan::STATUS_CANCELLED)
+        ->and($cancelAudit)->not->toBeNull()
+        ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('model_boundary_cancel')
+        ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(TreatmentPlan::STATUS_CANCELLED);
 });

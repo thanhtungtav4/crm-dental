@@ -66,6 +66,38 @@ it('marks installment plan as completed when fully paid', function () {
         ->and((float) $plan->fresh()->remaining_amount)->toEqualWithDelta(0.00, 0.01);
 });
 
+it('returns the synced installment plan from the model lifecycle facade', function (): void {
+    $patient = Patient::factory()->create();
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'status' => Invoice::STATUS_ISSUED,
+        'total_amount' => 1200000,
+        'paid_amount' => 0,
+    ]);
+
+    $plan = InstallmentPlan::create([
+        'invoice_id' => $invoice->id,
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'financed_amount' => 1000000,
+        'down_payment_amount' => 200000,
+        'remaining_amount' => 1000000,
+        'number_of_installments' => 2,
+        'installment_amount' => 500000,
+        'start_date' => now()->subMonths(2)->toDateString(),
+        'status' => InstallmentPlan::STATUS_ACTIVE,
+    ]);
+
+    $syncedPlan = $plan->syncFinancialState(now());
+
+    expect($syncedPlan)->toBeInstanceOf(InstallmentPlan::class)
+        ->and($syncedPlan->is($plan))->toBeTrue()
+        ->and($syncedPlan->status)->toBe(InstallmentPlan::STATUS_DEFAULTED)
+        ->and((float) $syncedPlan->remaining_amount)->toEqualWithDelta(1000000.00, 0.01)
+        ->and($plan->fresh()->status)->toBe(InstallmentPlan::STATUS_DEFAULTED);
+});
+
 it('creates dunning care ticket and updates dunning level', function () {
     $patient = Patient::factory()->create();
 

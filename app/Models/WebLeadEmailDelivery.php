@@ -215,7 +215,7 @@ class WebLeadEmailDelivery extends Model
         return in_array($this->status, [self::STATUS_SENT, self::STATUS_DEAD, self::STATUS_SKIPPED], true);
     }
 
-    public function markProcessing(?string $processingToken = null): void
+    public function markProcessing(?string $processingToken = null): self
     {
         static::runWithinManagedWorkflow(function () use ($processingToken): void {
             $this->forceFill([
@@ -227,9 +227,11 @@ class WebLeadEmailDelivery extends Model
                 'last_error_message' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markSent(?string $transportMessageId = null): void
+    public function markSent(?string $transportMessageId = null): self
     {
         static::runWithinManagedWorkflow(function () use ($transportMessageId): void {
             $this->forceFill([
@@ -242,9 +244,11 @@ class WebLeadEmailDelivery extends Model
                 'last_error_message' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markFailure(string $message, bool $terminal, int $delaySeconds): void
+    public function markFailure(string $message, bool $terminal, int $delaySeconds): self
     {
         static::runWithinManagedWorkflow(function () use ($message, $terminal, $delaySeconds): void {
             $this->forceFill([
@@ -255,12 +259,14 @@ class WebLeadEmailDelivery extends Model
                 'last_error_message' => mb_substr($message, 0, 2000),
             ])->save();
         });
+
+        return $this;
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function resetForReplay(array $attributes = []): void
+    public function resetForReplay(array $attributes = []): self
     {
         static::runWithinManagedWorkflow(function () use ($attributes): void {
             $this->forceFill(array_merge([
@@ -273,6 +279,8 @@ class WebLeadEmailDelivery extends Model
                 'sent_at' => null,
             ], $attributes))->save();
         });
+
+        return $this;
     }
 
     public static function runWithinManagedWorkflow(callable $callback): mixed

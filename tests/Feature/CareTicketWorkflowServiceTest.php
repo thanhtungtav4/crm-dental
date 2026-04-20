@@ -143,6 +143,46 @@ it('records audit context when manually updating a care ticket through workflow 
         ->and($auditLog->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE);
 });
 
+it('records audit context when updating a care ticket through the model boundary', function () {
+    $patient = makeCareWorkflowPatient();
+
+    $ticket = Note::query()->create([
+        'patient_id' => $patient->id,
+        'customer_id' => $patient->customer_id,
+        'user_id' => $patient->owner_staff_id,
+        'type' => Note::TYPE_GENERAL,
+        'care_type' => 'general_care',
+        'care_channel' => 'call',
+        'care_status' => Note::CARE_STATUS_NOT_STARTED,
+        'care_mode' => 'scheduled',
+        'care_at' => now()->addHour(),
+        'content' => 'Theo dõi chăm sóc',
+    ]);
+
+    $this->actingAs($patient->ownerStaff);
+
+    $ticket->updateCareTicket(
+        attributes: [
+            'care_status' => Note::CARE_STATUS_DONE,
+            'content' => 'Đã hoàn tất chăm sóc.',
+        ],
+        reason: 'Hoan tat theo model boundary',
+    );
+
+    $auditLog = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_CARE_TICKET)
+        ->where('entity_id', $ticket->id)
+        ->where('action', AuditLog::ACTION_COMPLETE)
+        ->latest('id')
+        ->first();
+
+    expect($auditLog)->not->toBeNull()
+        ->and($auditLog->actor_id)->toBe($patient->owner_staff_id)
+        ->and($auditLog->metadata['trigger'] ?? null)->toBe('patient_notes_edit')
+        ->and($auditLog->metadata['reason'] ?? null)->toBe('Hoan tat theo model boundary')
+        ->and($auditLog->metadata['care_status_to'] ?? null)->toBe(Note::CARE_STATUS_DONE);
+});
+
 it('supports recurring yearly ticket scopes without duplicating the same year', function () {
     $workflow = app(CareTicketWorkflowService::class);
     $patient = makeCareWorkflowPatient();

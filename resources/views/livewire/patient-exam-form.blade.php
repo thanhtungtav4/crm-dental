@@ -8,8 +8,8 @@
             <div class="crm-exam-header-copy">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="crm-section-title">Khám &amp; Điều trị</h3>
-                    @if($examSession)
-                        <span class="crm-session-badge is-active">Đang mở: {{ $examSession->session_date?->format('d/m/Y') ?? '-' }}</span>
+                    @if(filled($activeSessionBadgeLabel))
+                        <span class="crm-session-badge is-active">{{ $activeSessionBadgeLabel }}</span>
                     @endif
                     @if($examSession?->is_locked)
                         <span class="crm-session-badge is-locked">Phiếu đã khóa</span>
@@ -96,8 +96,8 @@
                                 wire:target="startEditingSession"
                                 @disabled($sessionCard['is_locked'])
                                 class="crm-btn crm-btn-outline crm-btn-icon text-gray-500 disabled:opacity-50"
-                                title="{{ $sessionCard['is_locked'] ? 'Ngày khám đã có tiến trình điều trị nên không thể chỉnh sửa.' : 'Sửa ngày khám' }}"
-                                aria-label="{{ $sessionCard['is_locked'] ? 'Ngày khám đã khóa, không thể chỉnh sửa' : 'Sửa ngày khám' }}"
+                                title="{{ $sessionCard['edit_action_title'] }}"
+                                aria-label="{{ $sessionCard['edit_action_label'] }}"
                             >
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 20h9" />
@@ -124,8 +124,8 @@
                                 wire:target="deleteSession"
                                 @disabled($sessionCard['is_locked'])
                                 class="crm-btn crm-btn-outline crm-btn-icon text-gray-600 disabled:opacity-50"
-                                title="{{ $sessionCard['is_locked'] ? 'Ngày khám đã có tiến trình điều trị nên không thể xóa được.' : 'Xóa phiếu khám' }}"
-                                aria-label="{{ $sessionCard['is_locked'] ? 'Ngày khám đã khóa, không thể xóa' : 'Xóa phiếu khám' }}"
+                                title="{{ $sessionCard['delete_action_title'] }}"
+                                aria-label="{{ $sessionCard['delete_action_label'] }}"
                             >
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7h10z"/>

@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-04-03`
+- Last updated: `2026-04-16`
 
 ## Working Rules
 
@@ -211,7 +211,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-009] Shared workflow action and audit-reason contract
 
-- Status: `In progress`
+- Status: `Completed`
 - Module: `PAT`, `APPT`, `TRT`, `FIN`, `SUP`, `INT`, `ZNS`, `CARE`, `OPS`
 - Description:
   - Chuan hoa pattern workflow service, guided actions, confirm modal, va audit reason metadata tren cac module co state machine.
@@ -235,20 +235,41 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da dua `BranchTransferRequest` vao managed workflow context trong `PatientBranchTransferService`, model guard raw status update, va observer audit cho `request` / `apply` / `reject`
     - da keo observer-based workflow audit cua `Consent`, `InsuranceClaim`, `TreatmentSession` gan hon ve contract chung
     - da dua `PopupAnnouncement` vao workflow service canonical, guided actions, va audit-reason metadata tren nhanh backlog
+    - da bo sung `PopupAnnouncement::publish()` canonical boundary noi ve `PopupAnnouncementWorkflowService`, de entry point publish di qua model layer thay vi goi service truc tiep
+    - da bo sung `PopupAnnouncementDelivery` model boundaries `markSeenViaWorkflow()` / `acknowledgeViaWorkflow()` / `dismissViaWorkflow()` noi ve workflow service, de delivery status transitions di qua model layer thay vi call service truc tiep
+    - da chuan hoa them `PopupAnnouncementDelivery::markSeen()` / `markAcknowledged()` / `markDismissed()` tra ve model da transition, de direct delivery mutation boundaries co return contract nhat quan hon voi workflow-boundary surfaces cua popup center
+    - da chuan hoa `ConversationMessage::markSent()` / `markFailed()` / `markIgnored()` tra ve model da transition, de outbound conversation delivery boundaries co return contract nhat quan hon voi cac workflow lanes dang duoc hoi tu
+    - da chuan hoa `GoogleCalendarSyncEvent::markProcessing()` / `markSynced()` / `markFailure()` / `resetForReplay()` va `EmrSyncEvent::markProcessing()` / `markSynced()` / `markFailure()` / `resetForReplay()` tra ve model da transition, de outbox sync boundaries giua Google Calendar va EMR co return contract nhat quan hon voi cac workflow lanes dang duoc hoi tu
+    - da chuan hoa `ZnsAutomationEvent::markProcessing()` / `markSent()` / `markFailure()` / `resetForReplay()` / `markSuperseded()` tra ve model da transition, de outbox/event boundaries cua ZNS co return contract nhat quan hon voi cac workflow lanes dang duoc hoi tu
+    - da chuan hoa `Payment::markReversed()` tra ve model da transition, de lane ledger immutability/reversal metadata co return contract nhat quan hon voi cac workflow boundaries cua FIN
+    - da chuan hoa `PatientToothCondition::startTreatment()` / `completeTreatment()` tra ve model da transition, de lane benh-an rang-ham-mat co return contract nhat quan hon voi cac workflow boundaries cua TRT
+    - da chuan hoa `PlanItem::completeVisit()` tra ve model da transition, de visit-progress boundary tren lane dieu tri co return contract nhat quan hon voi cac workflow boundaries cua TRT
     - da dua `PlanItem` mutation lane vao workflow service canonical, guided actions, va audit transition metadata tren nhanh backlog
     - da dua `PatientTreatmentPlanSection` draft lane vao `PatientTreatmentPlanDraftService`, de `prepare draft`, `sync diagnosis tu latest exam`, `resolve latest-or-create plan`, va `persist draft items` di qua mot workflow service canon thay vi nam truc tiep trong Livewire component
     - da dua `ReceiptExpense` mutation lane vao workflow service canonical, model guard, guided actions, va structured audit metadata tren nhanh backlog
     - da dua `MaterialIssueNote` mutation lane vao workflow service canonical, model guard, guided actions, va transition audit metadata tren nhanh backlog
     - da dua `InsuranceClaim` vao workflow service canonical, managed transition context, va audit metadata `reason` / `trigger` / `payment_id`
+    - da bo sung `InsuranceClaim::submit()` / `approve()` / `deny()` / `resubmit()` / `markPaid()` canonical boundaries noi ve `InsuranceClaimWorkflowService`, dong thoi chuan hoa cac model boundary nay tra ve record/payment da transition de caller layer co contract nhat quan hon
     - da dua `ClinicalOrder` / `ClinicalResult` vao workflow service canonical, managed transition context, va EMR audit metadata `reason` / `trigger`
+    - da chuan hoa `ClinicalResult::markPreliminary()` / `finalize()` / `amend()` tra ve result da transition, de entry points workflow ket qua lam sang co model boundary nhat quan hon
+    - da bo sung `ClinicalOrder::markInProgress()` boundary co `reason` / `actor` / `trigger` va chuan hoa `markCompleted()` / `cancel()` tra ve model da transition, de entry points workflow chi dinh di qua model layer nhat quan hon thay vi service call truc tiep
     - da dua `CareTicket/Note` vao workflow service canonical cho manual vs canonical status transitions, model guard raw status update, va managed audit metadata `reason` / `trigger`
+    - da bo sung boundary `Note::updateCareTicket()` / `transitionCareTicket()` noi ve `CareTicketWorkflowService`, de entry points care ticket di qua model layer thay vi caller tu goi service
     - da dua `Consent` vao managed workflow context trong lifecycle service, model guard raw status update, va audit metadata `trigger` / `signature_source`
-    - da dua `ExamSession / TreatmentProgress` vao workflow service canonical cho clinical-note sync, treatment-progress prime, lifecycle refresh, va managed mutation cho `TreatmentProgressDay / TreatmentProgressItem`; model guard raw status update, va loai bo `saveQuietly()` doi `status` rai rac
-    - da dua `InstallmentPlan` vao lifecycle service canonical, giu model facade `syncFinancialState()` cho backward compatibility, va keo `PaymentObserver`, `installments:run-dunning`, `installments:sync-status` qua cung lifecycle contract
+    - da dua `ExamSession / TreatmentProgress` vao workflow service canonical cho clinical-note sync, treatment-progress prime, lifecycle refresh, va managed mutation cho `TreatmentProgressDay / TreatmentProgressItem`; model guard raw status update, loai bo `saveQuietly()` doi `status` rai rac, va chuan hoa `ExamSession::transitionTo()` tra ve model da transition
+    - da chuan hoa `PlanItem::updateProgress()` / `TreatmentPlan::updateProgress()` tra ve model da mutate, de parent-child progress boundaries cua lane dieu tri co return contract nhat quan hon
+    - da chuan hoa `ClinicalNote::syncExamSessionSnapshot()` tra ve clinical note da sync, de boundary dong bo phien kham cua lane clinical note co return contract nhat quan hon
+    - da dua `InstallmentPlan` vao lifecycle service canonical, giu model facade `syncFinancialState()` cho backward compatibility, keo `PaymentObserver`, `installments:run-dunning`, `installments:sync-status` qua cung lifecycle contract, va chuan hoa facade/service boundary nay tra ve plan da sync
     - da chuan hoa them `Payment` refund / reversal audit metadata theo pattern `reason` / `trigger` / canonical identifiers
+    - da chuan hoa `Invoice::updatePaidAmount()` / `updatePaymentStatus()` tra ve invoice da sync/mutate, de cac financial status boundaries co return contract nhat quan hon voi workflow lane cua FIN
     - da dua `MasterPatientDuplicate / MasterPatientMerge` vao workflow contract voi model guard raw status update, canonical workflow service cho `ignore`, `merge-resolution`, `rollback restore`, va duong `auto-ignore` tu `MasterPatientIndexService`
+    - da chuan hoa `MasterPatientDuplicate::markResolved()` / `markIgnored()` tra ve model da transition, de MPI duplicate queue co model boundary nhat quan hon voi cac workflow lane khac
+    - da chuan hoa `OperationalKpiAlert::markAcknowledged()` / `markResolved()` tra ve model da transition, de KPI alert action boundaries co contract nhat quan hon voi cac workflow lanes dang su dung model-level transition entry points
     - da dua `WebLeadEmailDelivery` vao managed workflow contract voi model guard raw status update, canonical resend / claim / sent / fail mutation methods, va giu service mail noi bo di qua canonical path
-    - da dua `ZnsCampaignDelivery` vao managed workflow contract voi model guard raw status update, canonical sent / fail mutation methods, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`
+    - da chuan hoa `WebLeadEmailDelivery::markProcessing()` / `markSent()` / `markFailure()` / `resetForReplay()` tra ve model da transition, de lane outbound web-lead internal mail co model boundary return contract nhat quan hon voi cac workflow lanes khac
+    - da dua `ZnsCampaignDelivery` vao managed workflow contract voi model guard raw status update, canonical claim / sent / fail mutation methods, chuan hoa return contract cua cac delivery boundary, va loai bo stale-processing mass-update bypass trong `ZnsCampaignRunnerService`
+    - da bo sung `ZnsCampaign::cancel()` canonical boundary noi ve `ZnsCampaignWorkflowService`, de entry point huy campaign di qua workflow service thay vi caller tu doi trang thai
+    - da bo sung `ZnsCampaign::schedule()` / `runNow()` canonical boundaries noi ve `ZnsCampaignWorkflowService`, de entry points len lich / chay ngay di qua model layer thay vi goi service truc tiep
     - da dua cac lane outbox noi bo `ZnsAutomationEvent`, `GoogleCalendarSyncEvent`, `EmrSyncEvent` vao transition contract, canonical replay methods, va loai bo stale-processing mass-update bypass
     - da mo rong them `IntegrationProviderRuntimeGate` sang inbound `ValidateWebLeadToken`, `ValidateInternalEmrToken`, va `ZaloWebhookController`, de Web Lead API / EMR internal API / Zalo webhook ingress dung chung contract `skip / fail / ready` cho `enabled/token/secret configured` thay vi middleware/controller tu lap lai runtime gate rieng
     - `OPS` chua can lane refactor rieng trong wave nay
@@ -260,7 +281,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-010] Unified audit timeline and read-model conventions
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `PAT`, `GOV`, `CLIN`, `FIN`, `INT`, `OPS`, `ZNS`
 - Description:
   - Tiep tuc hop nhat cach doc audit timeline, operational event, va provenance read-model de de trace incident va nghiep vu.
@@ -304,6 +326,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da bo sung `PatientExamMediaReadModelService`, de `PatientExamForm` doc `mediaTimeline`, `mediaPhaseSummary`, va `evidenceChecklist` qua mot read-model service thay vi giu query `ClinicalMediaAsset`, signed URL generation, missing evidence labels, va quality warnings trong `render()`
     - da bo sung `PatientExamReferenceReadModelService`, de `PatientExamForm` doc `ToothCondition` payload va `otherDiagnosisOptions` qua mot read-model service thay vi tu query/map `conditionsJson`, `conditionOrder`, va `Disease` option lists trong `render()`
     - da bo sung `PatientExamSessionReadModelService`, de `PatientExamForm` doc danh sach exam sessions va co `is_locked` thong nhat qua mot read-model service thay vi tu lap `lockedDates` va loop decorate sessions trong `render()`
+    - da mo rong `PatientExamSessionReadModelService` them `latestSession()` / `findSession()`, de `PatientExamForm` bo query truc tiep `examSessions()->with('clinicalNote')` khoi `mount()`, `setActiveSession()`, `startEditingSession()`, va lane chon session tiep theo sau khi xoa
     - da bo sung `PatientExamClinicalNoteWorkflowService`, de `PatientExamForm` dung service cho `draftForSession`, `buildPayload`, `ensurePersisted`, va `optimistic update` cua clinical note thay vi giu helper draft/persist/update note truc tiep trong component
     - da bo sung `PatientExamIndicationStateService`, de `PatientExamForm` dung chung normalize/toggle contract cho `indications`, `indication_images`, va `tempUploads`, bo stale upload cleanup + key normalization khoi component
     - da bo sung `PatientExamMediaWorkflowService`, de `PatientExamForm` dung service cho `createAsset`, `removeAsset`, va `storeUploads`, bo lane persist/archive `ClinicalMediaAsset` + `ClinicalMediaVersion`, checksum/size/mime lookup, temp-upload storage, va cleanup file khoi Livewire component
@@ -331,6 +354,9 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - checkpoint `2026-04-02` da tiep tuc lam gon `PopupAnnouncementCenter` view-state: `centerViewState()` nay da bo key `has_active_announcement` va giu shell `announcement + polling_interval` la contract thuc te giua component, read-model, va Blade
     - checkpoint `2026-04-03` da tiep tuc chuyen `ViewPatient` va `PopupAnnouncementCenter` sang computed shell (`workspaceViewState`, `viewState`) thay vi getter legacy, de regression manual-object goi method shell truc tiep va runtime Livewire 3 giu mot contract nhat quan hon
     - checkpoint `2026-04-03` da tiep tuc chuyen `CustomerCare` sang computed shell `slaSummary`, dong thoi chot `ConversationInbox` sang bo computed shells (`conversationList`, `selectedConversation`, `branchOptions`, `assignableStaffOptions`, `conversationAssigneeOptions`, `handoffPriorityOptions`, `handoffStatusOptions`, `inboxTabOptions`, `inboxStats`); trong lane dang lam, `app/Filament` + `app/Livewire` khong con public `get*Property()` legacy nao nua
+    - checkpoint `2026-04-04` da chot them lane page-shell/read-model presentation cho `ViewPatient`, `PopupAnnouncementCenter`, `ConversationInbox`, `CustomerCare`, `CalendarAppointments`, `SystemSettings`, `DeliveryOpsCenter`, `FrontdeskControlCenter`, va `PlaceholderPage`: `ViewPatient` da doi sang `activeWorkspaceTabView()` + tab partials; `PopupAnnouncementCenter` da co shell partial va payload `has_announcement` / `aria_live`; `ConversationInbox` / `CustomerCare` da dung `inboxViewState()` / `careViewState()` de render queue/detail/SLA panels; `CalendarAppointments` da tach shell header/metrics/filters/modal sang partials va dung presentation payload cho metric/filter state; `SystemSettings` va `PlaceholderPage` da dung `pageViewState()` + shell partials; `DeliveryOpsCenter` va `FrontdeskControlCenter` da gom chung `pageViewState()` qua trait `BuildsControlCenterPageViewState`
+    - checkpoint `2026-04-07` da tiep tuc dong bo lane `clinical form presentation`: `ToothChart` da duoc nang thanh custom Filament field co view data rieng, `TreatmentPlanForm` va `ClinicalNotesRelationManager` khong con dung `ViewField` + `@php` de boot `conditionsJson / conditionOrder / dentition state path`, `ToothChartModalViewState` da gom presenter contract cho `tooth-chart-modal`, va `InstallmentPlan` da co model-backed presentation methods cho `installment-schedule` modal; sau batch nay `resources/views/filament` + `resources/views/livewire` khong con `@php` inline nao trong current branch checkpoint
+    - checkpoint `2026-04-09` da tiep tuc dong bo lane shell/read-model nho: `PatientActivityTimelineWidget` da chuyen sang `timelineViewState()` + widget render payload thay vi `getViewData()`, `PatientTreatmentPlanSection` da chuyen sang `sectionViewState()` hop nhat cho `list_panel / plan_modal / procedure_modal`, `PatientExamForm` da dua indications/evidence timeline ve payload `indicationOptions / indicationUploadCards / evidence*`, va `PasskeysComponent` da co `viewState()` + shell partial thay vi giu Blade/copy hardcode trong component view
     - da mo rong `OperationalAutomationAuditReadModelService` them `popups:dispatch-due`, `popups:prune`, va `photos:prune`, de tracked automation catalog khop voi scheduler wrapper va recent OPS runs khong bi thieu command
     - da mo rong `OpsControlCenterService` de hien thi them `Popup announcement logs` va `Patient photos` trong integration retention backlog, de OPS va command layer cung doc mot retention contract
     - da nang `OperationalAutomationAuditReadModelService` len wrapper-aware contract bang cach doc them `metadata->target_command`, de automation chay qua `ops:run-scheduled-command` van vao dung recent OPS runs va tracked command surface
@@ -351,6 +377,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-011] Immutable adjustment and reversal ledger strategy
 
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `TRT`, `INV`, `FIN`, `SUP`
 - Description:
   - Chot chien luoc append-only/immutable cho usage, void, reversal, cancel, va supplier-linked adjustments de giam drift downstream.
@@ -366,6 +394,26 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 - Recommended direction:
   - Khong dua ve delete/update mutable cho record da phat sinh side effect.
   - Uu tien event/adjustment model va read-model reconciliation.
+  - Tien do hien tai:
+    - checkpoint `2026-04-09` da bat dau lane immutable ledger cho `FIN`: `WalletLedgerEntry` da duoc khoa immutable o cap model, `PatientWalletService` da bo sung `trigger` + adjustment/reversal metadata cho ledger entries va audit trail, de wallet reconciliation co append-only contract ro hon.
+    - checkpoint `2026-04-09` da bat dau lane immutable ledger cho `INV/TRT`: `InventoryTransaction` da duoc khoa immutable o cap model, va `TreatmentMaterialUsageService` da duoc khoa regression de inventory ledger sau khi post usage khong con bi sua/xoa truc tiep.
+    - checkpoint `2026-04-09` da tiep tuc ha destructive surface cua `TRT`: `TreatmentMaterialsTable` da bo action `Hoan tac ghi nhan`, `TreatmentMaterialPolicy` khong con cho `delete/restore/forceDelete`, va regression da khoa direct delete/model-layer delete de lane vat tu dieu tri mac dinh di theo huong reversal-only thay vi destructive UI flow.
+    - checkpoint `2026-04-09` da tiep tuc bo sung audit/timeline cho `TRT/FIN`: `TreatmentMaterialUsageService` nay da ghi `ACTION_CREATE`/`ACTION_REVERSAL` audit co cau truc cho usage va reversal, `PatientOperationalTimelineService` da map duoc `Ghi nhận vật tư điều trị`, `Hoàn tác vật tư điều trị`, va `Điều chỉnh ví bệnh nhân` thay vi de nhung bien dong nay nam rieng trong audit log thô.
+    - checkpoint `2026-04-09` da tiep tuc siet lane `SUP`: `FactoryOrderPolicy` khong con cho `delete`, `EditFactoryOrder` va `FactoryOrdersTable` da go destructive delete surfaces, va `FactoryOrder` model da chan delete truc tiep; checkpoint `2026-04-13` bo sung them boundary `FactoryOrder::cancel()` canonical noi ve `FactoryOrderWorkflowService` de domain labo di qua workflow thay vi xoa ban ghi.
+    - checkpoint `2026-04-14` da bo sung `FactoryOrder::markOrdered()` / `markInProgress()` / `markDelivered()` canonical boundaries noi ve `FactoryOrderWorkflowService`, de entry points workflow labo di qua model layer thay vi service call truc tiep.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `INV`: `MaterialIssueNote` da duoc ha ve cancel-only, khi `EditMaterialIssueNote` va `MaterialIssueNotesTable` khong con expose delete surfaces, `MaterialIssueNotePolicy` khong con cho `delete/restore/forceDelete`, va model delete guard hard-deny moi thao tac xoa truc tiep de phieu xuat di qua workflow `cancel()`.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `TRT`: `TreatmentPlan` va `PlanItem` da duoc ha ve cancel-only, khi delete surfaces tren `EditTreatmentPlan`, `EditPlanItem`, va `PlanItemsRelationManager` bi go bo, `TreatmentPlanPolicy` / `PlanItemPolicy` khong con cho `delete/restore/forceDelete`, va model delete guard hard-deny moi thao tac xoa truc tiep de dieu tri di qua workflow `cancel()`.
+    - checkpoint `2026-04-14` da tiep tuc chuan hoa lane `TRT` o model boundaries: `TreatmentPlan` va `PlanItem` da co them `cancel()` canonical noi ve `TreatmentPlanWorkflowService` / `PlanItemWorkflowService`, de caller layer di qua workflow entry point nhat quan thay vi goi service truc tiep.
+    - checkpoint `2026-04-14` da bo sung them `TreatmentPlan::approve()` / `start()` / `complete()` canonical boundaries noi ve `TreatmentPlanWorkflowService`, de entry points workflow duoc goi tu model layer thay vi tu service truc tiep.
+    - checkpoint `2026-04-14` da bo sung them `PlanItem::startTreatment()` / `completeTreatment()` canonical boundaries noi ve `PlanItemWorkflowService`, de entry points workflow hang muc dieu tri di qua model layer thay vi service call truc tiep.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `FIN`: `Payment` da dong bo `PaymentPolicy` va `EditPayment` voi immutable ledger contract, khong con mo delete/restore/force-delete surface va buoc moi thao tac reversal di qua workflow canonical thay vi xoa truc tiep.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `FIN`: `ReceiptExpense` da hard-deny `delete/restore/forceDelete` o policy, va model delete guard moi da buoc phieu thu/chi di qua workflow state boundary thay vi xoa truc tiep bang Eloquent.
+    - checkpoint `2026-04-14` da tiep tuc chuan hoa model boundaries cho lane `FIN`: `ReceiptExpense` da co them `approve()` va `post()` canonical noi ve `ReceiptExpenseWorkflowService`, con `Payment` da co them `reverse()` canonical noi ve `PaymentReversalService`, de caller layer khong con phai goi service truc tiep moi khi di qua workflow chinh.
+    - checkpoint `2026-04-14` da tiep tuc chuan hoa lane `FIN` o `Invoice`: model da co them `cancel()` canonical noi ve `InvoiceWorkflowService`, va regression khoa lai cancel audit/status contract cho ca service path lan model boundary path.
+    - checkpoint `2026-04-10` da tiep tuc siet lane `CLIN`: `ClinicalOrder` da co model delete guard moi, de chi dinh lam sang co `cancel()` canonical khong con bi xoa truc tiep ngoai workflow.
+    - checkpoint `2026-04-13` da tiep tuc siet lane workflow-backed adjunct surfaces: `PopupAnnouncement` da duoc ha ve cancel-only, khi `EditPopupAnnouncement` va `PopupAnnouncementsTable` khong con expose delete/restore/force-delete surfaces, `PopupAnnouncementPolicy` hard-deny `delete/restore/forceDelete`, model delete guard moi chan xoa truc tiep, va model nay da co them `cancel()` canonical boundary noi ve `PopupAnnouncementWorkflowService`.
+    - checkpoint `2026-04-13` da tiep tuc khoi sau lane `TRT` bang regression reversal idempotency cho `TreatmentMaterialUsageService`: retry/duplicate calls vao `delete()` gio chi restore batch ton kho, tao `InventoryTransaction` adjust, va ghi `ACTION_REVERSAL` audit duy nhat mot lan cho moi `TreatmentMaterial` usage da duoc hoan tac.
+    - checkpoint `2026-04-13` da tiep tuc siet lane workflow-backed finance adjunct surface: `InsuranceClaim` da co them `cancel()` canonical boundary noi ve `InsuranceClaimWorkflowService`, model delete guard moi chan xoa truc tiep, va regression khoa lai cancel audit metadata cung destructive-path boundary cho ho so bao hiem.
 - Tests needed:
   - end-to-end reconciliation suite
   - concurrency tests
@@ -375,7 +423,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-012] Reporting and snapshot platform convergence
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `KPI`, `OPS`, `FIN`, `INV`, `CARE`, `SUP`
 - Description:
   - Tiep tuc tach report pages khoi ad-hoc query logic, chot read-model/snapshot contract, freshness policy, export scope, va query performance lane.
@@ -395,15 +444,16 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - da tao `HotReportAggregateReadModelService` de gom readiness, aggregate breakdown query, live fallback breakdown/summary query, va summary stats cho `RevenueStatistical` va `CustomsCareStatistical`
     - da keo `RevenueStatistical` va `CustomsCareStatistical` ve dung chung hot-report reader thay vi moi page tu giu aggregate query/stats/fallback branch-scope rieng
     - da mo rong tiep hot-report reader sang `TrickGroupStatistical`, de lane doanh thu theo nhom thu thuat cung dung chung aggregate readiness, aggregate breakdown query, va summary stats contract tu `report_revenue_daily_aggregates`
-    - da tao `FinancialReportReadModelService` de gom cashflow/invoice-balance query va summary contract cho `RevenueExpenditure` va `OwedStatistical`, de hai page finance report nay khong con giu branch-scoped stats/query logic rieng trong page class
-    - da tao `FinancialDashboardReadModelService` de gom payment/invoice aggregate contract cho `RevenueOverviewWidget`, `OutstandingBalanceWidget`, `QuickFinancialStatsWidget`, `MonthlyRevenueChartWidget`, `PaymentMethodsChartWidget`, `PaymentStatsWidget`, va heading summary cua `OverdueInvoicesWidget`, de lane dashboard/payment widgets branch-scoped khong con lap lai cung mot set query trong tung widget
+    - da tao `FinancialReportReadModelService` de gom cashflow/invoice-balance query va summary contract cho `RevenueExpenditure` va `OwedStatistical`, de hai page finance report nay khong con giu branch-scoped stats/query logic rieng trong page class; `RevenueExpenditure` va `OwedStatistical` nay da doc thang qua `cashflowStatsPayload()` / `invoiceBalanceStatsPayload()` thay vi tu format stats tai page layer
+    - da tao `FinancialDashboardReadModelService` de gom payment/invoice aggregate contract cho `RevenueOverviewWidget`, `OutstandingBalanceWidget`, `QuickFinancialStatsWidget`, `MonthlyRevenueChartWidget`, `PaymentMethodsChartWidget`, `PaymentStatsWidget`, va toan bo summary + overdue invoice query cua `OverdueInvoicesWidget`, de lane dashboard/payment widgets branch-scoped khong con lap lai cung mot set query trong tung widget; dong thoi `PaymentStatsWidget` nay da doc qua `paymentStatsCards()` thay vi tu giu formatting tu `paymentStatsSnapshot()`, `PaymentMethodsChartWidget` da doc qua `paymentMethodChart()` thay vi tu giu label/color/empty-state mapping, `MonthlyRevenueChartWidget` da doc qua `monthlyRevenueChart()` thay vi tu giu dataset assembly rieng, `RevenueOverviewWidget` da doc qua `revenueOverviewCards()` thay vi tu giu icon/color/description formatting, `QuickFinancialStatsWidget` da doc qua `quickFinancialStatCards()` thay vi tu giu presentation logic cua 5 the thong ke, `OutstandingBalanceWidget` da doc qua `outstandingBalanceCards()` thay vi tu giu card presentation mapping rieng, va heading cua `OverdueInvoicesWidget` nay da doc thang qua `overdueInvoiceHeading()` thay vi tu lap summary bang `outstandingBalances()`.
     - da tao `FinanceOperationalReadModelService` de gom finance aging / overdue sync / dunning / reversible-receipt watchlist cho `OpsControlCenterService`, de finance OPS summary khong con tu query truc tiep trong cockpit service
-    - da tao `PatientInsightReportReadModelService` de gom patient-breakdown va risk-summary query contract cho `PatientStatistical` va `RiskScoringDashboard`, de hai page patient/risk report nay khong con tu giu stats/query branch-scoped rieng trong page class
-    - da tao `InventorySupplyReportReadModelService` de gom material-inventory va factory-order report query/summary contract cho `MaterialStatistical` va `FactoryStatistical`, de lane `INV/SUP` khong con tu giu branch-scoped stats/query logic rieng trong page class; dong thoi `FactoryStatistical` da dong branch-filter option leak bang actor-scoped branch options
-    - da tao `AppointmentReportReadModelService` de gom appointment-query va visit-episode metric summary contract cho `AppointmentStatistical`, de page report lich hen khong con tu giu stats/query branch-scoped rieng trong page class
+    - da tao `PatientInsightReportReadModelService` de gom patient-breakdown va risk-summary query contract cho `PatientStatistical` va `RiskScoringDashboard`, de hai page patient/risk report nay khong con tu giu stats/query branch-scoped rieng trong page class; `PatientStatistical` nay da doc thang qua `patientSummaryStatsPayload()` thay vi tu format the thong ke tai page layer
+    - da tao `InventorySupplyReportReadModelService` de gom material-inventory va factory-order report query/summary contract cho `MaterialStatistical` va `FactoryStatistical`, de lane `INV/SUP` khong con tu giu branch-scoped stats/query logic rieng trong page class; `MaterialStatistical` va `FactoryStatistical` nay da doc thang qua `materialInventoryStatsPayload()` / `factoryOrderStatsPayload()` thay vi tu format stats tai page layer, dong thoi `FactoryStatistical` da dong branch-filter option leak bang actor-scoped branch options
+    - da tao `AppointmentReportReadModelService` de gom appointment-query va visit-episode metric summary contract cho `AppointmentStatistical`, de page report lich hen khong con tu giu stats/query branch-scoped rieng trong page class; `AppointmentStatistical` nay da doc thang qua `appointmentSummaryStatsPayload()` thay vi tu format 7 KPI cards tai page layer
     - da mo rong `AppointmentReportReadModelService` sang `CalendarAppointments` cho weekly operational status metrics, de page calendar khong con tu giu raw branch-scoped count query rieng trong `getOperationalStatusMetrics()`
     - da tao `ReportSnapshotComparisonService` de `CompareReportSnapshots` dung chung drift-aware metric diff contract thay vi command tu map numeric/scalar delta rieng
     - da tao `ReportSnapshotSlaService` de `CheckSnapshotSla` dung chung SLA evaluation + missing-placeholder contract thay vi command tu classify `on_time / late / stale / missing` va insert placeholder snapshot
+    - checkpoint `2026-04-07` da tiep tuc mo rong `BaseReportPage` sang `pageViewState()` + shell partial chung cho stats cards, de `FactoryStatistical` va cac report con doc presentation contract cho stat cards thay vi giu `@php($stats = $this->getStats())` va markup stats inline trong `base-report.blade.php`
 - Tests needed:
   - report scope/export tests
   - performance/explain checks cho heavy paths
@@ -413,7 +463,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-013] Integration control-plane platform convergence
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `INT`, `ZNS`, `OPS`
 - Description:
   - Tiep tuc tach ro control-plane health, runtime settings, secret rotation, payload governance, retry/dead-letter, va provider-specific runbooks thanh mot platform nhat quan.
@@ -467,6 +518,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
     - checkpoint `2026-04-02` da tiep tuc ha `renderedRecentLogs`, `renderedActiveSecretRotations`, `renderedProviderHealthCards`, va cac panel `secretRotation / providerHealth / auditLog` xuong helper noi bo, de regression khoa truc tiep panel payload trong `pageViewState` thay vi tiep tuc neo vao computed adapters cua page
     - checkpoint `2026-04-02` da tiep tuc ha `providerActionGroups` va `providerSupportPanels` xuong helper noi bo, de regression khoa `providerPanels/support_sections` la render contract thuc te thay vi computed adapters trung gian
     - checkpoint `2026-04-03` da tiep tuc chuyen `IntegrationSettings` sang computed shell `pageViewState`, de page control-plane nay khop hon voi Livewire 3 va regression manual-object chi con khoa method shell/public contract
+    - checkpoint `2026-04-04` da chot them lane shell/presentation contract cho `IntegrationSettings`, `OpsControlCenter`, va `ZaloZns`: `provider-health`, `dashboard summary`, `control-plane sections`, `field renderers`, `grace rotations`, va `OPS detail cards` da dung partial/state chung; `IntegrationSettings`, `OpsControlCenter`, va `ZaloZns` da tiep tuc giu `pageViewState()` / `dashboardViewState()` la shell contract chinh, giam them adapter state va markup lap
     - da tiep tuc dua `ZaloZns` tu state phang sang panel-state (`summary_panel`, `provider_health_panel`, `triage_panel`, `guidance_panel`), de page triage dung cung pattern view-state voi `IntegrationSettings` / `OpsControlCenter`
     - da tiep tuc gom hai khung note cua `ZaloZns` (`Triage nhanh`, `Gợi ý xử lý`) vao partial chung `control-plane-note-panel`, de page ZNS triage khong con giu hai block markup tach biet trong Blade
     - da tiep tuc nang `ZaloZns` len `note_panels`, de dashboard partial co the loop note payload theo cung contract thay vi van phai giu adapter rieng cho `triage_panel` va `guidance_panel`
@@ -514,3 +566,80 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 5. `RRB-007`, `RRB-008`
 6. `RRB-009`, `RRB-010`
 7. `RRB-011`, `RRB-012`, `RRB-013`
+8. `RRB-014`, `RRB-015`, `RRB-016`
+
+## [RRB-014] Cross-module TRT/INV/FIN/SUP reconciliation chain smoke tests
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/CrossModuleTrtInvFinChainSmokeTest.php` (10 tests, 28 assertions)
+- Module: `TRT`, `INV`, `FIN`, `SUP`
+- Description:
+  - Ghi nhan contract smoke tests cho chuoi cross-module: treatment material usage → inventory mutation → invoice → payment → wallet ledger → reversal → audit trail lien tuc. Bao gom installment dunning chain va MPI merge reparenting chain.
+- Impact:
+  - Dam bao khi TRT/INV/FIN thay doi rieng le, chuoi toan ven van khong bi drift.
+- Priority: `P2`
+- Risk: `High`
+- Effort estimate: `M`
+- Dependency:
+  - `RRB-011`
+- Tests needed:
+  - TreatmentMaterialUsage → InventoryTransaction → stock decrease chain
+  - Invoice creation from session → Payment → WalletLedger (khi wallet source)
+  - MaterialUsage reversal → stock restored → InventoryTransaction reversal immutable
+  - Payment reversal → WalletLedger CREDIT → original DEBIT unchanged
+  - Branch attribution consistent qua TRT/INV/FIN/SUP sau reversal
+  - Installment dunning → payment → wallet chain
+- Rollout note:
+  - Tests only, khong thay doi service code.
+
+## [RRB-015] KPI snapshot consistency, ZNS observability threshold, and OPS signoff contract
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/KpiSnapshotSlaAndOpsReleaseGateContractTest.php` (12 tests, 43 assertions)
+- Module: `KPI`, `ZNS`, `OPS`
+- Description:
+  - Contract tests cho KPI snapshot freshness SLA breach detection, ZNS dead-letter threshold policy, va OPS release signoff completeness.
+- Impact:
+  - Dam bao threshold/SLA contracts khong bi drift khi tham so thay doi.
+- Priority: `P2`
+- Risk: `Medium`
+- Effort estimate: `S`
+- Dependency:
+  - `RRB-012`
+  - `RRB-013`
+- Tests needed:
+  - KPI snapshot freshness: SLA breach khi snapshot > threshold gio cu
+  - KPI snapshot: `stale` va `missing` phan loai nhat quan voi SlaService
+  - ZNS dead-letter threshold: retry exhausted → status=dead → backlog count tang
+  - ZNS campaign runner: dead-letter gate block publish khi provider misconfigured
+  - OPS release gate catalog: all required gates present và `RunReleaseGates` passes clean state
+  - ProductionReadiness report: covers all critical modules không thiếu
+- Rollout note:
+  - Tests only, khong thay doi threshold values.
+
+## [RRB-016] Production-like dataset smoke tests for reports and MPI merge chain
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/ProductionDatasetSmokeAndMpiChainTest.php` (7 tests, 23 assertions)
+- Module: `KPI`, `PAT`, `FIN`, `TRT`
+- Description:
+  - Smoke tests voi dataset lon (50+ patients, invoices, payments) de dam bao report aggregates nhat quan, va MPI merge chain khong mat treatment/invoice attribution sau khi merge.
+- Impact:
+  - Phat hien volume/regression gap ma unit test don le khong cover duoc.
+- Priority: `P3`
+- Risk: `Medium`
+- Effort estimate: `M`
+- Dependency:
+  - `RRB-011`
+  - `RRB-014`
+- Tests needed:
+  - Seed 20+ patients across 2 branches → report aggregates khop between FinancialReportReadModelService va raw Invoice count
+  - Seed 10+ appointments per branch → AppointmentReportReadModelService count nhat quan
+  - MPI merge chain: Patient A + B merged → TreatmentPlan/Invoice/Payment duoc reparent sang canonical
+  - MPI rollback: restore reassigns references ve patient goc
+  - Cross-branch attribution: payment tren branch A khong xuat hien trong branch B report
+- Rollout note:
+  - Khong can feature flag, tests only.

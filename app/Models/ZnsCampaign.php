@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ZnsCampaignWorkflowService;
 use App\Support\BranchAccess;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -209,6 +210,21 @@ class ZnsCampaign extends Model
         } finally {
             static::$managedWorkflowDepth = max(0, static::$managedWorkflowDepth - 1);
         }
+    }
+
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ZnsCampaignWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public function schedule(mixed $scheduledAt = null, ?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ZnsCampaignWorkflowService::class)->schedule($this, $scheduledAt, $reason, $actorId);
+    }
+
+    public function runNow(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(ZnsCampaignWorkflowService::class)->runNow($this, $reason, $actorId);
     }
 
     public static function generateCode(): string

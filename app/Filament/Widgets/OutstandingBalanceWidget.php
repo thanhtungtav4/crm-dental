@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use App\Services\FinancialDashboardReadModelService;
-use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -18,50 +17,48 @@ class OutstandingBalanceWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $balances = app(FinancialDashboardReadModelService::class)
-            ->outstandingBalances(auth()->user());
+        $cards = app(FinancialDashboardReadModelService::class)
+            ->outstandingBalanceCards(auth()->user());
+        $unpaid = $cards['unpaid'];
+        $partial = $cards['partial'];
+        $overdue = $cards['overdue'];
+        $week = $cards['week'];
 
         return [
-            Stat::make('Hóa đơn chưa thanh toán', $balances['unpaid_count'].' hóa đơn')
-                ->description('Tổng: '.number_format($balances['unpaid_total'], 0, ',', '.').'đ')
-                ->descriptionIcon(Heroicon::OutlinedDocumentText)
-                ->color('warning')
-                ->url(route('filament.admin.resources.invoices.index', [
-                    'tableFilters' => ['payment_progress' => ['value' => 'unpaid']],
-                ]))
+            Stat::make($unpaid['label'], $unpaid['value'])
+                ->description($unpaid['description'])
+                ->descriptionIcon($unpaid['description_icon'])
+                ->color($unpaid['color'])
+                ->url($unpaid['url'])
                 ->extraAttributes([
-                    'title' => 'Hóa đơn chưa có khoản thanh toán nào',
+                    'title' => $unpaid['title'],
                 ]),
 
-            Stat::make('Thanh toán một phần', $balances['partial_count'].' hóa đơn')
-                ->description('Còn lại: '.number_format($balances['partial_balance'], 0, ',', '.').'đ')
-                ->descriptionIcon(Heroicon::OutlinedClock)
-                ->color('info')
-                ->url(route('filament.admin.resources.invoices.index', [
-                    'tableFilters' => ['status' => ['values' => ['partial']]],
-                ]))
+            Stat::make($partial['label'], $partial['value'])
+                ->description($partial['description'])
+                ->descriptionIcon($partial['description_icon'])
+                ->color($partial['color'])
+                ->url($partial['url'])
                 ->extraAttributes([
-                    'title' => 'Hóa đơn đã thanh toán một phần',
+                    'title' => $partial['title'],
                 ]),
 
-            Stat::make('Hóa đơn quá hạn', $balances['overdue_count'].' hóa đơn')
-                ->description('Nợ: '.number_format($balances['overdue_balance'], 0, ',', '.').'đ')
-                ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
-                ->color('danger')
-                ->url(route('filament.admin.resources.invoices.index', [
-                    'tableFilters' => ['status' => ['values' => ['overdue']]],
-                ]))
+            Stat::make($overdue['label'], $overdue['value'])
+                ->description($overdue['description'])
+                ->descriptionIcon($overdue['description_icon'])
+                ->color($overdue['color'])
+                ->url($overdue['url'])
                 ->extraAttributes([
-                    'title' => 'Hóa đơn đã quá ngày đến hạn',
+                    'title' => $overdue['title'],
                 ]),
 
-            Stat::make('Thu tuần này', number_format($balances['week_collections'], 0, ',', '.').'đ')
-                ->description($balances['week_payments_count'].' giao dịch')
-                ->descriptionIcon(Heroicon::OutlinedBanknotes)
-                ->color('success')
-                ->url(route('filament.admin.resources.payments.index'))
+            Stat::make($week['label'], $week['value'])
+                ->description($week['description'])
+                ->descriptionIcon($week['description_icon'])
+                ->color($week['color'])
+                ->url($week['url'])
                 ->extraAttributes([
-                    'title' => 'Tổng thu từ đầu tuần đến nay',
+                    'title' => $week['title'],
                 ]),
         ];
     }

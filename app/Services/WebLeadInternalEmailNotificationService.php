@@ -173,8 +173,12 @@ class WebLeadInternalEmailNotificationService
                 action: AuditLog::ACTION_COMPLETE,
                 metadata: [
                     'channel' => 'web_lead_internal_email',
+                    'trigger' => 'send_success',
+                    'status_from' => WebLeadEmailDelivery::STATUS_PROCESSING,
+                    'status_to' => WebLeadEmailDelivery::STATUS_SENT,
                     'attempt_count' => $claimedDelivery->attempt_count,
                     'recipient_email' => $claimedDelivery->recipient_email,
+                    'transport_message_id' => $transportMessageId,
                 ],
                 branchId: $claimedDelivery->branch_id ? (int) $claimedDelivery->branch_id : null,
             );
@@ -312,8 +316,10 @@ class WebLeadInternalEmailNotificationService
             action: AuditLog::ACTION_FAIL,
             metadata: [
                 'channel' => 'web_lead_internal_email',
-                'attempt_count' => $delivery->attempt_count,
+                'trigger' => $terminal ? 'send_dead' : 'send_retryable',
+                'status_from' => WebLeadEmailDelivery::STATUS_PROCESSING,
                 'status_to' => $delivery->status,
+                'attempt_count' => $delivery->attempt_count,
                 'message' => Str::limit($throwable->getMessage(), 500, ''),
             ],
             branchId: $delivery->branch_id ? (int) $delivery->branch_id : null,

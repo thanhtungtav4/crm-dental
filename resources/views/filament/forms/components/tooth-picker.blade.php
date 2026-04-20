@@ -1,14 +1,3 @@
-@php
-    $adultTeeth = [
-        'upper' => [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28],
-        'lower' => [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38],
-    ];
-    $childTeeth = [
-        'upper' => [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
-        'lower' => [85, 84, 83, 82, 81, 71, 72, 73, 74, 75],
-    ];
-@endphp
-
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
         x-data="{
@@ -16,7 +5,7 @@
             draftState: [],
             modalOpen: false,
             tab: 'adult',
-            childTeeth: @js(array_map('strval', array_values(array_merge($childTeeth['upper'], $childTeeth['lower'])))),
+            childTeeth: @js($childTeethFlat),
 
             init() {
                 this.state = this.normalizeState(this.state);
@@ -140,122 +129,46 @@
                 </div>
 
                 <!-- Tabs -->
-                <div class="flex gap-4 mb-4 border-b">
-                    <button type="button" @click="tab = 'adult'"
-                        class="px-4 py-2 font-medium text-sm transition-colors border-b-2"
-                        :class="tab === 'adult' ? 'border-primary-600 text-primary-600 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
-                        Người lớn
-                    </button>
-                    <button type="button" @click="tab = 'child'"
-                        class="px-4 py-2 font-medium text-sm transition-colors border-b-2"
-                        :class="tab === 'child' ? 'border-primary-600 text-primary-600 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
-                        Trẻ em
-                    </button>
+                <div class="mb-4 flex gap-4 border-b">
+                    @foreach($tabs as $tabConfig)
+                        <button type="button" @click="tab = '{{ $tabConfig['key'] }}'"
+                            class="border-b-2 px-4 py-2 text-sm font-medium transition-colors"
+                            :class="tab === '{{ $tabConfig['key'] }}' ? 'border-primary-600 text-primary-600 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+                            {{ $tabConfig['label'] }}
+                        </button>
+                    @endforeach
                 </div>
 
                 <!-- Content -->
-                <div class="overflow-y-auto flex-1">
-
-                    <!-- Adult View -->
-                    <div x-show="tab === 'adult'" class="space-y-6">
-                        <!-- Upper -->
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Hàm trên</span>
-                                <div class="text-xs space-x-2">
-                                    <button type="button" @click="selectAll(@js($adultTeeth['upper']))"
-                                        class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                                    <button type="button" @click="deselectAll(@js($adultTeeth['upper']))"
-                                        class="text-red-500 hover:underline">Bỏ chọn</button>
+                <div class="flex-1 overflow-y-auto">
+                    @foreach($toothGroups as $tabKey => $groups)
+                        <div x-show="tab === '{{ $tabKey }}'" class="space-y-6">
+                            @foreach($groups as $group)
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">{{ $group['label'] }}</span>
+                                        <div class="space-x-2 text-xs">
+                                            <button type="button" @click="selectAll(@js($group['teeth']))"
+                                                class="text-primary-600 hover:underline">Chọn hết</button>
+                                            <span class="text-gray-300 dark:text-gray-600">|</span>
+                                            <button type="button" @click="deselectAll(@js($group['teeth']))"
+                                                class="text-red-500 hover:underline">Bỏ chọn</button>
+                                        </div>
+                                    </div>
+                                    <div class="grid gap-2 {{ $group['grid_class'] }}" style="{{ $group['grid_style'] }}">
+                                        @foreach($group['teeth'] as $tooth)
+                                            <button type="button" @click="toggleTooth({{ $tooth }})"
+                                                class="{{ $group['button_classes'] }}"
+                                                :class="isSelected({{ $tooth }}) ? '{{ $selectedButtonClasses }}' : '{{ $defaultButtonClasses }}'">
+                                                <span class="text-xs font-bold"
+                                                    :class="isSelected({{ $tooth }}) ? '{{ $selectedLabelClasses }}' : '{{ $defaultLabelClasses }}'">{{ $tooth }}</span>
+                                            </button>
+                                        @endforeach
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="grid gap-2 crm-tooth-picker-grid-16" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
-                                @foreach($adultTeeth['upper'] as $t)
-                                    <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="flex h-12 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
-                                        <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
-                                    </button>
-                                @endforeach
-                            </div>
+                            @endforeach
                         </div>
-
-                        <!-- Lower -->
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Hàm dưới</span>
-                                <div class="text-xs space-x-2">
-                                    <button type="button" @click="selectAll(@js($adultTeeth['lower']))"
-                                        class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                                    <button type="button" @click="deselectAll(@js($adultTeeth['lower']))"
-                                        class="text-red-500 hover:underline">Bỏ chọn</button>
-                                </div>
-                            </div>
-                            <div class="grid gap-2 crm-tooth-picker-grid-16" style="grid-template-columns: repeat(16, minmax(0, 1fr));">
-                                @foreach($adultTeeth['lower'] as $t)
-                                    <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="flex h-12 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
-                                        <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Child View -->
-                    <div x-show="tab === 'child'" class="space-y-6">
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Răng sữa hàm trên</span>
-                                <div class="text-xs space-x-2">
-                                    <button type="button" @click="selectAll(@js($childTeeth['upper']))"
-                                        class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                                    <button type="button" @click="deselectAll(@js($childTeeth['upper']))"
-                                        class="text-red-500 hover:underline">Bỏ chọn</button>
-                                </div>
-                            </div>
-                            <div class="grid gap-2 crm-tooth-picker-grid-10" style="grid-template-columns: repeat(10, minmax(0, 1fr));">
-                                @foreach($childTeeth['upper'] as $t)
-                                    <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="flex h-11 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
-                                        <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-semibold uppercase text-gray-700 dark:text-gray-200">Răng sữa hàm dưới</span>
-                                <div class="text-xs space-x-2">
-                                    <button type="button" @click="selectAll(@js($childTeeth['lower']))"
-                                        class="text-primary-600 hover:underline">Chọn hết</button>
-                                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                                    <button type="button" @click="deselectAll(@js($childTeeth['lower']))"
-                                        class="text-red-500 hover:underline">Bỏ chọn</button>
-                                </div>
-                            </div>
-                            <div class="grid gap-2 crm-tooth-picker-grid-10" style="grid-template-columns: repeat(10, minmax(0, 1fr));">
-                                @foreach($childTeeth['lower'] as $t)
-                                    <button type="button" @click="toggleTooth({{ $t }})"
-                                        class="flex h-11 items-center justify-center rounded border bg-white transition-all hover:shadow-md dark:bg-gray-900 dark:hover:bg-gray-800"
-                                        :class="isSelected({{ $t }}) ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-offset-1 ring-offset-white dark:bg-primary-500/15 dark:ring-offset-gray-900' : 'border-gray-200 dark:border-gray-700'">
-                                        <span class="text-xs font-bold"
-                                            :class="isSelected({{ $t }}) ? 'text-primary-700 dark:text-primary-100' : 'text-gray-600 dark:text-gray-300'">{{ $t }}</span>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
+                    @endforeach
                 </div>
 
                 <!-- Footer -->

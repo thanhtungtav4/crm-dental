@@ -6,7 +6,6 @@ use App\Filament\Resources\MaterialIssueNotes\MaterialIssueNoteResource;
 use App\Models\MaterialIssueNote;
 use App\Services\MaterialIssueNoteWorkflowService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -76,8 +75,6 @@ class EditMaterialIssueNote extends EditRecord
 
                     $this->refreshFormData(['status', 'posted_at', 'posted_by']);
                 }),
-            DeleteAction::make()
-                ->visible(fn (): bool => $this->record->status === MaterialIssueNote::STATUS_DRAFT),
         ];
     }
 }

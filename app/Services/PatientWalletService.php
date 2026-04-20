@@ -65,11 +65,7 @@ class PatientWalletService
                 'balance_after' => $balanceAfter,
                 'reference_no' => $payment->transaction_ref ?: $invoice->invoice_no,
                 'note' => $entryDefinition['note'],
-                'metadata' => [
-                    'payment_direction' => $payment->direction,
-                    'payment_source' => $payment->payment_source,
-                    'is_deposit' => (bool) $payment->is_deposit,
-                ],
+                'metadata' => $this->paymentLedgerMetadata($payment, $entryDefinition['entry_type']),
                 'created_by' => $payment->received_by,
             ]);
 
@@ -128,6 +124,13 @@ class PatientWalletService
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
                 'note' => $note,
+                'metadata' => [
+                    'trigger' => 'manual_wallet_adjustment',
+                    'adjustment_amount' => $amount,
+                    'resulting_direction' => $amount >= 0
+                        ? WalletLedgerEntry::DIRECTION_CREDIT
+                        : WalletLedgerEntry::DIRECTION_DEBIT,
+                ],
                 'created_by' => $actorId ?? auth()->id(),
             ]);
 
@@ -143,6 +146,7 @@ class PatientWalletService
                     'patient_id' => $wallet->patient_id,
                     'branch_id' => $wallet->resolveBranchId(),
                     'wallet_entry_id' => $entry->id,
+                    'trigger' => 'manual_wallet_adjustment',
                     'adjustment_amount' => $amount,
                     'note' => $note,
                     'balance_before' => $balanceBefore,
@@ -208,5 +212,29 @@ class PatientWalletService
         }
 
         return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function paymentLedgerMetadata(Payment $payment, string $entryType): array
+    {
+        $trigger = match ($entryType) {
+            'deposit' => 'deposit_receipt',
+            'spend' => 'wallet_spend_receipt',
+            'refund' => $payment->is_deposit ? 'deposit_refund' : 'wallet_refund',
+            'reversal' => 'payment_reversal',
+            default => 'payment_posted',
+        };
+
+        return array_filter([
+            'trigger' => $trigger,
+            'payment_direction' => $payment->direction,
+            'payment_source' => $payment->payment_source,
+            'is_deposit' => (bool) $payment->is_deposit,
+            'transaction_ref' => $payment->transaction_ref,
+            'reversal_of_id' => $payment->reversal_of_id,
+            'refund_reason' => $payment->refund_reason,
+        ], static fn (mixed $value): bool => $value !== null);
     }
 }

@@ -11,6 +11,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 
 if (! function_exists('createFinancialDashboardInvoice')) {
@@ -140,4 +141,15 @@ it('scopes payment stats widget to the manager branch', function (): void {
         ->assertSee('1.000.000đ | Quá hạn: 0');
 
     Carbon::setTestNow();
+});
+
+it('routes payment stats widget data through the shared payment stats cards', function (): void {
+    $widget = File::get(app_path('Filament/Resources/Payments/Widgets/PaymentStatsWidget.php'));
+
+    expect($widget)
+        ->toContain('->paymentStatsCards(auth()->user())')
+        ->not->toContain('->paymentStatsSnapshot(auth()->user())')
+        ->not->toContain('->revenueOverview(auth()->user())')
+        ->not->toContain('->quickStats(auth()->user())')
+        ->not->toContain('->outstandingBalances(auth()->user())');
 });

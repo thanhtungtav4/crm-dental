@@ -55,9 +55,25 @@ class SystemSettings extends Page
     }
 
     /**
+     * @return array{
+     *     heading: string,
+     *     subheading: string,
+     *     sections: array<int, array<string, mixed>>
+     * }
+     */
+    public function pageViewState(): array
+    {
+        return [
+            'heading' => $this->getHeading(),
+            'subheading' => $this->getSubheading(),
+            'sections' => $this->settingSections(),
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
-    public function getSettingSections(): array
+    protected function settingSections(): array
     {
         $sections = [
             [

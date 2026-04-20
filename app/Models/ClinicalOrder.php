@@ -121,6 +121,12 @@ class ClinicalOrder extends Model
                 $order->completed_at = now();
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'clinical_order' => 'Chỉ định lâm sàng không hỗ trợ xóa trực tiếp. Vui lòng hủy chỉ định qua workflow.',
+            ]);
+        });
     }
 
     public function patient(): BelongsTo
@@ -168,19 +174,22 @@ class ClinicalOrder extends Model
         return $this->hasMany(ClinicalMediaAsset::class);
     }
 
-    public function markInProgress(): void
-    {
-        app(ClinicalOrderWorkflowService::class)->markInProgress($this);
+    public function markInProgress(
+        ?int $actorId = null,
+        ?string $reason = null,
+        string $trigger = 'manual_in_progress',
+    ): self {
+        return app(ClinicalOrderWorkflowService::class)->markInProgress($this, $actorId, $reason, $trigger);
     }
 
-    public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): void
+    public function markCompleted(?int $actorId = null, ?string $reason = null, string $trigger = 'manual_complete'): self
     {
-        app(ClinicalOrderWorkflowService::class)->markCompleted($this, $actorId, $reason, $trigger);
+        return app(ClinicalOrderWorkflowService::class)->markCompleted($this, $actorId, $reason, $trigger);
     }
 
-    public function cancel(?string $reason = null, ?int $actorId = null): void
+    public function cancel(?string $reason = null, ?int $actorId = null): self
     {
-        app(ClinicalOrderWorkflowService::class)->cancel($this, $reason, $actorId);
+        return app(ClinicalOrderWorkflowService::class)->cancel($this, $reason, $actorId);
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed

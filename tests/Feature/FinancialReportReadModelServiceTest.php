@@ -102,11 +102,23 @@ it('summarizes cashflow and invoice balances within selected branches', function
             'total_receipt' => 1_100_000.0,
             'total_expense' => 250_000.0,
         ])
+        ->and($service->cashflowStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng thu', 'value' => '1,100,000 đ'],
+            ['label' => 'Tổng chi', 'value' => '250,000 đ'],
+            ['label' => 'Biến động', 'value' => '850,000 đ'],
+        ])
         ->and($service->invoiceBalanceSummary([$branchA->id], now()->toDateString(), now()->toDateString()))
         ->toBe([
             'total_amount' => 1_900_000.0,
             'paid_amount' => 1_100_000.0,
             'balance' => 800_000.0,
+        ])
+        ->and($service->invoiceBalanceStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng phải thanh toán', 'value' => '1,900,000 đ'],
+            ['label' => 'Đã thanh toán', 'value' => '1,100,000 đ'],
+            ['label' => 'Công nợ', 'value' => '800,000 đ'],
         ]);
 });
 
@@ -119,9 +131,19 @@ it('returns empty readers for inaccessible branch selections', function (): void
             'total_receipt' => 0.0,
             'total_expense' => 0.0,
         ])
+        ->and($service->cashflowStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng thu', 'value' => '0 đ'],
+            ['label' => 'Tổng chi', 'value' => '0 đ'],
+            ['label' => 'Biến động', 'value' => '0 đ'],
+        ])
         ->and($service->invoiceBalanceSummary([], now()->toDateString(), now()->toDateString()))->toBe([
             'total_amount' => 0.0,
             'paid_amount' => 0.0,
             'balance' => 0.0,
+        ])
+        ->and($service->invoiceBalanceStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng phải thanh toán', 'value' => '0 đ'],
+            ['label' => 'Đã thanh toán', 'value' => '0 đ'],
+            ['label' => 'Công nợ', 'value' => '0 đ'],
         ]);
 });

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Filament\Forms\Components\ToothChart;
+use App\Models\Disease;
 use App\Services\PatientAssignmentAuthorizer;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
@@ -12,7 +14,6 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\ViewField;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -33,113 +34,9 @@ class ClinicalNotesRelationManager extends RelationManager
     {
         return $schema
             ->schema([
-                // Section 1: KHÁM TỔNG QUÁT (General Exam) - Collapsible
-                Section::make('KHÁM TỔNG QUÁT')
-                    ->description('Thông tin bác sĩ và nhận xét chung')
-                    ->collapsible()
-                    ->schema([
-                        Grid::make(4)->schema([
-                            Select::make('examining_doctor_id')
-                                ->label('Bác sĩ khám')
-                                ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
-                                ->searchable()
-                                ->preload()
-                                ->helperText('Chỉ hiển thị bác sĩ thuộc chi nhánh đang chọn hoặc chi nhánh gốc của bệnh nhân.')
-                                ->columnSpan(1),
-
-                            Select::make('treating_doctor_id')
-                                ->label('Bác sĩ điều trị')
-                                ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
-                                ->searchable()
-                                ->preload()
-                                ->helperText('Chỉ hiển thị bác sĩ thuộc chi nhánh đang chọn hoặc chi nhánh gốc của bệnh nhân.')
-                                ->columnSpan(1),
-
-                            Select::make('branch_id')
-                                ->label('Phòng khám')
-                                ->relationship(
-                                    name: 'branch',
-                                    titleAttribute: 'name',
-                                    modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
-                                )
-                                ->searchable()
-                                ->preload()
-                                ->live()
-                                ->afterStateUpdated(function (Set $set): void {
-                                    $set('examining_doctor_id', null);
-                                    $set('treating_doctor_id', null);
-                                })
-                                ->columnSpan(1),
-
-                            DatePicker::make('date')
-                                ->label('Ngày khám')
-                                ->default(now())
-                                ->required()
-                                ->columnSpan(1),
-                        ]),
-
-                        Textarea::make('general_exam_notes')
-                            ->label('Nhập khám tổng quát')
-                            ->placeholder('Ghi nhận xét khám lâm sàng...')
-                            ->rows(4)
-                            ->columnSpanFull(),
-
-                        Textarea::make('recommendation_notes')
-                            ->label('Nhập kế hoạch điều trị')
-                            ->placeholder('Ghi hướng điều trị tổng quát...')
-                            ->rows(4)
-                            ->columnSpanFull(),
-                    ]),
-
-                // Section 2: CHỈ ĐỊNH (Orders) - Collapsible with dynamic image upload
-                Section::make('CHỈ ĐỊNH')
-                    ->description('Chỉ định cận lâm sàng (Chụp X-quang, Xét nghiệm máu)')
-                    ->collapsible()
-                    ->schema([
-                        CheckboxList::make('indications')
-                            ->label('')
-                            ->options(fn (): array => ClinicRuntimeSettings::examIndicationOptions())
-                            ->columns(5)
-                            ->gridDirection('row')
-                            ->live()
-                            ->columnSpanFull(),
-
-                        ...$this->buildIndicationImageUploadFields(),
-
-                        // Dynamic disease select - appears when "Khác" checkbox is checked
-                        Select::make('other_diseases')
-                            ->label('Chọn bệnh khác')
-                            ->multiple()
-                            ->options(
-                                fn () => \App\Models\Disease::active()
-                                    ->with('diseaseGroup')
-                                    ->get()
-                                    ->groupBy('diseaseGroup.name')
-                                    ->map(fn ($diseases, $group) => $diseases->pluck('full_name', 'id'))
-                                    ->toArray()
-                            )
-                            ->searchable()
-                            ->preload()
-                            ->visible(fn (Get $get): bool => in_array('khac', $get('indications') ?? []))
-                            ->columnSpanFull(),
-                    ]),
-
-                // Section 3: CHẨN ĐOÁN VÀ ĐIỀU TRỊ (Diagnosis & Treatment) - Collapsible
-                Section::make('CHẨN ĐOÁN VÀ ĐIỀU TRỊ')
-                    ->description('Sơ đồ răng và chẩn đoán')
-                    ->collapsible()
-                    ->schema([
-                        ViewField::make('tooth_diagnosis_data')
-                            ->view('filament.forms.components.tooth-chart')
-                            ->label('')
-                            ->columnSpanFull(),
-
-                        Textarea::make('other_diagnosis')
-                            ->label('Chẩn đoán khác')
-                            ->placeholder('Nhập chẩn đoán hoặc ghi chú khác...')
-                            ->rows(2)
-                            ->columnSpanFull(),
-                    ]),
+                $this->generalExamSection(),
+                $this->indicationsSection(),
+                $this->diagnosisAndTreatmentSection(),
             ]);
     }
 
@@ -202,6 +99,129 @@ class ClinicalNotesRelationManager extends RelationManager
             actor: BranchAccess::currentUser(),
             branchId: $this->resolveSelectedBranchId($get),
         );
+    }
+
+    protected function generalExamSection(): Section
+    {
+        return Section::make('KHÁM TỔNG QUÁT')
+            ->description('Thông tin bác sĩ và nhận xét chung')
+            ->collapsible()
+            ->schema([
+                Grid::make(4)->schema([
+                    Select::make('examining_doctor_id')
+                        ->label('Bác sĩ khám')
+                        ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
+                        ->searchable()
+                        ->preload()
+                        ->helperText($this->doctorSelectHelperText())
+                        ->columnSpan(1),
+
+                    Select::make('treating_doctor_id')
+                        ->label('Bác sĩ điều trị')
+                        ->options(fn (Get $get): array => $this->doctorOptionsForBranch($get))
+                        ->searchable()
+                        ->preload()
+                        ->helperText($this->doctorSelectHelperText())
+                        ->columnSpan(1),
+
+                    Select::make('branch_id')
+                        ->label('Phòng khám')
+                        ->relationship(
+                            name: 'branch',
+                            titleAttribute: 'name',
+                            modifyQueryUsing: fn (Builder $query): Builder => BranchAccess::scopeBranchQueryForCurrentUser($query),
+                        )
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->afterStateUpdated(function (Set $set): void {
+                            $set('examining_doctor_id', null);
+                            $set('treating_doctor_id', null);
+                        })
+                        ->columnSpan(1),
+
+                    DatePicker::make('date')
+                        ->label('Ngày khám')
+                        ->default(now())
+                        ->required()
+                        ->columnSpan(1),
+                ]),
+
+                Textarea::make('general_exam_notes')
+                    ->label('Nhập khám tổng quát')
+                    ->placeholder('Ghi nhận xét khám lâm sàng...')
+                    ->rows(4)
+                    ->columnSpanFull(),
+
+                Textarea::make('recommendation_notes')
+                    ->label('Nhập kế hoạch điều trị')
+                    ->placeholder('Ghi hướng điều trị tổng quát...')
+                    ->rows(4)
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    protected function doctorSelectHelperText(): string
+    {
+        return 'Chỉ hiển thị bác sĩ thuộc chi nhánh đang chọn hoặc chi nhánh gốc của bệnh nhân.';
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    protected function otherDiseaseOptions(): array
+    {
+        return Disease::active()
+            ->with('diseaseGroup')
+            ->get()
+            ->groupBy('diseaseGroup.name')
+            ->map(fn ($diseases) => $diseases->pluck('full_name', 'id')->all())
+            ->toArray();
+    }
+
+    protected function indicationsSection(): Section
+    {
+        return Section::make('CHỈ ĐỊNH')
+            ->description('Chỉ định cận lâm sàng (Chụp X-quang, Xét nghiệm máu)')
+            ->collapsible()
+            ->schema([
+                CheckboxList::make('indications')
+                    ->label('')
+                    ->options(fn (): array => ClinicRuntimeSettings::examIndicationOptions())
+                    ->columns(5)
+                    ->gridDirection('row')
+                    ->live()
+                    ->columnSpanFull(),
+
+                ...$this->buildIndicationImageUploadFields(),
+
+                Select::make('other_diseases')
+                    ->label('Chọn bệnh khác')
+                    ->multiple()
+                    ->options(fn (): array => $this->otherDiseaseOptions())
+                    ->searchable()
+                    ->preload()
+                    ->visible(fn (Get $get): bool => in_array('khac', $get('indications') ?? []))
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    protected function diagnosisAndTreatmentSection(): Section
+    {
+        return Section::make('CHẨN ĐOÁN VÀ ĐIỀU TRỊ')
+            ->description('Sơ đồ răng và chẩn đoán')
+            ->collapsible()
+            ->schema([
+                ToothChart::make('tooth_diagnosis_data')
+                    ->label('')
+                    ->columnSpanFull(),
+
+                Textarea::make('other_diagnosis')
+                    ->label('Chẩn đoán khác')
+                    ->placeholder('Nhập chẩn đoán hoặc ghi chú khác...')
+                    ->rows(2)
+                    ->columnSpanFull(),
+            ]);
     }
 
     /**

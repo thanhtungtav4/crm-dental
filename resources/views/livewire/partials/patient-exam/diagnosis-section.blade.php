@@ -10,33 +10,17 @@
         <div class="crm-tooth-chart">
             <div class="crm-tooth-toolbar mb-3">
                 <div class="crm-dentition-toggle" role="tablist" aria-label="Chế độ sơ đồ răng">
-                    <button
-                        type="button"
-                        @click="setDentitionMode('auto')"
-                        class="crm-dentition-option"
-                        :class="dentitionMode === 'auto' ? 'is-active' : ''"
-                        :aria-pressed="dentitionMode === 'auto' ? 'true' : 'false'"
-                    >
-                        Tự động
-                    </button>
-                    <button
-                        type="button"
-                        @click="setDentitionMode('adult')"
-                        class="crm-dentition-option"
-                        :class="dentitionMode === 'adult' ? 'is-active' : ''"
-                        :aria-pressed="dentitionMode === 'adult' ? 'true' : 'false'"
-                    >
-                        Người lớn
-                    </button>
-                    <button
-                        type="button"
-                        @click="setDentitionMode('child')"
-                        class="crm-dentition-option"
-                        :class="dentitionMode === 'child' ? 'is-active' : ''"
-                        :aria-pressed="dentitionMode === 'child' ? 'true' : 'false'"
-                    >
-                        Trẻ em
-                    </button>
+                    @foreach($diagnosisDentitionOptions as $option)
+                        <button
+                            type="button"
+                            @click="setDentitionMode('{{ $option['mode'] }}')"
+                            class="crm-dentition-option"
+                            :class="dentitionMode === '{{ $option['mode'] }}' ? 'is-active' : ''"
+                            :aria-pressed="dentitionMode === '{{ $option['mode'] }}' ? 'true' : 'false'"
+                        >
+                            {{ $option['label'] }}
+                        </button>
+                    @endforeach
                 </div>
 
                 <div class="crm-tooth-toolbar-actions">
@@ -49,74 +33,12 @@
 
             <div class="overflow-x-auto pb-2">
                 <div class="text-center">
-                    <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
-                        @foreach($adultUpper as $t)
-                            <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                                <div class="crm-tooth-number mb-1">{{ $t }}</div>
-                                <button type="button"
-                                    class="tooth-item-cell"
-                                    :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                                    @click="toggleTooth({{ $t }}, $event)"
-                                >
-                                    <div :class="getToothBoxClass({{ $t }})">
-                                        <span class="tooth-status-list" x-text="getConditionLabels({{ $t }})"></span>
-                                    </div>
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
-                        @foreach($childUpper as $t)
-                            <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                                <button type="button"
-                                    class="tooth-item-cell"
-                                    :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                                    @click="toggleTooth({{ $t }}, $event)"
-                                >
-                                    <div :class="getToothBoxClass({{ $t }}, true)"></div>
-                                </button>
-                                <div class="crm-tooth-number mt-1">{{ $t }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
-                        @foreach($childLower as $t)
-                            <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                                <div class="crm-tooth-number mb-1">{{ $t }}</div>
-                                <button type="button"
-                                    class="tooth-item-cell"
-                                    :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                                    @click="toggleTooth({{ $t }}, $event)"
-                                >
-                                    <div :class="getToothBoxClass({{ $t }}, true)"></div>
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
-                        @foreach($adultLower as $t)
-                            <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                                <button type="button"
-                                    class="tooth-item-cell"
-                                    :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                                    @click="toggleTooth({{ $t }}, $event)"
-                                >
-                                    <div :class="getToothBoxClass({{ $t }})">
-                                        <span class="tooth-status-list" x-text="getConditionLabels({{ $t }})"></span>
-                                    </div>
-                                </button>
-                                <div class="crm-tooth-number mt-1">{{ $t }}</div>
-                            </div>
-                        @endforeach
-                    </div>
+                    @include('filament.forms.components.partials.tooth-chart-rows', ['rows' => $diagnosisToothRows])
                 </div>
             </div>
 
             <p class="mt-3 text-center text-xs italic text-gray-500 dark:text-gray-400">
-                * Dùng nút "Chọn nhiều" (hỗ trợ mobile) hoặc giữ phím "Ctrl/Command" để chọn nhiều răng trước khi chẩn đoán.
+                {{ $diagnosisSelectionHint }}
             </p>
 
             <div class="mt-4 border-t border-gray-300 pt-3 dark:border-gray-700">
@@ -169,12 +91,7 @@
             </div>
         </div>
 
-        <div class="note-teeth mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
-            <div class="note-tooth-sign w-full text-gray-500 dark:text-gray-400">* chú thích hiện trạng răng</div>
-            <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-gray-500"></span> Tình trạng hiện tại</div>
-            <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-red-500"></span> Đang được điều trị</div>
-            <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-green-500"></span> Hoàn thành điều trị</div>
-        </div>
+        @include('filament.forms.components.partials.tooth-chart-legend', ['legendItems' => $diagnosisTreatmentLegend])
     </div>
 
     <div

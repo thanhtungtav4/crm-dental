@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PatientToothCondition extends Model
 {
@@ -30,7 +30,9 @@ class PatientToothCondition extends Model
 
     // Treatment status constants
     const STATUS_CURRENT = 'current';
+
     const STATUS_IN_TREATMENT = 'in_treatment';
+
     const STATUS_COMPLETED = 'completed';
 
     // Relationships
@@ -64,21 +66,41 @@ class PatientToothCondition extends Model
         ];
     }
 
+    public static function statusLabel(string $status): string
+    {
+        return self::getStatusOptions()[$status] ?? $status;
+    }
+
+    public static function statusBadgeColor(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_CURRENT => 'gray',
+            self::STATUS_IN_TREATMENT => 'danger',
+            self::STATUS_COMPLETED => 'success',
+            default => 'gray',
+        };
+    }
+
+    public static function statusHexColor(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_CURRENT => '#6B7280',
+            self::STATUS_IN_TREATMENT => '#EF4444',
+            self::STATUS_COMPLETED => '#10B981',
+            default => '#6B7280',
+        };
+    }
+
     // Get status color for UI
     public function getStatusColorAttribute(): string
     {
-        return match ($this->treatment_status) {
-            self::STATUS_CURRENT => '#6B7280', // Gray
-            self::STATUS_IN_TREATMENT => '#EF4444', // Red
-            self::STATUS_COMPLETED => '#10B981', // Green
-            default => '#6B7280',
-        };
+        return self::statusHexColor($this->treatment_status);
     }
 
     // Get status label
     public function getStatusLabelAttribute(): string
     {
-        return self::getStatusOptions()[$this->treatment_status] ?? $this->treatment_status;
+        return self::statusLabel($this->treatment_status);
     }
 
     // Adult teeth numbers
@@ -114,6 +136,27 @@ class PatientToothCondition extends Model
         );
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function toothNumberOptions(): array
+    {
+        $options = [];
+
+        foreach ([
+            ['teeth' => self::getAdultTeethUpper(), 'group' => 'Hàm trên người lớn'],
+            ['teeth' => self::getChildTeethUpper(), 'group' => 'Răng sữa trên'],
+            ['teeth' => self::getChildTeethLower(), 'group' => 'Răng sữa dưới'],
+            ['teeth' => self::getAdultTeethLower(), 'group' => 'Hàm dưới người lớn'],
+        ] as $definition) {
+            foreach ($definition['teeth'] as $toothNumber) {
+                $options[$toothNumber] = "Răng {$toothNumber} ({$definition['group']})";
+            }
+        }
+
+        return $options;
+    }
+
     // Scopes
     public function scopeForPatient($query, int $patientId)
     {
@@ -136,21 +179,25 @@ class PatientToothCondition extends Model
     }
 
     // Mark as in treatment
-    public function startTreatment(?int $treatmentPlanId = null): void
+    public function startTreatment(?int $treatmentPlanId = null): self
     {
         $this->update([
             'treatment_status' => self::STATUS_IN_TREATMENT,
             'treatment_plan_id' => $treatmentPlanId,
         ]);
+
+        return $this;
     }
 
     // Mark as completed
-    public function completeTreatment(): void
+    public function completeTreatment(): self
     {
         $this->update([
             'treatment_status' => self::STATUS_COMPLETED,
             'completed_at' => now(),
         ]);
+
+        return $this;
     }
 
     // Boot method

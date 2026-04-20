@@ -34,27 +34,32 @@ class PaymentPolicy
 
     public function delete(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Delete:Payment') && $this->canAccessPayment($authUser, $payment);
+        return false;
     }
 
     public function restore(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('Restore:Payment') && $this->canAccessPayment($authUser, $payment);
+        return false;
     }
 
     public function forceDelete(User $authUser, Payment $payment): bool
     {
-        return $authUser->can('ForceDelete:Payment') && $this->canAccessPayment($authUser, $payment);
+        return false;
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:Payment') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:Payment') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, Payment $payment): bool

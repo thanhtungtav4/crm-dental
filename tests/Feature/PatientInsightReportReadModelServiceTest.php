@@ -80,6 +80,10 @@ it('summarizes patient and risk insights within selected branches', function ():
 
     expect($service->patientSummary([$branchA->id], now()->toDateString(), now()->toDateString()))
         ->toBe(['total_patients' => 1])
+        ->and($service->patientSummaryStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng khách hàng', 'value' => '1'],
+        ])
         ->and($service->riskSummary([$branchA->id], now()->toDateString(), now()->toDateString()))
         ->toBe([
             'total' => 1,
@@ -109,6 +113,9 @@ it('returns empty patient and risk readers for inaccessible branch selections', 
         ->and($service->riskProfileQuery([])->get())->toHaveCount(0)
         ->and($service->patientSummary([], now()->toDateString(), now()->toDateString()))->toBe([
             'total_patients' => 0,
+        ])
+        ->and($service->patientSummaryStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng khách hàng', 'value' => '0'],
         ])
         ->and($service->riskSummary([], now()->toDateString(), now()->toDateString()))->toBe([
             'total' => 0,

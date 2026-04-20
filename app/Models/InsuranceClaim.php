@@ -145,6 +145,12 @@ class InsuranceClaim extends Model
                 $claim->cancelled_at = $claim->cancelled_at ?? now();
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'insurance_claim' => 'Hồ sơ bảo hiểm không hỗ trợ xóa trực tiếp. Vui lòng hủy hồ sơ qua workflow.',
+            ]);
+        });
     }
 
     public function invoice(): BelongsTo
@@ -166,29 +172,39 @@ class InsuranceClaim extends Model
         return in_array($toStatus, self::TRANSITIONS[$fromStatus] ?? [], true);
     }
 
-    public function submit(): void
+    public function submit(?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->submit($this);
+        return app(InsuranceClaimWorkflowService::class)->submit($this, $reason, $actorId);
     }
 
-    public function approve(?float $amountApproved = null): void
+    public function approve(?float $amountApproved = null, ?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved);
+        return app(InsuranceClaimWorkflowService::class)->approve($this, $amountApproved, $reason, $actorId);
     }
 
-    public function deny(string $reasonCode, ?string $note = null): void
+    public function deny(string $reasonCode, ?string $note = null, ?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note);
+        return app(InsuranceClaimWorkflowService::class)->deny($this, $reasonCode, $note, $reason, $actorId);
     }
 
-    public function resubmit(): void
+    public function resubmit(?string $reason = null, ?int $actorId = null): self
     {
-        app(InsuranceClaimWorkflowService::class)->resubmit($this);
+        return app(InsuranceClaimWorkflowService::class)->resubmit($this, $reason, $actorId);
     }
 
-    public function markPaid(?float $amount = null, string $method = 'transfer', ?string $note = null): Payment
+    public function cancel(?string $reason = null, ?int $actorId = null): self
     {
-        return app(InsuranceClaimWorkflowService::class)->markPaid($this, $amount, $method, $note);
+        return app(InsuranceClaimWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public function markPaid(
+        ?float $amount = null,
+        string $method = 'transfer',
+        ?string $note = null,
+        ?string $reason = null,
+        ?int $actorId = null,
+    ): Payment {
+        return app(InsuranceClaimWorkflowService::class)->markPaid($this, $amount, $method, $note, $reason, $actorId);
     }
 
     public static function runWithinManagedWorkflow(callable $callback, array $context = []): mixed

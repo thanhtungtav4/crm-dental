@@ -380,18 +380,18 @@ class MasterPatientDuplicate extends Model
             ->all();
     }
 
-    public function markResolved(?int $reviewedBy = null, ?string $note = null): void
+    public function markResolved(?int $reviewedBy = null, ?string $note = null): self
     {
-        app(MasterPatientDuplicateWorkflowService::class)->resolve(
+        return app(MasterPatientDuplicateWorkflowService::class)->resolve(
             duplicateCase: $this,
             note: $note,
             actorId: $reviewedBy,
         );
     }
 
-    public function markIgnored(?int $reviewedBy = null, ?string $note = null): void
+    public function markIgnored(?int $reviewedBy = null, ?string $note = null): self
     {
-        app(MasterPatientDuplicateWorkflowService::class)->ignore(
+        return app(MasterPatientDuplicateWorkflowService::class)->ignore(
             duplicateCase: $this,
             note: $note,
             actorId: $reviewedBy,

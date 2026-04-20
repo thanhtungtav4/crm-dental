@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TreatmentPlans\Schemas;
 
+use App\Filament\Forms\Components\ToothChart;
 use App\Models\Patient;
 use App\Models\TreatmentPlan;
 use App\Services\TreatmentAssignmentAuthorizer;
@@ -180,9 +181,7 @@ class TreatmentPlanForm
                                     Forms\Components\Hidden::make('tooth_chart_default_dentition_mode')
                                         ->default(DentitionModeResolver::MODE_ADULT)
                                         ->dehydrated(false),
-                                    Forms\Components\ViewField::make('tooth_diagnosis_data')
-                                        ->default([])
-                                        ->view('filament.forms.components.tooth-chart')
+                                    ToothChart::make('tooth_diagnosis_data')
                                         ->columnSpanFull(),
                                 ])
                                 ->collapsible(),
@@ -218,13 +217,7 @@ class TreatmentPlanForm
 
                                                 \App\Filament\Forms\Components\ToothPicker::make('tooth_number')
                                                     ->label('Răng số')
-                                                    ->columnSpan(2)
-                                                    ->afterStateHydrated(function ($component, $state): void {
-                                                        if (is_string($state) && ! empty($state)) {
-                                                            $component->state(array_map('trim', explode(',', $state)));
-                                                        }
-                                                    })
-                                                    ->dehydrateStateUsing(fn ($state) => is_array($state) ? implode(',', $state) : $state),
+                                                    ->columnSpan(2),
 
                                                 Forms\Components\TextInput::make('quantity')
                                                     ->label('SL')

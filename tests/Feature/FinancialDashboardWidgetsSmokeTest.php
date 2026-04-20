@@ -17,6 +17,7 @@ use App\Models\TreatmentPlan;
 use App\Models\TreatmentSession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 
 if (! function_exists('createFinancialDashboardInvoice')) {
@@ -162,4 +163,76 @@ it('renders financial dashboard widgets through the shared read model service', 
         ->assertSee('Tỷ lệ thanh toán');
 
     Carbon::setTestNow();
+});
+
+it('routes overdue invoice widget rows through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/OverdueInvoicesWidget.php'));
+
+    expect($widget)
+        ->toContain('->overdueInvoices(auth()->user())')
+        ->toContain('->overdueInvoiceHeading(auth()->user())')
+        ->not->toContain('->scopedInvoiceQuery()')
+        ->not->toContain('->outstandingBalances(auth()->user())');
+});
+
+it('keeps the shared financial widget scope trait focused on visibility gating', function (): void {
+    $trait = File::get(app_path('Filament/Widgets/Concerns/InteractsWithFinancialBranchScope.php'));
+
+    expect($trait)
+        ->toContain('FinancialAccess::canViewDashboard()')
+        ->not->toContain('scopedInvoiceQuery(')
+        ->not->toContain('scopedPaymentQuery(')
+        ->not->toContain('scopeFinancialQueryToAccessibleBranches(');
+});
+
+it('routes payment methods chart widget data through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Resources/Payments/Widgets/PaymentMethodsChartWidget.php'));
+
+    expect($widget)
+        ->toContain('->paymentMethodChart($this->filter ?? \'month\', auth()->user())')
+        ->not->toContain('ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true)')
+        ->not->toContain('->paymentMethodTotals($this->filter ?? \'month\', auth()->user())');
+});
+
+it('routes monthly revenue chart widget data through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/MonthlyRevenueChartWidget.php'));
+
+    expect($widget)
+        ->toContain('->monthlyRevenueChart($this->filter ?? \'year\', auth()->user())')
+        ->not->toContain('->monthlyRevenueSeries($this->filter ?? \'year\', auth()->user())')
+        ->not->toContain("'label' => 'Doanh thu (VNĐ)'")
+        ->not->toContain("'label' => 'Số lượng thanh toán'");
+});
+
+it('routes revenue overview widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/RevenueOverviewWidget.php'));
+
+    expect($widget)
+        ->toContain('->revenueOverviewCards(auth()->user())')
+        ->not->toContain('->revenueOverview(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingUp')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingDown')
+        ->not->toContain('Heroicon::OutlinedExclamationTriangle');
+});
+
+it('routes quick financial stats widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/QuickFinancialStatsWidget.php'));
+
+    expect($widget)
+        ->toContain('->quickFinancialStatCards(auth()->user())')
+        ->not->toContain('->quickStats(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedCurrencyDollar')
+        ->not->toContain('Heroicon::OutlinedCheckCircle')
+        ->not->toContain('Heroicon::OutlinedArrowTrendingUp');
+});
+
+it('routes outstanding balance widget presentation through the financial dashboard read model', function (): void {
+    $widget = File::get(app_path('Filament/Widgets/OutstandingBalanceWidget.php'));
+
+    expect($widget)
+        ->toContain('->outstandingBalanceCards(auth()->user())')
+        ->not->toContain('->outstandingBalances(auth()->user())')
+        ->not->toContain('Heroicon::OutlinedDocumentText')
+        ->not->toContain('Heroicon::OutlinedClock')
+        ->not->toContain('Heroicon::OutlinedBanknotes');
 });

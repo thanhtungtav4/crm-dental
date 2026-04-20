@@ -172,6 +172,28 @@ it('blocks tracked clinical note updates once the exam session is locked', funct
     ]))->toThrow(ValidationException::class, 'EXAM_SESSION_LOCKED');
 });
 
+it('returns the clinical note from the exam session snapshot boundary', function () {
+    [$patient, $doctor, $encounter] = seedClinicalVersioningContext();
+
+    $note = ClinicalNote::query()->create([
+        'patient_id' => $patient->id,
+        'visit_episode_id' => $encounter->id,
+        'doctor_id' => $doctor->id,
+        'branch_id' => $encounter->branch_id,
+        'date' => '2026-03-12',
+        'general_exam_notes' => 'Khám ban đầu.',
+        'created_by' => $doctor->id,
+        'updated_by' => $doctor->id,
+    ]);
+
+    $syncedNote = $note->fresh()->syncExamSessionSnapshot();
+
+    expect($syncedNote)->toBeInstanceOf(ClinicalNote::class)
+        ->and($syncedNote->is($note))->toBeTrue()
+        ->and($syncedNote->exam_session_id)->not->toBeNull()
+        ->and($syncedNote->fresh()->examSession)->not->toBeNull();
+});
+
 /**
  * @return array{0: Patient, 1: User, 2: VisitEpisode}
  */

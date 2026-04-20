@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Patients\Widgets;
 use App\Models\Patient;
 use App\Services\PatientActivityTimelineReadModelService;
 use Filament\Widgets\Widget;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -28,17 +29,40 @@ class PatientActivityTimelineWidget extends Widget
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{
+     *     title:string,
+     *     count_label:string,
+     *     empty_state:array{
+     *         title:string,
+     *         description:string,
+     *     },
+     *     activities:list<array<string, mixed>>,
+     *     shows_max_activities_footer:bool,
+     *     footer_label:string,
+     * }
      */
-    protected function getViewData(): array
+    public function timelineViewState(): array
     {
         $activities = $this->getActivities();
 
         return [
+            'title' => 'Hoạt động gần đây',
+            'count_label' => $activities->count().' hoạt động',
+            'empty_state' => [
+                'title' => 'Chưa có hoạt động',
+                'description' => 'Lịch sử hoạt động của bệnh nhân sẽ hiển thị ở đây.',
+            ],
             'activities' => $this->renderedActivities($activities),
-            'activityCount' => $activities->count(),
-            'showsMaxActivitiesFooter' => $activities->count() === 20,
+            'shows_max_activities_footer' => $activities->count() === 20,
+            'footer_label' => 'Hiển thị 20 hoạt động gần nhất',
         ];
+    }
+
+    public function render(): View
+    {
+        return view($this->view, [
+            'viewState' => $this->timelineViewState(),
+        ]);
     }
 
     /**

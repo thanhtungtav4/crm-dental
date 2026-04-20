@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\FactoryOrder;
+use App\Models\Invoice;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\User;
@@ -102,17 +103,19 @@ it('includes appointment and care audit logs in patient activity timeline', func
         ->and($activities->pluck('title')->all())
         ->toContain('Hẹn lại lịch', 'Hoàn thành chăm sóc', 'Hoàn thành labo');
 
-    $getViewDataMethod = new ReflectionMethod($widget, 'getViewData');
-    $getViewDataMethod->setAccessible(true);
-    $viewData = $getViewDataMethod->invoke($widget);
+    $viewState = $widget->timelineViewState();
+    $component = File::get(app_path('Filament/Resources/Patients/Widgets/PatientActivityTimelineWidget.php'));
     $blade = File::get(resource_path('views/filament/resources/patients/widgets/patient-activity-timeline-widget.blade.php'));
 
     expect($blade)
         ->not->toContain('@php')
         ->not->toContain('$this->getActivities()')
-        ->and($viewData)->toHaveKeys(['activities', 'activityCount', 'showsMaxActivitiesFooter'])
-        ->and($viewData['activityCount'])->toBe($activities->count())
-        ->and($viewData['activities'][0])->toHaveKeys([
+        ->and($component)
+        ->toContain('public function timelineViewState(): array')
+        ->not->toContain('protected function getViewData(): array')
+        ->and($viewState)->toHaveKeys(['title', 'count_label', 'empty_state', 'activities', 'shows_max_activities_footer', 'footer_label'])
+        ->and($viewState['count_label'])->toBe($activities->count().' hoạt động')
+        ->and($viewState['activities'][0])->toHaveKeys([
             'type_class',
             'type_label',
             'description_excerpt',
@@ -121,4 +124,51 @@ it('includes appointment and care audit logs in patient activity timeline', func
             'time_label',
             'human_label',
         ]);
+});
+
+it('maps invoice workflow audits into patient activity timeline', function () {
+    $branch = Branch::factory()->create();
+    $patient = Patient::factory()->create([
+        'first_branch_id' => $branch->id,
+    ]);
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $invoice = Invoice::factory()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'invoice_no' => 'INV-TL-001',
+        'status' => Invoice::STATUS_OVERDUE,
+    ]);
+
+    AuditLog::factory()->create([
+        'entity_type' => AuditLog::ENTITY_INVOICE,
+        'entity_id' => $invoice->id,
+        'action' => AuditLog::ACTION_SYNC,
+        'actor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'patient_id' => $patient->id,
+        'metadata' => [
+            'patient_id' => $patient->id,
+            'branch_id' => $branch->id,
+            'invoice_id' => $invoice->id,
+            'invoice_no' => $invoice->invoice_no,
+            'status_from' => Invoice::STATUS_ISSUED,
+            'status_to' => Invoice::STATUS_OVERDUE,
+            'trigger' => 'automation_overdue_sync',
+            'paid_amount' => 0,
+        ],
+        'occurred_at' => now()->addMinutes(5),
+    ]);
+
+    $widget = app(PatientActivityTimelineWidget::class);
+    $widget->record = $patient;
+
+    $activities = $widget->getActivities();
+    $invoiceAudit = $activities->firstWhere('title', 'Đồng bộ trạng thái hóa đơn');
+
+    expect($invoiceAudit)->not->toBeNull()
+        ->and($invoiceAudit['description'])->toContain('Hóa đơn INV-TL-001', 'Quá hạn')
+        ->and($invoiceAudit['meta']['Trạng thái'] ?? null)->toBe('Quá hạn');
 });

@@ -46,6 +46,20 @@ class InventorySupplyReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function materialInventoryStatsPayload(?array $branchIds, ?string $from, ?string $until): array
+    {
+        $summary = $this->materialInventorySummary($branchIds, $from, $until);
+
+        return [
+            ['label' => 'Tổng vật tư', 'value' => number_format($summary['total_materials'])],
+            ['label' => 'Vật tư dưới định mức', 'value' => number_format($summary['low_stock'])],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      */
     public function factoryOrderQuery(?array $branchIds, ?string $status = null, ?int $supplierId = null): Builder
     {
@@ -116,6 +130,27 @@ class InventorySupplyReportReadModelService
             'open_orders' => $openOrders,
             'delivered_orders' => $deliveredOrders,
             'total_value' => $totalValue,
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function factoryOrderStatsPayload(
+        ?array $branchIds,
+        ?string $from,
+        ?string $until,
+        ?string $status = null,
+        ?int $supplierId = null,
+    ): array {
+        $summary = $this->factoryOrderSummary($branchIds, $from, $until, $status, $supplierId);
+
+        return [
+            ['label' => 'Tổng lệnh labo', 'value' => number_format($summary['total_orders'])],
+            ['label' => 'Đang xử lý', 'value' => number_format($summary['open_orders'])],
+            ['label' => 'Đã giao', 'value' => number_format($summary['delivered_orders'])],
+            ['label' => 'Tổng giá trị', 'value' => number_format($summary['total_value']).' đ'],
         ];
     }
 

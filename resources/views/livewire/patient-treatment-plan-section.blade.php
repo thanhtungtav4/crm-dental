@@ -1,18 +1,13 @@
 <div class="space-y-4">
     @include('livewire.partials.patient-treatment-plan.list-section', [
-        'viewState' => $viewState,
+        'panel' => $viewState['list_panel'],
     ])
 
     @include('livewire.partials.patient-treatment-plan.plan-modal', [
-        'isVisible' => $showPlanModal,
-        'viewState' => $viewState,
-        'diagnosisOptions' => $diagnosisOptions,
+        'panel' => $viewState['plan_modal'],
     ])
 
     @include('livewire.partials.patient-treatment-plan.procedure-modal', [
-        'isVisible' => $showProcedureModal,
-        'selectedCategoryId' => $selectedCategoryId,
-        'categories' => $categories,
-        'viewState' => $viewState,
+        'panel' => $viewState['procedure_modal'],
     ])
 </div>

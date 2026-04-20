@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\DoctorBranchAssignmentService;
 use App\Services\FactoryOrderNumberGenerator;
+use App\Services\FactoryOrderWorkflowService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -164,6 +165,12 @@ class FactoryOrder extends Model
                 ]);
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'factory_order' => 'Lệnh labo không hỗ trợ xóa trực tiếp. Vui lòng hủy lệnh qua workflow.',
+            ]);
+        });
     }
 
     public function patient(): BelongsTo
@@ -213,6 +220,26 @@ class FactoryOrder extends Model
     public static function generateOrderNo(): string
     {
         return app(FactoryOrderNumberGenerator::class)->next();
+    }
+
+    public function cancel(?string $reason = null): self
+    {
+        return app(FactoryOrderWorkflowService::class)->cancel($this, $reason);
+    }
+
+    public function markOrdered(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markOrdered($this);
+    }
+
+    public function markInProgress(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markInProgress($this);
+    }
+
+    public function markDelivered(): self
+    {
+        return app(FactoryOrderWorkflowService::class)->markDelivered($this);
     }
 
     public function scopeBranchAccessible(Builder $query): Builder

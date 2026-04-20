@@ -109,12 +109,24 @@ it('summarizes inventory and supplier reports within selected branches', functio
             'total_materials' => 1,
             'low_stock' => 1,
         ])
+        ->and($service->materialInventoryStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng vật tư', 'value' => '1'],
+            ['label' => 'Vật tư dưới định mức', 'value' => '1'],
+        ])
         ->and($service->factoryOrderSummary([$branchA->id], now()->toDateString(), now()->toDateString()))
         ->toBe([
             'total_orders' => 1,
             'open_orders' => 1,
             'delivered_orders' => 0,
             'total_value' => 900000.0,
+        ])
+        ->and($service->factoryOrderStatsPayload([$branchA->id], now()->toDateString(), now()->toDateString()))
+        ->toBe([
+            ['label' => 'Tổng lệnh labo', 'value' => '1'],
+            ['label' => 'Đang xử lý', 'value' => '1'],
+            ['label' => 'Đã giao', 'value' => '0'],
+            ['label' => 'Tổng giá trị', 'value' => '900,000 đ'],
         ]);
 });
 
@@ -127,10 +139,20 @@ it('returns empty inventory and supplier readers for inaccessible branch selecti
             'total_materials' => 0,
             'low_stock' => 0,
         ])
+        ->and($service->materialInventoryStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng vật tư', 'value' => '0'],
+            ['label' => 'Vật tư dưới định mức', 'value' => '0'],
+        ])
         ->and($service->factoryOrderSummary([], now()->toDateString(), now()->toDateString()))->toBe([
             'total_orders' => 0,
             'open_orders' => 0,
             'delivered_orders' => 0,
             'total_value' => 0.0,
+        ])
+        ->and($service->factoryOrderStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng lệnh labo', 'value' => '0'],
+            ['label' => 'Đang xử lý', 'value' => '0'],
+            ['label' => 'Đã giao', 'value' => '0'],
+            ['label' => 'Tổng giá trị', 'value' => '0 đ'],
         ]);
 });

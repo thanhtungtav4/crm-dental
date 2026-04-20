@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Payments\Widgets;
 
 use App\Filament\Widgets\Concerns\InteractsWithFinancialBranchScope;
 use App\Services\FinancialDashboardReadModelService;
-use App\Support\ClinicRuntimeSettings;
 use Filament\Widgets\ChartWidget;
 
 class PaymentMethodsChartWidget extends ChartWidget
@@ -21,15 +20,16 @@ class PaymentMethodsChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $data = $this->getMethodData();
+        $data = app(FinancialDashboardReadModelService::class)
+            ->paymentMethodChart($this->filter ?? 'month', auth()->user());
 
         return [
             'datasets' => [
                 [
                     'label' => 'Doanh thu theo phương thức',
                     'data' => $data['values'],
-                    'backgroundColor' => $data['backgroundColor'],
-                    'borderColor' => $data['borderColor'],
+                    'backgroundColor' => $data['background_color'],
+                    'borderColor' => $data['border_color'],
                     'borderWidth' => 2,
                 ],
             ],
@@ -80,49 +80,6 @@ class PaymentMethodsChartWidget extends ChartWidget
             'week' => 'Tuần này',
             'month' => 'Tháng này',
             'year' => 'Năm nay',
-        ];
-    }
-
-    private function getMethodData(): array
-    {
-        $methods = ClinicRuntimeSettings::paymentMethodOptions(withEmoji: true);
-        $totals = app(FinancialDashboardReadModelService::class)
-            ->paymentMethodTotals($this->filter ?? 'month', auth()->user());
-
-        $values = [];
-        $labels = [];
-        $backgroundColor = [];
-        $borderColor = [];
-        $colorMap = [
-            'cash' => ['rgba(34, 197, 94, 0.8)', 'rgb(34, 197, 94)'],
-            'card' => ['rgba(59, 130, 246, 0.8)', 'rgb(59, 130, 246)'],
-            'transfer' => ['rgba(251, 146, 60, 0.8)', 'rgb(251, 146, 60)'],
-            'vnpay' => ['rgba(99, 102, 241, 0.8)', 'rgb(99, 102, 241)'],
-            'other' => ['rgba(156, 163, 175, 0.8)', 'rgb(156, 163, 175)'],
-        ];
-
-        foreach ($methods as $method => $label) {
-            $amount = $totals[$method] ?? 0;
-            if ($amount > 0) {
-                $values[] = $amount;
-                $labels[] = $label;
-                $backgroundColor[] = $colorMap[$method][0] ?? 'rgba(156, 163, 175, 0.8)';
-                $borderColor[] = $colorMap[$method][1] ?? 'rgb(156, 163, 175)';
-            }
-        }
-
-        if (empty($values)) {
-            $values = [0];
-            $labels = ['Chưa có dữ liệu'];
-            $backgroundColor = ['rgba(156, 163, 175, 0.8)'];
-            $borderColor = ['rgb(156, 163, 175)'];
-        }
-
-        return [
-            'values' => $values,
-            'labels' => $labels,
-            'backgroundColor' => $backgroundColor,
-            'borderColor' => $borderColor,
         ];
     }
 }

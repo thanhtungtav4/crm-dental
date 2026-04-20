@@ -6,7 +6,6 @@ namespace App\Policies;
 
 use App\Models\PlanItem;
 use App\Models\User;
-use App\Services\TreatmentDeletionGuardService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PlanItemPolicy
@@ -35,9 +34,7 @@ class PlanItemPolicy
 
     public function delete(User $authUser, PlanItem $planItem): bool
     {
-        return $authUser->can('Delete:PlanItem')
-            && $this->canAccessPlanItem($authUser, $planItem)
-            && app(TreatmentDeletionGuardService::class)->canDeletePlanItem($planItem);
+        return false;
     }
 
     public function deleteAny(User $authUser): bool

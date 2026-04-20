@@ -85,20 +85,12 @@ class OwedStatistical extends BaseReportPage
     public function getStats(): array
     {
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->financialReports()->invoiceBalanceSummary(
+
+        return $this->financialReports()->invoiceBalanceStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
         );
-        $totalAmount = $summary['total_amount'];
-        $paidAmount = $summary['paid_amount'];
-        $balance = $summary['balance'];
-
-        return [
-            ['label' => 'Tổng phải thanh toán', 'value' => number_format($totalAmount).' đ'],
-            ['label' => 'Đã thanh toán', 'value' => number_format($paidAmount).' đ'],
-            ['label' => 'Công nợ', 'value' => number_format($balance).' đ'],
-        ];
     }
 
     protected function financialReports(): FinancialReportReadModelService

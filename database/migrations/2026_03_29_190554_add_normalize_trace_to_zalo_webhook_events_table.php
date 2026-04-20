@@ -9,14 +9,28 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('zalo_webhook_events', function (Blueprint $table) {
-            $table->string('normalize_status', 40)->nullable()->after('processed_at');
-            $table->foreignId('conversation_id')->nullable()->after('normalize_status')->constrained()->nullOnDelete();
-            $table->foreignId('message_id')->nullable()->after('conversation_id')->constrained('conversation_messages')->nullOnDelete();
-            $table->dateTime('normalized_at')->nullable()->after('message_id');
-            $table->text('error_message')->nullable()->after('normalized_at');
-
-            $table->index(['normalize_status', 'normalized_at'], 'zalo_webhook_events_normalize_status_idx');
+            if (! Schema::hasColumn('zalo_webhook_events', 'normalize_status')) {
+                $table->string('normalize_status', 40)->nullable()->after('processed_at');
+            }
+            if (! Schema::hasColumn('zalo_webhook_events', 'conversation_id')) {
+                $table->foreignId('conversation_id')->nullable()->after('normalize_status')->constrained()->nullOnDelete();
+            }
+            if (! Schema::hasColumn('zalo_webhook_events', 'message_id')) {
+                $table->foreignId('message_id')->nullable()->after('conversation_id')->constrained('conversation_messages')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('zalo_webhook_events', 'normalized_at')) {
+                $table->dateTime('normalized_at')->nullable()->after('message_id');
+            }
+            if (! Schema::hasColumn('zalo_webhook_events', 'error_message')) {
+                $table->text('error_message')->nullable()->after('normalized_at');
+            }
         });
+
+        if (! Schema::hasIndex('zalo_webhook_events', 'zalo_webhook_events_normalize_status_idx')) {
+            Schema::table('zalo_webhook_events', function (Blueprint $table) {
+                $table->index(['normalize_status', 'normalized_at'], 'zalo_webhook_events_normalize_status_idx');
+            });
+        }
     }
 
     public function down(): void

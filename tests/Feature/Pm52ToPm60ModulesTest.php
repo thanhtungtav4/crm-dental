@@ -101,12 +101,51 @@ it('scopes calendar operational metrics by accessible branch for non admin users
         $this->actingAs($manager);
 
         $page = Livewire::test(CalendarAppointments::class)->instance();
-        $metrics = $page->getOperationalStatusMetrics();
         $viewState = $page->calendarViewState();
+        $metrics = $viewState['metrics'];
 
         expect($metrics['total'])->toBe(1)
             ->and($metrics['scheduled'])->toBe(1)
             ->and($metrics['no_show'])->toBe(0)
+            ->and($viewState)->toHaveKeys(['shell_panel', 'reschedule_modal_panel'])
+            ->and($viewState['filters_panel'])->toHaveKeys([
+                'heading',
+                'description',
+                'labelled_by',
+                'described_by',
+                'active_summary_label',
+                'reset_label',
+                'status_filter',
+                'branch_filter',
+                'doctor_filter',
+                'status_options',
+                'branch_options',
+                'doctor_options',
+            ])
+            ->and($viewState['filters_panel']['branch_options'][0])->toBe([
+                'value' => '',
+                'label' => 'Tất cả chi nhánh',
+            ])
+            ->and($viewState['filters_panel']['doctor_options'][0])->toBe([
+                'value' => '',
+                'label' => 'Tất cả bác sĩ',
+            ])
+            ->and($viewState['shell_panel'])->toMatchArray([
+                'modal_id' => 'appointment-calendar-reschedule-modal',
+                'conflict_keyword' => 'trùng lịch',
+                'calendar_region_label' => 'Lưới lịch hẹn theo tuần',
+                'calendar_loading_label' => 'Đang tải lại lịch hẹn',
+                'branch_filter_id' => 'calendar-filter-branch',
+                'doctor_filter_id' => 'calendar-filter-doctor',
+            ])
+            ->and($viewState['reschedule_modal_panel'])->toMatchArray([
+                'heading' => 'Dời lịch hẹn',
+                'conflict_message_id' => 'calendar-reschedule-conflict-message',
+                'conflict_note_id' => 'calendar-reschedule-conflict-note',
+                'reason_help_id' => 'calendar-reschedule-reason-help',
+                'reason_error_id' => 'calendar-reschedule-reason-error',
+                'submit_override_label' => 'Override và lưu',
+            ])
             ->and($viewState['branches'])->toHaveKey($branchA->id)
             ->and($viewState['branches'])->not->toHaveKey($branchB->id)
             ->and($viewState['doctors'])->toHaveKey($doctor->id)

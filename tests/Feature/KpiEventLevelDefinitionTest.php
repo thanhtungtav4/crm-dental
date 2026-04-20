@@ -40,8 +40,8 @@ it('computes booking to visit using arrived visit episodes instead of appointmen
         'status' => Appointment::STATUS_CONFIRMED,
     ]);
 
-    VisitEpisode::runWithinManagedWorkflow(function () use ($arrivedAppointment, $patient, $doctor, $branch): void {
-        VisitEpisode::query()->updateOrCreate(
+    VisitEpisode::runWithinManagedWorkflow(
+        fn (): VisitEpisode => VisitEpisode::query()->updateOrCreate(
             ['appointment_id' => $arrivedAppointment->id],
             [
                 'patient_id' => $patient->id,
@@ -53,12 +53,13 @@ it('computes booking to visit using arrived visit episodes instead of appointmen
                 'planned_duration_minutes' => 30,
                 'chair_minutes' => 15,
             ],
-        );
-    }, [
-        'trigger' => 'kpi_event_definition_test',
-        'appointment_id' => $arrivedAppointment->id,
-        'patient_id' => $patient->id,
-    ]);
+        ),
+        [
+            'trigger' => 'kpi_event_level_definition_test',
+            'appointment_id' => $arrivedAppointment->id,
+            'patient_id' => $patient->id,
+        ],
+    );
 
     $snapshot = app(OperationalKpiService::class)->buildSnapshot(
         now()->startOfDay(),

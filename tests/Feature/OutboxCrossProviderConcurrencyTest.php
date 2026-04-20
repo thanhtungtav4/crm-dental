@@ -74,6 +74,79 @@ it('keeps deterministic idempotency under concurrent google and emr publish atte
         ->and((int) $replayedEmr?->attempts)->toBe(0);
 });
 
+it('returns transitioned models from google and emr sync boundaries', function (): void {
+    $patient = Patient::factory()->create();
+
+    $appointment = Appointment::factory()->create([
+        'patient_id' => $patient->id,
+        'status' => Appointment::STATUS_SCHEDULED,
+        'date' => now()->addDay(),
+        'duration_minutes' => 45,
+    ]);
+
+    $googleEvent = GoogleCalendarSyncEvent::query()->create([
+        'event_key' => 'gcal-boundary-001',
+        'appointment_id' => $appointment->id,
+        'branch_id' => $appointment->branch_id,
+        'event_type' => GoogleCalendarSyncEvent::EVENT_UPSERT,
+        'payload' => ['title' => 'Boundary check'],
+        'payload_checksum' => 'gcal-checksum-001',
+        'status' => GoogleCalendarSyncEvent::STATUS_PENDING,
+        'attempts' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    $emrEvent = EmrSyncEvent::query()->create([
+        'event_key' => 'emr-boundary-001',
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'event_type' => 'manual.sync',
+        'payload' => ['patient_id' => $patient->id],
+        'payload_checksum' => 'emr-checksum-001',
+        'status' => EmrSyncEvent::STATUS_PENDING,
+        'attempts' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    $googleProcessing = $googleEvent->markProcessing();
+    $emrProcessing = $emrEvent->markProcessing();
+    $googleFailed = $googleProcessing->markFailure(500, 'Google timeout');
+    $emrFailed = $emrProcessing->markFailure(500, 'EMR timeout');
+
+    expect($googleProcessing)->toBeInstanceOf(GoogleCalendarSyncEvent::class)
+        ->and($googleProcessing->is($googleEvent))->toBeTrue()
+        ->and($googleFailed)->toBeInstanceOf(GoogleCalendarSyncEvent::class)
+        ->and($googleFailed->is($googleEvent))->toBeTrue()
+        ->and($googleFailed->status)->toBe(GoogleCalendarSyncEvent::STATUS_FAILED)
+        ->and($googleFailed->next_retry_at)->not->toBeNull()
+        ->and($emrProcessing)->toBeInstanceOf(EmrSyncEvent::class)
+        ->and($emrProcessing->is($emrEvent))->toBeTrue()
+        ->and($emrFailed)->toBeInstanceOf(EmrSyncEvent::class)
+        ->and($emrFailed->is($emrEvent))->toBeTrue()
+        ->and($emrFailed->status)->toBe(EmrSyncEvent::STATUS_FAILED)
+        ->and($emrFailed->next_retry_at)->not->toBeNull();
+
+    $googleSynced = $googleFailed
+        ->resetForReplay([])
+        ->markProcessing()
+        ->markSynced('gcal-boundary-event-001', 200);
+    $emrSynced = $emrFailed
+        ->resetForReplay([])
+        ->markProcessing()
+        ->markSynced('emr-boundary-patient-001', 200);
+
+    expect($googleSynced)->toBeInstanceOf(GoogleCalendarSyncEvent::class)
+        ->and($googleSynced->is($googleEvent))->toBeTrue()
+        ->and($googleSynced->status)->toBe(GoogleCalendarSyncEvent::STATUS_SYNCED)
+        ->and($googleSynced->external_event_id)->toBe('gcal-boundary-event-001')
+        ->and($googleSynced->processed_at)->not->toBeNull()
+        ->and($emrSynced)->toBeInstanceOf(EmrSyncEvent::class)
+        ->and($emrSynced->is($emrEvent))->toBeTrue()
+        ->and($emrSynced->status)->toBe(EmrSyncEvent::STATUS_SYNCED)
+        ->and($emrSynced->external_patient_id)->toBe('emr-boundary-patient-001')
+        ->and($emrSynced->processed_at)->not->toBeNull();
+});
+
 function configureCrossProviderGoogleCalendarRuntime(): void
 {
     ClinicSetting::setValue('google_calendar.enabled', true, [

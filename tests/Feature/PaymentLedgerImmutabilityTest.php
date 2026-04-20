@@ -22,10 +22,12 @@ it('marks reversal metadata without editing financial fields', function () {
     $payment = Payment::factory()->create();
     $user = User::factory()->create();
 
-    $payment->markReversed($user->id);
+    $reversedPayment = $payment->markReversed($user->id);
 
-    expect($payment->fresh()->reversed_by)->toBe($user->id)
-        ->and($payment->fresh()->reversed_at)->not->toBeNull()
-        ->and($payment->fresh()->amount)->toEqualWithDelta((float) $payment->amount, 0.01)
-        ->and($payment->fresh()->direction)->toBe($payment->direction);
+    expect($reversedPayment)->toBeInstanceOf(Payment::class)
+        ->and($reversedPayment->is($payment))->toBeTrue()
+        ->and($reversedPayment->reversed_by)->toBe($user->id)
+        ->and($reversedPayment->reversed_at)->not->toBeNull()
+        ->and($reversedPayment->amount)->toEqualWithDelta((float) $payment->amount, 0.01)
+        ->and($reversedPayment->direction)->toBe($payment->direction);
 });

@@ -89,6 +89,26 @@ it('blocks direct exam session status mutations outside the workflow service', f
     ])->save())->toThrow(ValidationException::class, 'EXAM_SESSION_STATE_INVALID');
 });
 
+it('returns the transitioned exam session from the model workflow boundary', function (): void {
+    $patient = Patient::factory()->create();
+    $doctor = User::factory()->create();
+
+    $session = ExamSession::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $patient->first_branch_id,
+        'doctor_id' => $doctor->id,
+        'session_date' => '2026-03-09',
+        'status' => ExamSession::STATUS_IN_PROGRESS,
+    ]);
+
+    $transitioned = $session->transitionTo(ExamSession::STATUS_LOCKED);
+
+    expect($transitioned)->toBeInstanceOf(ExamSession::class)
+        ->and($transitioned->is($session))->toBeTrue()
+        ->and($transitioned->status)->toBe(ExamSession::STATUS_LOCKED)
+        ->and($session->fresh()?->status)->toBe(ExamSession::STATUS_LOCKED);
+});
+
 it('blocks deleting an exam session when clinical order exists', function (): void {
     $patient = Patient::factory()->create();
     $doctor = User::factory()->create([

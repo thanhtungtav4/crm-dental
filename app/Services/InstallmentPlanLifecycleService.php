@@ -7,10 +7,10 @@ use Carbon\Carbon;
 
 class InstallmentPlanLifecycleService
 {
-    public function syncFinancialState(InstallmentPlan $plan, ?Carbon $asOf = null, bool $persist = true): void
+    public function syncFinancialState(InstallmentPlan $plan, ?Carbon $asOf = null, bool $persist = true): InstallmentPlan
     {
         if ($plan->status === InstallmentPlan::STATUS_CANCELLED) {
-            return;
+            return $plan;
         }
 
         $asOfDate = ($asOf ?? now())->copy()->startOfDay();
@@ -63,5 +63,7 @@ class InstallmentPlanLifecycleService
         if ($persist) {
             $plan->save();
         }
+
+        return $plan;
     }
 }

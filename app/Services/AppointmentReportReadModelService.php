@@ -74,6 +74,25 @@ class AppointmentReportReadModelService
 
     /**
      * @param  array<int, int>|null  $branchIds
+     * @return array<int, array{label:string, value:string}>
+     */
+    public function appointmentSummaryStatsPayload(?array $branchIds, ?string $from, ?string $until): array
+    {
+        $summary = $this->appointmentSummary($branchIds, $from, $until);
+
+        return [
+            ['label' => 'Tổng lịch hẹn', 'value' => number_format($summary['total'])],
+            ['label' => 'Lịch hẹn mới', 'value' => number_format($summary['new'])],
+            ['label' => 'Lịch hẹn bị hủy', 'value' => number_format($summary['cancelled'])],
+            ['label' => 'Hoàn thành', 'value' => number_format($summary['completed'])],
+            ['label' => 'Waiting TB (phút)', 'value' => number_format($summary['avg_waiting'], 1)],
+            ['label' => 'Chair TB (phút)', 'value' => number_format($summary['avg_chair'], 1)],
+            ['label' => 'Overrun TB (phút)', 'value' => number_format($summary['avg_overrun'], 1)],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>|null  $branchIds
      * @return array{
      *     total:int,
      *     scheduled:int,
@@ -93,6 +112,7 @@ class AppointmentReportReadModelService
                 'in_progress' => 0,
                 'completed' => 0,
                 'no_show' => 0,
+                'cancelled' => 0,
             ];
         }
 
@@ -115,6 +135,9 @@ class AppointmentReportReadModelService
                 ->count(),
             'no_show' => (int) (clone $query)
                 ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
+                ->count(),
+            'cancelled' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CANCELLED]))
                 ->count(),
         ];
     }

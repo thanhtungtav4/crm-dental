@@ -77,7 +77,7 @@ class OperationalKpiAlert extends Model
         return $this->belongsTo(User::class, 'resolved_by');
     }
 
-    public function markAcknowledged(?int $actorId = null): void
+    public function markAcknowledged(?int $actorId = null): self
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -89,9 +89,11 @@ class OperationalKpiAlert extends Model
             'acknowledged_by' => $actorId ?? auth()->id(),
             'acknowledged_at' => now(),
         ])->save();
+
+        return $this;
     }
 
-    public function markResolved(?int $actorId = null, ?string $note = null): void
+    public function markResolved(?int $actorId = null, ?string $note = null): self
     {
         ActionGate::authorize(
             ActionPermission::AUTOMATION_RUN,
@@ -104,5 +106,7 @@ class OperationalKpiAlert extends Model
             'resolved_at' => now(),
             'resolution_note' => $note,
         ])->save();
+
+        return $this;
     }
 }

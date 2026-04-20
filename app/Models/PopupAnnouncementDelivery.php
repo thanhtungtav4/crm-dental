@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PopupAnnouncementDeliveryWorkflowService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -77,7 +78,7 @@ class PopupAnnouncementDelivery extends Model
             ->whereNull('expired_at');
     }
 
-    public function markSeen(): void
+    public function markSeen(): self
     {
         $now = now();
 
@@ -87,9 +88,11 @@ class PopupAnnouncementDelivery extends Model
             'display_count' => (int) $this->display_count + 1,
             'last_displayed_at' => $now,
         ])->save();
+
+        return $this;
     }
 
-    public function markAcknowledged(): void
+    public function markAcknowledged(): self
     {
         $now = now();
 
@@ -98,9 +101,11 @@ class PopupAnnouncementDelivery extends Model
             'acknowledged_at' => $now,
             'dismissed_at' => $this->dismissed_at,
         ])->save();
+
+        return $this;
     }
 
-    public function markDismissed(): void
+    public function markDismissed(): self
     {
         $now = now();
 
@@ -108,5 +113,22 @@ class PopupAnnouncementDelivery extends Model
             'status' => self::STATUS_DISMISSED,
             'dismissed_at' => $now,
         ])->save();
+
+        return $this;
+    }
+
+    public function markSeenViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->markSeen($this);
+    }
+
+    public function acknowledgeViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->acknowledge($this);
+    }
+
+    public function dismissViaWorkflow(): self
+    {
+        return app(PopupAnnouncementDeliveryWorkflowService::class)->dismiss($this);
     }
 }

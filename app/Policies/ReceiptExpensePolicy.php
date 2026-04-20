@@ -34,27 +34,32 @@ class ReceiptExpensePolicy
 
     public function delete(User $authUser, ReceiptExpense $receiptExpense): bool
     {
-        return $authUser->can('Delete:ReceiptExpense') && $this->canAccessReceiptExpense($authUser, $receiptExpense);
+        return false;
     }
 
     public function restore(User $authUser, ReceiptExpense $receiptExpense): bool
     {
-        return $authUser->can('Restore:ReceiptExpense') && $this->canAccessReceiptExpense($authUser, $receiptExpense);
+        return false;
     }
 
     public function forceDelete(User $authUser, ReceiptExpense $receiptExpense): bool
     {
-        return $authUser->can('ForceDelete:ReceiptExpense') && $this->canAccessReceiptExpense($authUser, $receiptExpense);
+        return false;
+    }
+
+    public function deleteAny(User $authUser): bool
+    {
+        return false;
     }
 
     public function forceDeleteAny(User $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:ReceiptExpense') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function restoreAny(User $authUser): bool
     {
-        return $authUser->can('RestoreAny:ReceiptExpense') && $authUser->hasAnyAccessibleBranch();
+        return false;
     }
 
     public function replicate(User $authUser, ReceiptExpense $receiptExpense): bool

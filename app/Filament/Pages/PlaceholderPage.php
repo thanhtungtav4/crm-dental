@@ -29,8 +29,26 @@ abstract class PlaceholderPage extends Page
         return $this->getHeading();
     }
 
-    public function getBullets(): array
+    protected function bullets(): array
     {
         return static::$pageBullets;
+    }
+
+    /**
+     * @return array{
+     *     badge_label: string,
+     *     status_text: string,
+     *     subheading: ?string,
+     *     bullets: array<int, string>
+     * }
+     */
+    public function pageViewState(): array
+    {
+        return [
+            'badge_label' => 'Đang phát triển',
+            'status_text' => 'Module này đang được xây dựng theo tài liệu tham chiếu.',
+            'subheading' => $this->getSubheading(),
+            'bullets' => $this->bullets(),
+        ];
     }
 }

@@ -6,7 +6,6 @@ namespace App\Policies;
 
 use App\Models\TreatmentPlan;
 use App\Models\User;
-use App\Services\TreatmentDeletionGuardService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TreatmentPlanPolicy
@@ -35,9 +34,7 @@ class TreatmentPlanPolicy
 
     public function delete(User $authUser, TreatmentPlan $treatmentPlan): bool
     {
-        return $authUser->can('Delete:TreatmentPlan')
-            && $this->canAccessTreatmentPlan($authUser, $treatmentPlan)
-            && app(TreatmentDeletionGuardService::class)->canDeleteTreatmentPlan($treatmentPlan);
+        return false;
     }
 
     public function deleteAny(User $authUser): bool

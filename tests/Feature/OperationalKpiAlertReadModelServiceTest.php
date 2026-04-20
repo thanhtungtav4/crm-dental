@@ -146,3 +146,34 @@ it('returns empty alert summaries when the visible branch scope is empty', funct
             'open_alerts' => [],
         ]);
 });
+
+it('returns transitioned alert models from acknowledge and resolve boundaries', function (): void {
+    $branch = Branch::factory()->create();
+
+    $manager = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $manager->assignRole('Manager');
+
+    $this->actingAs($manager);
+
+    $alert = OperationalKpiAlert::factory()->create([
+        'branch_id' => $branch->id,
+        'owner_user_id' => $manager->id,
+        'status' => OperationalKpiAlert::STATUS_NEW,
+    ]);
+
+    $acknowledgedAlert = $alert->markAcknowledged();
+    $resolvedAlert = $acknowledgedAlert->markResolved(note: 'Handled from boundary');
+
+    expect($acknowledgedAlert)->toBeInstanceOf(OperationalKpiAlert::class)
+        ->and($acknowledgedAlert->is($alert))->toBeTrue()
+        ->and($resolvedAlert)->toBeInstanceOf(OperationalKpiAlert::class)
+        ->and($resolvedAlert->is($alert))->toBeTrue()
+        ->and($resolvedAlert->status)->toBe(OperationalKpiAlert::STATUS_RESOLVED)
+        ->and((int) $resolvedAlert->acknowledged_by)->toBe($manager->id)
+        ->and((int) $resolvedAlert->resolved_by)->toBe($manager->id)
+        ->and($resolvedAlert->acknowledged_at)->not->toBeNull()
+        ->and($resolvedAlert->resolved_at)->not->toBeNull()
+        ->and($resolvedAlert->resolution_note)->toBe('Handled from boundary');
+});

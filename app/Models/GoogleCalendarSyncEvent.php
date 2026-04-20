@@ -121,7 +121,7 @@ class GoogleCalendarSyncEvent extends Model
             });
     }
 
-    public function markProcessing(): void
+    public function markProcessing(): self
     {
         static::runWithinManagedWorkflow(function (): void {
             $this->forceFill([
@@ -131,9 +131,11 @@ class GoogleCalendarSyncEvent extends Model
                 'last_error' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markSynced(?string $externalEventId, ?int $httpStatus): void
+    public function markSynced(?string $externalEventId, ?int $httpStatus): self
     {
         static::runWithinManagedWorkflow(function () use ($externalEventId, $httpStatus): void {
             $this->forceFill([
@@ -146,9 +148,11 @@ class GoogleCalendarSyncEvent extends Model
                 'locked_at' => null,
             ])->save();
         });
+
+        return $this;
     }
 
-    public function markFailure(?int $httpStatus, string $message): void
+    public function markFailure(?int $httpStatus, string $message): self
     {
         $shouldDeadLetter = (int) $this->attempts >= (int) $this->max_attempts;
         $nextRetryAt = $shouldDeadLetter
@@ -164,12 +168,14 @@ class GoogleCalendarSyncEvent extends Model
                 'locked_at' => null,
             ])->save();
         });
+
+        return $this;
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function resetForReplay(array $attributes): void
+    public function resetForReplay(array $attributes): self
     {
         static::runWithinManagedWorkflow(function () use ($attributes): void {
             $this->forceFill(array_merge($attributes, [
@@ -183,6 +189,8 @@ class GoogleCalendarSyncEvent extends Model
                 'external_event_id' => null,
             ]))->save();
         });
+
+        return $this;
     }
 
     public static function reclaimStaleProcessing(int $ttlMinutes = self::STALE_PROCESSING_TTL_MINUTES): int

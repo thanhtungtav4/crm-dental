@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\Invoice;
+use App\Support\WorkflowAuditMetadata;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -89,6 +91,70 @@ class InvoiceWorkflowService
         }, 3);
     }
 
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    public function syncFinancialStatus(
+        Invoice $invoice,
+        ?int $actorId = null,
+        string $auditAction = AuditLog::ACTION_UPDATE,
+        ?string $reason = null,
+        array $metadata = [],
+        bool $persistQuietly = false,
+    ): Invoice {
+        return DB::transaction(function () use (
+            $invoice,
+            $actorId,
+            $auditAction,
+            $reason,
+            $metadata,
+            $persistQuietly,
+        ): Invoice {
+            $lockedInvoice = Invoice::query()
+                ->lockForUpdate()
+                ->findOrFail($invoice->getKey());
+
+            $resolvedActorId = $this->resolveActorId($actorId);
+            $fromStatus = Invoice::normalizeStatusValue($lockedInvoice->status) ?? Invoice::STATUS_DRAFT;
+            $originalPaidAmount = round((float) $lockedInvoice->paid_amount, 2);
+            $originalPaidAt = $lockedInvoice->paid_at?->toDateTimeString();
+
+            $lockedInvoice->paid_amount = $lockedInvoice->getTotalPaid();
+            $lockedInvoice->updatePaymentStatus();
+
+            $toStatus = Invoice::normalizeStatusValue($lockedInvoice->status) ?? Invoice::STATUS_DRAFT;
+            $paidAmountChanged = round((float) $lockedInvoice->paid_amount, 2) !== $originalPaidAmount;
+            $paidAtChanged = $lockedInvoice->paid_at?->toDateTimeString() !== $originalPaidAt;
+            $statusChanged = $fromStatus !== $toStatus;
+
+            if (! $paidAmountChanged && ! $paidAtChanged && ! $statusChanged) {
+                return $lockedInvoice;
+            }
+
+            if ($persistQuietly) {
+                $lockedInvoice->saveQuietly();
+            } else {
+                $lockedInvoice->save();
+            }
+
+            $lockedInvoice->refresh();
+
+            if ($statusChanged) {
+                $this->recordFinancialStatusAudit(
+                    invoice: $lockedInvoice,
+                    action: $auditAction,
+                    actorId: $resolvedActorId,
+                    fromStatus: $fromStatus,
+                    toStatus: $toStatus,
+                    reason: $reason,
+                    metadata: $metadata,
+                );
+            }
+
+            return $lockedInvoice;
+        }, 3);
+    }
+
     protected function assertCanCancel(Invoice $invoice): void
     {
         if ($invoice->hasPayments()) {
@@ -102,5 +168,45 @@ class InvoiceWorkflowService
                 'status' => 'Khong the huy hoa don da co ho so tra gop.',
             ]);
         }
+    }
+
+    protected function resolveActorId(?int $actorId): ?int
+    {
+        return $actorId ?? (is_numeric(auth()->id()) ? (int) auth()->id() : null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    protected function recordFinancialStatusAudit(
+        Invoice $invoice,
+        string $action,
+        ?int $actorId,
+        string $fromStatus,
+        string $toStatus,
+        ?string $reason,
+        array $metadata = [],
+    ): void {
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_INVOICE,
+            entityId: (int) $invoice->getKey(),
+            action: $action,
+            actorId: $actorId,
+            metadata: WorkflowAuditMetadata::transition(
+                fromStatus: $fromStatus,
+                toStatus: $toStatus,
+                reason: $reason,
+                metadata: array_filter(array_merge($metadata, [
+                    'invoice_id' => (int) $invoice->getKey(),
+                    'invoice_no' => $invoice->invoice_no,
+                    'patient_id' => $invoice->patient_id,
+                    'branch_id' => $invoice->branch_id,
+                    'previous_status' => $fromStatus,
+                    'paid_amount' => round((float) $invoice->paid_amount, 2),
+                    'total_amount' => round((float) $invoice->total_amount, 2),
+                    'paid_at' => $invoice->paid_at?->toDateTimeString(),
+                ]), static fn (mixed $value): bool => $value !== null),
+            ),
+        );
     }
 }

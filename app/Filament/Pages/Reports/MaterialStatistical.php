@@ -83,16 +83,12 @@ class MaterialStatistical extends BaseReportPage
     public function getStats(): array
     {
         [$from, $until] = $this->getDateRangeFromFilters();
-        $summary = $this->inventorySupplyReports()->materialInventorySummary(
+
+        return $this->inventorySupplyReports()->materialInventoryStatsPayload(
             $this->resolvedVisibleBranchIds(),
             $from,
             $until,
         );
-
-        return [
-            ['label' => 'Tổng vật tư', 'value' => number_format($summary['total_materials'])],
-            ['label' => 'Vật tư dưới định mức', 'value' => number_format($summary['low_stock'])],
-        ];
     }
 
     protected function inventorySupplyReports(): InventorySupplyReportReadModelService

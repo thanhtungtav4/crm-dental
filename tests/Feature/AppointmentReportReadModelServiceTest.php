@@ -97,6 +97,16 @@ it('summarizes appointment metrics within selected branches', function (): void 
             'avg_waiting' => 15.0,
             'avg_chair' => 45.0,
             'avg_overrun' => 5.0,
+        ])
+        ->and($service->appointmentSummaryStatsPayload([$branchA->id], $reportDate, $reportDate))
+        ->toBe([
+            ['label' => 'Tổng lịch hẹn', 'value' => '1'],
+            ['label' => 'Lịch hẹn mới', 'value' => '0'],
+            ['label' => 'Lịch hẹn bị hủy', 'value' => '0'],
+            ['label' => 'Hoàn thành', 'value' => '1'],
+            ['label' => 'Waiting TB (phút)', 'value' => '15.0'],
+            ['label' => 'Chair TB (phút)', 'value' => '45.0'],
+            ['label' => 'Overrun TB (phút)', 'value' => '5.0'],
         ]);
 
     expect($service->operationalStatusMetrics([$branchA->id], $reportDate, $reportDate))
@@ -107,6 +117,7 @@ it('summarizes appointment metrics within selected branches', function (): void 
             'in_progress' => 0,
             'completed' => 1,
             'no_show' => 0,
+            'cancelled' => 0,
         ]);
 });
 
@@ -123,6 +134,15 @@ it('returns empty appointment readers for inaccessible branch selections', funct
             'avg_chair' => 0.0,
             'avg_overrun' => 0.0,
         ])
+        ->and($service->appointmentSummaryStatsPayload([], now()->toDateString(), now()->toDateString()))->toBe([
+            ['label' => 'Tổng lịch hẹn', 'value' => '0'],
+            ['label' => 'Lịch hẹn mới', 'value' => '0'],
+            ['label' => 'Lịch hẹn bị hủy', 'value' => '0'],
+            ['label' => 'Hoàn thành', 'value' => '0'],
+            ['label' => 'Waiting TB (phút)', 'value' => '0.0'],
+            ['label' => 'Chair TB (phút)', 'value' => '0.0'],
+            ['label' => 'Overrun TB (phút)', 'value' => '0.0'],
+        ])
         ->and($service->operationalStatusMetrics([], now()->toDateString(), now()->toDateString()))->toBe([
             'total' => 0,
             'scheduled' => 0,
@@ -130,5 +150,6 @@ it('returns empty appointment readers for inaccessible branch selections', funct
             'in_progress' => 0,
             'completed' => 0,
             'no_show' => 0,
+            'cancelled' => 0,
         ]);
 });

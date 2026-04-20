@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PaymentReversalService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -215,6 +216,24 @@ class Payment extends Model
         return ! $this->isRefund() && ! $this->isReversal() && ! $this->isReversed();
     }
 
+    public function reverse(
+        float $amount,
+        mixed $paidAt = null,
+        ?string $refundReason = null,
+        ?string $note = null,
+        ?int $actorId = null,
+    ): self {
+        /** @var self */
+        return app(PaymentReversalService::class)->reverse(
+            payment: $this,
+            amount: $amount,
+            paidAt: $paidAt,
+            refundReason: $refundReason,
+            note: $note,
+            actorId: $actorId,
+        );
+    }
+
     public static function reversalTransactionRef(int $invoiceId, int $originalPaymentId): string
     {
         return sprintf('REV-%d-%d', $invoiceId, $originalPaymentId);
@@ -227,10 +246,10 @@ class Payment extends Model
         return $branchId !== null ? (int) $branchId : null;
     }
 
-    public function markReversed(?int $userId = null): void
+    public function markReversed(?int $userId = null): self
     {
         if ($this->isReversed()) {
-            return;
+            return $this;
         }
 
         $now = now();
@@ -244,6 +263,8 @@ class Payment extends Model
             ]);
 
         $this->refresh();
+
+        return $this;
     }
 
     /**

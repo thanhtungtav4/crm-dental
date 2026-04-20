@@ -227,6 +227,40 @@ it('marks a queued delivery as dead for invalid runtime mailer configuration', f
         ->and($delivery->fresh()->last_error_message)->toContain('SMTP host');
 });
 
+it('returns transitioned delivery models from processing and failure boundaries', function (): void {
+    $delivery = WebLeadEmailDelivery::factory()->create([
+        'status' => WebLeadEmailDelivery::STATUS_QUEUED,
+        'attempt_count' => 0,
+    ]);
+
+    $processingDelivery = $delivery->markProcessing('wf-token-001');
+    $retryableDelivery = $processingDelivery->markFailure(
+        message: 'SMTP temporarily unavailable',
+        terminal: false,
+        delaySeconds: 120,
+    );
+
+    expect($processingDelivery)->toBeInstanceOf(WebLeadEmailDelivery::class)
+        ->and($processingDelivery->is($delivery))->toBeTrue()
+        ->and($retryableDelivery)->toBeInstanceOf(WebLeadEmailDelivery::class)
+        ->and($retryableDelivery->is($delivery))->toBeTrue()
+        ->and($retryableDelivery->status)->toBe(WebLeadEmailDelivery::STATUS_RETRYABLE)
+        ->and((int) $retryableDelivery->attempt_count)->toBe(1)
+        ->and($retryableDelivery->next_retry_at)->not->toBeNull();
+
+    $sentDelivery = $retryableDelivery
+        ->resetForReplay()
+        ->markProcessing('wf-token-002')
+        ->markSent('smtp-message-002');
+
+    expect($sentDelivery)->toBeInstanceOf(WebLeadEmailDelivery::class)
+        ->and($sentDelivery->is($delivery))->toBeTrue()
+        ->and($sentDelivery->status)->toBe(WebLeadEmailDelivery::STATUS_SENT)
+        ->and((int) $sentDelivery->attempt_count)->toBe(2)
+        ->and($sentDelivery->transport_message_id)->toBe('smtp-message-002')
+        ->and($sentDelivery->sent_at)->not->toBeNull();
+});
+
 it('blocks raw status mutation outside the web lead email workflow contract', function (): void {
     $delivery = WebLeadEmailDelivery::factory()->create();
 

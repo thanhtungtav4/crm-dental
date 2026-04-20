@@ -97,6 +97,19 @@ class InsuranceClaimWorkflowService
         );
     }
 
+    public function cancel(InsuranceClaim $claim, ?string $reason = null, ?int $actorId = null): InsuranceClaim
+    {
+        $this->authorizeDecision();
+
+        return $this->transition(
+            claim: $claim,
+            toStatus: InsuranceClaim::STATUS_CANCELLED,
+            trigger: 'manual_cancel',
+            reason: $reason,
+            actorId: $actorId,
+        );
+    }
+
     public function markPaid(
         InsuranceClaim $claim,
         ?float $amount = null,

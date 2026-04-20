@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InvoiceWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -432,6 +433,11 @@ class Invoice extends Model
         return $context;
     }
 
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(InvoiceWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
     // ==================== RELATIONSHIPS ====================
 
     public function session(): BelongsTo
@@ -499,35 +505,42 @@ class Invoice extends Model
     }
 
     /**
-     * Update paid_amount field based on payments
+     * @param  array<string, mixed>  $metadata
      */
-    public function updatePaidAmount(): void
-    {
-        $this->paid_amount = $this->getTotalPaid();
-        $this->updatePaymentStatus();
-
-        if ($this->isDirty(['paid_amount', 'status', 'paid_at'])) {
-            $this->save();
-        }
+    public function updatePaidAmount(
+        ?int $actorId = null,
+        string $auditAction = AuditLog::ACTION_UPDATE,
+        ?string $reason = null,
+        array $metadata = [],
+        bool $persistQuietly = false,
+    ): self {
+        return app(InvoiceWorkflowService::class)->syncFinancialStatus(
+            invoice: $this,
+            actorId: $actorId,
+            auditAction: $auditAction,
+            reason: $reason,
+            metadata: $metadata,
+            persistQuietly: $persistQuietly,
+        );
     }
 
     /**
      * Auto-update status based on payment progress
      */
-    public function updatePaymentStatus(): void
+    public function updatePaymentStatus(): self
     {
         $totalPaid = round((float) ($this->paid_amount ?? $this->getTotalPaid()), 2);
         $totalAmount = round((float) $this->total_amount, 2);
 
         if ($this->status === self::STATUS_CANCELLED) {
-            return;
+            return $this;
         }
 
         if ($totalAmount <= 0 || $totalPaid >= $totalAmount) {
             $this->status = self::STATUS_PAID;
             $this->paid_at = $this->paid_at ?? now();
 
-            return;
+            return $this;
         }
 
         $isPastDue = false;
@@ -545,7 +558,7 @@ class Invoice extends Model
                 : self::STATUS_PARTIAL;
             $this->paid_at = null;
 
-            return;
+            return $this;
         }
 
         if ($this->status !== self::STATUS_DRAFT) {
@@ -555,6 +568,8 @@ class Invoice extends Model
         }
 
         $this->paid_at = null;
+
+        return $this;
     }
 
     /**

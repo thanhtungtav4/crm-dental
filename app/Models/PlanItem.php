@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlanItemWorkflowService;
 use App\Support\ActionGate;
 use App\Support\ActionPermission;
 use App\Support\BranchAccess;
@@ -232,6 +233,12 @@ class PlanItem extends Model
 
             $item->patient_approved = $item->approval_status === static::APPROVAL_APPROVED;
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'plan_item' => 'Hạng mục điều trị không hỗ trợ xóa trực tiếp. Vui lòng hủy hạng mục qua workflow.',
+            ]);
+        });
     }
 
     public function treatmentPlan()
@@ -272,12 +279,27 @@ class PlanItem extends Model
         return $branchId !== null ? (int) $branchId : null;
     }
 
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public function startTreatment(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->startTreatment($this, $reason, $actorId);
+    }
+
+    public function completeTreatment(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PlanItemWorkflowService::class)->completeTreatment($this, $reason, $actorId);
+    }
+
     // Helper Methods
 
     /**
      * Update progress based on completed visits
      */
-    public function updateProgress(): void
+    public function updateProgress(): self
     {
         static::assertTreatmentPhaseGate($this);
 
@@ -314,12 +336,14 @@ class PlanItem extends Model
 
         // Update parent treatment plan
         $this->treatmentPlan?->updateProgress();
+
+        return $this;
     }
 
     /**
      * Mark a visit as completed
      */
-    public function completeVisit(): void
+    public function completeVisit(): self
     {
         if (! $this->canStartTreatment()) {
             throw ValidationException::withMessages([
@@ -331,6 +355,8 @@ class PlanItem extends Model
             $this->completed_visits++;
             $this->updateProgress();
         }
+
+        return $this;
     }
 
     /**

@@ -7,13 +7,19 @@ use App\Models\BranchTransferRequest;
 use App\Models\Customer;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
+use App\Models\Material;
+use App\Models\MaterialBatch;
 use App\Models\MaterialIssueNote;
 use App\Models\Note;
 use App\Models\Patient;
 use App\Models\PlanItem;
 use App\Models\ReceiptExpense;
+use App\Models\TreatmentPlan;
+use App\Models\TreatmentSession;
 use App\Models\User;
 use App\Services\PatientOperationalTimelineService;
+use App\Services\PatientWalletService;
+use App\Services\TreatmentMaterialUsageService;
 use Carbon\Carbon;
 
 it('builds operational timeline entries for a patient from finance, appointment, care, and labo audit logs', function (): void {
@@ -172,6 +178,113 @@ it('includes insurance claim and treatment session audit entries in the patient 
     expect($entries->pluck('title')->all())->toContain('Bảo hiểm đã duyệt', 'Hoàn thành buổi điều trị')
         ->and($descriptions)->toContain('CLM-505 • Đã duyệt • 320.000đ')
         ->and($descriptions)->toContain('Hạng mục #88 • Hoàn thành • Thực hiện 10/03/2026 12:45 • Bo sung anh hau thu thuat sau');
+});
+
+it('includes treatment material usage audits in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $actor->assignRole('Manager');
+    $this->actingAs($actor);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    $plan = TreatmentPlan::factory()->create([
+        'patient_id' => $patient->id,
+        'doctor_id' => $actor->id,
+        'branch_id' => $branch->id,
+        'status' => 'in_progress',
+    ]);
+
+    $session = TreatmentSession::factory()->create([
+        'treatment_plan_id' => $plan->id,
+        'doctor_id' => $actor->id,
+    ]);
+
+    $material = Material::factory()->create([
+        'branch_id' => $branch->id,
+        'stock_qty' => 10,
+        'name' => 'Composite A2',
+        'unit' => 'ống',
+    ]);
+
+    $batch = MaterialBatch::query()->create([
+        'material_id' => $material->id,
+        'batch_number' => 'LOT-TL-001',
+        'expiry_date' => now()->addMonths(5)->toDateString(),
+        'quantity' => 10,
+        'purchase_price' => 40_000,
+        'received_date' => today()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $usage = app(TreatmentMaterialUsageService::class)->create([
+        'treatment_session_id' => $session->id,
+        'material_id' => $material->id,
+        'batch_id' => $batch->id,
+        'quantity' => 2,
+    ]);
+
+    app(TreatmentMaterialUsageService::class)->delete($usage);
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $descriptions = $entries->pluck('description')->all();
+
+    expect($entries->pluck('title')->all())->toContain('Ghi nhận vật tư điều trị', 'Hoàn tác vật tư điều trị')
+        ->and($descriptions)->toContain(
+            'Composite A2 • SL 2 ống • Lô LOT-TL-001 • 80.000đ',
+            'Composite A2 • SL 2 ống • Lô LOT-TL-001 • 80.000đ',
+        );
+});
+
+it('includes manual wallet adjustment audits in the patient operational timeline', function (): void {
+    $branch = Branch::factory()->create();
+    $actor = User::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+    $actor->assignRole('Manager');
+    $this->actingAs($actor);
+
+    $customer = Customer::factory()->create([
+        'branch_id' => $branch->id,
+    ]);
+
+    $patient = Patient::factory()->create([
+        'customer_id' => $customer->id,
+        'first_branch_id' => $branch->id,
+    ]);
+
+    $wallet = \App\Models\PatientWallet::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'balance' => 300_000,
+    ]);
+
+    app(PatientWalletService::class)->adjustBalance(
+        wallet: $wallet,
+        amount: -50_000,
+        note: 'Điều chỉnh sai lệch đối soát',
+        actorId: $actor->id,
+    );
+
+    $entries = app(PatientOperationalTimelineService::class)->timelineEntriesForPatient($patient, 10);
+    $walletEntry = $entries->firstWhere('title', 'Điều chỉnh ví bệnh nhân');
+
+    expect($walletEntry)->not->toBeNull()
+        ->and($walletEntry['description'])->toContain(
+            'Điều chỉnh sai lệch đối soát',
+            '-50.000đ',
+            'Số dư 250.000đ',
+        )
+        ->and($walletEntry['meta']['Trạng thái'] ?? null)->toBe('Ví bệnh nhân');
 });
 
 it('includes plan item workflow audit entries in the patient operational timeline', function (): void {

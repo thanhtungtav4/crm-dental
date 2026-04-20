@@ -1,10 +1,8 @@
 @props([
-    'isVisible',
-    'viewState',
-    'diagnosisOptions',
+    'panel',
 ])
 
-@if($isVisible)
+@if($panel['is_visible'])
     <div class="crm-modal-backdrop crm-modal-z-50" wire:click="closePlanModal">
         <div class="crm-modal-card crm-modal-card-lg dark:bg-gray-900" wire:click.stop>
             <div class="crm-modal-header">
@@ -41,7 +39,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($viewState['draft_rows'] as $row)
+                            @forelse($panel['draft_rows'] as $row)
                                 <tr wire:key="draft-item-{{ $row['index'] }}">
                                     <td class="is-center">{{ $row['index'] + 1 }}</td>
                                     <td>
@@ -51,7 +49,7 @@
                                     <td>
                                         <select multiple wire:model="draftItems.{{ $row['index'] }}.diagnosis_ids"
                                             class="crm-plan-editor-select">
-                                            @foreach($diagnosisOptions as $id => $label)
+                                            @foreach($panel['diagnosis_options'] as $id => $label)
                                                 <option value="{{ $id }}">{{ $label }}</option>
                                             @endforeach
                                         </select>

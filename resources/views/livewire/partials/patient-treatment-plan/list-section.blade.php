@@ -1,15 +1,15 @@
 @props([
-    'viewState',
+    'panel',
 ])
 
 <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-3">
         <h3 class="crm-section-label">Kế hoạch điều trị</h3>
-        <span class="crm-section-badge">{{ $viewState['plan_count'] }} hồ sơ</span>
+        <span class="crm-section-badge">{{ $panel['plan_count'] }} hồ sơ</span>
     </div>
     <div class="flex items-center gap-2">
         <button type="button"
-            @disabled(empty($viewState['plan_rows']))
+            @disabled(empty($panel['plan_rows']))
             class="crm-btn crm-btn-outline h-8 px-3 text-xs disabled:opacity-50"
         >
             Sắp xếp kế hoạch điều trị
@@ -46,7 +46,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($viewState['plan_rows'] as $row)
+                @forelse($panel['plan_rows'] as $row)
                     <tr>
                         <td>{{ $row['tooth_label'] }}</td>
                         <td>{{ $row['diagnosis_labels'] }}</td>
@@ -110,12 +110,12 @@
     </div>
 
     <div class="crm-treatment-summary border-t border-gray-300 px-4 py-3 text-xs text-gray-700">
-        @foreach($viewState['summary_panels'] as $panel)
+        @foreach($panel['summary_panels'] as $summaryPanel)
             <div @class([
                 'grid grid-cols-2 gap-3 md:grid-cols-3',
                 'mt-2' => ! $loop->first,
             ])>
-                @foreach($panel['items'] as $summaryItem)
+                @foreach($summaryPanel['items'] as $summaryItem)
                     <div>{{ $summaryItem['label'] }}: <strong>{{ $summaryItem['value'] }}</strong></div>
                 @endforeach
             </div>

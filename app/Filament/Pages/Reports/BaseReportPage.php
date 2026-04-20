@@ -31,12 +31,51 @@ abstract class BaseReportPage extends Page implements HasTable
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{
+     *     stats_panel: array{
+     *         heading: string,
+     *         description: string,
+     *         labelled_by: string,
+     *         cards: array<int, array{id:string,label:mixed,value:mixed,description:mixed,aria_label:string,container_classes:string}>
+     *     }
+     * }
      */
-    protected function getViewData(): array
+    public function pageViewState(): array
     {
         return [
-            'stats' => $this->getStats(),
+            'stats_panel' => $this->statsPanel(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     heading: string,
+     *     description: string,
+     *     labelled_by: string,
+     *     cards: array<int, array{id:string,label:mixed,value:mixed,description:mixed,aria_label:string,container_classes:string}>
+     * }
+     */
+    protected function statsPanel(): array
+    {
+        return [
+            'heading' => 'Tổng quan báo cáo',
+            'description' => 'Các chỉ số chính được cập nhật theo bộ lọc hiện tại.',
+            'labelled_by' => 'report-stats-heading',
+            'cards' => collect($this->getStats())
+                ->values()
+                ->map(fn (array $stat, int $index): array => [
+                    'id' => 'report-stat-card-'.$index,
+                    'label' => $stat['label'] ?? '',
+                    'value' => $stat['value'] ?? '',
+                    'description' => $stat['description'] ?? null,
+                    'aria_label' => trim(implode(' ', array_filter([
+                        (string) ($stat['label'] ?? ''),
+                        (string) ($stat['value'] ?? ''),
+                        (string) ($stat['description'] ?? ''),
+                    ]))),
+                    'container_classes' => 'group relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/80 px-4 py-4 shadow-sm ring-1 ring-gray-950/5 transition duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-gray-800 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900/70 dark:ring-white/10 dark:hover:border-primary-700',
+                ])
+                ->all(),
         ];
     }
 

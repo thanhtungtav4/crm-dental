@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TreatmentPlanWorkflowService;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -175,6 +176,12 @@ class TreatmentPlan extends Model
 
             static::assertWorkflowControlledFields($plan);
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'treatment_plan' => 'Kế hoạch điều trị không hỗ trợ xóa trực tiếp. Vui lòng hủy kế hoạch qua workflow.',
+            ]);
+        });
     }
 
     public static function runWithinManagedWorkflow(callable $callback): mixed
@@ -234,6 +241,26 @@ class TreatmentPlan extends Model
         }
     }
 
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public function approve(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->approve($this, $actorId);
+    }
+
+    public function start(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->start($this, $actorId);
+    }
+
+    public function complete(?int $actorId = null): self
+    {
+        return app(TreatmentPlanWorkflowService::class)->complete($this, $actorId);
+    }
+
     public function sessions()
     {
         return $this->hasMany(TreatmentSession::class);
@@ -287,7 +314,7 @@ class TreatmentPlan extends Model
         return (int) ($totalProgress / $items->count());
     }
 
-    public function updateProgress(): void
+    public function updateProgress(): self
     {
         $this->progress_percentage = $this->calculateProgress();
         $this->completed_visits = $this->planItems->sum('completed_visits');
@@ -311,6 +338,8 @@ class TreatmentPlan extends Model
         static::runWithinManagedWorkflow(function (): void {
             $this->save();
         });
+
+        return $this;
     }
 
     public function getProgressBadgeColor(): string

@@ -156,6 +156,104 @@ it('records normalized cancellation audit metadata for factory orders', function
         ->and(data_get($auditLog->metadata, 'supplier_id'))->toBe($supplier->id);
 });
 
+it('cancels factory orders through the canonical model boundary', function (): void {
+    $branch = Branch::factory()->create(['active' => true]);
+
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $supplier = Supplier::query()->create([
+        'name' => 'Labo Canonical Cancel',
+        'code' => 'LABOCANON',
+        'payment_terms' => '30_days',
+        'active' => true,
+    ]);
+
+    $order = FactoryOrder::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'supplier_id' => $supplier->id,
+        'status' => FactoryOrder::STATUS_DRAFT,
+        'priority' => 'normal',
+    ]);
+
+    $this->actingAs($manager);
+
+    $order->cancel('benh nhan khong tiep tuc');
+
+    $cancelAudit = AuditLog::query()
+        ->where('entity_type', AuditLog::ENTITY_FACTORY_ORDER)
+        ->where('entity_id', $order->id)
+        ->where('action', AuditLog::ACTION_CANCEL)
+        ->latest('id')
+        ->first();
+
+    expect($order->fresh()->status)->toBe(FactoryOrder::STATUS_CANCELLED)
+        ->and($order->fresh()->notes)->toBe('benh nhan khong tiep tuc')
+        ->and($cancelAudit)->not->toBeNull()
+        ->and(data_get($cancelAudit, 'metadata.status_to'))->toBe(FactoryOrder::STATUS_CANCELLED)
+        ->and(data_get($cancelAudit, 'metadata.reason'))->toBe('benh nhan khong tiep tuc');
+});
+
+it('transitions factory orders through the canonical model boundaries', function (): void {
+    $branch = Branch::factory()->create(['active' => true]);
+
+    $manager = User::factory()->create(['branch_id' => $branch->id]);
+    $manager->assignRole('Manager');
+
+    $doctor = User::factory()->create(['branch_id' => $branch->id]);
+    $doctor->assignRole('Doctor');
+
+    DoctorBranchAssignment::query()->create([
+        'user_id' => $doctor->id,
+        'branch_id' => $branch->id,
+        'is_active' => true,
+        'is_primary' => true,
+    ]);
+
+    $patient = Patient::factory()->create(['first_branch_id' => $branch->id]);
+    $supplier = Supplier::query()->create([
+        'name' => 'Labo Model Boundary',
+        'code' => 'LABOMODEL',
+        'payment_terms' => '30_days',
+        'active' => true,
+    ]);
+
+    $order = FactoryOrder::query()->create([
+        'patient_id' => $patient->id,
+        'branch_id' => $branch->id,
+        'doctor_id' => $doctor->id,
+        'supplier_id' => $supplier->id,
+        'status' => FactoryOrder::STATUS_DRAFT,
+        'priority' => 'normal',
+    ]);
+
+    $item = FactoryOrderItem::query()->create([
+        'factory_order_id' => $order->id,
+        'item_name' => 'Mão răng sứ',
+        'quantity' => 1,
+        'unit_price' => 1_200_000,
+        'status' => 'ordered',
+    ]);
+
+    $this->actingAs($manager);
+
+    $ordered = $order->markOrdered();
+    expect($ordered->status)->toBe(FactoryOrder::STATUS_ORDERED)
+        ->and($ordered->ordered_at)->not->toBeNull()
+        ->and($item->fresh()->status)->toBe('ordered');
+
+    $inProgress = $ordered->markInProgress();
+    expect($inProgress->status)->toBe(FactoryOrder::STATUS_IN_PROGRESS)
+        ->and($item->fresh()->status)->toBe('in_progress');
+
+    $delivered = $inProgress->markDelivered();
+    expect($delivered->status)->toBe(FactoryOrder::STATUS_DELIVERED)
+        ->and($delivered->delivered_at)->not->toBeNull()
+        ->and($item->fresh()->status)->toBe('delivered');
+});
+
 it('blocks direct status changes and item mutations once order leaves draft', function (): void {
     $branch = Branch::factory()->create(['active' => true]);
 
@@ -240,6 +338,8 @@ it('wires factory order pages and relation manager through the workflow boundary
 
     expect($model)
         ->toContain('runWithinManagedWorkflow')
+        ->toContain('FactoryOrderWorkflowService::class')
+        ->toContain('public function cancel(?string $reason = null): self')
         ->toContain('Trang thai lenh labo chi duoc thay doi qua FactoryOrderWorkflowService.')
         ->toContain('return $this->status === self::STATUS_DRAFT;');
 

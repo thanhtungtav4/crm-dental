@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\BranchTransferRequest;
 use App\Models\FactoryOrder;
 use App\Models\InsuranceClaim;
+use App\Models\Invoice;
 use App\Models\MaterialIssueNote;
 use App\Models\Note;
 use App\Models\Patient;
@@ -39,6 +40,12 @@ class PatientOperationalTimelineService
                             AuditLog::ACTION_REFUND,
                             AuditLog::ACTION_REVERSAL,
                             AuditLog::ACTION_CANCEL,
+                            AuditLog::ACTION_SYNC,
+                            AuditLog::ACTION_UPDATE,
+                        ]);
+                })->orWhere(function (Builder $query): void {
+                    $query->where('entity_type', AuditLog::ENTITY_PATIENT_WALLET)
+                        ->whereIn('action', [
                             AuditLog::ACTION_UPDATE,
                         ]);
                 })->orWhere(function (Builder $query): void {
@@ -90,9 +97,11 @@ class PatientOperationalTimelineService
                 })->orWhere(function (Builder $query): void {
                     $query->where('entity_type', AuditLog::ENTITY_TREATMENT_SESSION)
                         ->whereIn('action', [
+                            AuditLog::ACTION_CREATE,
                             AuditLog::ACTION_UPDATE,
                             AuditLog::ACTION_COMPLETE,
                             AuditLog::ACTION_CANCEL,
+                            AuditLog::ACTION_REVERSAL,
                         ]);
                 })->orWhere(function (Builder $query): void {
                     $query->where('entity_type', AuditLog::ENTITY_BRANCH_TRANSFER)
@@ -119,6 +128,7 @@ class PatientOperationalTimelineService
     {
         return match ($log->entity_type) {
             AuditLog::ENTITY_PAYMENT, AuditLog::ENTITY_INVOICE, AuditLog::ENTITY_RECEIPT_EXPENSE => $this->mapFinancialEntry($log),
+            AuditLog::ENTITY_PATIENT_WALLET => $this->mapPatientWalletEntry($log),
             AuditLog::ENTITY_MATERIAL_ISSUE_NOTE => $this->mapMaterialIssueNoteEntry($log),
             AuditLog::ENTITY_APPOINTMENT => $this->mapAppointmentEntry($log),
             AuditLog::ENTITY_CARE_TICKET => $this->mapCareTicketEntry($log),
@@ -152,11 +162,18 @@ class PatientOperationalTimelineService
                 default => 'Cập nhật thanh toán',
             };
         } else {
+            $statusTo = (string) data_get($log->metadata, 'status_to', '');
             $title = match ($log->action) {
                 AuditLog::ACTION_REFUND => 'Hoàn tiền',
                 AuditLog::ACTION_REVERSAL => 'Đảo phiếu',
                 AuditLog::ACTION_CANCEL => 'Hủy hóa đơn',
-                AuditLog::ACTION_UPDATE => 'Cập nhật hóa đơn',
+                AuditLog::ACTION_SYNC => 'Đồng bộ trạng thái hóa đơn',
+                AuditLog::ACTION_UPDATE => match ($statusTo) {
+                    Invoice::STATUS_PARTIAL => 'Hóa đơn thanh toán một phần',
+                    Invoice::STATUS_PAID => 'Hóa đơn đã thanh toán',
+                    Invoice::STATUS_OVERDUE => 'Hóa đơn quá hạn',
+                    default => 'Cập nhật hóa đơn',
+                },
                 default => 'Giao dịch tài chính',
             };
         }
@@ -171,6 +188,7 @@ class PatientOperationalTimelineService
                 AuditLog::ACTION_CANCEL => 'danger',
                 AuditLog::ACTION_REFUND => 'warning',
                 AuditLog::ACTION_REVERSAL => 'primary',
+                AuditLog::ACTION_SYNC => 'info',
                 AuditLog::ACTION_UPDATE => 'info',
                 default => 'success',
             },
@@ -180,6 +198,44 @@ class PatientOperationalTimelineService
                 'Nguồn audit' => 'AuditLog',
                 'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
                 'Loại' => $log->entity_type,
+                'Trạng thái' => $this->financialStatusLabel($log),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapPatientWalletEntry(AuditLog $log): array
+    {
+        $adjustmentAmount = data_get($log->metadata, 'adjustment_amount');
+        $amountLabel = is_numeric($adjustmentAmount)
+            ? ((float) $adjustmentAmount >= 0 ? '+' : '').number_format((float) $adjustmentAmount, 0, ',', '.').'đ'
+            : null;
+        $balanceAfter = data_get($log->metadata, 'balance_after');
+        $balanceLabel = is_numeric($balanceAfter)
+            ? 'Số dư '.number_format((float) $balanceAfter, 0, ',', '.').'đ'
+            : null;
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => 'heroicon-o-wallet',
+            'color' => is_numeric($adjustmentAmount) && (float) $adjustmentAmount < 0 ? 'warning' : 'success',
+            'title' => match ((string) data_get($log->metadata, 'trigger', '')) {
+                'manual_wallet_adjustment' => 'Điều chỉnh ví bệnh nhân',
+                default => 'Cập nhật ví bệnh nhân',
+            },
+            'description' => implode(' • ', array_filter([
+                data_get($log->metadata, 'note'),
+                $amountLabel,
+                $balanceLabel,
+            ])),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => 'Ví bệnh nhân',
             ],
             'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
         ];
@@ -353,15 +409,37 @@ class PatientOperationalTimelineService
         }
 
         $description = data_get($log->metadata, 'invoice_no') ?? data_get($log->metadata, 'invoice_id');
-        $amount = data_get($log->metadata, 'amount');
+        $amount = data_get($log->metadata, 'amount') ?? data_get($log->metadata, 'paid_amount');
+        $statusLabel = $this->financialStatusLabel($log);
+        $reason = data_get($log->metadata, 'reason') ?? data_get($log->metadata, 'refund_reason');
 
         if ($amount !== null) {
             $amount = number_format((float) $amount, 0, ',', '.');
         }
 
-        $description = $description ? "Hóa đơn {$description}" : 'Giao dịch tài chính';
+        $parts = array_filter([
+            $description ? "Hóa đơn {$description}" : 'Giao dịch tài chính',
+            $statusLabel,
+            $amount !== null ? $amount.'đ' : null,
+            filled($reason) ? trim((string) $reason) : null,
+        ]);
 
-        return $amount !== null ? $description.' • '.$amount.'đ' : $description;
+        return implode(' • ', $parts);
+    }
+
+    protected function financialStatusLabel(AuditLog $log): ?string
+    {
+        if ($log->entity_type !== AuditLog::ENTITY_INVOICE) {
+            return null;
+        }
+
+        $statusTo = data_get($log->metadata, 'status_to');
+
+        if (! is_string($statusTo) || $statusTo === '') {
+            return null;
+        }
+
+        return Invoice::statusOptions()[$statusTo] ?? null;
     }
 
     protected function buildAppointmentDescription(AuditLog $log, string $statusLabel): string
@@ -434,6 +512,10 @@ class PatientOperationalTimelineService
      */
     protected function mapTreatmentSessionEntry(AuditLog $log): array
     {
+        if ($this->isTreatmentMaterialUsageAudit($log)) {
+            return $this->mapTreatmentMaterialUsageEntry($log);
+        }
+
         $statusTo = (string) data_get($log->metadata, 'status_to', '');
         $title = match ($log->action) {
             AuditLog::ACTION_COMPLETE => 'Hoàn thành buổi điều trị',
@@ -472,6 +554,29 @@ class PatientOperationalTimelineService
                 'Nguồn audit' => 'AuditLog',
                 'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
                 'Trạng thái' => $this->treatmentSessionStatusLabel($statusTo),
+            ],
+            'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapTreatmentMaterialUsageEntry(AuditLog $log): array
+    {
+        $isReversal = $log->action === AuditLog::ACTION_REVERSAL;
+
+        return [
+            'date' => $log->occurred_at ?? $log->created_at,
+            'type' => 'audit',
+            'icon' => $isReversal ? 'heroicon-o-arrow-uturn-left' : 'heroicon-o-cube',
+            'color' => $isReversal ? 'warning' : 'success',
+            'title' => $isReversal ? 'Hoàn tác vật tư điều trị' : 'Ghi nhận vật tư điều trị',
+            'description' => $this->buildTreatmentMaterialUsageDescription($log),
+            'meta' => [
+                'Nguồn audit' => 'AuditLog',
+                'Người thực hiện' => $log->actor?->name ?? 'Hệ thống',
+                'Trạng thái' => $isReversal ? 'Đã hoàn tác' : 'Đã ghi nhận',
             ],
             'url' => route('filament.admin.resources.audit-logs.view', ['record' => $log->id]),
         ];
@@ -646,6 +751,33 @@ class PatientOperationalTimelineService
         }
 
         return number_format((float) $amount, 0, ',', '.').'đ';
+    }
+
+    protected function isTreatmentMaterialUsageAudit(AuditLog $log): bool
+    {
+        return in_array(
+            (string) data_get($log->metadata, 'trigger', ''),
+            ['treatment_material_usage_recorded', 'treatment_material_usage_reversed'],
+            true,
+        );
+    }
+
+    protected function buildTreatmentMaterialUsageDescription(AuditLog $log): string
+    {
+        $quantity = data_get($log->metadata, 'quantity');
+        $unit = trim((string) data_get($log->metadata, 'material_unit', ''));
+
+        return implode(' • ', array_filter([
+            data_get($log->metadata, 'material_name')
+                ?: (data_get($log->metadata, 'material_id') ? 'Vật tư #'.data_get($log->metadata, 'material_id') : null),
+            $quantity !== null
+                ? 'SL '.(int) $quantity.($unit !== '' ? ' '.$unit : '')
+                : null,
+            data_get($log->metadata, 'batch_number') ? 'Lô '.data_get($log->metadata, 'batch_number') : null,
+            data_get($log->metadata, 'total_cost') !== null
+                ? number_format((float) data_get($log->metadata, 'total_cost'), 0, ',', '.').'đ'
+                : null,
+        ]));
     }
 
     protected function treatmentSessionStatusLabel(string $status): string

@@ -1,51 +1,3 @@
-@php
-    $conditions = \App\Models\ToothCondition::query()->ordered()->get()->values();
-
-    if (!$conditions->contains(fn(\App\Models\ToothCondition $condition) => strtoupper((string) $condition->code) === 'KHAC')) {
-        $conditions->push(new \App\Models\ToothCondition([
-            'code' => 'KHAC',
-            'name' => '(*) Khác',
-            'category' => 'Khác',
-            'color' => '#9ca3af',
-        ]));
-    }
-
-    $conditions = $conditions->values();
-
-    $conditionsJson = $conditions->map(function (\App\Models\ToothCondition $condition) {
-        $displayCode = strtoupper((string) $condition->code);
-
-        if (preg_match('/^\(([^)]+)\)/', (string) $condition->name, $matches)) {
-            $displayCode = strtoupper(str_replace(' ', '', $matches[1]));
-        }
-
-        return [
-            'code' => $condition->code,
-            'name' => $condition->name,
-            'category' => $condition->category,
-            'color' => $condition->color,
-            'display_code' => $displayCode,
-        ];
-    })->values()->all();
-
-    $conditionOrder = $conditions
-        ->pluck('code')
-        ->map(fn($code) => (string) $code)
-        ->values()
-        ->all();
-
-    $adultUpper = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
-    $childUpper = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
-    $childLower = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
-    $adultLower = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
-    $adultTeeth = array_map('strval', array_merge($adultUpper, $adultLower));
-    $childTeeth = array_map('strval', array_merge($childUpper, $childLower));
-
-    $toothDiagnosisStatePath = $getStatePath();
-    $dentitionModeStatePath = str_replace('tooth_diagnosis_data', 'tooth_chart_dentition_mode', $toothDiagnosisStatePath);
-    $defaultDentitionModeStatePath = str_replace('tooth_diagnosis_data', 'tooth_chart_default_dentition_mode', $toothDiagnosisStatePath);
-@endphp
-
 <div
     x-data="{
         state: $wire.entangle('{{ $toothDiagnosisStatePath }}'),
@@ -280,42 +232,18 @@
 >
     <div class="crm-tooth-toolbar mb-3" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
         <div class="crm-dentition-toggle" role="tablist" aria-label="Chế độ sơ đồ răng" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--crm-border, #d1d5db); border-radius: 8px; background: var(--crm-surface-elevated, #fff);">
-            <button
-                type="button"
-                @click="setDentitionMode('auto')"
-                class="crm-dentition-option"
-                :class="dentitionMode === 'auto' ? 'is-active' : ''"
-                :style="dentitionMode === 'auto'
-                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #2563eb); color: #fff; box-shadow: 0 1px 2px var(--crm-primary-shadow, rgba(37, 99, 235, .3));'
-                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: var(--crm-text-body, #475569); box-shadow: none;'"
-                :aria-pressed="dentitionMode === 'auto' ? 'true' : 'false'"
-            >
-                Tự động
-            </button>
-            <button
-                type="button"
-                @click="setDentitionMode('adult')"
-                class="crm-dentition-option"
-                :class="dentitionMode === 'adult' ? 'is-active' : ''"
-                :style="dentitionMode === 'adult'
-                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #2563eb); color: #fff; box-shadow: 0 1px 2px var(--crm-primary-shadow, rgba(37, 99, 235, .3));'
-                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: var(--crm-text-body, #475569); box-shadow: none;'"
-                :aria-pressed="dentitionMode === 'adult' ? 'true' : 'false'"
-            >
-                Người lớn
-            </button>
-            <button
-                type="button"
-                @click="setDentitionMode('child')"
-                class="crm-dentition-option"
-                :class="dentitionMode === 'child' ? 'is-active' : ''"
-                :style="dentitionMode === 'child'
-                    ? 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: var(--crm-primary, #2563eb); color: #fff; box-shadow: 0 1px 2px var(--crm-primary-shadow, rgba(37, 99, 235, .3));'
-                    : 'min-width: 78px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; background: transparent; color: var(--crm-text-body, #475569); box-shadow: none;'"
-                :aria-pressed="dentitionMode === 'child' ? 'true' : 'false'"
-            >
-                Trẻ em
-            </button>
+            @foreach($dentitionOptions as $option)
+                <button
+                    type="button"
+                    @click="setDentitionMode('{{ $option['mode'] }}')"
+                    class="crm-dentition-option"
+                    :class="dentitionMode === '{{ $option['mode'] }}' ? 'is-active' : ''"
+                    :style="dentitionMode === '{{ $option['mode'] }}' ? '{{ $dentitionOptionActiveStyle }}' : '{{ $dentitionOptionIdleStyle }}'"
+                    :aria-pressed="dentitionMode === '{{ $option['mode'] }}' ? 'true' : 'false'"
+                >
+                    {{ $option['label'] }}
+                </button>
+            @endforeach
         </div>
 
         <div class="crm-tooth-toolbar-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
@@ -328,86 +256,15 @@
 
     <div class="overflow-x-auto pb-2">
         <div class="text-center">
-            <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
-                @foreach($adultUpper as $t)
-                    <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                        <div class="crm-tooth-number mb-1">{{ $t }}</div>
-                        <button
-                            type="button"
-                            class="tooth-item-cell"
-                            :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                            @click="toggleTooth({{ $t }}, $event)"
-                        >
-                            <div :class="getToothBoxClass({{ $t }})">
-                                <span class="tooth-status-list" x-text="getConditionLabels({{ $t }})"></span>
-                            </div>
-                        </button>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
-                @foreach($childUpper as $t)
-                    <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                        <button
-                            type="button"
-                            class="tooth-item-cell"
-                            :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                            @click="toggleTooth({{ $t }}, $event)"
-                        >
-                            <div :class="getToothBoxClass({{ $t }}, true)"></div>
-                        </button>
-                        <div class="crm-tooth-number mt-1">{{ $t }}</div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="crm-tooth-grid" x-show="showChildTeeth()" x-cloak>
-                @foreach($childLower as $t)
-                    <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                        <div class="crm-tooth-number mb-1">{{ $t }}</div>
-                        <button
-                            type="button"
-                            class="tooth-item-cell"
-                            :title="'Răng sữa ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                            @click="toggleTooth({{ $t }}, $event)"
-                        >
-                            <div :class="getToothBoxClass({{ $t }}, true)"></div>
-                        </button>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="crm-tooth-grid" x-show="showAdultTeeth()" x-cloak>
-                @foreach($adultLower as $t)
-                    <div class="selection-item" item-key="{{ $t }}" :class="isToothSelected({{ $t }}) ? 'is-selected' : ''">
-                        <button
-                            type="button"
-                            class="tooth-item-cell"
-                            :title="'Răng ' + {{ $t }} + ': ' + getConditionsList({{ $t }}) + ' | ' + getToothTreatmentStateLabel({{ $t }})"
-                            @click="toggleTooth({{ $t }}, $event)"
-                        >
-                            <div :class="getToothBoxClass({{ $t }})">
-                                <span class="tooth-status-list" x-text="getConditionLabels({{ $t }})"></span>
-                            </div>
-                        </button>
-                        <div class="crm-tooth-number mt-1">{{ $t }}</div>
-                    </div>
-                @endforeach
-            </div>
+            @include('filament.forms.components.partials.tooth-chart-rows', ['rows' => $toothRows])
         </div>
     </div>
 
     <p class="mt-3 text-center text-xs italic text-gray-500 dark:text-gray-400">
-        * Dùng nút "Chọn nhiều" (hỗ trợ mobile) hoặc giữ phím "Ctrl/Command" để chọn nhiều răng trước khi chẩn đoán.
+        {{ $selectionHint }}
     </p>
 
-    <div class="note-teeth mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
-        <div class="note-tooth-sign w-full text-gray-500 dark:text-gray-400">* chú thích hiện trạng răng</div>
-        <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-gray-500"></span> Tình trạng hiện tại</div>
-        <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-red-500"></span> Đang được điều trị</div>
-        <div class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-green-500"></span> Hoàn thành điều trị</div>
-    </div>
+    @include('filament.forms.components.partials.tooth-chart-legend', ['legendItems' => $treatmentLegend])
 
     <div
         x-show="modalOpen"

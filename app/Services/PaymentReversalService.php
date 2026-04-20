@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\ActionGate;
@@ -88,7 +89,7 @@ class PaymentReversalService
             }
 
             try {
-                return $lockedInvoice->recordPayment(
+                $refundPayment = $lockedInvoice->recordPayment(
                     amount: $amount,
                     method: (string) $lockedPayment->method,
                     notes: $note,
@@ -108,11 +109,32 @@ class PaymentReversalService
                     throw $exception;
                 }
 
-                return Payment::query()
+                $refundPayment = Payment::query()
                     ->where('invoice_id', $lockedInvoice->getKey())
                     ->where('transaction_ref', $resolvedTransactionRef)
                     ->firstOrFail();
             }
+
+            AuditLog::record(
+                entityType: AuditLog::ENTITY_PAYMENT,
+                entityId: (int) $refundPayment->getKey(),
+                action: AuditLog::ACTION_REVERSAL,
+                actorId: $resolvedActorId,
+                metadata: [
+                    'payment_id' => (int) $refundPayment->getKey(),
+                    'reversal_of_id' => (int) $lockedPayment->getKey(),
+                    'invoice_id' => (int) $lockedInvoice->getKey(),
+                    'amount' => round(abs($amount), 2),
+                    'reason' => $refundReason,
+                    'trigger' => 'manual_reversal',
+                    'status_from' => 'active',
+                    'status_to' => 'reversed',
+                ],
+                branchId: $lockedPayment->resolveBranchId(),
+                patientId: is_numeric($lockedInvoice->patient_id) ? (int) $lockedInvoice->patient_id : null,
+            );
+
+            return $refundPayment;
         }, 5);
     }
 

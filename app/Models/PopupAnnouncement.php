@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PopupAnnouncementWorkflowService;
 use App\Support\BranchAccess;
 use App\Support\ClinicRuntimeSettings;
 use Illuminate\Database\Eloquent\Builder;
@@ -170,6 +171,12 @@ class PopupAnnouncement extends Model
                 }
             }
         });
+
+        static::deleting(function (): void {
+            throw ValidationException::withMessages([
+                'popup_announcement' => 'Popup nội bộ không hỗ trợ xóa trực tiếp. Vui lòng hủy popup qua workflow.',
+            ]);
+        });
     }
 
     public function creator(): BelongsTo
@@ -226,6 +233,16 @@ class PopupAnnouncement extends Model
         }
 
         return in_array($this->status, [static::STATUS_SCHEDULED, static::STATUS_PUBLISHED], true);
+    }
+
+    public function cancel(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PopupAnnouncementWorkflowService::class)->cancel($this, $reason, $actorId);
+    }
+
+    public function publish(?string $reason = null, ?int $actorId = null): self
+    {
+        return app(PopupAnnouncementWorkflowService::class)->publish($this, $reason, $actorId);
     }
 
     /**
