@@ -15,7 +15,7 @@ it('configures popup announcement message as rich editor with file attachments',
 });
 
 it('renders popup message using rich content renderer', function (): void {
-    $viewFile = File::get(resource_path('views/livewire/popup-announcement-center.blade.php'));
+    $viewFile = File::get(resource_path('views/livewire/partials/popup-announcement-dialog.blade.php'));
 
     expect($viewFile)
         ->toContain('RichContentRenderer::make')

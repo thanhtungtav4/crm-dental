@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -106,16 +107,30 @@ class AppointmentSchedulingService
                 $payload['overbooking_override_at'] = now();
             }
 
+            $rescheduleContext = $this->rescheduleAuditContext(
+                originalStartAt: $originalStartAt,
+                newStartAt: $normalizedStartAt,
+                reason: $reason,
+                force: $force,
+                source: 'calendar',
+            );
+
             $this->saveWithinManagedWorkflow(
                 appointment: $lockedAppointment,
                 payload: $payload,
-                context: $this->rescheduleAuditContext(
-                    originalStartAt: $originalStartAt,
-                    newStartAt: $normalizedStartAt,
-                    reason: $reason,
-                    force: $force,
-                    source: 'calendar',
-                ),
+                context: $rescheduleContext,
+            );
+
+            AuditLog::record(
+                entityType: Appointment::class,
+                entityId: $lockedAppointment->getKey(),
+                action: AuditLog::ACTION_RESCHEDULE,
+                actorId: $rescheduleContext['actor_id'] ?? null,
+                metadata: array_merge($rescheduleContext, [
+                    'status_from' => Appointment::STATUS_SCHEDULED,
+                    'status_to' => Appointment::STATUS_RESCHEDULED,
+                ]),
+                branchId: $lockedAppointment->branch_id,
             );
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;
@@ -158,10 +173,25 @@ class AppointmentSchedulingService
                 );
             }
 
+            $auditContext = $this->statusTransitionAuditContext($normalizedStatus, $context);
+
             $this->saveWithinManagedWorkflow(
                 appointment: $lockedAppointment,
                 payload: $payload,
-                context: $this->statusTransitionAuditContext($normalizedStatus, $context),
+                context: $auditContext,
+            );
+
+            $auditAction = $auditContext['audit_action'] ?? AuditLog::ACTION_UPDATE;
+            AuditLog::record(
+                entityType: Appointment::class,
+                entityId: $lockedAppointment->getKey(),
+                action: $auditAction,
+                actorId: $auditContext['actor_id'] ?? null,
+                metadata: array_merge($auditContext, [
+                    'status_from' => $lockedAppointment->getOriginal('status') ?? $lockedAppointment->status,
+                    'status_to' => $normalizedStatus,
+                ]),
+                branchId: $lockedAppointment->branch_id,
             );
 
             return $lockedAppointment->fresh() ?? $lockedAppointment;

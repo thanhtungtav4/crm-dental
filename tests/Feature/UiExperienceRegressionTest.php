@@ -104,12 +104,22 @@ it('uses a panel modal for calendar rescheduling instead of browser dialogs', fu
         ->toContain("x-init=\"init(@js(\$viewState['status_colors']))\"")
         ->toContain("@include('filament.appointments.partials.calendar-filters-panel'")
         ->toContain("@include('filament.appointments.partials.calendar-reschedule-modal', [")
-        ->toContain("'panel' => \$viewState['reschedule_modal_panel']");
+        ->toContain("'panel' => \$viewState['reschedule_modal_panel']")
+        ->toContain("aria-label=\"{{ \$viewState['shell_panel']['calendar_region_label'] }}\"")
+        ->toContain('x-bind:aria-busy="isFetchingEvents.toString()"')
+        ->toContain('role="status"')
+        ->toContain("{{ \$viewState['shell_panel']['calendar_loading_label'] }}");
 
     expect($calendarFiltersPanel)
         ->toContain("\$panel['status_options']")
         ->toContain("\$panel['branch_options']")
-        ->toContain("\$panel['doctor_options']");
+        ->toContain("\$panel['doctor_options']")
+        ->toContain("aria-labelledby=\"{{ \$panel['labelled_by'] }}\"")
+        ->toContain("aria-describedby=\"{{ \$panel['described_by'] }}\"")
+        ->toContain("for=\"{{ \$panel['status_filter']['id'] }}\"")
+        ->toContain("id=\"{{ \$panel['branch_filter']['id'] }}\"")
+        ->toContain("id=\"{{ \$panel['doctor_filter']['id'] }}\"")
+        ->toContain('x-text="activeFilterSummary()"');
 
     expect($calendarRescheduleModal)
         ->toContain("@props([\n    'panel',\n])")
@@ -117,6 +127,12 @@ it('uses a panel modal for calendar rescheduling instead of browser dialogs', fu
         ->toContain(":id=\"\$panel['id']\"")
         ->toContain(":heading=\"\$panel['heading']\"")
         ->toContain(":description=\"\$panel['description']\"")
+        ->toContain('role="alert"')
+        ->toContain("aria-describedby=\"{{ \$panel['conflict_message_id'] }} {{ \$panel['conflict_note_id'] }}\"")
+        ->toContain("id=\"{{ \$panel['reason_help_id'] }}\"")
+        ->toContain("id=\"{{ \$panel['reason_error_id'] }}\"")
+        ->toContain('x-bind:aria-invalid="rescheduleDialog.errorMessage ? \'true\' : \'false\'"')
+        ->toContain('x-bind:aria-busy="rescheduleDialog.isSubmitting.toString()"')
         ->not->toContain('window.prompt')
         ->not->toContain('window.alert')
         ->not->toContain('window.confirm');
@@ -131,6 +147,10 @@ it('uses a panel modal for calendar rescheduling instead of browser dialogs', fu
         ->toContain('new FullCalendar.Calendar(el, {')
         ->toContain('callFetchEvents(startAtIso, endAtIso)')
         ->toContain('submitReschedule()')
+        ->toContain('selectedOptionLabel(selectId, selectedValue, fallback)')
+        ->toContain('activeFilterSummary()')
+        ->toContain('eventContextLines(info)')
+        ->toContain("info.el.setAttribute('aria-label', assistiveLabel)")
         ->toContain("const baseUrl = @js(\$panel['create_url'])")
         ->toContain("@js(\$panel['connection_error_message'])")
         ->toContain("message.includes(@js(\$panel['conflict_keyword']))");

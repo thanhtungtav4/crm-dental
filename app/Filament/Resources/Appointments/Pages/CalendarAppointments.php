@@ -214,7 +214,15 @@ class CalendarAppointments extends Page
      *     connection_error_message: string,
      *     reason_required_message: string,
      *     default_error_message: string,
-     *     conflict_keyword: string
+     *     conflict_keyword: string,
+     *     calendar_region_label: string,
+     *     calendar_loading_label: string,
+     *     status_filter_id: string,
+     *     branch_filter_id: string,
+     *     doctor_filter_id: string,
+     *     all_status_label: string,
+     *     all_branch_label: string,
+     *     all_doctor_label: string
      * }
      */
     protected function shellPanel(): array
@@ -228,6 +236,14 @@ class CalendarAppointments extends Page
             'reason_required_message' => 'Vui lòng nhập lý do dời lịch hẹn.',
             'default_error_message' => 'Không thể dời lịch hẹn.',
             'conflict_keyword' => 'trùng lịch',
+            'calendar_region_label' => 'Lưới lịch hẹn theo tuần',
+            'calendar_loading_label' => 'Đang tải lại lịch hẹn',
+            'status_filter_id' => 'calendar-filter-status',
+            'branch_filter_id' => 'calendar-filter-branch',
+            'doctor_filter_id' => 'calendar-filter-doctor',
+            'all_status_label' => 'Tất cả',
+            'all_branch_label' => 'Tất cả chi nhánh',
+            'all_doctor_label' => 'Tất cả bác sĩ',
         ];
     }
 
@@ -248,7 +264,12 @@ class CalendarAppointments extends Page
             'branch_label' => 'Chi nhánh',
             'conflict_heading' => 'Khung giờ mới đang bị trùng lịch.',
             'conflict_note' => 'Nếu vẫn cần lưu, hệ thống sẽ ghi nhận đây là thao tác override.',
+            'conflict_message_id' => 'calendar-reschedule-conflict-message',
+            'conflict_note_id' => 'calendar-reschedule-conflict-note',
             'reason_label' => 'Lý do dời lịch',
+            'reason_help' => 'Lý do sẽ được lưu vào lịch sử dời lịch để đội vận hành tra cứu lại khi cần.',
+            'reason_help_id' => 'calendar-reschedule-reason-help',
+            'reason_error_id' => 'calendar-reschedule-reason-error',
             'reason_placeholder' => 'Ví dụ: bệnh nhân xin đổi giờ, bác sĩ thay đổi lịch, điều phối qua chi nhánh khác...',
             'cancel_label' => 'Hủy',
             'submit_label' => 'Lưu thay đổi',
@@ -319,6 +340,13 @@ class CalendarAppointments extends Page
                 'label_classes' => 'text-xs text-rose-700 dark:text-rose-300',
                 'value_classes' => 'text-xl font-semibold text-rose-700 dark:text-rose-300',
             ],
+            [
+                'label' => 'Đã hủy',
+                'value' => number_format($metrics['cancelled'] ?? 0),
+                'container_classes' => 'rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-600/30 dark:bg-gray-500/10',
+                'label_classes' => 'text-xs text-gray-600 dark:text-gray-400',
+                'value_classes' => 'text-xl font-semibold text-gray-600 dark:text-gray-400',
+            ],
         ];
     }
 
@@ -326,6 +354,15 @@ class CalendarAppointments extends Page
      * @param  array<int|string, string>  $branches
      * @param  array<int|string, string>  $doctors
      * @return array{
+     *     heading: string,
+     *     description: string,
+     *     labelled_by: string,
+     *     described_by: string,
+     *     active_summary_label: string,
+     *     reset_label: string,
+     *     status_filter: array{id:string,label:string},
+     *     branch_filter: array{id:string,label:string},
+     *     doctor_filter: array{id:string,label:string},
      *     status_options: array<int, array{value:string,label:string}>,
      *     branch_options: array<int, array{value:string,label:string}>,
      *     doctor_options: array<int, array{value:string,label:string}>
@@ -334,6 +371,24 @@ class CalendarAppointments extends Page
     protected function filtersPanel(array $branches, array $doctors): array
     {
         return [
+            'heading' => 'Bộ lọc lịch hẹn',
+            'description' => 'Lọc nhanh theo trạng thái, chi nhánh hoặc bác sĩ mà không làm thay đổi các chỉ số tổng quan tuần.',
+            'labelled_by' => 'calendar-filters-heading',
+            'described_by' => 'calendar-filters-description',
+            'active_summary_label' => 'Đang xem',
+            'reset_label' => 'Đặt lại',
+            'status_filter' => [
+                'id' => 'calendar-filter-status',
+                'label' => 'Trạng thái',
+            ],
+            'branch_filter' => [
+                'id' => 'calendar-filter-branch',
+                'label' => 'Chi nhánh',
+            ],
+            'doctor_filter' => [
+                'id' => 'calendar-filter-doctor',
+                'label' => 'Bác sĩ',
+            ],
             'status_options' => [
                 ['value' => '', 'label' => 'Tất cả'],
                 ['value' => Appointment::STATUS_SCHEDULED, 'label' => 'Đã đặt'],
@@ -344,22 +399,28 @@ class CalendarAppointments extends Page
                 ['value' => Appointment::STATUS_CANCELLED, 'label' => 'Đã hủy'],
                 ['value' => Appointment::STATUS_RESCHEDULED, 'label' => 'Đã hẹn lại'],
             ],
-            'branch_options' => array_map(
-                fn (int|string $branchId, string $branchName): array => [
-                    'value' => (string) $branchId,
-                    'label' => $branchName,
-                ],
-                array_keys($branches),
-                $branches,
-            ),
-            'doctor_options' => array_map(
-                fn (int|string $doctorId, string $doctorName): array => [
-                    'value' => (string) $doctorId,
-                    'label' => $doctorName,
-                ],
-                array_keys($doctors),
-                $doctors,
-            ),
+            'branch_options' => [
+                ['value' => '', 'label' => 'Tất cả chi nhánh'],
+                ...array_map(
+                    fn (int|string $branchId, string $branchName): array => [
+                        'value' => (string) $branchId,
+                        'label' => $branchName,
+                    ],
+                    array_keys($branches),
+                    $branches,
+                ),
+            ],
+            'doctor_options' => [
+                ['value' => '', 'label' => 'Tất cả bác sĩ'],
+                ...array_map(
+                    fn (int|string $doctorId, string $doctorName): array => [
+                        'value' => (string) $doctorId,
+                        'label' => $doctorName,
+                    ],
+                    array_keys($doctors),
+                    $doctors,
+                ),
+            ],
         ];
     }
 

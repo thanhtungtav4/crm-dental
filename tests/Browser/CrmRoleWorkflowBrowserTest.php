@@ -27,9 +27,8 @@ it('lets cskh work the frontdesk queue and convert a lead into a patient', funct
         ->click('Xác nhận');
 
     $page->assertSee('Đã chuyển thành bệnh nhân')
-        ->assertSee('Đã chuyển đổi')
-        ->click('Pham Minh Chau')
         ->assertPathBeginsWith('/admin/patients/')
+        ->assertSee('Pham Minh Chau')
         ->assertSee('Đặt lịch hẹn')
         ->assertNoJavascriptErrors()
         ->assertNoConsoleLogs();

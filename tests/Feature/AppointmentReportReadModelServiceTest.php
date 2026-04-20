@@ -117,6 +117,7 @@ it('summarizes appointment metrics within selected branches', function (): void 
             'in_progress' => 0,
             'completed' => 1,
             'no_show' => 0,
+            'cancelled' => 0,
         ]);
 });
 
@@ -149,5 +150,6 @@ it('returns empty appointment readers for inaccessible branch selections', funct
             'in_progress' => 0,
             'completed' => 0,
             'no_show' => 0,
+            'cancelled' => 0,
         ]);
 });

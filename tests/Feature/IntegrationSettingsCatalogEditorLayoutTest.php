@@ -4,17 +4,16 @@ use App\Filament\Pages\IntegrationSettings;
 use Illuminate\Support\Facades\File;
 
 it('renders user-friendly catalog editor controls instead of raw json editing', function (): void {
-    $blade = File::get(resource_path('views/filament/pages/integration-settings.blade.php'));
+    $blade = File::get(resource_path('views/filament/pages/partials/integration-setting-json-field.blade.php'));
 
     expect($blade)
         ->toContain("wire:click=\"addCatalogRow('{{ \$field['state'] }}')\"")
-        ->toContain("wire:click=\"removeCatalogRow('{{ \$field['state'] }}', {{ \$index }})\"")
+        ->toContain("wire:click=\"removeCatalogRow('{{ \$field['state'] }}', {{ \$entry['index'] }})\"")
         ->toContain("wire:click=\"restoreCatalogDefaults('{{ \$field['state'] }}')\"")
-        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$index }}.enabled\"")
-        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$index }}.key\"")
-        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$index }}.label\"")
-        ->toContain("wire:blur=\"syncCatalogRowFromLabel('{{ \$field['state'] }}', {{ \$index }})\"")
-        ->toContain('Không cần sửa JSON thủ công')
+        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$entry['index'] }}.enabled\"")
+        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$entry['index'] }}.key\"")
+        ->toContain("wire:model.live=\"catalogEditors.{{ \$field['state'] }}.{{ \$entry['index'] }}.label\"")
+        ->toContain("wire:blur=\"syncCatalogRowFromLabel('{{ \$field['state'] }}', {{ \$entry['index'] }})\"")
         ->toContain('Thêm dòng')
         ->toContain('Khôi phục mặc định')
         ->toContain('Mã tự sinh')

@@ -68,7 +68,7 @@ it('renders admin hot paths with seeded governance and control-plane markers', f
     $this->actingAs($admin)
         ->get(AuditLogResource::getUrl('index'))
         ->assertOk()
-        ->assertSee('Audit logs')
+        ->assertSee('Audit log')
         ->assertSee('Entity')
         ->assertSee('Hành động')
         ->assertSee('Người thực hiện');

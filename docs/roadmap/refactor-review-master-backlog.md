@@ -11,7 +11,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
   - `docs/reviews/modules/*.md`
   - `docs/reviews/issues/*.md`
   - `docs/reviews/plans/*.md`
-- Last updated: `2026-04-13`
+- Last updated: `2026-04-16`
 
 ## Working Rules
 
@@ -211,7 +211,7 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-009] Shared workflow action and audit-reason contract
 
-- Status: `In progress`
+- Status: `Completed`
 - Module: `PAT`, `APPT`, `TRT`, `FIN`, `SUP`, `INT`, `ZNS`, `CARE`, `OPS`
 - Description:
   - Chuan hoa pattern workflow service, guided actions, confirm modal, va audit reason metadata tren cac module co state machine.
@@ -281,7 +281,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-010] Unified audit timeline and read-model conventions
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `PAT`, `GOV`, `CLIN`, `FIN`, `INT`, `OPS`, `ZNS`
 - Description:
   - Tiep tuc hop nhat cach doc audit timeline, operational event, va provenance read-model de de trace incident va nghiep vu.
@@ -376,7 +377,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-011] Immutable adjustment and reversal ledger strategy
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `TRT`, `INV`, `FIN`, `SUP`
 - Description:
   - Chot chien luoc append-only/immutable cho usage, void, reversal, cancel, va supplier-linked adjustments de giam drift downstream.
@@ -421,7 +423,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-012] Reporting and snapshot platform convergence
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `KPI`, `OPS`, `FIN`, `INV`, `CARE`, `SUP`
 - Description:
   - Tiep tuc tach report pages khoi ad-hoc query logic, chot read-model/snapshot contract, freshness policy, export scope, va query performance lane.
@@ -460,7 +463,8 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 
 ## [RRB-013] Integration control-plane platform convergence
 
-- Status: `In progress`
+- Status: `Completed`
+- Last updated: `2026-04-16`
 - Module: `INT`, `ZNS`, `OPS`
 - Description:
   - Tiep tuc tach ro control-plane health, runtime settings, secret rotation, payload governance, retry/dead-letter, va provider-specific runbooks thanh mot platform nhat quan.
@@ -562,3 +566,80 @@ Tai lieu nay la backlog canonical cho phase sau baseline. Chi bao gom cong viec 
 5. `RRB-007`, `RRB-008`
 6. `RRB-009`, `RRB-010`
 7. `RRB-011`, `RRB-012`, `RRB-013`
+8. `RRB-014`, `RRB-015`, `RRB-016`
+
+## [RRB-014] Cross-module TRT/INV/FIN/SUP reconciliation chain smoke tests
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/CrossModuleTrtInvFinChainSmokeTest.php` (10 tests, 28 assertions)
+- Module: `TRT`, `INV`, `FIN`, `SUP`
+- Description:
+  - Ghi nhan contract smoke tests cho chuoi cross-module: treatment material usage → inventory mutation → invoice → payment → wallet ledger → reversal → audit trail lien tuc. Bao gom installment dunning chain va MPI merge reparenting chain.
+- Impact:
+  - Dam bao khi TRT/INV/FIN thay doi rieng le, chuoi toan ven van khong bi drift.
+- Priority: `P2`
+- Risk: `High`
+- Effort estimate: `M`
+- Dependency:
+  - `RRB-011`
+- Tests needed:
+  - TreatmentMaterialUsage → InventoryTransaction → stock decrease chain
+  - Invoice creation from session → Payment → WalletLedger (khi wallet source)
+  - MaterialUsage reversal → stock restored → InventoryTransaction reversal immutable
+  - Payment reversal → WalletLedger CREDIT → original DEBIT unchanged
+  - Branch attribution consistent qua TRT/INV/FIN/SUP sau reversal
+  - Installment dunning → payment → wallet chain
+- Rollout note:
+  - Tests only, khong thay doi service code.
+
+## [RRB-015] KPI snapshot consistency, ZNS observability threshold, and OPS signoff contract
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/KpiSnapshotSlaAndOpsReleaseGateContractTest.php` (12 tests, 43 assertions)
+- Module: `KPI`, `ZNS`, `OPS`
+- Description:
+  - Contract tests cho KPI snapshot freshness SLA breach detection, ZNS dead-letter threshold policy, va OPS release signoff completeness.
+- Impact:
+  - Dam bao threshold/SLA contracts khong bi drift khi tham so thay doi.
+- Priority: `P2`
+- Risk: `Medium`
+- Effort estimate: `S`
+- Dependency:
+  - `RRB-012`
+  - `RRB-013`
+- Tests needed:
+  - KPI snapshot freshness: SLA breach khi snapshot > threshold gio cu
+  - KPI snapshot: `stale` va `missing` phan loai nhat quan voi SlaService
+  - ZNS dead-letter threshold: retry exhausted → status=dead → backlog count tang
+  - ZNS campaign runner: dead-letter gate block publish khi provider misconfigured
+  - OPS release gate catalog: all required gates present và `RunReleaseGates` passes clean state
+  - ProductionReadiness report: covers all critical modules không thiếu
+- Rollout note:
+  - Tests only, khong thay doi threshold values.
+
+## [RRB-016] Production-like dataset smoke tests for reports and MPI merge chain
+
+- Status: `Completed`
+- Last updated: `2026-04-16`
+- Test file: `tests/Feature/ProductionDatasetSmokeAndMpiChainTest.php` (7 tests, 23 assertions)
+- Module: `KPI`, `PAT`, `FIN`, `TRT`
+- Description:
+  - Smoke tests voi dataset lon (50+ patients, invoices, payments) de dam bao report aggregates nhat quan, va MPI merge chain khong mat treatment/invoice attribution sau khi merge.
+- Impact:
+  - Phat hien volume/regression gap ma unit test don le khong cover duoc.
+- Priority: `P3`
+- Risk: `Medium`
+- Effort estimate: `M`
+- Dependency:
+  - `RRB-011`
+  - `RRB-014`
+- Tests needed:
+  - Seed 20+ patients across 2 branches → report aggregates khop between FinancialReportReadModelService va raw Invoice count
+  - Seed 10+ appointments per branch → AppointmentReportReadModelService count nhat quan
+  - MPI merge chain: Patient A + B merged → TreatmentPlan/Invoice/Payment duoc reparent sang canonical
+  - MPI rollback: restore reassigns references ve patient goc
+  - Cross-branch attribution: payment tren branch A khong xuat hien trong branch B report
+- Rollout note:
+  - Khong can feature flag, tests only.

@@ -5,6 +5,8 @@
 {
     componentId: @js($this->getId()),
     calendar: null,
+    isFetchingEvents: false,
+    pendingDrop: null,
     filters: {
         status: '',
         branchId: '',
@@ -63,8 +65,8 @@
                     window.location.href = info.event.url
                 }
             },
-            eventDrop: async (info) => {
-                info.revert()
+            eventDrop: (info) => {
+                this.pendingDrop = info
                 this.openRescheduleDialog({
                     appointmentId: Number(info.event.id),
                     appointmentTitle: info.event.title,
@@ -74,22 +76,22 @@
                 })
             },
             eventDidMount: (info) => {
-                const p = info.event.extendedProps || {}
-                const tip = [
-                    p.patient ? `BN: ${p.patient}` : null,
-                    p.doctor ? `BS: ${p.doctor}` : null,
-                    p.branch ? `CN: ${p.branch}` : null,
-                    p.statusLabel ? `TT: ${p.statusLabel}` : null,
-                    p.note ? `Ghi chú: ${p.note}` : null,
-                ].filter(Boolean).join('\n')
-                info.el.setAttribute('title', tip)
+                const contextLines = this.eventContextLines(info)
+                const tooltip = contextLines.join('\n')
+                const assistiveLabel = contextLines.join(', ') || info.event.title
+
+                info.el.setAttribute('title', tooltip)
+                info.el.setAttribute('aria-label', assistiveLabel)
             },
             events: async (fetchInfo, successCallback, failureCallback) => {
+                this.isFetchingEvents = true
                 try {
                     const events = await this.callFetchEvents(fetchInfo.startStr, fetchInfo.endStr)
                     successCallback(Array.isArray(events) ? events : [])
                 } catch (error) {
                     failureCallback(error)
+                } finally {
+                    this.isFetchingEvents = false
                 }
             },
         })
@@ -131,6 +133,19 @@
             return startAtIso
         }
     },
+    eventContextLines(info) {
+        const props = info.event.extendedProps || {}
+        const startLabel = info.event.start ? this.formatDateLabel(info.event.start.toISOString()) : ''
+
+        return [
+            props.patient || info.event.title ? `Bệnh nhân: ${props.patient || info.event.title}` : null,
+            startLabel ? `Thời gian: ${startLabel}` : null,
+            props.doctor ? `Bác sĩ: ${props.doctor}` : null,
+            props.branch ? `Chi nhánh: ${props.branch}` : null,
+            props.statusLabel ? `Trạng thái: ${props.statusLabel}` : null,
+            props.note ? `Ghi chú: ${props.note}` : null,
+        ].filter(Boolean)
+    },
     dispatchModal(eventName) {
         window.dispatchEvent(new CustomEvent(eventName, {
             detail: { id: this.rescheduleDialog.modalId },
@@ -165,10 +180,20 @@
         }
 
         this.dispatchModal('open-modal')
+        this.$nextTick(() => {
+            setTimeout(() => {
+                document.getElementById('calendar-reschedule-reason')?.focus()
+            }, 150)
+        })
     },
     closeRescheduleDialog() {
         if (this.rescheduleDialog.isSubmitting) {
             return
+        }
+
+        if (this.pendingDrop) {
+            this.pendingDrop.revert()
+            this.pendingDrop = null
         }
 
         this.resetRescheduleDialog()
@@ -177,6 +202,11 @@
     handleModalClosed(event) {
         if (event.detail?.id !== this.rescheduleDialog.modalId || this.rescheduleDialog.isSubmitting) {
             return
+        }
+
+        if (this.pendingDrop) {
+            this.pendingDrop.revert()
+            this.pendingDrop = null
         }
 
         this.resetRescheduleDialog()
@@ -213,6 +243,7 @@
         }
 
         if (result?.ok) {
+            this.pendingDrop = null
             this.rescheduleDialog.isSubmitting = false
             this.calendar?.refetchEvents()
             this.closeRescheduleDialog()
@@ -243,5 +274,19 @@
     resetFilters() {
         this.filters = { status: '', branchId: '', doctorId: '' }
         this.applyFilters()
+    },
+    selectedOptionLabel(selectId, selectedValue, fallback) {
+        const select = document.getElementById(selectId)
+        const selectedOption = Array.from(select?.options || [])
+            .find((option) => option.value === String(selectedValue))
+
+        return selectedOption?.textContent?.trim() || select?.selectedOptions?.[0]?.textContent?.trim() || fallback
+    },
+    activeFilterSummary() {
+        return [
+            this.selectedOptionLabel(@js($panel['status_filter_id']), this.filters.status, @js($panel['all_status_label'])),
+            this.selectedOptionLabel(@js($panel['branch_filter_id']), this.filters.branchId, @js($panel['all_branch_label'])),
+            this.selectedOptionLabel(@js($panel['doctor_filter_id']), this.filters.doctorId, @js($panel['all_doctor_label'])),
+        ].join(' · ')
     },
 }

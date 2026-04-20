@@ -112,6 +112,7 @@ class AppointmentReportReadModelService
                 'in_progress' => 0,
                 'completed' => 0,
                 'no_show' => 0,
+                'cancelled' => 0,
             ];
         }
 
@@ -134,6 +135,9 @@ class AppointmentReportReadModelService
                 ->count(),
             'no_show' => (int) (clone $query)
                 ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_NO_SHOW]))
+                ->count(),
+            'cancelled' => (int) (clone $query)
+                ->whereIn('status', Appointment::statusesForQuery([Appointment::STATUS_CANCELLED]))
                 ->count(),
         ];
     }

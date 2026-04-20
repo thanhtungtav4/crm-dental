@@ -167,6 +167,8 @@ class ZnsCampaignDelivery extends Model
         ?array $providerResponse,
         ?array $providerRequestSummary = null,
     ): self {
+        $statusFrom = $this->status ?? self::STATUS_QUEUED;
+
         static::runWithinManagedWorkflow(function () use (
             $providerMessageId,
             $providerStatusCode,
@@ -191,6 +193,26 @@ class ZnsCampaignDelivery extends Model
             ])->save();
         });
 
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: (int) $this->zns_campaign_id,
+            action: AuditLog::ACTION_RUN,
+            actorId: null,
+            metadata: [
+                'delivery_id' => (int) $this->getKey(),
+                'campaign_id' => (int) $this->zns_campaign_id,
+                'patient_id' => $this->patient_id,
+                'branch_id' => $this->branch_id,
+                'trigger' => 'zns_sent',
+                'status_from' => $statusFrom,
+                'status_to' => self::STATUS_SENT,
+                'provider_message_id' => $providerMessageId,
+                'provider_status_code' => $providerStatusCode,
+            ],
+            branchId: $this->branch_id,
+            patientId: $this->patient_id,
+        );
+
         return $this;
     }
 
@@ -205,6 +227,9 @@ class ZnsCampaignDelivery extends Model
         mixed $nextRetryAt,
         ?array $providerRequestSummary = null,
     ): self {
+        $statusFrom = $this->status ?? self::STATUS_QUEUED;
+        $isDeadLetter = $nextRetryAt === null;
+
         static::runWithinManagedWorkflow(function () use (
             $message,
             $providerStatusCode,
@@ -228,6 +253,29 @@ class ZnsCampaignDelivery extends Model
                     ]),
             ])->save();
         });
+
+        AuditLog::record(
+            entityType: AuditLog::ENTITY_AUTOMATION,
+            entityId: (int) $this->zns_campaign_id,
+            action: AuditLog::ACTION_FAIL,
+            actorId: null,
+            metadata: [
+                'delivery_id' => (int) $this->getKey(),
+                'campaign_id' => (int) $this->zns_campaign_id,
+                'patient_id' => $this->patient_id,
+                'branch_id' => $this->branch_id,
+                'trigger' => $isDeadLetter ? 'zns_dead' : 'zns_retryable',
+                'status_from' => $statusFrom,
+                'status_to' => self::STATUS_FAILED,
+                'error_message' => $message,
+                'provider_status_code' => $providerStatusCode,
+                'next_retry_at' => $nextRetryAt instanceof \DateTimeInterface
+                    ? $nextRetryAt->format(\DateTimeInterface::ATOM)
+                    : $nextRetryAt,
+            ],
+            branchId: $this->branch_id,
+            patientId: $this->patient_id,
+        );
 
         return $this;
     }
